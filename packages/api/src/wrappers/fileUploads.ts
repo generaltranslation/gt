@@ -14,17 +14,21 @@ type PresignedFileUpload = NonNullable<
 /**
  * PUTs a file's bytes to a presigned URL from `createFileUploads`. The URL
  * authorizes the request, so `fetch` must not add API credentials. The whole
- * PUT, retries and their backoff included, times out when the URL expires.
+ * PUT, retries and their backoff included, times out when the URL expires, or
+ * after `timeoutMs` when that is sooner.
  */
 export async function putFileUpload(
   upload: PresignedFileUpload,
   bytes: Uint8Array<ArrayBuffer>,
-  options: Pick<ApiClientConfig, 'fetch' | 'retryPolicy'> = {}
+  options: Pick<ApiClientConfig, 'fetch' | 'retryPolicy' | 'timeoutMs'> = {}
 ): Promise<void> {
   const { fetch, retryPolicy } = resolveTransportOptions(options);
   const fetchUpload = createTimeoutFetch({
     fetch: createRetryingFetch({ fetch, retryPolicy }),
-    timeoutMs: Math.max(Date.parse(upload.expiresAt) - Date.now(), 0),
+    timeoutMs: Math.min(
+      Math.max(Date.parse(upload.expiresAt) - Date.now(), 0),
+      options.timeoutMs ?? Infinity
+    ),
   });
   const response = await fetchUpload(upload.url, {
     method: 'PUT',

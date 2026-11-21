@@ -5,6 +5,9 @@ import type {
   AssignContextGroupData,
   AssignContextGroupErrors,
   AssignContextGroupResponses,
+  CreateAssetUploadsData,
+  CreateAssetUploadsErrors,
+  CreateAssetUploadsResponses,
   CreateBranchData,
   CreateBranchErrors,
   CreateBranchResponses,
@@ -680,7 +683,7 @@ export const uploadTranslations = <ThrowOnError extends boolean = false>(
 /**
  * Create file uploads
  *
- * Get presigned URLs to PUT 1–100 files (media up to 2GB, others 150MB) for Upload source files or translations; use one when that request would be over 4MB. Requires `project:files:write`.
+ * Get presigned URLs to PUT 1–100 files (media up to 2GB, others 150MB) that a later request names by `upload`; use one when that request would be over 4MB. Requires `project:files:write`.
  */
 export const createFileUploads = <ThrowOnError extends boolean = false>(
   options: Options<CreateFileUploadsData, ThrowOnError>
@@ -1695,6 +1698,31 @@ export const upsertAssets = <ThrowOnError extends boolean = false>(
       { scheme: 'bearer', type: 'http' },
     ],
     url: '/v2/orgs/{orgId}/assets',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Create asset uploads
+ *
+ * Get presigned URLs to PUT 1–10 fonts (up to 20MB each) for Upsert Organization assets; use one when that request would be over 4MB. Requires `org:assets:write`.
+ */
+export const createAssetUploads = <ThrowOnError extends boolean = false>(
+  options: Options<CreateAssetUploadsData, ThrowOnError>
+) =>
+  options.client.post<
+    CreateAssetUploadsResponses,
+    CreateAssetUploadsErrors,
+    ThrowOnError
+  >({
+    security: [
+      { scheme: 'bearer', type: 'http' },
+      { scheme: 'bearer', type: 'http' },
+    ],
+    url: '/v2/orgs/{orgId}/assets/uploads',
     ...options,
     headers: {
       'Content-Type': 'application/json',

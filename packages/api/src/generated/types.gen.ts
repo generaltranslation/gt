@@ -2146,17 +2146,32 @@ export type OverwriteTranslationsData = {
     /**
      * 1–100 translations; each branch, file, version and locale may appear once.
      */
-    diffs: Array<{
-      locale: string;
-      diff: string;
-      branchId?: string;
-      versionId: string;
-      fileId: string;
-      /**
-       * The full translated file content.
-       */
-      localContent: string;
-    }>;
+    translations: Array<
+      {
+        locale: string;
+        branchId?: string;
+        versionId: string;
+        fileId: string;
+      } & (
+        | {
+            /**
+             * Base64-encoded translation content.
+             */
+            content: string;
+          }
+        | {
+            /**
+             * A file already PUT to the URL from Create file uploads, in place of `content`; required when the request body would be over 4MB.
+             */
+            upload: {
+              /**
+               * SHA-256 of the file's bytes, as 64 lowercase hex characters.
+               */
+              sha256: string;
+            };
+          }
+      )
+    >;
   };
   headers: {
     /**
@@ -2173,7 +2188,7 @@ export type OverwriteTranslationsData = {
 
 export type OverwriteTranslationsErrors = {
   /**
-   * The request is malformed or failed validation.
+   * The request is malformed or failed validation, or its uploads are together too large to read (`file_too_large`). Nothing is saved.
    */
   400: ErrorResponse & {
     code?:
@@ -2181,6 +2196,7 @@ export type OverwriteTranslationsErrors = {
       | 'invalid_content_encoding'
       | 'api_version_unsupported'
       | 'user_ip_missing'
+      | 'file_too_large'
       | 'api_version_too_old';
   };
   /**
@@ -2234,7 +2250,7 @@ export type OverwriteTranslationsError =
 
 export type OverwriteTranslationsResponses = {
   /**
-   * Overwrite result for each translation, in request order, even when every translation fails; a translation fails when its source file or translation does not exist, the content does not apply to its format, or the save fails. Retrying with the same content is safe.
+   * Overwrite result for each translation, in request order, even when every translation fails; a translation fails when its source file or translation does not exist, its content is empty or not base64, its upload is missing or too large (`file_too_large`), the content does not apply to its format, or the save fails. Retrying with the same content is safe.
    */
   200: {
     summary: BatchWriteSummary;
@@ -2266,6 +2282,7 @@ export type OverwriteTranslationsResponses = {
             | 'source_file_not_found'
             | 'not_found'
             | 'invalid_request'
+            | 'file_too_large'
             | 'internal_error';
         }
     >;
@@ -3589,7 +3606,7 @@ export type CreateFileUploadsData = {
      * 1–100 files; each sha256 may appear once.
      */
     files: Array<{
-      fileFormat: FileFormat;
+      fileFormat?: FileFormat & unknown;
       /**
        * File size in bytes: at most 2000000000 for PNG, JPEG and MP4, and 150000000 for other formats.
        */
@@ -3688,11 +3705,11 @@ export type CreateFileUploadsResponses = {
        */
       sha256: string;
       /**
-       * `exists` when the project already stores these bytes, so the PUT is skipped; `upload_required` otherwise.
+       * `exists` when these bytes are already stored, so the PUT is skipped; `upload_required` otherwise.
        */
       status: 'exists' | 'upload_required';
       /**
-       * Present when `status` is `upload_required`. Register the file through Upload source files or Upload translations within 24 hours; later, the upload may be deleted.
+       * Present when `status` is `upload_required`. Name the file by `upload` in a later request within 24 hours; later, the upload may be deleted.
        */
       upload?: {
         /**
@@ -8404,21 +8421,40 @@ export type ExportContextContentResponse =
 export type UpsertAssetsData = {
   body: {
     /**
-     * OpenType or TrueType fonts (`assetType: FONT`) are the only asset type today. A font's identity is its family, weight and italic style: an asset with a stored identity replaces it for the whole organization, and two assets with the same identity reject the request.
+     * OpenType or TrueType fonts (`assetType: FONT`) are the only asset type today. A font's identity is its family, weight and italic style: an asset with a stored identity replaces it for the whole organization, and two assets with the same identity reject the request. Assets sent by `upload` total at most 150MB per request.
      */
-    assets: Array<{
-      assetType: 'FONT';
-      content: string;
-      fileName: string;
-      /**
-       * Family that Lottie files reference the font by. When set, `family` and `style` alone set the font's identity. When absent, the family, weight and italic style come from the font's own tables, then its file name, and `style` is ignored.
-       */
-      family?: string;
-      /**
-       * Weight and italic style, such as `Bold Italic` or `350`. Read only with `family`; a `family` without `style` is regular weight (400), not italic.
-       */
-      style?: string;
-    }>;
+    assets: Array<
+      {
+        assetType: 'FONT';
+        fileName: string;
+        /**
+         * Family that Lottie files reference the font by. When set, `family` and `style` alone set the font's identity. When absent, the family, weight and italic style come from the font's own tables, then its file name, and `style` is ignored.
+         */
+        family?: string;
+        /**
+         * Weight and italic style, such as `Bold Italic` or `350`. Read only with `family`; a `family` without `style` is regular weight (400), not italic.
+         */
+        style?: string;
+      } & (
+        | {
+            /**
+             * Base64-encoded asset file.
+             */
+            content: string;
+          }
+        | {
+            /**
+             * A file already PUT to the URL from Create asset uploads, in place of `content`; required when the request body would be over 4MB.
+             */
+            upload: {
+              /**
+               * SHA-256 of the file's bytes, as 64 lowercase hex characters.
+               */
+              sha256: string;
+            };
+          }
+      )
+    >;
   };
   headers: {
     /**
@@ -8438,7 +8474,138 @@ export type UpsertAssetsData = {
 
 export type UpsertAssetsErrors = {
   /**
-   * The request is malformed or failed validation, or two assets have the same identity, taken from `family` and `style` or read from the font. No asset is written.
+   * The request is malformed or failed validation, two assets have the same identity, taken from `family` and `style` or read from the font, or its uploaded fonts are together too large to read (`file_too_large`). No asset is written.
+   */
+  400: ErrorResponse & {
+    code?:
+      | 'invalid_request'
+      | 'invalid_content_encoding'
+      | 'api_version_unsupported'
+      | 'user_ip_missing'
+      | 'file_too_large'
+      | 'api_version_too_old';
+  };
+  /**
+   * Authentication is missing or invalid.
+   */
+  401: ErrorResponse & {
+    code?:
+      | 'unauthenticated'
+      | 'api_key_invalid'
+      | 'token_invalid'
+      | 'super_user_grant_revoked';
+  };
+  /**
+   * The caller is authenticated but not allowed to perform this operation or access the requested resource.
+   */
+  403: ErrorResponse & {
+    code?:
+      | 'scope_missing'
+      | 'ip_not_allowed'
+      | 'permission_missing'
+      | 'target_inaccessible';
+  };
+  /**
+   * The request, or the data it would return, exceeds a size or item limit.
+   */
+  413: ErrorResponse & {
+    code?: 'payload_too_large';
+  };
+  /**
+   * The request body's Content-Type is missing or not supported, or its Content-Encoding is not supported. Send the body as application/json, uncompressed or gzip-encoded.
+   */
+  415: ErrorResponse & {
+    code?: 'unsupported_media_type' | 'unsupported_content_encoding';
+  };
+  /**
+   * Too many requests. The rate limit was exceeded.
+   */
+  429: ErrorResponse & {
+    code?: 'rate_limited';
+  };
+  /**
+   * An unexpected server error occurred.
+   */
+  500: ErrorResponse & {
+    code?: 'internal_error';
+  };
+};
+
+export type UpsertAssetsError = UpsertAssetsErrors[keyof UpsertAssetsErrors];
+
+export type UpsertAssetsResponses = {
+  /**
+   * One result per asset, in request order, even when every asset fails. `invalid_request`: a font whose family cannot be determined, whose content is empty or not base64, or whose upload is missing. Retrying a failed asset is safe.
+   */
+  200: {
+    summary: BatchWriteSummary;
+    /**
+     * One result per requested asset, in request order.
+     */
+    results: Array<
+      | {
+          fileName: string;
+          status: 'succeeded';
+          id: string;
+          /**
+           * The asset's identity within its type: for a font, its normalized family, weight and italic style.
+           */
+          assetKey: string;
+        }
+      | {
+          fileName: string;
+          status: 'failed';
+          /**
+           * Why the item failed.
+           */
+          error: string;
+          /**
+           * Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize.
+           */
+          code: 'invalid_request' | 'file_too_large' | 'internal_error';
+        }
+    >;
+  };
+};
+
+export type UpsertAssetsResponse =
+  UpsertAssetsResponses[keyof UpsertAssetsResponses];
+
+export type CreateAssetUploadsData = {
+  body: {
+    /**
+     * 1–10 files; each sha256 may appear once.
+     */
+    files: Array<{
+      /**
+       * SHA-256 of the file's bytes, as 64 lowercase hex characters.
+       */
+      sha256: string;
+      /**
+       * File size in bytes, at most 20000000.
+       */
+      size: number;
+    }>;
+  };
+  headers: {
+    /**
+     * API contract version. Must be `2026-10-08.v1` or later; requests without it or with an older version return 400.
+     */
+    'gt-api-version': ApiVersion;
+  };
+  path: {
+    /**
+     * Organization ID.
+     */
+    orgId: string;
+  };
+  query?: never;
+  url: '/v2/orgs/{orgId}/assets/uploads';
+};
+
+export type CreateAssetUploadsErrors = {
+  /**
+   * The request is malformed or failed validation, including a repeated sha256 or a size over the limit. No URL is issued.
    */
   400: ErrorResponse & {
     code?:
@@ -8494,45 +8661,51 @@ export type UpsertAssetsErrors = {
   };
 };
 
-export type UpsertAssetsError = UpsertAssetsErrors[keyof UpsertAssetsErrors];
+export type CreateAssetUploadsError =
+  CreateAssetUploadsErrors[keyof CreateAssetUploadsErrors];
 
-export type UpsertAssetsResponses = {
+export type CreateAssetUploadsResponses = {
   /**
-   * One result per asset, in request order, even when every asset fails. `invalid_request`: a font whose family cannot be determined. Retrying a failed asset is safe.
+   * Upload target for each file, in request order.
    */
   200: {
-    summary: BatchWriteSummary;
     /**
-     * One result per requested asset, in request order.
+     * One result per file, in order.
      */
-    results: Array<
-      | {
-          fileName: string;
-          status: 'succeeded';
-          id: string;
-          /**
-           * The asset's identity within its type: for a font, its normalized family, weight and italic style.
-           */
-          assetKey: string;
-        }
-      | {
-          fileName: string;
-          status: 'failed';
-          /**
-           * Why the item failed.
-           */
-          error: string;
-          /**
-           * Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize.
-           */
-          code: 'invalid_request' | 'internal_error';
-        }
-    >;
+    files: Array<{
+      /**
+       * SHA-256 of the file's bytes, as 64 lowercase hex characters.
+       */
+      sha256: string;
+      /**
+       * `exists` when these bytes are already stored, so the PUT is skipped; `upload_required` otherwise.
+       */
+      status: 'exists' | 'upload_required';
+      /**
+       * Present when `status` is `upload_required`. Name the file by `upload` in a later request within 24 hours; later, the upload may be deleted.
+       */
+      upload?: {
+        /**
+         * Presigned URL to PUT the file bytes to.
+         */
+        url: string;
+        /**
+         * Headers the PUT must send exactly as given.
+         */
+        headers: {
+          'x-amz-checksum-sha256': string;
+        };
+        /**
+         * The PUT must start before this ISO 8601 time.
+         */
+        expiresAt: string;
+      };
+    }>;
   };
 };
 
-export type UpsertAssetsResponse =
-  UpsertAssetsResponses[keyof UpsertAssetsResponses];
+export type CreateAssetUploadsResponse =
+  CreateAssetUploadsResponses[keyof CreateAssetUploadsResponses];
 
 export type CreateCliWizardSessionData = {
   body: CreateCliWizardSessionRequest;

@@ -1232,6 +1232,32 @@ describe('putFileUpload', () => {
     expect(neverResponds).toHaveBeenCalledOnce();
   });
 
+  it('outlasts the default request timeout when the caller sets none', async () => {
+    expiresInMs(120_000);
+    vi.stubGlobal('fetch', neverResponds);
+    const settled = vi.fn();
+
+    const put = putFileUpload(upload, new Uint8Array([1]));
+    put.catch(settled);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(settled).not.toHaveBeenCalled();
+    const rejected = expect(put).rejects.toThrow(
+      'Request timed out after 120000ms'
+    );
+    await vi.advanceTimersByTimeAsync(60_000);
+    await rejected;
+  });
+
+  it("times out after the caller's timeout when that is before the URL expires", async () => {
+    expiresInMs(2000);
+    vi.stubGlobal('fetch', neverResponds);
+
+    const put = putFileUpload(upload, new Uint8Array([1]), { timeoutMs: 50 });
+    const settled = expect(put).rejects.toThrow('Request timed out after 50ms');
+    await vi.advanceTimersByTimeAsync(50);
+    await settled;
+  });
+
   it('stops retrying when the URL expires during a backoff, reporting the last response', async () => {
     expiresInMs(300);
     const fetchMock = vi

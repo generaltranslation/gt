@@ -103,7 +103,7 @@ describe.sequential('GeneralTranslation service locale egress', () => {
       targetLocales: ['brand-french', 'es-es'],
     });
     await gt.overwriteTranslations([
-      { ...ids, locale: 'brand-french', diff: 'diff', localContent: '{}' },
+      { ...ids, locale: 'brand-french', content: '{}' },
     ]);
     await gt.queryFiles([{ ...ids, locale: 'brand-french' }]);
     await gt.getFileContent('file-id', { locale: 'brand-french' });
@@ -140,7 +140,7 @@ describe.sequential('GeneralTranslation service locale egress', () => {
       }),
       expect.objectContaining({
         pathname: `${project}/files/translations/overwrite`,
-        body: { diffs: [expect.objectContaining({ locale: 'fr-FR' })] },
+        body: { translations: [expect.objectContaining({ locale: 'fr-FR' })] },
       }),
       expect.objectContaining({
         pathname: `${project}/files/query`,

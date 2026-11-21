@@ -3,6 +3,7 @@ import {
   awaitJobs,
   createApiClient,
   createBranch,
+  createFileUploads,
   createProjectApiKey,
   DEFAULT_BATCH_SIZE,
   deleteProjectApiKey,
@@ -55,7 +56,6 @@ import {
   type ListProjectApiKeysData,
   type ListProjectApiKeysResponse,
   type MoveFilesResponse,
-  type OverwriteTranslationsData,
   type OverwriteTranslationsResponse,
   type PublishFilesResponse,
   type QueryFilesContentData,
@@ -95,16 +95,21 @@ import type { MoveMapping } from '../translate/moveFiles';
 import type { PublishFileEntry } from '../translate/publishFiles';
 import { unwrapApiResult } from '../translate/utils/unwrapApiResult';
 import {
-  fileContentBytes,
+  base64Content,
+  contentBytes,
+  contentOrUpload,
+  jsonContent,
   splitByUploads,
-  uploadFileContents,
-} from '../translate/uploadFileContents';
+  uploadContents,
+  type CreateUploads,
+} from '../translate/uploadContents';
 import type {
   FileUpload,
+  TranslationOverwrite,
   TranslationSourceUpload,
   TranslationUpload,
 } from '../types-dir/api/uploadFiles';
-import { decodeFileContent } from '../utils/base64';
+import { decodeFileContent, encode, encodeFileContent } from '../utils/base64';
 
 // The server accepts at most 25 moves per request.
 const MOVE_FILES_BATCH_SIZE = 25;
@@ -134,6 +139,36 @@ function translationFields({
   return { fileName, fileFormat, dataFormat, locale };
 }
 
+const fileContent = ({
+  content,
+  fileFormat,
+}: Pick<FileUpload, 'content' | 'fileFormat'>) =>
+  base64Content(encodeFileContent(content, fileFormat), fileFormat);
+
+/** A translation's text as the bytes of the file it overwrites. */
+const overwriteContents = ({ content }: TranslationOverwrite) => [
+  base64Content(encode(content)),
+];
+
+/** A source file's content, then its `formatMetadata` when it has one. */
+function sourceContents(source: FileUpload) {
+  return [
+    fileContent(source),
+    ...(source.formatMetadata ? [jsonContent(source.formatMetadata)] : []),
+  ] as const;
+}
+
+/** The source's content, then each translation's, each on its own. A wider object's formatMetadata has no place in a translation upload. */
+function translationContents({
+  source,
+  translations,
+}: {
+  source: TranslationSourceUpload;
+  translations: TranslationUpload[];
+}) {
+  return [source, ...translations].map((file) => [fileContent(file)]);
+}
+
 /**
  * Project and file operations, plus runtime translation, for one project: the
  * project-scoped `new GeneralTranslation({ projectId })` and `account.project(projectId)`.
@@ -160,6 +195,15 @@ export class ProjectHandle extends GTRuntime {
       headers: apiVersionHeaders(),
       path: { projectId: this.projectId },
     };
+  }
+
+  /** Asks the project where to PUT content a request has no room for. */
+  private createUploads(
+    request: ReturnType<ProjectHandle['request']>
+  ): CreateUploads {
+    return async (files) =>
+      unwrapApiResult(await createFileUploads({ ...request, body: { files } }))
+        .files;
   }
 
   /** Convert app identity only where a GT service expects a language code. */
@@ -813,32 +857,49 @@ export class ProjectHandle extends GTRuntime {
    * preserve user edits, in batches the server accepts. A translation can fail
    * on its own; check `summary.failed` and each result's `status`.
    *
-   * @param diffs - One entry per translation with its diff and full local content.
+   * @param translations - One entry per translation with its full content, as text.
    * @returns The summary and one result per translation, in request order.
    */
   async overwriteTranslations(
-    diffs: OverwriteTranslationsData['body']['diffs'],
+    translations: TranslationOverwrite[],
     options: { timeout?: number } = {}
   ): Promise<BatchWriteResponse<OverwriteTranslationsResponse>> {
+    const target = ({
+      branchId,
+      versionId,
+      fileId,
+      locale,
+    }: TranslationOverwrite) => ({
+      branchId,
+      versionId,
+      fileId,
+      locale: this.resolveServiceLocale(locale),
+    });
     const response = await writeInBatches(
-      diffs.map(
-        ({ diff, branchId, versionId, fileId, localContent, locale }) => ({
-          diff,
-          branchId,
-          versionId,
-          fileId,
-          localContent,
-          locale: this.resolveServiceLocale(locale),
-        })
-      ),
+      translations,
       DEFAULT_BATCH_SIZE,
-      async (batch) =>
-        unwrapApiResult(
+      async (batch) => {
+        const request = this.request(options.timeout);
+        const targets = batch.map(target);
+        const contents = batch.map(overwriteContents);
+        const uploaded = await uploadContents(
+          this.createUploads(request),
+          contents,
+          jsonByteLength({ translations: targets }),
+          options.timeout
+        );
+        return unwrapApiResult(
           await overwriteTranslations({
-            ...this.request(options.timeout),
-            body: { diffs: batch },
+            ...request,
+            body: {
+              translations: targets.map((translation, index) => ({
+                ...translation,
+                ...contentOrUpload(contents[index][0], uploaded[index][0]),
+              })),
+            },
           })
-        ),
+        );
+      },
       ({ branchId = '', versionId, fileId, locale }, failure) => [
         {
           branchId,
@@ -848,13 +909,20 @@ export class ProjectHandle extends GTRuntime {
           status: 'failed' as const,
           ...failure,
         },
-      ]
+      ],
+      {
+        // One batch at a time bounds the bytes in flight, as for file uploads.
+        parallel: false,
+        byteLength: (translation) =>
+          jsonByteLength(target(translation)) +
+          contentBytes([overwriteContents(translation)]),
+      }
     );
     return {
       ...response,
       results: response.results.map((item, index) => ({
         ...item,
-        locale: diffs[index].locale,
+        locale: translations[index].locale,
       })),
     };
   }
@@ -1103,19 +1171,34 @@ export class ProjectHandle extends GTRuntime {
             sourceLocale: this.resolveServiceLocale(sourceLocale),
           }),
         };
-        const contents = await uploadFileContents(
-          request,
-          batch.map(({ source }) => source),
-          jsonByteLength(body)
+        const contents = batch.map(({ source }) => sourceContents(source));
+        const uploaded = await uploadContents(
+          this.createUploads(request),
+          contents,
+          jsonByteLength(body),
+          options.timeout
         );
         return unwrapApiResult(
           await uploadSourceFiles({
             ...request,
             body: {
               ...body,
-              data: body.data.map(({ source }, index) => ({
-                source: { ...source, ...contents[index] },
-              })),
+              data: body.data.map(({ source }, index) => {
+                const [content, formatMetadata] = contents[index];
+                const [contentHash, metadataHash] = uploaded[index];
+                return {
+                  source: {
+                    ...source,
+                    ...contentOrUpload(content, contentHash),
+                    ...(formatMetadata && {
+                      formatMetadata: contentOrUpload(
+                        formatMetadata,
+                        metadataHash
+                      ),
+                    }),
+                  },
+                };
+              }),
             },
           })
         );
@@ -1137,7 +1220,7 @@ export class ProjectHandle extends GTRuntime {
         byteLength: ({ source }) =>
           jsonByteLength({
             source: { ...source, content: '', formatMetadata: undefined },
-          }) + fileContentBytes([source]),
+          }) + contentBytes([sourceContents(source)]),
       }
     );
   }
@@ -1160,10 +1243,12 @@ export class ProjectHandle extends GTRuntime {
     const response = await writeInBatches(
       // A source whose translations no request may name together goes with each part of them.
       files.flatMap(({ source, translations }) =>
-        splitByUploads(source, translations).map((part) => ({
-          source,
-          translations: part,
-        }))
+        splitByUploads(fileContent(source), translations, fileContent).map(
+          (part) => ({
+            source,
+            translations: part,
+          })
+        )
       ),
       DEFAULT_BATCH_SIZE,
       async (batch) => {
@@ -1175,27 +1260,25 @@ export class ProjectHandle extends GTRuntime {
             locale: this.resolveServiceLocale(translation.locale),
           })),
         }));
-        // Only the content is uploaded: a wider object's formatMetadata has no place in this request.
-        const contents = await uploadFileContents(
-          request,
-          batch.flatMap(({ source, translations }) =>
-            [source, ...translations].map(({ content, fileFormat }) => ({
-              content,
-              fileFormat,
-            }))
-          ),
-          jsonByteLength({ data })
+        const contents = batch.flatMap(translationContents);
+        const uploaded = await uploadContents(
+          this.createUploads(request),
+          contents,
+          jsonByteLength({ data }),
+          options.timeout
         );
         let next = 0;
+        const sent = () =>
+          contentOrUpload(contents[next][0], uploaded[next++][0]);
         return unwrapApiResult(
           await uploadTranslations({
             ...request,
             body: {
               data: data.map(({ source, translations }) => ({
-                source: { ...source, ...contents[next++] },
+                source: { ...source, ...sent() },
                 translations: translations.map((translation) => ({
                   ...translation,
-                  ...contents[next++],
+                  ...sent(),
                 })),
               })),
             },
@@ -1219,7 +1302,7 @@ export class ProjectHandle extends GTRuntime {
           jsonByteLength({
             source: translationSourceFields(source),
             translations: translations.map(translationFields),
-          }) + fileContentBytes([source, ...translations]),
+          }) + contentBytes(translationContents({ source, translations })),
       }
     );
     return {

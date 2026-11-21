@@ -8,7 +8,9 @@ import type { Settings } from '../../../types/index.js';
 import { syncFonts } from '../syncFonts.js';
 
 vi.mock('../../../formats/files/collectFonts.js', () => ({
-  collectFonts: vi.fn(async () => [{ fileName: 'Inter.ttf' }]),
+  collectFonts: vi.fn(async () => [
+    { assetType: 'FONT', fileName: 'Inter.ttf', content: 'AA==' },
+  ]),
 }));
 
 describe('syncFonts', () => {

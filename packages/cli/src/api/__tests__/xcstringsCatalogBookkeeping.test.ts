@@ -74,7 +74,7 @@ vi.mock('../../console/logging.js', () => ({
  * The lifecycle of one .xcstrings catalog across `translate` runs, driven
  * through the real modules that own the lockfile, the download metadata, the
  * post-process hashes, and the user-edit diffs. Only the API client is
- * mocked; files, lockfile, slicing, merging, and git diff are real.
+ * mocked; files, lockfile, slicing, and merging are real.
  */
 describe('.xcstrings catalog bookkeeping across translate runs', () => {
   const CATALOG = 'App/Localizable.xcstrings';
@@ -385,16 +385,9 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
     const diffs = vi.mocked(api.overwriteTranslations).mock.calls[0][0];
     expect(diffs).toHaveLength(1);
     expect(diffs[0]).toMatchObject({ fileName: CATALOG, locale: 'de' });
-    expect(diffs[0].localContent).toBe(
+    expect(diffs[0].content).toBe(
       localeContent(editedContent, 'XCSTRINGS', 'de')
     );
-    const lines = diffs[0].diff.split('\n');
-    expect(
-      lines.filter((line) => line.startsWith('-') && !line.startsWith('---'))
-    ).toEqual([expect.stringContaining('"Hallo"')]);
-    expect(
-      lines.filter((line) => line.startsWith('+') && !line.startsWith('+++'))
-    ).toEqual([expect.stringContaining('"Hallo!"')]);
   });
 
   it('submits only the locale edited on disk when another locale changed on the server since the download', async () => {
@@ -407,7 +400,7 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
     server.set('de', served('de', { ...TRANSLATIONS.de, Save: 'Speichern' }));
     // The server applies a submitted edit before it is downloaded again
     vi.mocked(api.overwriteTranslations).mockImplementation(async (diffs) => {
-      for (const diff of diffs) server.set(diff.locale, diff.localContent);
+      for (const diff of diffs) server.set(diff.locale, diff.content);
       return {
         summary: { total: diffs.length, succeeded: diffs.length, failed: 0 },
         results: diffs.map(({ fileId, versionId, locale }) => ({
@@ -431,7 +424,7 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
     expect(api.overwriteTranslations).toHaveBeenCalledTimes(1);
     const diffs = vi.mocked(api.overwriteTranslations).mock.calls[0][0];
     expect(diffs.map((diff) => diff.locale)).toEqual(['fr']);
-    expect(diffs[0].localContent).toBe(
+    expect(diffs[0].content).toBe(
       localeContent(editedContent, 'XCSTRINGS', 'fr')
     );
     // Only the fr slice changed on disk, so only fr is checked at all
@@ -504,7 +497,7 @@ describe('.xcstrings catalog bookkeeping across translate runs', () => {
     expect(api.overwriteTranslations).toHaveBeenCalledTimes(1);
     const diffs = vi.mocked(api.overwriteTranslations).mock.calls[0][0];
     expect(diffs.map((diff) => diff.locale)).toEqual(['fr']);
-    expect(diffs[0].localContent).toBe(
+    expect(diffs[0].content).toBe(
       localeContent(editedContent, 'XCSTRINGS', 'fr')
     );
     // The download still carries nothing for fr, so the hand-written slice

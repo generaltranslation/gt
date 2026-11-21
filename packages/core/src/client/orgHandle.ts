@@ -1,14 +1,16 @@
 import {
   createApiClient,
+  createAssetUploads,
   createOrgApiKey,
   createProject,
   ErrorCode,
+  jsonByteLength,
+  MAX_REQUEST_BODY_BYTES,
   upsertAssets,
   type CreateOrgApiKeyData,
   type CreateOrgApiKeyResponse,
   type CreateProjectData,
   type CreateProjectResponse,
-  type UpsertAssetsData,
   type UpsertAssetsResponse,
 } from '@generaltranslation/api';
 import {
@@ -19,7 +21,14 @@ import {
   type BatchWriteResponse,
 } from './apiClient';
 import type { CustomMapping } from '@generaltranslation/format';
+import {
+  base64Content,
+  contentBytes,
+  contentOrUpload,
+  uploadContents,
+} from '../translate/uploadContents';
 import { unwrapApiResult } from '../translate/utils/unwrapApiResult';
+import type { AssetUpload } from '../types-dir/api/uploadFiles';
 
 // The server accepts at most 10 fonts per request.
 const UPSERT_ASSETS_BATCH_SIZE = 10;
@@ -45,7 +54,7 @@ export class OrgHandle {
    * @returns The summary and one result per font, in request order.
    */
   async upsertAssets(
-    assets: UpsertAssetsData['body']['assets'],
+    assets: AssetUpload[],
     options: { timeout?: number } = {}
   ): Promise<BatchWriteResponse<UpsertAssetsResponse>> {
     const request = {
@@ -59,13 +68,49 @@ export class OrgHandle {
     return writeInBatches(
       assets,
       UPSERT_ASSETS_BATCH_SIZE,
-      async (batch) =>
-        unwrapApiResult(
-          await upsertAssets({ ...request, body: { assets: batch } })
-        ),
+      async (batch) => {
+        const fields = batch.map(({ content: _, ...asset }) => asset);
+        const contents = batch.map(({ content }) => [base64Content(content)]);
+        const uploaded = await uploadContents(
+          async (files) =>
+            unwrapApiResult(
+              await createAssetUploads({
+                ...request,
+                body: {
+                  files: files.map(({ sha256, size }) => ({ sha256, size })),
+                },
+              })
+            ).files,
+          contents,
+          jsonByteLength({ assets: fields }),
+          options.timeout
+        );
+        return unwrapApiResult(
+          await upsertAssets({
+            ...request,
+            body: {
+              assets: fields.map((asset, index) => ({
+                ...asset,
+                ...contentOrUpload(contents[index][0], uploaded[index][0]),
+              })),
+            },
+          })
+        );
+      },
       ({ fileName }, { error, code = ErrorCode.INTERNAL_ERROR }) => [
         { fileName, status: 'failed' as const, error, code },
-      ]
+      ],
+      {
+        // One batch at a time bounds the bytes in flight, as for file uploads.
+        parallel: false,
+        // A font sent by upload gets a request of its own, because the API refuses a whole request for one font over its size limit.
+        byteLength: ({ content, ...asset }) => {
+          const font = base64Content(content);
+          return font.inlineBytes > MAX_REQUEST_BODY_BYTES
+            ? Infinity
+            : jsonByteLength(asset) + contentBytes([[font]]);
+        },
+      }
     );
   }
 

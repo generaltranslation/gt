@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   API_VERSION,
   ApiError,
+  createAssetUploads,
   createBranch,
   createFileUploads,
   createProject,
@@ -30,6 +31,7 @@ import { GeneralTranslation, type FileUpload } from '../index';
 
 vi.mock('@generaltranslation/api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@generaltranslation/api')>()),
+  createAssetUploads: vi.fn(),
   createBranch: vi.fn(),
   createFileUploads: vi.fn(),
   createProject: vi.fn(),
@@ -804,7 +806,7 @@ describe.sequential('GeneralTranslation project and organization operations', ()
         branchId: 'branch-id',
         versionId: 'version-id',
         fileId: 'file-id',
-        localContent: '{}',
+        content: '{}',
       } as Parameters<typeof adapter.overwriteTranslations>[0][number],
     ]);
 
@@ -824,13 +826,12 @@ describe.sequential('GeneralTranslation project and organization operations', ()
     });
     expect(published.summary).toEqual({ total: 1, succeeded: 1, failed: 0 });
     expect(bodyOf(overwriteTranslations)).toEqual({
-      diffs: [
+      translations: [
         {
-          diff: '@@',
           branchId: 'branch-id',
           versionId: 'version-id',
           fileId: 'file-id',
-          localContent: '{}',
+          content: btoa('{}'),
           locale: 'es-ES',
         },
       ],
@@ -914,7 +915,7 @@ describe.sequential('GeneralTranslation project and organization operations', ()
               newFileId: `${id}-new`,
               newFileName: `${id}.json`,
             }))
-          : ids.map((fileName) => ({ fileName }));
+          : ids.map((fileName) => ({ fileName, content: 'AA==' }));
       const echo = (key: string, itemKey: string) =>
         (async ({
           body,
@@ -1200,8 +1201,7 @@ describe.sequential('GeneralTranslation project and organization operations', ()
       ids.map((id) => ({
         ...file(id),
         locale: 'es',
-        diff: '',
-        localContent: '{}',
+        content: '{}',
       }))
     );
     await adapter.uploadSourceFiles(ids.map(upload), { sourceLocale: 'en-US' });
@@ -1215,7 +1215,7 @@ describe.sequential('GeneralTranslation project and organization operations', ()
       [queryFiles, 'files'],
       [queryFilesContent, 'files'],
       [translateFiles, 'files'],
-      [overwriteTranslations, 'diffs'],
+      [overwriteTranslations, 'translations'],
       [uploadSourceFiles, 'data'],
       [uploadTranslations, 'data'],
     ] as const) {
@@ -1238,7 +1238,11 @@ describe.sequential('GeneralTranslation project and organization operations', ()
     async (operation) => {
       vi.mocked(upsertAssets).mockResolvedValue(result(succeeded([])));
       vi.mocked(overwriteTranslations).mockResolvedValue(result(succeeded([])));
-      const large = 'x'.repeat(1_500_000);
+      // Each is sent as 1.5MB of base64; the overwrite's text is 750,000 characters of 1,125,000 bytes.
+      const large =
+        operation === 'upsertAssets'
+          ? 'x'.repeat(1_500_000)
+          : 'é"'.repeat(375_000);
 
       if (operation === 'upsertAssets') {
         await account()
@@ -1257,8 +1261,7 @@ describe.sequential('GeneralTranslation project and organization operations', ()
             versionId: 'v',
             branchId: 'b',
             locale: 'es',
-            diff: '',
-            localContent: large,
+            content: large,
           }))
         );
       }
@@ -1272,7 +1275,9 @@ describe.sequential('GeneralTranslation project and organization operations', ()
         bodies.map((body) => Object.values(body as object)[0].length)
       ).toEqual([2, 1]);
       for (const body of bodies) {
-        expect(JSON.stringify(body).length).toBeLessThanOrEqual(4_000_000);
+        expect(
+          new TextEncoder().encode(JSON.stringify(body)).byteLength
+        ).toBeLessThanOrEqual(4_000_000);
       }
     }
   );
@@ -1383,23 +1388,21 @@ describe.sequential('GeneralTranslation project and organization operations', ()
       expiresAt: '2026-11-05T00:00:00.000Z',
     };
 
+    const presignEach = ({ body }: { body: { files: { sha256: string }[] } }) =>
+      Promise.resolve(
+        result({
+          files: body.files.map(({ sha256: hash }) => ({
+            sha256: hash,
+            status: 'upload_required' as const,
+            upload: presigned,
+          })),
+        })
+      );
+
     beforeEach(() => {
       vi.mocked(uploadSourceFiles).mockResolvedValue(result(succeeded([])));
       vi.mocked(uploadTranslations).mockResolvedValue(result(succeeded([])));
-      vi.mocked(createFileUploads).mockImplementation((({
-        body,
-      }: {
-        body: { files: { sha256: string }[] };
-      }) =>
-        Promise.resolve(
-          result({
-            files: body.files.map(({ sha256: hash }) => ({
-              sha256: hash,
-              status: 'upload_required' as const,
-              upload: presigned,
-            })),
-          })
-        )) as never);
+      vi.mocked(createFileUploads).mockImplementation(presignEach as never);
     });
 
     it('PUTs a large source through createFileUploads and sends a reference to it', async () => {
@@ -1611,13 +1614,22 @@ describe.sequential('GeneralTranslation project and organization operations', ()
             { ...source(large), locale: 'fr' },
           ],
         },
+        {
+          source: source('{"second":1}'),
+          translations: [{ ...source('{"second":2}'), locale: 'es' }],
+        },
       ]);
 
-      const [{ source: sent, translations }] = bodyOf(uploadTranslations)
-        .data as {
+      const [{ source: sent, translations }, second] = bodyOf(
+        uploadTranslations
+      ).data as {
         source: Record<string, unknown>;
         translations: Record<string, unknown>[];
       }[];
+      expect(second).toMatchObject({
+        source: { content: btoa('{"second":1}') },
+        translations: [{ content: btoa('{"second":2}') }],
+      });
       expect(sent).toMatchObject({ content: btoa('{}') });
       expect(translations).toEqual([
         expect.objectContaining({ locale: 'es', content: btoa('{"a":"b"}') }),
@@ -1758,6 +1770,154 @@ describe.sequential('GeneralTranslation project and organization operations', ()
         sizes.flatMap((_, call) => bodyOf(uploadTranslations, call).data)
       ).toHaveLength(100);
     });
+
+    it('overwrites a translation no request holds by reference', async () => {
+      vi.mocked(overwriteTranslations).mockResolvedValue(result(succeeded([])));
+      const target = { fileId: 'file', versionId: 'version', branchId: 'main' };
+
+      await configuredProject().overwriteTranslations([
+        { ...target, locale: 'es', content: 'hola' },
+        { ...target, locale: 'fr', content: large },
+      ]);
+
+      expect(bodyOf(createFileUploads)).toEqual({
+        files: [{ sha256: hashOf(large), size: large.length }],
+      });
+      const [upload, bytes] = vi.mocked(putFileUpload).mock.calls[0];
+      expect(upload).toEqual(presigned);
+      expect(bytesToHex(sha256(bytes))).toBe(hashOf(large));
+      expect(bodyOf(overwriteTranslations).translations).toEqual([
+        { ...target, locale: 'es', content: btoa('hola') },
+        { ...target, locale: 'fr', upload: { sha256: hashOf(large) } },
+      ]);
+    });
+
+    it('upserts each font no request holds by reference, in a request of its own, one at a time', async () => {
+      const events: string[] = [];
+      vi.mocked(upsertAssets).mockImplementation((async ({
+        body,
+      }: {
+        body: { assets: { fileName: string }[] };
+      }) => {
+        events.push(`upsert ${body.assets.map(({ fileName }) => fileName)}`);
+        return result(succeeded([]));
+      }) as never);
+      vi.mocked(createAssetUploads).mockImplementation(((
+        options: Parameters<typeof presignEach>[0]
+      ) => {
+        events.push(`urls ${options.body.files.length}`);
+        return presignEach(options);
+      }) as never);
+      vi.mocked(putFileUpload).mockImplementation(async () => {
+        events.push('put');
+      });
+      const asset = { assetType: 'FONT' as const, family: 'Brand' };
+      const small = (fileName: string) => ({
+        ...asset,
+        fileName,
+        content: btoa(fileName),
+      });
+
+      await account()
+        .org('org-id')
+        .upsertAssets([
+          small('a.ttf'),
+          { ...asset, fileName: 'large.ttf', content: btoa(large) },
+          { ...asset, fileName: 'larger.ttf', content: btoa(`${large}!`) },
+          small('b.ttf'),
+        ]);
+
+      expect(events).toEqual([
+        'upsert a.ttf',
+        'urls 1',
+        'put',
+        'upsert large.ttf',
+        'urls 1',
+        'put',
+        'upsert larger.ttf',
+        'upsert b.ttf',
+      ]);
+      const [{ path, body }] = vi.mocked(createAssetUploads).mock.calls[0];
+      expect(path).toEqual({ orgId: 'org-id' });
+      expect(body).toEqual({
+        files: [{ sha256: hashOf(large), size: large.length }],
+      });
+      const [upload, bytes] = vi.mocked(putFileUpload).mock.calls[0];
+      expect(upload).toEqual(presigned);
+      expect(bytesToHex(sha256(bytes))).toBe(hashOf(large));
+      expect(bodyOf(upsertAssets, 1).assets).toEqual([
+        {
+          ...asset,
+          fileName: 'large.ttf',
+          upload: { sha256: hashOf(large) },
+        },
+      ]);
+    });
+
+    it('gives a font that line breaks push over the limit a request of its own', async () => {
+      vi.mocked(upsertAssets).mockResolvedValue(result(succeeded([])));
+      vi.mocked(createAssetUploads).mockImplementation(presignEach as never);
+      const asset = { assetType: 'FONT' as const, family: 'Brand' };
+      const wrapped = btoa('x'.repeat(2_900_000)).replace(/.{76}/g, '$&\r\n');
+
+      await account()
+        .org('org-id')
+        .upsertAssets([
+          { ...asset, fileName: 'wrapped.ttf', content: wrapped },
+          { ...asset, fileName: 'small.ttf', content: btoa('small') },
+        ]);
+
+      expect(
+        vi
+          .mocked(upsertAssets)
+          .mock.calls.map(([{ body }]) =>
+            body.assets.map(({ fileName }) => fileName)
+          )
+      ).toEqual([['wrapped.ttf'], ['small.ttf']]);
+    });
+
+    it.each([
+      'uploadSourceFiles',
+      'uploadTranslations',
+      'overwriteTranslations',
+      'upsertAssets',
+    ] as const)(
+      "bounds the PUTs of %s by the call's timeout",
+      async (operation) => {
+        vi.mocked(overwriteTranslations).mockResolvedValue(
+          result(succeeded([]))
+        );
+        vi.mocked(upsertAssets).mockResolvedValue(result(succeeded([])));
+        vi.mocked(createAssetUploads).mockImplementation(presignEach as never);
+        const options = { timeout: 20 };
+        const project = configuredProject();
+
+        if (operation === 'uploadSourceFiles') {
+          await project.uploadSourceFiles([{ source: source(large) }], options);
+        } else if (operation === 'uploadTranslations') {
+          await project.uploadTranslations(
+            [{ source: source(large), translations: [] }],
+            options
+          );
+        } else if (operation === 'overwriteTranslations') {
+          await project.overwriteTranslations(
+            [{ fileId: 'f', versionId: 'v', locale: 'es', content: large }],
+            options
+          );
+        } else {
+          await account()
+            .org('org-id')
+            .upsertAssets(
+              [{ assetType: 'FONT', fileName: 'f.ttf', content: btoa(large) }],
+              options
+            );
+        }
+
+        expect(vi.mocked(putFileUpload).mock.calls[0][2]).toEqual({
+          timeoutMs: 20,
+        });
+      }
+    );
 
     it('uploads the content a source and its translations cannot hold inline in one request', async () => {
       await configuredProject().uploadTranslations([
