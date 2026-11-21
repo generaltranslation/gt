@@ -121,7 +121,8 @@ export function followTagArgument(
   if (param === null) return followable;
   const key = getOptionsKey();
   if (key === undefined) return true;
-  const paramKey = `${found.file}\0${param.identifier.start}`;
+  // On Windows, scanned paths use / and resolved paths use \.
+  const paramKey = `${nodePath.resolve(found.file)}\0${param.identifier.start}`;
   if (importKey) {
     follower.importedParameters.set(`${importKey}\0${index}`, {
       paramKey,
@@ -253,7 +254,7 @@ function getImportKey(
   const name = path.isImportSpecifier()
     ? getImportedName(path.node)
     : 'default';
-  return `${resolved}\0${name}`;
+  return `${nodePath.resolve(resolved)}\0${name}`;
 }
 
 /** The function a binding declares, defines as a const, or imports. */
