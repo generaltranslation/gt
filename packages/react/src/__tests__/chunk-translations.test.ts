@@ -1843,10 +1843,11 @@ describe('gt-react/chunk-translations', () => {
 
         it('waits for the files in place of a missing one no longer than for the file, and adds them when they arrive', async () => {
           // The lists take most of the file's timeout, and the file in its
-          // place longer than what is left of it
+          // place longer than what is left of it. It takes less than a whole
+          // timeout, so an import that waited that long would be translated.
           const files = built();
           files[CURRENT] = after(45, { v: { fr: '99999999' } });
-          files['/assets/gt-ee.fr.34343434.json'] = after(150, {
+          files['/assets/gt-ee.fr.34343434.json'] = after(40, {
             [TITLE]: 'Aperçu, encore',
           });
           serve(files);
@@ -1854,9 +1855,7 @@ describe('gt-react/chunk-translations', () => {
           await startSplit();
           await tick();
 
-          const start = Date.now();
           expect(await reports()).toEqual({ evaluated: 'Overview' });
-          expect(Date.now() - start).toBeLessThan(95);
 
           await new Promise((resolve) => setTimeout(resolve, 200));
           expect(title()).toBe('Aperçu, encore');
@@ -1894,17 +1893,19 @@ describe('gt-react/chunk-translations', () => {
 
         it('asks for the files in place of a missing one when the lists arrive after its timeout', async () => {
           const files = built();
-          files[CURRENT] = after(90, { v: { fr: '99999999' } });
+          const lists = hold({ v: { fr: '99999999' } });
+          files[CURRENT] = lists.response;
           const fetched = serve(files);
           writeSplitState({ n: 'assets/gt-current', w: 40 });
           await startSplit();
           await tick();
 
-          const start = Date.now();
+          // The lists, which name the file, are still on their way
           expect(await reports()).toEqual({ evaluated: 'Overview' });
-          expect(Date.now() - start).toBeLessThan(80);
+          expect(urls(fetched)).not.toContain('/assets/gt-ee.fr.34343434.json');
 
-          await new Promise((resolve) => setTimeout(resolve, 150));
+          lists.respond();
+          await tick();
           expect(urls(fetched)).toContain('/assets/gt-ee.fr.34343434.json');
           expect(title()).toBe('Aperçu, encore');
         });
