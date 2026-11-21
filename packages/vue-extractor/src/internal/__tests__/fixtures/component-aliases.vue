@@ -1,10 +1,10 @@
 <script setup>
-import { Branch, T } from 'gt-vue';
+import { Select, T } from 'gt-vue';
 
 const Tr = T;
-const B = Branch;
+const B = Select;
 </script>
 
 <template>
-  <Tr><B :branch="tone" formal="Hello">Fallback</B></Tr>
+  <Tr><B :value="tone" formal="Hello">Fallback</B></Tr>
 </template>

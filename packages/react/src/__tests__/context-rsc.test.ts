@@ -54,8 +54,8 @@ describe('gt-react react-server surface', () => {
 
   it('exports the RSC context surface', async () => {
     const mod = await import('../index.rsc');
-    expect(mod.Branch).toBeTypeOf('function');
-    expect('GtInternalBranch' in mod).toBe(false);
+    expect(mod.Select).toBeTypeOf('function');
+    expect('GtInternalSelect' in mod).toBe(false);
     expect(mod.Currency).toBeTypeOf('function');
     expect(mod.DateTime).toBeTypeOf('function');
     expect(mod.Derive).toBeTypeOf('function');

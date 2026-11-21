@@ -21,7 +21,7 @@ const scope = {
   Currency: ReactComponents.Currency,
   DateTime: ReactComponents.DateTime,
   RelativeTime: ReactComponents.RelativeTime,
-  Branch: ReactComponents.Branch,
+  Select: ReactComponents.Select,
   Plural: ReactComponents.Plural,
   Ordinal: ReactComponents.Ordinal,
   Link,

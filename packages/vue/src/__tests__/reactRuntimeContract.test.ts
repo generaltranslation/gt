@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import type { JsxChildren } from '@generaltranslation/format';
 import { hashContent } from 'gt-i18n/internal';
 import {
-  Branch as ReactBranch,
+  Select as ReactBranch,
   Currency as ReactCurrency,
   DateTime as ReactDateTime,
   Num as ReactNum,
@@ -27,7 +27,7 @@ import {
 import { renderToString } from 'vue/server-renderer';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import {
-  Branch,
+  Select,
   Currency,
   DateTime,
   Num,
@@ -166,19 +166,19 @@ const fixtures: ContractFixture[] = [
     },
   },
   {
-    name: 'Branch alternatives and fallback content',
+    name: 'Select alternatives and fallback content',
     react: () =>
       createElement(
         ReactBranch,
         {
-          branch: 'online',
+          value: 'online',
           online: createElement('strong', null, 'Online'),
         },
         createElement('span', null, 'Unknown')
       ),
     vue: {
       template:
-        '<T><Branch branch="online"><template #online><strong>Online</strong></template><span>Unknown</span></Branch></T>',
+        '<T><Select value="online"><template #online><strong>Online</strong></template><span>Unknown</span></Select></T>',
     },
   },
   {
@@ -198,12 +198,12 @@ const fixtures: ContractFixture[] = [
     },
   },
   {
-    name: 'custom components inside Branch alternatives',
+    name: 'custom components inside Select alternatives',
     react: () =>
       createElement(
         ReactBranch,
         {
-          branch: 'docs',
+          value: 'docs',
           docs: createElement(DocsLink, { to: '/docs' }, 'Read the docs'),
         },
         createElement('span', null, 'No destination')
@@ -211,11 +211,11 @@ const fixtures: ContractFixture[] = [
     vue: {
       components: { DocsLink: VueDocsLink },
       template:
-        '<T><Branch branch="docs"><template #docs><DocsLink to="/docs">Read the docs</DocsLink></template><span>No destination</span></Branch></T>',
+        '<T><Select value="docs"><template #docs><DocsLink to="/docs">Read the docs</DocsLink></template><span>No destination</span></Select></T>',
     },
   },
   {
-    name: 'Branch and Var inside a custom component',
+    name: 'Select and Var inside a custom component',
     react: () =>
       createElement(
         Callout,
@@ -223,7 +223,7 @@ const fixtures: ContractFixture[] = [
         createElement(
           ReactBranch,
           {
-            branch: 'welcome',
+            value: 'welcome',
             welcome: [
               'Welcome, ',
               createElement(ReactVar, { key: 'name' }, 'Ada'),
@@ -237,7 +237,7 @@ const fixtures: ContractFixture[] = [
       components: { Callout: VueCallout },
       setup: () => ({ name: 'Ada' }),
       template:
-        '<T><Callout><Branch branch="welcome"><template #welcome>Welcome, <Var>{{ name }}</Var>!</template>Welcome!</Branch></Callout></T>',
+        '<T><Callout><Select value="welcome"><template #welcome>Welcome, <Var>{{ name }}</Var>!</template>Welcome!</Select></Callout></T>',
     },
   },
   {
@@ -393,7 +393,7 @@ async function prepareVueWire(
   });
   const Root = defineComponent({
     components: {
-      Branch,
+      Select,
       Currency,
       DateTime,
       Num,
@@ -1098,8 +1098,8 @@ const catalogCases = {
   'independent-branch-numbering': {
     source: (alternate = false) => [
       h(
-        Branch,
-        { branch: alternate ? 'casual' : 'formal' },
+        Select,
+        { value: alternate ? 'casual' : 'formal' },
         {
           default: () => 'Fallback',
           casual: () => [

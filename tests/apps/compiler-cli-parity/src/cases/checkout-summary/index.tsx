@@ -1,4 +1,4 @@
-import { Branch, Num } from 'gt-react';
+import { Select, Num } from 'gt-react';
 
 export default function CheckoutSummary() {
   const subtotal = 89.97;
@@ -35,7 +35,7 @@ export default function CheckoutSummary() {
       <div>
         <strong>Total: $<Num>{total}</Num></strong>
       </div>
-      <Branch branch={'payment' as string} card="Pay with Card" paypal="Pay with PayPal">Select payment method</Branch>
+      <Select value={'payment' as string} card="Pay with Card" paypal="Pay with PayPal">Select payment method</Select>
     </div>
   );
 }

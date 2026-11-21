@@ -396,7 +396,7 @@ export function warnTemplateLiteral(file: string, value: string) {
 export function warnTernary(file: string) {
   logger.warn(
     `Found ternary expression in ${chalk.cyan(file)}. ` +
-      chalk.white('A Branch component may be more appropriate here.')
+      chalk.white('A Select component may be more appropriate here.')
   );
 }
 

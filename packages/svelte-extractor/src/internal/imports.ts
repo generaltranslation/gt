@@ -10,7 +10,7 @@ export type GTComponentKind =
   | 'Currency'
   | 'DateTime'
   | 'RelativeTime'
-  | 'Branch'
+  | 'Select'
   | 'Plural'
   | 'Ordinal';
 
@@ -24,7 +24,7 @@ const COMPONENT_EXPORTS = new Set<string>([
   'Currency',
   'DateTime',
   'RelativeTime',
-  'Branch',
+  'Select',
   'Plural',
   'Ordinal',
 ]);

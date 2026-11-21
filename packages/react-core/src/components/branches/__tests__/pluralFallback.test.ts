@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import { renderPlural } from '../Plural.shared';
-import { GtInternalBranch } from '../Branch';
+import { GtInternalSelect } from '../Select';
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 function resetGTGlobals() {
@@ -186,10 +186,10 @@ describe('branch selection', () => {
     [0, 'Zero'],
     ['data-id', 'Someone'],
     ['toString', 'Someone'],
-  ])('branch=%s renders %s', (branch, expected) => {
+  ])('value=%s renders %s', (value, expected) => {
     expect(
-      GtInternalBranch({
-        branch,
+      GtInternalSelect({
+        value,
         admin: 'Admin',
         true: 'Yes',
         0: 'Zero',
@@ -202,20 +202,20 @@ describe('branch selection', () => {
   it('reports a value with no branch', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(
-      GtInternalBranch({ branch: 'guest', admin: 'Admin' })
+      GtInternalSelect({ value: 'guest', admin: 'Admin' })
     ).toBeUndefined();
     expect(error).toHaveBeenCalledWith(
-      expect.stringContaining('<Branch> has no branch for its value')
+      expect.stringContaining('<Select> has no branch for its value')
     );
     expect(
-      GtInternalBranch({ branch: 'data-id', 'data-id': 'injected' })
+      GtInternalSelect({ value: 'data-id', 'data-id': 'injected' })
     ).toBeUndefined();
     expect(error).toHaveBeenLastCalledWith(
-      expect.stringContaining('branch: data-id')
+      expect.stringContaining('value: data-id')
     );
     vi.stubEnv('NODE_ENV', 'development');
-    expect(() => GtInternalBranch({ branch: 'guest', admin: 'Admin' })).toThrow(
-      '<Branch> has no branch for its value'
+    expect(() => GtInternalSelect({ value: 'guest', admin: 'Admin' })).toThrow(
+      '<Select> has no branch for its value'
     );
   });
 });

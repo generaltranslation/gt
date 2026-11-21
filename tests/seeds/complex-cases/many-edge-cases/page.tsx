@@ -1,4 +1,4 @@
-import { T, Plural, Branch, Var, Num, Currency, DateTime } from "gt-next";
+import { T, Plural, Select, Var, Num, Currency, DateTime } from "gt-next";
 
 export default function ExtremeEdgeCases() {
   const count = 42;
@@ -56,8 +56,8 @@ export default function ExtremeEdgeCases() {
 
       {/* Fragment with mixed content types */}
       
-        <Branch
-          branch="mixed"
+        <Select
+          value="mixed"
           option1={
             <>
               text
@@ -95,8 +95,8 @@ export default function ExtremeEdgeCases() {
 
       {/* Special float values */}
       
-        <Branch
-          branch="floats"
+        <Select
+          value="floats"
           tiny={0.1}
           precise={3.141592653589793}
           scientific={1.23e-10}
@@ -106,8 +106,8 @@ export default function ExtremeEdgeCases() {
 
       {/* Hexadecimal variations */}
       
-        <Branch
-          branch="hex"
+        <Select
+          value="hex"
           small={0x1}
           medium={0xabc}
           large={0xdeadbeef}
@@ -116,8 +116,8 @@ export default function ExtremeEdgeCases() {
       
 
       
-        <Branch
-          branch="mixed"
+        <Select
+          value="mixed"
           option1={
             <>
               text
@@ -166,8 +166,8 @@ export default function ExtremeEdgeCases() {
 
       {/* Raw strings with problematic characters */}
       
-        <Branch
-          branch="raw"
+        <Select
+          value="raw"
           json={`{"key": "value", "array": [1,2,3]}`}
           regex={`/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/`}
           path={`C:\\Program Files\\App\\file.exe`}
@@ -176,8 +176,8 @@ export default function ExtremeEdgeCases() {
 
       {/* URLs and complex strings */}
       
-        <Branch
-          branch="complex"
+        <Select
+          value="complex"
           url="https://example.com:8080/path?param=value&other=123#section"
           email="user.name+tag@subdomain.example-site.co.uk"
           css="body { margin: 0; padding: 10px; font-family: Arial, sans-serif; }"
@@ -200,8 +200,8 @@ export default function ExtremeEdgeCases() {
 
       {/* Mixed boolean contexts */}
       
-        <Branch
-          branch="booleans"
+        <Select
+          value="booleans"
           truthy={true}
           falsy={false}
           nullish={null}
@@ -228,8 +228,8 @@ export default function ExtremeEdgeCases() {
 
       {/* Template with special characters */}
       
-        <Branch
-          branch="templates"
+        <Select
+          value="templates"
           code="function test() { return `Hello ${name}`; }"
           markdown={`# Title\n\n**Bold** and *italic* text.\n\n\`\`\`js\nconst x = 42;\n\`\`\``}
           xml={`<root><child attr="value">content</child></root>`}
@@ -252,10 +252,10 @@ export default function ExtremeEdgeCases() {
         >other</Plural>
       
 
-      {/* Branch with many options */}
+      {/* Select with many options */}
       
-        <Branch
-          branch="many_options"
+        <Select
+          value="many_options"
           a="option a"
           b="option b"
           c="option c"
@@ -319,38 +319,38 @@ export default function ExtremeEdgeCases() {
 
       {/* 7-level component nesting */}
       
-        <Branch
-          branch="l1"
+        <Select
+          value="l1"
           option1={
             <Plural
               n={1}
               _1={
-                <Branch
-                  branch="l2"
+                <Select
+                  value="l2"
                   option1={
                     <Plural
                       n={1}
                       _1={
-                        <Branch
-                          branch="l3"
+                        <Select
+                          value="l3"
                           option1={
                             <Plural
                               n={1}
                               _1={
-                                <Branch
-                                  branch="l4"
+                                <Select
+                                  value="l4"
                                   option1={
                                     <Plural
                                       n={1}
                                       _1={
-                                        <Branch
-                                          branch="l5"
+                                        <Select
+                                          value="l5"
                                           option1={
                                             <Plural
                                               n={1}
                                               _1={
-                                                <Branch
-                                                  branch="l6"
+                                                <Select
+                                                  value="l6"
                                                   option1={
                                                     <Var name="deep7">
                                                       maximum depth
@@ -393,8 +393,8 @@ export default function ExtremeEdgeCases() {
       {/* Mixed nesting with all component types */}
       
         <div className="wrapper">
-          <Branch
-            branch="outer"
+          <Select
+            value="outer"
             option1={
               <>
                 <span>Before plural</span>
@@ -409,8 +409,8 @@ export default function ExtremeEdgeCases() {
                       </Currency>
                       at <DateTime name="single_time">{timestamp}</DateTime>
                       in{" "}
-                      <Branch
-                        branch="location"
+                      <Select
+                        value="location"
                         home={
                           <>
                             home folder with <Var name="home_var">variable</Var>
@@ -453,7 +453,7 @@ export default function ExtremeEdgeCases() {
        */}
       {/* 
       
-        <Branch branch="test" />
+        <Select value="test" />
        */}
 
       
@@ -466,7 +466,7 @@ export default function ExtremeEdgeCases() {
        */}
 
       
-        <Branch branch="test" invalid="ignored" also_invalid="also ignored" />
+        <Select value="test" invalid="ignored" also_invalid="also ignored" />
       
 
       {/* Missing required attributes DISREGARD, INVALID */}
@@ -475,15 +475,15 @@ export default function ExtremeEdgeCases() {
       
 
       
-        <Branch option1="test" option2="test2" />
+        <Select option1="test" option2="test2" />
        */}
 
       {/* ========== UNICODE EXTREMES ========== */}
 
       {/* Every major unicode category */}
       
-        <Branch
-          branch="unicode"
+        <Select
+          value="unicode"
           latin="àáâãäåæçèéêëìíîï"
           cyrillic="абвгдежзийклмнопрстуфхцчшщъыьэюя"
           greek="αβγδεζηθικλμνξοπρστυφχψω"
@@ -530,8 +530,8 @@ export default function ExtremeEdgeCases() {
       
 
       
-        <Branch
-          branch="test"
+        <Select
+          value="test"
           empty=""
           whitespace="   padded   "
           fragment={<>fragment content</>}
@@ -553,8 +553,8 @@ export default function ExtremeEdgeCases() {
 
       {/* Variable key consistency across parallel branches */}
       
-        <Branch
-          branch="consistency"
+        <Select
+          value="consistency"
           path_a={
             <div>
               <Var name="shared1">var1</Var>

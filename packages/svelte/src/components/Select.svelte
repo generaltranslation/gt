@@ -1,13 +1,13 @@
 <!--
   @component
-  Renders the branch named by `branch`, or its children when no branch
+  Renders the branch named by `value`, or its children when no branch
   matches. Branches are string props or snippets.
 
   ```svelte
-  <Branch branch={status} inactive="Inactive">
+  <Select value={status} inactive="Inactive">
     {#snippet active()}<b>Active</b>{/snippet}
     Unknown
-  </Branch>
+  </Select>
   ```
 -->
 
@@ -17,23 +17,23 @@
   import type { Snippet } from 'svelte';
 
   let {
-    branch,
+    value,
     children,
     // `other` is not a branch: the fallback is the children.
     other: _other,
     ...branches
   }: {
-    branch?: string | number | boolean | null;
+    value?: string | number | boolean | null;
     children?: Snippet;
     [branch: string]: unknown;
   } = $props();
 
   // A branch passed as undefined counts as absent, as in gt-react.
   const selected = $derived(
-    branch != null &&
-      Object.hasOwn(branches, String(branch)) &&
-      branches[String(branch)] !== undefined
-      ? branches[String(branch)]
+    value != null &&
+      Object.hasOwn(branches, String(value)) &&
+      branches[String(value)] !== undefined
+      ? branches[String(value)]
       : children
   );
 </script>

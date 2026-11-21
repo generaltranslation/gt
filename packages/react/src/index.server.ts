@@ -51,7 +51,7 @@ export { RegionSelector } from './components/RegionSelector';
 
 // ===== Components ===== //
 export {
-  Branch,
+  Select,
   Ordinal,
   Plural,
   Derive,

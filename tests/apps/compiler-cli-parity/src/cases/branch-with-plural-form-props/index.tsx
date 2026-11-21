@@ -1,9 +1,9 @@
-import { Branch } from 'gt-react';
+import { Select } from 'gt-react';
 
 export default function BranchWithPluralFormProps() {
   return (
     <div>
-      <Branch branch={'count' as string} one="One item" few="A few items" many="Many items">Default items</Branch>
+      <Select value={'count' as string} one="One item" few="A few items" many="Many items">Default items</Select>
     </div>
   );
 }

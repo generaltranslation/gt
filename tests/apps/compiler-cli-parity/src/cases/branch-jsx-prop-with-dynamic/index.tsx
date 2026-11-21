@@ -1,10 +1,10 @@
-import { Branch } from 'gt-react';
+import { Select } from 'gt-react';
 
 export default function BranchJsxPropWithDynamic() {
   const userName = 'Alice';
   return (
     <div>
-      <Branch branch={'mode' as string} greeting={<>Hello {userName}</>}>Fallback</Branch>
+      <Select value={'mode' as string} greeting={<>Hello {userName}</>}>Fallback</Select>
     </div>
   );
 }

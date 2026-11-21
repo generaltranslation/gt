@@ -1,12 +1,12 @@
-import { Branch } from 'gt-react';
+import { Select } from 'gt-react';
 
 export default function BranchFallbackDynamic() {
   const name = 'Alice';
   return (
     <div>
-      <Branch branch={name}>
+      <Select value={name}>
         Fallback with {name}
-      </Branch>
+      </Select>
     </div>
   );
 }

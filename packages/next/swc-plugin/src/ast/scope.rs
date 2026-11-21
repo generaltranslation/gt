@@ -18,7 +18,7 @@ pub struct ScopedVariable {
   /// The scope ID
   pub scope_id: u32,
   /// The original name of the variable
-  pub original_name: Atom, // T, Var, Branch (the imported name)
+  pub original_name: Atom, // T, Var, Select (the imported name)
   /// The variable name
   pub variable_name: Atom, // T, MyVar, etc.
   /// Whether the variable is a tracked gt-next import

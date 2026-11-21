@@ -1,10 +1,10 @@
-import { Branch } from 'gt-react';
+import { Select } from 'gt-react';
 
 export default function BranchDataAttributes() {
   const val = 'dynamic';
   return (
     <div>
-      <Branch branch={'x' as string} hello={val} world="static">Fallback</Branch>
+      <Select value={'x' as string} hello={val} world="static">Fallback</Select>
     </div>
   );
 }

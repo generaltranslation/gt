@@ -7,23 +7,23 @@
         "t": "input",
         "i": 2,
         "d": {
-          "pl": "Branch placeholder",
-          "ti": "Branch title"
+          "pl": "Select placeholder",
+          "ti": "Select title"
         }
       },
       "image": {
         "t": "img",
         "i": 2,
         "d": {
-          "ti": "Branch image title",
-          "alt": "Branch image"
+          "ti": "Select image title",
+          "alt": "Select image"
         }
       },
       "link": {
         "t": "a",
         "i": 2,
         "d": {
-          "arl": "Branch link",
+          "arl": "Select link",
           "ard": "desc"
         },
         "c": "Link"

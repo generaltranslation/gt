@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Branch, Derive, T, Var } from 'gt-next';
+import { Select, Derive, T, Var } from 'gt-next';
 
 // Subjects
 const getFourthSubject = () => "Lily"
@@ -81,8 +81,8 @@ function getThirdObject(object: string) {
     return (
       <>
         a{' '}
-        <Branch
-          branch={Math.random() > 0.5}
+        <Select
+          value={Math.random() > 0.5}
           true='cool person'
           false={<>person</>}
         />

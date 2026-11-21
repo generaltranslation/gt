@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { Branch, T } from 'gt-vue';
+import { Select, T } from 'gt-vue';
 
 const state = false;
 </script>
 
 <template>
   <T
-    ><Branch :branch="state"
-      ><template #true>The boy</template><template #false>The girl</template></Branch
+    ><Select :value="state"
+      ><template #true>The boy</template><template #false>The girl</template></Select
     > is beautiful</T
   >
 </template>

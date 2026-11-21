@@ -1,5 +1,5 @@
 import {
-  Branch,
+  Select,
   Currency,
   DateTime,
   Derive,
@@ -22,9 +22,9 @@ export default function ServerExportsPage() {
       <T>Server exports fixture</T>
       <Var>value</Var>
       <Derive>static</Derive>
-      <Branch branch='a' a='A'>
+      <Select value='a' a='A'>
         fallback
-      </Branch>
+      </Select>
       <Plural n={1}>fallback</Plural>
       <Ordinal n={1}>fallback</Ordinal>
       <Num>{1234.5}</Num>

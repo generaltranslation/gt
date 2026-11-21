@@ -1,9 +1,9 @@
-import { Branch } from 'gt-react';
+import { Select } from 'gt-react';
 
 export default function BranchNoChildren() {
   return (
     <div>
-      <Branch branch={'mode' as string} a="Option A" b="Option B">Another option</Branch>
+      <Select value={'mode' as string} a="Option A" b="Option B">Another option</Select>
     </div>
   );
 }

@@ -22,7 +22,7 @@ export function addGTIdentifier(
   // Object to keep track of the current index for GT IDs
   let index = startingIndex;
 
-  // The children of a <Plural> or a <Branch> are its `other` branch.
+  // The children of a <Plural> or a <Select> are its `other` branch.
   const addFallbackBranch = (
     branches: Record<string, TaggedChildren>,
     children: unknown
@@ -95,8 +95,8 @@ export function addGTIdentifier(
           }),
         };
       }
-      case 'branch': {
-        const { children, branch: _branch, other: _other, ...branches } = props;
+      case 'select': {
+        const { children, value: _value, other: _other, ...branches } = props;
         // Filter out data-* attributes injected by build tools
         const filteredBranches = Object.fromEntries(
           Object.entries(branches).filter(([key]) => !key.startsWith('data-'))
@@ -112,7 +112,7 @@ export function addGTIdentifier(
         addFallbackBranch(resultBranches, children);
         return {
           ...tag,
-          transformation: 'branch',
+          transformation: 'select',
           ...(Object.keys(resultBranches).length > 0 && {
             branches: resultBranches,
           }),
@@ -135,7 +135,7 @@ export function addGTIdentifier(
     if (
       generaltranslation.transformation === 'plural' ||
       generaltranslation.transformation === 'ordinal' ||
-      generaltranslation.transformation === 'branch'
+      generaltranslation.transformation === 'select'
     ) {
       // Stored as the `other` branch above.
       newProps.children = undefined;

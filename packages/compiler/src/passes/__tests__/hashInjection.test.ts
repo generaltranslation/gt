@@ -23,7 +23,7 @@ const jsxHash = (source: JsxChildren) =>
 
 const JSX_IMPORTS = `
   import { jsx, jsxs } from 'react/jsx-runtime';
-  import { T, Var, Num, Branch, Plural, Ordinal, Derive, derive } from 'gt-react';
+  import { T, Var, Num, Select, Plural, Ordinal, Derive, derive } from 'gt-react';
 `;
 
 describe('<T> hash injection', () => {
@@ -35,9 +35,9 @@ describe('<T> hash injection', () => {
     expect(code).toContain(`_hash: "${jsxHash('Hello world')}"`);
   });
 
-  it('injects _hash into a <T> with a Branch but no Derive', () => {
+  it('injects _hash into a <T> with a Select but no Derive', () => {
     const { errors, code } = transform(
-      `${JSX_IMPORTS}jsx(T, { children: jsx(Branch, { branch: cond, a: "first", b: "fallback" }) });`
+      `${JSX_IMPORTS}jsx(T, { children: jsx(Select, { value: cond, a: "first", b: "fallback" }) });`
     );
     expect(errors).toEqual([]);
     expect(code).toContain('_hash: "');
@@ -54,8 +54,8 @@ describe('<T> hash injection', () => {
     ],
     // Derive in a branch attribute is constructed separately from children
     [
-      '<T><Branch branch={cond} a={<Derive>{getX()}</Derive>} b="fallback" /></T>',
-      `jsx(T, { children: jsx(Branch, { branch: cond, a: jsx(Derive, { children: getX() }), b: "fallback" }) })`,
+      '<T><Select value={cond} a={<Derive>{getX()}</Derive>} b="fallback" /></T>',
+      `jsx(T, { children: jsx(Select, { value: cond, a: jsx(Derive, { children: getX() }), b: "fallback" }) })`,
     ],
     [
       '<T><Plural n={count} one={<Derive>{getX()}</Derive>}>many</Plural></T>',
@@ -72,8 +72,8 @@ describe('<T> hash injection', () => {
       { autoderive: true },
     ],
     [
-      '<T><Branch branch={cond} a={<Derive>{getX()}</Derive>} b="fallback" /></T> with autoderive',
-      `jsx(T, { children: jsx(Branch, { branch: cond, a: jsx(Derive, { children: getX() }), b: "fallback" }) })`,
+      '<T><Select value={cond} a={<Derive>{getX()}</Derive>} b="fallback" /></T> with autoderive',
+      `jsx(T, { children: jsx(Select, { value: cond, a: jsx(Derive, { children: getX() }), b: "fallback" }) })`,
       { autoderive: true },
     ],
   ])('skips %s', (_source, compiled, options = {}) => {
@@ -210,13 +210,13 @@ describe('<T> with dynamic content (autoderive)', () => {
 
 /**
  * JSX ids must match the runtime's addGTIdentifier numbering, which keeps a
- * shared counter through Branch/Plural children. Branch props start their own
+ * shared counter through Select/Plural children. Select props start their own
  * counter from the branching element's id. Element ids are not hashed, but
  * variable keys (_gt_<id>) are, so these cases end in a variable.
  *
  * https://github.com/generaltranslation/gt/issues/2449
  */
-describe('JSX ids of Branch/Plural children, which are the other branch', () => {
+describe('JSX ids of Select/Plural children, which are the other branch', () => {
   const PLURAL = `jsxs(Plural, { n: 2, one: "one bottle", children: [jsx(Num, { children: 2 }), " bottles"] })`;
   const pluralChildren = {
     t: 'Plural',
@@ -237,14 +237,14 @@ describe('JSX ids of Branch/Plural children, which are the other branch', () => 
       [pluralChildren, { i: 2, v: 'v' }],
     ],
     [
-      '<T><Branch branch="open" open="Open"><span>Closed</span></Branch><Var>{name}</Var></T>',
+      '<T><Select value="open" open="Open"><span>Closed</span></Select><Var>{name}</Var></T>',
       `jsxs(T, { children: [
-        jsx(Branch, { branch: "open", open: "Open", children: jsx("span", { children: "Closed" }) }),
+        jsx(Select, { value: "open", open: "Open", children: jsx("span", { children: "Closed" }) }),
         jsx(Var, { children: name }),
       ] })`,
       [
         {
-          t: 'Branch',
+          t: 'Select',
           i: 1,
           d: {
             b: { open: 'Open', other: { t: 'span', i: 2, c: 'Closed' } },
@@ -255,15 +255,15 @@ describe('JSX ids of Branch/Plural children, which are the other branch', () => 
       ],
     ],
     [
-      '<T><Plural ...><Num>{2}</Num> bottles</Plural><Branch branch="open" open={<Var>{name}</Var>}>Closed</Branch></T>',
+      '<T><Plural ...><Num>{2}</Num> bottles</Plural><Select value="open" open={<Var>{name}</Var>}>Closed</Select></T>',
       `jsxs(T, { children: [
         ${PLURAL},
-        jsx(Branch, { branch: "open", open: jsx(Var, { children: name }), children: "Closed" }),
+        jsx(Select, { value: "open", open: jsx(Var, { children: name }), children: "Closed" }),
       ] })`,
       [
         pluralChildren,
         {
-          t: 'Branch',
+          t: 'Select',
           i: 2,
           d: {
             b: { open: { i: 3, v: 'v' }, other: 'Closed' },
@@ -279,12 +279,12 @@ describe('JSX ids of Branch/Plural children, which are the other branch', () => 
   });
 });
 
-describe('an other prop on Branch/Plural', () => {
-  it.each(['Plural', 'Ordinal', 'Branch'])(
+describe('an other prop on Select/Plural', () => {
+  it.each(['Plural', 'Ordinal', 'Select'])(
     'is an error on <%s>',
     (component) => {
       const { errors, code } = transform(
-        `${JSX_IMPORTS}jsx(T, { children: jsx(${component}, { n: count, branch: status, one: "One", other: "Many" }) });`
+        `${JSX_IMPORTS}jsx(T, { children: jsx(${component}, { n: count, value: status, one: "One", other: "Many" }) });`
       );
       expect(errors).toEqual([
         expect.stringContaining(
@@ -322,14 +322,14 @@ describe('<Ordinal>', () => {
   );
 });
 
-describe('a spread on Branch/Plural', () => {
+describe('a spread on Select/Plural', () => {
   it.each([
     ['Plural', '<Plural n={count} {...forms} />', '{ n: count, ...forms }'],
     ['Ordinal', '<Ordinal n={place} {...forms} />', '{ n: place, ...forms }'],
     [
-      'Branch',
-      '<Branch branch={status} {...branches}>Closed</Branch>',
-      '{ branch: status, ...branches, children: "Closed" }',
+      'Select',
+      '<Select value={status} {...branches}>Closed</Select>',
+      '{ value: status, ...branches, children: "Closed" }',
     ],
   ])('is rejected on <%s> inside <T>: %s', (component, _source, props) => {
     const { errors, code } = transform(

@@ -449,7 +449,7 @@ import { LocalT } from '@local/gt';
     'preserves rich Vue wire values through the CLI adapter with %s',
     async (_name, filePatterns) => {
       const root = createVueFixture({
-        'src/App.vue': `<script setup>import { Branch, T } from 'gt-vue';</script><template><T><Branch branch="active" :active="true" :inactive="false" :unknown="null">Fallback</Branch></T></template>`,
+        'src/App.vue': `<script setup>import { Select, T } from 'gt-vue';</script><template><T><Select value="active" :active="true" :inactive="false" :unknown="null">Fallback</Select></T></template>`,
       });
       const plan = planVueExtraction({
         library: 'gt-vue',
@@ -466,7 +466,7 @@ import { LocalT } from '@local/gt';
         expect.objectContaining({
           dataFormat: 'JSX',
           source: {
-            t: 'Branch',
+            t: 'Select',
             i: 1,
             d: {
               b: {

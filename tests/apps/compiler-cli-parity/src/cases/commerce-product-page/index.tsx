@@ -1,4 +1,4 @@
-import { Var, Num, Branch, Plural } from 'gt-react';
+import { Var, Num, Select, Plural } from 'gt-react';
 
 export default function CommerceProductPage() {
   const product = {
@@ -68,11 +68,11 @@ export default function CommerceProductPage() {
             </div>
           </div>
 
-          <Branch
-            branch={'stock' as string}
+          <Select
+            value={'stock' as string}
             inStock={<button>Add to Cart</button>}
             lowStock={<button>Add to Cart — Only a few left!</button>}
-          ><button disabled>Out of Stock</button></Branch>
+          ><button disabled>Out of Stock</button></Select>
 
           <p>
             <Plural

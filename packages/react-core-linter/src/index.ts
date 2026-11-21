@@ -7,7 +7,7 @@
  */
 
 import type { ESLint, Rule } from 'eslint';
-import { noDataAttrsOnBranch } from './rules/no-data-attrs-on-branch/index.js';
+import { noDataAttrsOnSelect } from './rules/no-data-attrs-on-select/index.js';
 import { staticBranch } from './rules/static-branch/index.js';
 import { staticJsx } from './rules/static-jsx/index.js';
 import { staticString } from './rules/static-string/index.js';
@@ -19,8 +19,8 @@ const plugin: ESLint.Plugin = {
     version: '0.0.0',
   },
   rules: {
-    'no-data-attrs-on-branch':
-      noDataAttrsOnBranch as unknown as Rule.RuleModule,
+    'no-data-attrs-on-select':
+      noDataAttrsOnSelect as unknown as Rule.RuleModule,
     'static-branch': staticBranch as unknown as Rule.RuleModule,
     'static-jsx': staticJsx as unknown as Rule.RuleModule,
     'static-string': staticString as unknown as Rule.RuleModule,
@@ -31,7 +31,7 @@ const plugin: ESLint.Plugin = {
     recommended: {
       plugins: ['@generaltranslation/react-core-linter'],
       rules: {
-        '@generaltranslation/react-core-linter/no-data-attrs-on-branch':
+        '@generaltranslation/react-core-linter/no-data-attrs-on-select':
           'error',
         '@generaltranslation/react-core-linter/static-branch': 'error',
         '@generaltranslation/react-core-linter/static-jsx': 'error',
@@ -47,7 +47,7 @@ plugin.configs = {
   recommended: {
     plugins: { '@generaltranslation/react-core-linter': plugin },
     rules: {
-      '@generaltranslation/react-core-linter/no-data-attrs-on-branch': 'error',
+      '@generaltranslation/react-core-linter/no-data-attrs-on-select': 'error',
       '@generaltranslation/react-core-linter/static-branch': 'error',
       '@generaltranslation/react-core-linter/static-jsx': 'error',
       '@generaltranslation/react-core-linter/static-string': 'error',

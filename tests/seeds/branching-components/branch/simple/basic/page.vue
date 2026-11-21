@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Branch, T } from 'gt-vue';
+import { Select, T } from 'gt-vue';
 </script>
 
-<template><T><Branch branch="morning" morning="Good morning" evening="Good evening" /></T></template>
+<template><T><Select value="morning" morning="Good morning" evening="Good evening" /></T></template>

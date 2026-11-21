@@ -39,7 +39,7 @@ const getTagName = (child: TaggedElement): string => {
 };
 /** What each kind of branching element is stored as. */
 const TRANSFORMATION_CODES = {
-  branch: 'b',
+  select: 'b',
   plural: 'p',
   ordinal: 'o',
 } as const;

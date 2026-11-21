@@ -25,7 +25,7 @@ import {
   translateVueChildren,
 } from '../rendering/translateVueChildren';
 import {
-  Branch,
+  Select,
   Currency,
   DateTime,
   Num,
@@ -1167,8 +1167,8 @@ describe('gt-vue runtime', () => {
             default: () =>
               order.value.map((label) =>
                 h(
-                  Branch,
-                  { key: label, branch: 'show' },
+                  Select,
+                  { key: label, value: 'show' },
                   { show: () => h(Stateful, { label }) }
                 )
               ),
@@ -1331,7 +1331,7 @@ describe('gt-vue runtime', () => {
     mounted.app.unmount();
   });
 
-  it('keeps Branch and Plural descendants isolated by named slot', async () => {
+  it('keeps Select and Plural descendants isolated by named slot', async () => {
     let setupCount = 0;
     const branch = ref('formal');
     const n = ref(1);
@@ -1351,8 +1351,8 @@ describe('gt-vue runtime', () => {
           h(T, null, {
             default: () => [
               h(
-                Branch,
-                { branch: branch.value },
+                Select,
+                { value: branch.value },
                 {
                   casual: () => h(Stateful, { label: 'casual' }),
                   formal: () => h(Stateful, { label: 'formal' }),
@@ -2027,7 +2027,7 @@ describe('gt-vue runtime', () => {
       },
     };
     const branchSource: JsxChildren = {
-      t: 'Branch',
+      t: 'Select',
       i: 2,
       d: {
         b: {
@@ -2088,8 +2088,8 @@ describe('gt-vue runtime', () => {
               ),
               ' / ',
               h(
-                Branch,
-                { branch: 'formal' },
+                Select,
+                { value: 'formal' },
                 {
                   default: () => [
                     'fallback ',
@@ -2117,12 +2117,12 @@ describe('gt-vue runtime', () => {
 
   it('ignores Vue-reserved VNode props when hashing rich branches', async () => {
     const source: JsxChildren = {
-      t: 'Branch',
+      t: 'Select',
       i: 1,
       d: { b: { formal: 'Hello', other: 'Fallback' }, t: 'b' },
     };
     const target: JsxChildren = {
-      t: 'Branch',
+      t: 'Select',
       i: 1,
       d: { b: { formal: 'Bonjour', other: 'Repli' }, t: 'b' },
     };
@@ -2136,9 +2136,9 @@ describe('gt-vue runtime', () => {
           h(T, null, {
             default: () =>
               h(
-                Branch,
+                Select,
                 {
-                  branch: 'formal',
+                  value: 'formal',
                   key: 'stable',
                   onVnodeMounted: () => undefined,
                   ref: () => undefined,
@@ -2175,8 +2175,8 @@ describe('gt-vue runtime', () => {
             h(Plural, { n: 2 }, { one: () => 'item', default: () => 'items' }),
             '|',
             h(
-              Branch,
-              { branch: 'formal', formal: 'Welcome' },
+              Select,
+              { value: 'formal', formal: 'Welcome' },
               { default: () => 'Hi' }
             ),
           ]);
@@ -2218,9 +2218,9 @@ describe('gt-vue runtime', () => {
             'H',
             h(DateTime, { value: null }),
             'I',
-            h(Branch, { branch: 'yes', yes: 'branch' }),
+            h(Select, { value: 'yes', yes: 'branch' }),
             'J',
-            h(Branch, { branch: 'empty', empty: null }),
+            h(Select, { value: 'empty', empty: null }),
             'K',
             h(Plural, { n: 2 }, { default: () => 'plural' }),
             'L',
@@ -2244,22 +2244,22 @@ describe('gt-vue runtime', () => {
         return () =>
           h('div', [
             h(
-              Branch,
-              { branch: 'toString' },
+              Select,
+              { value: 'toString' },
               { default: () => 'Standalone fallback' }
             ),
             '|',
             h(
-              Branch,
-              { branch: 'missing', missing: undefined },
+              Select,
+              { value: 'missing', missing: undefined },
               { default: () => 'Undefined fallback' }
             ),
             '|',
             h(T, null, {
               default: () =>
                 h(
-                  Branch,
-                  { branch: 'constructor' },
+                  Select,
+                  { value: 'constructor' },
                   { default: () => 'Rich fallback' }
                 ),
             }),

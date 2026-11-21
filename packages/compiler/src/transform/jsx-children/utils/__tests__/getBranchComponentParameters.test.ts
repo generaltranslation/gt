@@ -36,18 +36,18 @@ function getObjectExpressionPath(
 }
 
 describe('getBranchComponentParameters', () => {
-  it('should filter out branch and data-* attributes for Branch components', () => {
+  it('should filter out branch and data-* attributes for Select components', () => {
     const expression = makeObjectExpression({
       'data-testid': 'my-test',
       'data-track': 'click',
-      branch: 'someBranch',
+      value: 'someBranch',
       morning: 'Good morning',
       evening: 'Good evening',
     });
 
     const result = getBranchComponentParameters(
       getObjectExpressionPath(expression),
-      GT_COMPONENT_TYPES.Branch
+      GT_COMPONENT_TYPES.Select
     );
 
     const keys = result.map(([key]) => key);
@@ -83,7 +83,7 @@ describe('getBranchComponentParameters', () => {
 
     const result = getBranchComponentParameters(
       getObjectExpressionPath(expression),
-      GT_COMPONENT_TYPES.Branch
+      GT_COMPONENT_TYPES.Select
     );
 
     const keys = result.map(([key]) => key);
@@ -119,7 +119,7 @@ describe('getBranchComponentParameters', () => {
   it.each([
     GT_COMPONENT_TYPES.Plural,
     GT_COMPONENT_TYPES.Ordinal,
-    GT_COMPONENT_TYPES.Branch,
+    GT_COMPONENT_TYPES.Select,
   ])(
     'fails an other prop on <%s>, whose fallback is its children',
     (component) => {

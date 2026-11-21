@@ -23,7 +23,7 @@ const translations = JSON.parse(
       { i: 1, k: '__proto__', v: 'v' },
     ],
     [branchHash]: {
-      t: 'Branch',
+      t: 'Select',
       i: 1,
       d: {
         t: 'b',

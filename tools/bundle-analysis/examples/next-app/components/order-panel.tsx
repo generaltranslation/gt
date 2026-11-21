@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-  Branch,
+  Select,
   Currency,
   n,
   Num,
@@ -56,8 +56,8 @@ export function OrderPanel() {
           ))}
         </div>
         <T>
-          <Branch
-            branch={finish}
+          <Select
+            value={finish}
             graphite={
               <p className='order-note'>
                 Powder-coated steel with a black anodized head.
@@ -75,7 +75,7 @@ export function OrderPanel() {
             }
           >
             <p className='order-note'>Steel arm and aluminum head.</p>
-          </Branch>
+          </Select>
         </T>
       </div>
 

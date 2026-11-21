@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Fragment } from 'vue';
-import { Branch, T } from 'gt-vue';
+import { Select, T } from 'gt-vue';
 </script>
 
-<template><T><Branch branch="morning" evening=""><template #morning><Fragment /></template></Branch></T></template>
+<template><T><Select value="morning" evening=""><template #morning><Fragment /></template></Select></T></template>

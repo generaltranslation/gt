@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { Branch, T, Var } from 'gt-vue';
+import { Select, T, Var } from 'gt-vue';
 import { Fragment } from 'vue';
 </script>
 
 <template>
   <T>
-    <Branch branch="format">
+    <Select value="format">
       <template #compact>
         <Fragment>No spaces<Var>here</Var>at all</Fragment>
       </template>
@@ -15,6 +15,6 @@ import { Fragment } from 'vue';
       <template #mixed>
         <Fragment>Text<span> embedded spaces </span>more text<Var> padded var </Var>final text</Fragment>
       </template>
-    </Branch>
+    </Select>
   </T>
 </template>

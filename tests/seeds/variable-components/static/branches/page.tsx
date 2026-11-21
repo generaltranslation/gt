@@ -1,5 +1,5 @@
 'use client'
-import { Derive, T, Branch } from 'gt-next'
+import { Derive, T, Select } from 'gt-next'
 
 export function fn2() {
   return 'fn2'
@@ -22,11 +22,11 @@ export default function Home() {
       <Derive>
         Hello my good friend
         {true ? fn1() : 'no'} 
-        <Branch
-          branch={true ? 'yes' : 'no'}
+        <Select
+          value={true ? 'yes' : 'no'}
           yes={<>yes</>}
           no={<>no</>}
-        >yo</Branch>
+        >yo</Select>
       </Derive>
     </T>
   </div>;
