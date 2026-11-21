@@ -29,12 +29,6 @@ export {
   type ResolvedCredentials,
 } from './config/credentials';
 export { getPluralBranchKey, isAcceptedPluralForm } from './settings/plurals';
-export type {
-  InjectionType,
-  Transformation,
-  TransformationPrefix,
-  VariableTransformationSuffix,
-} from './types-dir/transformations';
 export {
   isGTMessageHelperName,
   isGTMessageImportSource,
