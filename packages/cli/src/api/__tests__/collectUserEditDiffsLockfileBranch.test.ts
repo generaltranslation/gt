@@ -5,7 +5,9 @@ import os from 'node:os';
 import { collectAndSendUserEditDiffs } from '../collectUserEditDiffs.js';
 import { createMockSettings } from '../__mocks__/settings.js';
 import { api } from '../../utils/api.js';
-import { clearWarnings } from '../../state/translateWarnings.js';
+import { logger } from '../../console/logger.js';
+import { clearWarnings, getWarnings } from '../../state/translateWarnings.js';
+import { hashStringSync } from '../../utils/hash.js';
 import type { FileReference } from 'generaltranslation/types';
 import type { DownloadedVersionsV1 } from '../../fs/config/downloadedVersions.js';
 
@@ -55,9 +57,13 @@ describe('collectAndSendUserEditDiffs - lockfile branch selection', () => {
     });
 
   const writeLocal = () => {
+    writeFile(EDITED_CONTENT);
+  };
+
+  const writeFile = (content: string) => {
     const outputPath = path.join(tempDir, 'docs', 'ja', 'doc.md');
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-    fs.writeFileSync(outputPath, EDITED_CONTENT);
+    fs.writeFileSync(outputPath, content);
   };
 
   /**
@@ -65,6 +71,11 @@ describe('collectAndSendUserEditDiffs - lockfile branch selection', () => {
    * listed first, as it is in the report that motivated this test.
    */
   const writeLockFile = () => {
+    writeLockFileWithHash();
+  };
+
+  /** The current branch records a hash the edited file no longer matches. */
+  const writeLockFileWithHash = (postProcessHash?: string) => {
     const lockfile: DownloadedVersionsV1 = {
       version: 1,
       entries: {
@@ -78,7 +89,10 @@ describe('collectAndSendUserEditDiffs - lockfile branch selection', () => {
         'branch-1': {
           file1: {
             'version-current': {
-              ja: { updatedAt: '2026-11-01T00:00:00.000Z' },
+              ja: {
+                updatedAt: '2026-11-01T00:00:00.000Z',
+                ...(postProcessHash ? { postProcessHash } : {}),
+              },
             },
           },
         },
@@ -185,5 +199,45 @@ describe('collectAndSendUserEditDiffs - lockfile branch selection', () => {
       'version-stale',
     ]);
     expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+  });
+
+  it('warns when a known local edit has no server version to compare against', async () => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+    const settings = buildSettings();
+    // A recorded hash the edited file no longer matches makes the edit known.
+    writeLockFileWithHash(hashStringSync(SERVER_CONTENT));
+    writeLocal();
+    vi.mocked(api.queryFileData).mockReset();
+    vi.mocked(api.downloadFileBatch).mockReset();
+    // The server holds no copy of the version the lockfile records.
+    vi.mocked(api.queryFileData).mockResolvedValue({
+      translatedFiles: [],
+    } as unknown as Awaited<ReturnType<typeof api.queryFileData>>);
+
+    await collectAndSendUserEditDiffs(filesUnderTest(), settings);
+
+    expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledTimes(1);
+    const [message] = warn.mock.calls[0];
+    expect(String(message)).toContain('ja');
+    expect(String(message)).toContain('could not be compared');
+    expect(getWarnings()).toContainEqual(
+      expect.objectContaining({ category: 'skipped_file' })
+    );
+    warn.mockRestore();
+  });
+
+  it('stays quiet when the local file matches the recorded hash', async () => {
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {});
+    const settings = buildSettings();
+    writeFile(SERVER_CONTENT);
+    writeLockFileWithHash(hashStringSync(SERVER_CONTENT));
+
+    await collectAndSendUserEditDiffs(filesUnderTest(), settings);
+
+    expect(api.queryFileData).not.toHaveBeenCalled();
+    expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });

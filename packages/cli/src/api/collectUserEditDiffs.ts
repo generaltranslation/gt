@@ -242,6 +242,8 @@ export async function collectAndSendUserEditDiffs(
     locale: string; // resolved
     outputPath: string;
     fileFormat: FileFormat;
+    /** The recorded hash did not match, so this locale is known to be edited. */
+    knownEdited: boolean;
   };
   const candidates: DiffCandidate[] = [];
 
@@ -261,6 +263,7 @@ export async function collectAndSendUserEditDiffs(
       const downloadedVersion = latestDownloaded.entry;
 
       // Skip if the locale's local content matches the last recorded hash
+      let knownEdited = false;
       if (downloadedVersion.postProcessHash) {
         try {
           // Hashed from the locale's share of the pipeline content, which is
@@ -277,6 +280,7 @@ export async function collectAndSendUserEditDiffs(
           if (localHash === downloadedVersion.postProcessHash) {
             continue;
           }
+          knownEdited = true;
         } catch {
           // If hash check fails, fall through to diff
         }
@@ -290,6 +294,7 @@ export async function collectAndSendUserEditDiffs(
         locale: locale,
         outputPath,
         fileFormat: uploadedFile.fileFormat,
+        knownEdited,
       });
     }
   }
@@ -340,8 +345,17 @@ export async function collectAndSendUserEditDiffs(
       const payload = serverPayloadByKey.get(key);
       // Absent means the batch did not return this file, so there is no
       // baseline. An empty payload is a baseline of nothing, which the user
-      // may well have written against.
-      if (!payload) continue;
+      // may well have written against. When the recorded hash already showed
+      // an edit, say so rather than leaving the run looking clean.
+      if (!payload) {
+        if (c.knownEdited) {
+          const relativePath = getRelative(c.outputPath);
+          const reason = `the ${c.locale} version recorded in the lockfile is not available on the server, so the edit could not be compared`;
+          logger.warn(unsavedJsonEditsWarning(relativePath, c.locale, reason));
+          recordWarning('skipped_file', relativePath, reason);
+        }
+        continue;
+      }
 
       // The locale's share of the payload, read on its own so a payload the
       // server sent malformed costs only its own locale. A catalog payload

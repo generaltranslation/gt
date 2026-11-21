@@ -20,6 +20,17 @@ import { shouldPublishGt } from '../utils/resolvePublish.js';
 export async function saveLocalEdits(settings: Settings): Promise<void> {
   if (!settings.files) return;
 
+  // Resolve the branch before reading anything out of the lockfile: a v1
+  // lockfile keeps every branch it has seen, and without a branch it is read
+  // from whichever one is listed first.
+  const branchStep = new BranchStep(api, settings);
+  const branchResult = await branchStep.run();
+  if (!branchResult) {
+    return logErrorAndExit(branchResolutionError);
+  }
+  const branchId = branchResult.currentBranch.id;
+  const branchSettings: Settings = { ...settings, _branchId: branchId };
+
   // Collect current files from config
   const { files, publishMap } = await aggregateFiles(settings);
   const fileRefs = files.map((file) => ({
@@ -31,7 +42,7 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
 
   // Include the GT JSON at its last downloaded version
   const gtJsonEntry = settings.files.placeholderPaths.gt
-    ? readLockfile(settings).entryMap.get(TEMPLATE_FILE_ID)
+    ? readLockfile(branchSettings).entryMap.get(TEMPLATE_FILE_ID)
     : undefined;
   if (gtJsonEntry) {
     fileRefs.push({
@@ -47,32 +58,23 @@ export async function saveLocalEdits(settings: Settings): Promise<void> {
   }
   if (!fileRefs.length) return;
 
-  // run branch query to get branch id
-  // Run the branch step
-  const branchStep = new BranchStep(api, settings);
-  const branchResult = await branchStep.run();
-  if (!branchResult) {
-    return logErrorAndExit(branchResolutionError);
-  }
-
   const uploads = fileRefs.map((file) => ({
     ...file,
-    branchId: branchResult.currentBranch.id,
+    branchId,
   })) satisfies FileReference[];
 
   const spinner = logger.createSpinner('dots');
   spinner.start('Saving local edits...');
 
   const hadDiffs = await collectAndSendUserEditDiffs(uploads, settings);
-  spinner.stop(chalk.green('Local edits saved successfully'));
+  spinner.stop(
+    hadDiffs
+      ? chalk.green('Local edits saved successfully')
+      : chalk.yellow('No local edits were saved')
+  );
 
   // Publish files to CDN if diffs were detected and publish config exists
   if (hadDiffs) {
-    await runPublishWorkflow(
-      fileRefs,
-      publishMap,
-      branchResult.currentBranch.id,
-      settings
-    );
+    await runPublishWorkflow(fileRefs, publishMap, branchId, settings);
   }
 }

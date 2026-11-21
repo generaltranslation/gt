@@ -2,4 +2,4 @@
 'gt': patch
 ---
 
-Read the lockfile for the branch the files were uploaded under when collecting local edits, so `gt save-local` and `gt translate --save-local` diff against the current branch's downloaded version instead of whichever branch is listed first in a v1 `gt-lock.json`.
+Resolve the current branch before reading `gt-lock.json` in `gt save-local`, so the `files.gt` template is looked up and published under the branch the files belong to. Also warn, and avoid reporting a clean success, when a locale whose recorded hash already differs cannot be compared because the server has no copy of the version in the lockfile.
