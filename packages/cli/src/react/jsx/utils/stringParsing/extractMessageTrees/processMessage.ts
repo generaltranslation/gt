@@ -60,22 +60,37 @@ export function processMessage(
     }
   } catch (error) {
     if (!(error instanceof NonStaticMessageError)) throw error;
-    const skipped = warnNonStaticMessageTreeSync(
+    reportSkippedMessage(
+      error,
       options?.some((option) => containsNode(option, error.node))
         ? optionsFile
         : config.file,
-      error.message,
-      formatLocation(error.node),
-      error.details,
-      error.fix
+      config,
+      output
     );
-    if (!config.skippedMessagesAreErrors) {
-      output.warnings.add(skipped);
-    } else if (!output.errors.includes(skipped)) {
-      // Two messages that share a part`...` report the same skip, which the
-      // warnings set drops.
-      output.errors.push(skipped);
-    }
+  }
+}
+
+/** Reports a message skipped because of `error`, found in `file`. */
+export function reportSkippedMessage(
+  error: NonStaticMessageError,
+  file: string,
+  config: ParsingConfig,
+  output: ParsingOutput
+): void {
+  const skipped = warnNonStaticMessageTreeSync(
+    file,
+    error.message,
+    formatLocation(error.node),
+    error.details,
+    error.fix
+  );
+  if (!config.skippedMessagesAreErrors) {
+    output.warnings.add(skipped);
+  } else if (!output.errors.includes(skipped)) {
+    // Two messages that share a part`...` report the same skip, which the
+    // warnings set drops.
+    output.errors.push(skipped);
   }
 }
 

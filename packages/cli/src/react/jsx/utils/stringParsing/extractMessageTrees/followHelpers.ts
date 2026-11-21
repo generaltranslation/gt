@@ -59,7 +59,12 @@ export function createHelperFollower(
   };
 }
 
-type FoundFunction = { fn: NodePath<t.Function>; file: string };
+/** `reassigned` is set when the name may later hold another function. */
+type FoundFunction = {
+  fn: NodePath<t.Function>;
+  file: string;
+  reassigned?: boolean;
+};
 
 /**
  * Queues the parameter of the function that `call` passes `arg`, a tag, to.
@@ -71,16 +76,15 @@ export function followTagArgument(
   options: TagOptions | undefined,
   optionsFile: string,
   file: string,
-  follower: HelperFollower
+  follower: HelperFollower,
+  /** Parses `options` into a key, or reports them and returns undefined. */
+  getOptionsKey: () => string | undefined
 ): boolean {
   if (!call.isCallExpression() || !t.isIdentifier(call.node.callee)) {
     return false;
   }
-  const args = call.node.arguments;
-  const index = args.indexOf(arg as (typeof args)[number]);
-  if (index < 0 || args.slice(0, index).some((a) => t.isSpreadElement(a))) {
-    return false;
-  }
+  const index = getArgumentIndex(call.node.arguments, arg);
+  if (index === undefined) return false;
   const found = findBindingFunction(
     call.scope.getBinding(call.node.callee.name),
     file,
@@ -90,10 +94,13 @@ export function followTagArgument(
   if (!found) return false;
   const param = getParameter(found.fn, index);
   if (param === undefined) return false;
-  if (param === null) return !readsArguments(found.fn);
+  // A function can also read the tag through `arguments`, which is not followed.
+  const followable = !found.reassigned && !readsArguments(found.fn);
+  if (param === null) return followable;
+  const key = getOptionsKey();
+  if (key === undefined) return true;
   const paramKey = `${realPath(found.file, follower)}\0${param.identifier.start}`;
   const followedOptions = follower.followed.get(paramKey) ?? new Set();
-  const key = optionsKey(options);
   if (!followedOptions.has(key)) {
     followedOptions.add(key);
     follower.followed.set(paramKey, followedOptions);
@@ -104,7 +111,7 @@ export function followTagArgument(
       file: found.file,
     });
   }
-  return true;
+  return followable;
 }
 
 function realPath(file: string, follower: HelperFollower): string {
@@ -120,24 +127,30 @@ function realPath(file: string, follower: HelperFollower): string {
   return real;
 }
 
-const positionKeys = new Set([
-  'loc',
-  'start',
-  'end',
-  'range',
-  'extra',
-  'leadingComments',
-  'trailingComments',
-  'innerComments',
-]);
-
-/** Equal for options written the same way at different call sites. */
-function optionsKey(options: TagOptions | undefined): string {
-  return options
-    ? JSON.stringify(options, (key, value: unknown) =>
-        positionKeys.has(key) ? undefined : value
-      )
-    : '';
+/**
+ * The position of `arg` among the parameters, counting the elements of array
+ * literals spread before it, or undefined when another spread hides it.
+ */
+function getArgumentIndex(
+  args: t.CallExpression['arguments'],
+  arg: t.Node
+): number | undefined {
+  let index = 0;
+  for (const current of args) {
+    if (current === arg) return index;
+    if (!t.isSpreadElement(current)) {
+      index++;
+      continue;
+    }
+    const spread = current.argument;
+    if (
+      !t.isArrayExpression(spread) ||
+      spread.elements.some((element) => !element || t.isSpreadElement(element))
+    ) {
+      return;
+    }
+    index += spread.elements.length;
+  }
 }
 
 /**
@@ -165,7 +178,7 @@ function getParameter(
 function readsArguments(fn: NodePath<t.Function>): boolean {
   if (fn.isArrowFunctionExpression()) return false;
   let reads = false;
-  fn.get('body').traverse({
+  fn.traverse({
     Function(inner) {
       if (!inner.isArrowFunctionExpression()) inner.skip();
     },
@@ -199,14 +212,14 @@ function findBindingFunction(
   const path = binding?.path;
   if (!path) return;
   if (path.isFunctionDeclaration()) {
-    return binding.constant ? { fn: path, file } : undefined;
+    return { fn: path, file, reassigned: !binding.constant };
   }
   // The name of a function expression, inside its own body.
   if (path.isFunctionExpression()) return { fn: path, file };
-  if (path.isVariableDeclarator() && binding.constant) {
+  if (path.isVariableDeclarator()) {
     const init = path.get('init');
     if (init.isArrowFunctionExpression() || init.isFunctionExpression()) {
-      return { fn: init, file };
+      return { fn: init, file, reassigned: !binding.constant };
     }
     return;
   }
@@ -283,8 +296,12 @@ function findExport(
           seen
         );
       }
+      if (declaration.isFunctionDeclaration()) {
+        const id = declaration.node.id;
+        const reassigned = !!id && !program.scope.getBinding(id.name)?.constant;
+        return { fn: declaration, file, reassigned };
+      }
       if (
-        declaration.isFunctionDeclaration() ||
         declaration.isArrowFunctionExpression() ||
         declaration.isFunctionExpression()
       ) {

@@ -1731,6 +1731,116 @@ ${
     ).toHaveLength(1);
   });
 
+  it('extracts and warns about a reassigned default export, and warns about arguments read beside a parameter', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        [
+          'reassigned(t);',
+          'inDefault(undefined, t);',
+          'return besideParameter(t);',
+        ].join('\n  '),
+        [
+          "import reassigned from './reassigned';",
+          'function inDefault(tr: GT = arguments[1]) {\n  return tr`In default`;\n}',
+          'function besideParameter(tr: GT) {\n  return (arguments[0] as GT)`Beside`;\n}',
+        ].join('\n')
+      ),
+      'reassigned.ts': nav(
+        nextHost,
+        'export default function label(t: GT) {\n  return t`Old`;\n}\nlabel = (t: GT) => t`New`;'
+      ),
+    }));
+
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Old']);
+    const untracked = result.warnings.filter((w) =>
+      w.includes('Could not follow this use')
+    );
+    expect(untracked).toHaveLength(3);
+  });
+
+  it('extracts a function once for the same options written in another order', async () => {
+    const { result } = await extractProject(
+      Libraries.GT_NEXT,
+      () => ({
+        'page.tsx': withTag(
+          nextHost,
+          "return [getNavLabels(t({ context: 'menu', maxChars: 9 })), getNavLabels(t({ maxChars: 9, context: 'menu' }))];",
+          "import { getNavLabels } from './nav';"
+        ),
+        'nav.ts': nav(
+          nextHost,
+          'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+        ),
+      }),
+      ['page.tsx'],
+      { includeSourceCodeContext: true }
+    );
+
+    expect(result.warnings).toEqual([]);
+    const updates = treeUpdates(result);
+    expect(updates.map((u) => u.source)).toEqual(['Settings']);
+    expect(
+      Object.values(updates[0].metadata.sourceCode ?? {}).flat()
+    ).toHaveLength(1);
+  });
+
+  it('reports invalid options at every call site, including t()', async () => {
+    const caller = (body: string) =>
+      withTag(
+        nextHost,
+        body,
+        "import { getNavLabels } from './nav';\ndeclare const ctx: string;"
+      );
+    const { result } = await extractProject(
+      Libraries.GT_NEXT,
+      () => ({
+        'a.tsx': caller('return getNavLabels(t({ context: ctx }));'),
+        'b.tsx': caller('return getNavLabels(t({ context: ctx }));'),
+        'c.tsx': caller('return getNavLabels(t());'),
+        'nav.ts': nav(
+          nextHost,
+          'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+        ),
+      }),
+      ['a.tsx', 'b.tsx', 'c.tsx']
+    );
+
+    expect(treeUpdates(result)).toEqual([]);
+    const skipped = [...result.warnings, ...result.errors];
+    expect(skipped).toHaveLength(3);
+    expect(
+      skipped.map((w) => w.match(/\b([abc])\.tsx \(/)?.[1]).sort()
+    ).toEqual(['a', 'b', 'c']);
+    expect(skipped.join('\n')).not.toMatch(/nav\.ts/);
+  });
+
+  it('follows let and var aliases, array literal spreads, and hook dependency arrays without warning', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        [
+          'let tr = t;',
+          'var label = useCallback(() => tr`Callback`, [tr]);',
+          'useMemo(() => viaLet(t), [t]);',
+          'return [label, spread(...[1, 2], t)];',
+        ].join('\n  '),
+        [
+          "import { useCallback, useMemo } from 'react';",
+          'function viaLet(t: GT) {\n  let inner = t;\n  return inner`Let alias`;\n}',
+          'function spread(a: number, b: number, t: GT) {\n  return t`Spread`;\n}',
+        ].join('\n')
+      ),
+    }));
+
+    expect(result.warnings).toEqual([]);
+    expect(
+      treeUpdates(result)
+        .map((u) => u.source)
+        .sort()
+    ).toEqual(['Callback', 'Let alias', 'Spread']);
+  });
+
   it('does not extract a function that never receives a tag', async () => {
     const { result } = await extractProject(Libraries.GT_NEXT, () => ({
       'page.tsx': withTag(
@@ -1768,7 +1878,7 @@ ${
     ]);
   });
 
-  it('warns about a reassigned function and one that reads arguments', async () => {
+  it('extracts and warns about a reassigned function, and warns about one that reads arguments', async () => {
     const { result } = await extractProject(Libraries.GT_NEXT, () => ({
       'page.tsx': withTag(
         nextHost,
@@ -1788,7 +1898,7 @@ ${
       ),
     }));
 
-    expect(treeUpdates(result)).toEqual([]);
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Old']);
     const untracked = result.warnings.filter((w) =>
       w.includes('Could not follow this use')
     );

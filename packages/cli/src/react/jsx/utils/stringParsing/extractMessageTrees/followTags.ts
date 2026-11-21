@@ -6,9 +6,10 @@ import {
 } from '../../../../../console/index.js';
 import type { ParsingConfig, ParsingOutput } from '../types.js';
 import { loadTypeScript } from '../../typeChecker.js';
-import { formatLocation } from './diagnostics.js';
+import { NonStaticMessageError, formatLocation } from './diagnostics.js';
 import { followTagArgument, type HelperFollower } from './followHelpers.js';
-import { processMessage } from './processMessage.js';
+import { parseMessageOptions } from './parseMessageOptions.js';
+import { processMessage, reportSkippedMessage } from './processMessage.js';
 import { processMsgCall } from './processMsgCall.js';
 import type { TagOptions } from './types.js';
 
@@ -51,7 +52,8 @@ export function processHookReference(
       undefined,
       config.file,
       config.file,
-      follower
+      follower,
+      () => ''
     )
   ) {
     return;
@@ -153,7 +155,7 @@ function processTagReference(
     // msg('Save')
     if (isMsg && processMsgCall(parent, config, output)) return;
     // const save = t({ ...options })
-    const alias = getConstAliasBinding(outer, parent.node);
+    const alias = getAliasBinding(outer, parent.node);
     if (alias) {
       processTagBinding(alias, parent.node.arguments, {
         ...context,
@@ -171,14 +173,21 @@ function processTagReference(
         parent.node.arguments,
         config.file,
         config.file,
-        follower
+        follower,
+        () =>
+          getOptionsKey(
+            parent.node.arguments,
+            parent.node,
+            config.file,
+            context
+          )
       )
     ) {
       return;
     }
   }
   // const translate = t
-  const alias = getConstAliasBinding(parent, ref.node);
+  const alias = getAliasBinding(parent, ref.node);
   if (alias) {
     processTagBinding(alias, configuredOptions, context);
     return;
@@ -194,24 +203,67 @@ function processTagReference(
       configuredOptions,
       optionsFile,
       config.file,
-      follower
+      follower,
+      () => getOptionsKey(configuredOptions, ref.node, optionsFile, context)
     )
   ) {
     return;
   }
+  // useCallback(..., [t]) only lists the tag as a dependency.
+  if (isHookDependency(ref)) return;
   warnUntrackedTag(ref.node, config, output);
 }
 
-/** Binding of `const alias = <init>` when `path` is that declarator. */
-function getConstAliasBinding(
+/** Whether `path` is listed in a React hook's dependency array. */
+function isHookDependency(path: NodePath): boolean {
+  const array = path.parentPath;
+  const call = array?.parentPath;
+  if (!array?.isArrayExpression() || !call?.isCallExpression()) return false;
+  const position = call.node.arguments.indexOf(
+    array.node as (typeof call.node.arguments)[number]
+  );
+  const { callee } = call.node;
+  const name = t.isIdentifier(callee)
+    ? callee.name
+    : t.isMemberExpression(callee) && t.isIdentifier(callee.property)
+      ? callee.property.name
+      : undefined;
+  return position > 0 && !!name && /^use[A-Z]/.test(name);
+}
+
+/**
+ * Key of the metadata `options` give a message, equal for options written in
+ * any order. Invalid options are reported in `file` and give undefined.
+ */
+function getOptionsKey(
+  options: TagOptions | undefined,
+  fallback: t.Node,
+  file: string,
+  { config, output }: TagContext
+): string | undefined {
+  try {
+    const metadata = parseMessageOptions(options, fallback);
+    return JSON.stringify(
+      Object.entries(metadata).sort(([a], [b]) => (a < b ? -1 : 1))
+    );
+  } catch (error) {
+    if (!(error instanceof NonStaticMessageError)) throw error;
+    reportSkippedMessage(error, file, config, output);
+  }
+}
+
+/**
+ * Binding of `const alias = <init>` (or `let`/`var`) when `path` is that
+ * declarator; processTagBinding warns where the alias is reassigned.
+ */
+function getAliasBinding(
   path: NodePath | null | undefined,
   init: t.Node
 ): Binding | undefined {
   if (
     !path?.isVariableDeclarator() ||
     path.node.init !== init ||
-    !t.isIdentifier(path.node.id) ||
-    (path.parentPath as NodePath<t.VariableDeclaration>).node.kind !== 'const'
+    !t.isIdentifier(path.node.id)
   ) {
     return;
   }
