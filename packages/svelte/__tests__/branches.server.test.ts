@@ -100,7 +100,9 @@ describe('a branch value named other', () => {
   it.each(['other', 'missing'])(
     'renders nothing for value=%s with an other prop and no children',
     (branch) => {
-      const { body } = render(Select, { props: { branch, other: 'Prop' } });
+      const { body } = render(Select, {
+        props: { value: branch, other: 'Prop' },
+      });
       expect(withoutComments(body).trim()).toBe('');
     }
   );
