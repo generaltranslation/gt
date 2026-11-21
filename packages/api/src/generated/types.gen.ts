@@ -3229,7 +3229,7 @@ export type UploadSourceFilesData = {
           }
         | {
             /**
-             * A file already PUT to the URL from Create file uploads, in place of `content`; required for files over 4MB.
+             * A file already PUT to the URL from Create file uploads, in place of `content`; required when the request body would be over 4MB.
              */
             upload: {
               /**
@@ -3346,9 +3346,6 @@ export type UploadSourceFilesResponses = {
       | {
           branchId: string;
           fileId: string;
-          /**
-           * Version ID; empty when the item failed before its version could be derived.
-           */
           versionId: string;
           fileName: string;
           fileFormat: FileFormat;
@@ -3358,9 +3355,6 @@ export type UploadSourceFilesResponses = {
       | {
           branchId: string;
           fileId: string;
-          /**
-           * Version ID; empty when the item failed before its version could be derived.
-           */
           versionId: string;
           fileName: string;
           fileFormat: FileFormat;
@@ -3414,7 +3408,7 @@ export type UploadTranslationsData = {
           }
         | {
             /**
-             * A file already PUT to the URL from Create file uploads, in place of `content`; required for files over 4MB.
+             * A file already PUT to the URL from Create file uploads, in place of `content`; required when the request body would be over 4MB.
              */
             upload: {
               /**
@@ -3439,7 +3433,7 @@ export type UploadTranslationsData = {
             }
           | {
               /**
-               * A file already PUT to the URL from Create file uploads, in place of `content`; required for files over 4MB.
+               * A file already PUT to the URL from Create file uploads, in place of `content`; required when the request body would be over 4MB.
                */
               upload: {
                 /**
@@ -3553,9 +3547,6 @@ export type UploadTranslationsResponses = {
       | {
           branchId: string;
           fileId: string;
-          /**
-           * Version ID; empty when the item failed before its version could be derived.
-           */
           versionId: string;
           fileName: string;
           fileFormat: FileFormat;
@@ -3566,9 +3557,6 @@ export type UploadTranslationsResponses = {
       | {
           branchId: string;
           fileId: string;
-          /**
-           * Version ID; empty when the item failed before its version could be derived.
-           */
           versionId: string;
           fileName: string;
           fileFormat: FileFormat;
@@ -8450,7 +8438,7 @@ export type UpsertAssetsData = {
 
 export type UpsertAssetsErrors = {
   /**
-   * The request is malformed or failed validation, or two assets have the same identity, taken from `family` and `style` or read from a font within the size limit. No asset is written.
+   * The request is malformed or failed validation, or two assets have the same identity, taken from `family` and `style` or read from the font. No asset is written.
    */
   400: ErrorResponse & {
     code?:
@@ -8510,7 +8498,7 @@ export type UpsertAssetsError = UpsertAssetsErrors[keyof UpsertAssetsErrors];
 
 export type UpsertAssetsResponses = {
   /**
-   * One result per asset, in request order, even when every asset fails. `file_too_large`: an oversized asset. `invalid_request`: a font whose family cannot be determined. Retrying a failed asset is safe.
+   * One result per asset, in request order, even when every asset fails. `invalid_request`: a font whose family cannot be determined. Retrying a failed asset is safe.
    */
   200: {
     summary: BatchWriteSummary;
@@ -8537,7 +8525,7 @@ export type UpsertAssetsResponses = {
           /**
            * Machine-readable cause of the failure. New values may be added; fall back to `status` for ones you do not recognize.
            */
-          code: 'file_too_large' | 'invalid_request' | 'internal_error';
+          code: 'invalid_request' | 'internal_error';
         }
     >;
   };

@@ -1,6 +1,9 @@
 import {
   createApiClient,
+  createBatches,
   ErrorCode,
+  jsonByteLength,
+  MAX_REQUEST_BODY_BYTES,
   translateContent,
   type ModelProvider,
   type UserTokenProvider,
@@ -19,40 +22,6 @@ type RuntimeTranslationResult = TranslateContentResponse['results'][number];
 type RuntimeRequest = TranslateContentData['body']['requests'][number];
 // A request with the hash its result is returned under.
 type HashedRequest = [hash: string, request: RuntimeRequest];
-
-// The API rejects translate request bodies over 4MB.
-const MAX_REQUEST_BYTES = 4_000_000;
-
-const byteLength = (value: TranslateContentData['body'] | RuntimeRequest) =>
-  new TextEncoder().encode(JSON.stringify(value)).byteLength;
-
-/**
- * Splits `requests` into groups whose request body, `envelope` plus the
- * group's entries, stays within the API's limit. An entry too large on its own
- * is sent alone, and the API rejects it.
- */
-function splitRequests(
-  requests: HashedRequest[],
-  envelope: Omit<TranslateContentData['body'], 'requests'>
-): HashedRequest[][] {
-  const emptyBytes = byteLength({ ...envelope, requests: [] });
-  const groups: HashedRequest[][] = [];
-  let group: HashedRequest[] = [];
-  let groupBytes = emptyBytes;
-  for (const entry of requests) {
-    // Each entry adds its JSON and a separating comma.
-    const entryBytes = byteLength(entry[1]) + 1;
-    if (groupBytes + entryBytes > MAX_REQUEST_BYTES && group.length > 0) {
-      groups.push(group);
-      group = [];
-      groupBytes = emptyBytes;
-    }
-    group.push(entry);
-    groupBytes += entryBytes;
-  }
-  groups.push(group);
-  return groups;
-}
 
 // The generated schema types translations as JsonValue; the service returns
 // the content type matching each entry's dataFormat.
@@ -143,27 +112,31 @@ export async function translateEntries(
     sourceLocale: call.sourceLocale,
     metadata: { modelProvider: call.modelProvider },
   } satisfies Omit<TranslateContentData['body'], 'requests'>;
-  // The API returns one result per request, in request order.
+  const groups = createBatches<HashedRequest>(
+    Object.entries(requestsObject),
+    Infinity,
+    MAX_REQUEST_BODY_BYTES - jsonByteLength({ ...envelope, requests: [] }),
+    ([, request]) => jsonByteLength(request)
+  );
+  // The API returns one result per request, in request order. A call with no entries still sends its one request.
   const responses = await Promise.all(
-    splitRequests(Object.entries(requestsObject), envelope).map(
-      async (group) => {
-        const { results } = unwrapApiResult(
-          await translateContent({
-            body: {
-              ...envelope,
-              requests: group.map(([, request]) => request),
-            },
-            client,
-            headers: apiVersionHeaders(),
-            path: { projectId: call.projectId },
-          })
-        );
-        return results.map(
-          (result, index) =>
-            [group[index][0], toTranslationResult(result)] as const
-        );
-      }
-    )
+    (groups.length > 0 ? groups : [[]]).map(async (group) => {
+      const { results } = unwrapApiResult(
+        await translateContent({
+          body: {
+            ...envelope,
+            requests: group.map(([, request]) => request),
+          },
+          client,
+          headers: apiVersionHeaders(),
+          path: { projectId: call.projectId },
+        })
+      );
+      return results.map(
+        (result, index) =>
+          [group[index][0], toTranslationResult(result)] as const
+      );
+    })
   );
   const response: Record<string, TranslationResult> = Object.fromEntries(
     responses.flat()

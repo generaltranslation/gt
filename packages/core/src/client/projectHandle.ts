@@ -14,6 +14,7 @@ import {
   getJob,
   getProject,
   getProjectApiKey,
+  jsonByteLength,
   listBranchFiles,
   listBranches,
   listProjectApiKeys,
@@ -93,7 +94,11 @@ import { GTRuntime } from '../runtime';
 import type { MoveMapping } from '../translate/moveFiles';
 import type { PublishFileEntry } from '../translate/publishFiles';
 import { unwrapApiResult } from '../translate/utils/unwrapApiResult';
-import { uploadFileContents } from '../translate/uploadFileContents';
+import {
+  fileContentBytes,
+  splitByUploads,
+  uploadFileContents,
+} from '../translate/uploadFileContents';
 import type {
   FileUpload,
   TranslationSourceUpload,
@@ -816,31 +821,22 @@ export class ProjectHandle extends GTRuntime {
     options: { timeout?: number } = {}
   ): Promise<BatchWriteResponse<OverwriteTranslationsResponse>> {
     const response = await writeInBatches(
-      diffs,
+      diffs.map(
+        ({ diff, branchId, versionId, fileId, localContent, locale }) => ({
+          diff,
+          branchId,
+          versionId,
+          fileId,
+          localContent,
+          locale: this.resolveServiceLocale(locale),
+        })
+      ),
       DEFAULT_BATCH_SIZE,
       async (batch) =>
         unwrapApiResult(
           await overwriteTranslations({
             ...this.request(options.timeout),
-            body: {
-              diffs: batch.map(
-                ({
-                  diff,
-                  branchId,
-                  versionId,
-                  fileId,
-                  localContent,
-                  locale,
-                }) => ({
-                  diff,
-                  branchId,
-                  versionId,
-                  fileId,
-                  localContent,
-                  locale: this.resolveServiceLocale(locale),
-                })
-              ),
-            },
+            body: { diffs: batch },
           })
         ),
       ({ branchId = '', versionId, fileId, locale }, failure) => [
@@ -1092,35 +1088,34 @@ export class ProjectHandle extends GTRuntime {
       DEFAULT_BATCH_SIZE,
       async (batch) => {
         const request = this.request(options.timeout);
+        const body = {
+          data: batch.map(
+            ({
+              source: { content: _, formatMetadata: _metadata, ...source },
+            }) => ({
+              source: {
+                ...source,
+                locale: this.resolveServiceLocale(source.locale),
+              },
+            })
+          ),
+          ...(sourceLocale !== undefined && {
+            sourceLocale: this.resolveServiceLocale(sourceLocale),
+          }),
+        };
         const contents = await uploadFileContents(
           request,
-          batch.map(({ source }) => source)
+          batch.map(({ source }) => source),
+          jsonByteLength(body)
         );
         return unwrapApiResult(
           await uploadSourceFiles({
             ...request,
             body: {
-              data: batch.map(
-                (
-                  {
-                    source: {
-                      content: _,
-                      formatMetadata: _metadata,
-                      ...source
-                    },
-                  },
-                  index
-                ) => ({
-                  source: {
-                    ...source,
-                    ...contents[index],
-                    locale: this.resolveServiceLocale(source.locale),
-                  },
-                })
-              ),
-              ...(sourceLocale !== undefined && {
-                sourceLocale: this.resolveServiceLocale(sourceLocale),
-              }),
+              ...body,
+              data: body.data.map(({ source }, index) => ({
+                source: { ...source, ...contents[index] },
+              })),
             },
           })
         );
@@ -1137,7 +1132,13 @@ export class ProjectHandle extends GTRuntime {
         },
       ],
       // Each batch stages up to four PUTs; one batch at a time keeps that the limit.
-      { parallel: false }
+      {
+        parallel: false,
+        byteLength: ({ source }) =>
+          jsonByteLength({
+            source: { ...source, content: '', formatMetadata: undefined },
+          }) + fileContentBytes([source]),
+      }
     );
   }
 
@@ -1157,10 +1158,23 @@ export class ProjectHandle extends GTRuntime {
     options: { timeout?: number } = {}
   ): Promise<BatchWriteResponse<UploadTranslationsResponse>> {
     const response = await writeInBatches(
-      files,
+      // A source whose translations no request may name together goes with each part of them.
+      files.flatMap(({ source, translations }) =>
+        splitByUploads(source, translations).map((part) => ({
+          source,
+          translations: part,
+        }))
+      ),
       DEFAULT_BATCH_SIZE,
       async (batch) => {
         const request = this.request(options.timeout);
+        const data = batch.map(({ source, translations }) => ({
+          source: translationSourceFields(source),
+          translations: translations.map((translation) => ({
+            ...translationFields(translation),
+            locale: this.resolveServiceLocale(translation.locale),
+          })),
+        }));
         // Only the content is uploaded: a wider object's formatMetadata has no place in this request.
         const contents = await uploadFileContents(
           request,
@@ -1169,22 +1183,19 @@ export class ProjectHandle extends GTRuntime {
               content,
               fileFormat,
             }))
-          )
+          ),
+          jsonByteLength({ data })
         );
         let next = 0;
         return unwrapApiResult(
           await uploadTranslations({
             ...request,
             body: {
-              data: batch.map(({ source, translations }) => ({
-                source: {
-                  ...translationSourceFields(source),
-                  ...contents[next++],
-                },
+              data: data.map(({ source, translations }) => ({
+                source: { ...source, ...contents[next++] },
                 translations: translations.map((translation) => ({
-                  ...translationFields(translation),
+                  ...translation,
                   ...contents[next++],
-                  locale: this.resolveServiceLocale(translation.locale),
                 })),
               })),
             },
@@ -1202,7 +1213,14 @@ export class ProjectHandle extends GTRuntime {
           status: 'failed' as const,
           ...failure,
         })),
-      { parallel: false }
+      {
+        parallel: false,
+        byteLength: ({ source, translations }) =>
+          jsonByteLength({
+            source: translationSourceFields(source),
+            translations: translations.map(translationFields),
+          }) + fileContentBytes([source, ...translations]),
+      }
     );
     return {
       ...response,

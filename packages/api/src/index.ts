@@ -5,7 +5,13 @@ export type {
   JobResult,
   UnpolledJobResult,
 } from './wrappers/awaitJobs';
-export { DEFAULT_BATCH_SIZE, processBatches } from './wrappers/batch';
+export {
+  createBatches,
+  DEFAULT_BATCH_SIZE,
+  jsonByteLength,
+  MAX_REQUEST_BODY_BYTES,
+  processBatches,
+} from './wrappers/batch';
 export type { BatchOptions } from './wrappers/batch';
 export { API_VERSION, createApiClient } from './wrappers/client';
 export { ApiError, isTransientApiError } from './wrappers/errors';

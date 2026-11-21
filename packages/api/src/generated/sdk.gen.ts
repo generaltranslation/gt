@@ -680,7 +680,7 @@ export const uploadTranslations = <ThrowOnError extends boolean = false>(
 /**
  * Create file uploads
  *
- * Get presigned URLs to PUT 1–100 files (media up to 2GB, others 150MB) for Upload source files or translations; files over 4MB must use one. Requires `project:files:write`.
+ * Get presigned URLs to PUT 1–100 files (media up to 2GB, others 150MB) for Upload source files or translations; use one when that request would be over 4MB. Requires `project:files:write`.
  */
 export const createFileUploads = <ThrowOnError extends boolean = false>(
   options: Options<CreateFileUploadsData, ThrowOnError>
