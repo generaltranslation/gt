@@ -2,6 +2,7 @@ import { render } from 'svelte/server';
 import { beforeEach, describe, expect, it } from 'vitest';
 import Harness from './fixtures/Harness.svelte';
 import SourceFallback from './fixtures/SourceFallback.svelte';
+import { initializeGT } from '../src/runtime/config';
 import { hashesOf, setupGT, withoutComments } from './helpers';
 
 const [pluralHash, numHash] = hashesOf('SourceFallback.svelte');
@@ -53,6 +54,22 @@ describe('<T> source content in a translated locale', () => {
     expect(
       html({ component: SourceFallback, locale: 'fr', translations: {} })
     ).toContain('<p class="num">Total: 1,234.5</p>');
+  });
+
+  it('formats variables in a locale of the default language without a translation', () => {
+    // Mexican Spanish reads Spanish source as it is, with its own separators.
+    initializeGT({
+      defaultLocale: 'es',
+      locales: ['es', 'es-MX'],
+      loadTranslations: async () => ({}),
+    });
+    const body = html({
+      component: SourceFallback,
+      locale: 'es-MX',
+      translations: {},
+    });
+    expect(body).toContain('<p class="num">Total: 1,234.5</p>');
+    expect(body).toContain('<p class="str">Total: 1,234.5</p>');
   });
 
   it('formats translated variables in the active locale', () => {

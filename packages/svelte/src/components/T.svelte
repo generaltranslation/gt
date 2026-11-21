@@ -78,7 +78,7 @@
     return false;
   });
 
-  // Untranslated children render as source content, in the default locale.
+  // Untranslated children render as source content.
   setSourceContent({
     get current() {
       return !valid;

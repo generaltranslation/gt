@@ -1,7 +1,9 @@
 import React from 'react';
+import { initializeI18nConfig } from 'gt-i18n/internal';
 import { describe, expect, it } from 'vitest';
 import {
   renderDefaultChildren,
+  renderPreparedT,
   renderTranslatedChildren,
   renderVariable,
 } from '../renderPipeline.rsc';
@@ -121,6 +123,31 @@ describe('renderVariable locale handling', () => {
     expect(element.props._locale).toBe('en');
     expect(element.props._enableI18n).toBe(false);
   });
+
+  it.each([
+    ['a dialect of the default locale in it', 'en-GB', true, 'en-GB'],
+    ['another language in the default locale', 'fr', true, 'en'],
+    ['a dialect in the default locale without i18n', 'en-GB', false, 'en'],
+  ])(
+    'renders the source variables of a <T> for %s',
+    (_name, locale, enableI18n, expected) => {
+      initializeI18nConfig({
+        defaultLocale: 'en',
+        locales: ['en', 'en-GB', 'fr'],
+      });
+      const result = renderPreparedT({
+        taggedSourceChildren: createNumberVariable(5),
+        targetJsxChildren: undefined,
+        locale,
+        defaultLocale: 'en',
+        enableI18n,
+        shouldTranslate: enableI18n && locale === 'fr',
+      }) as React.ReactElement<{ _locale: string }>;
+      Reflect.deleteProperty(globalThis, '__generaltranslation');
+
+      expect(result.props._locale).toBe(expected);
+    }
+  );
 
   it('passes the target locale when rendering translated variables', () => {
     const result = renderTranslatedChildren({

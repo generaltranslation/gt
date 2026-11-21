@@ -29,3 +29,19 @@ export function _isSameLanguage(...locales: (string | string[])[]): boolean {
     return false;
   }
 }
+
+/**
+ * Whether `locale` reads the language that `sourceLocale` content is written
+ * in. Source content then formats in `locale`: en text keeps en-GB dates for
+ * an en-GB reader. A locale that cannot be parsed is no match.
+ */
+export function isSourceLanguage(
+  locale: string,
+  sourceLocale: string
+): boolean {
+  if (locale === sourceLocale) return true;
+  const language = _getLocaleLanguage(locale);
+  return (
+    language !== undefined && language === _getLocaleLanguage(sourceLocale)
+  );
+}

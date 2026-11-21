@@ -91,7 +91,10 @@ export function renderMessage(
       );
     }
   }
-  output ??= formatTree(tree, defaultLocale, values, formats);
+  if (output === undefined) {
+    outputLocale = getI18nConfig().getSourceFormatLocale(locale);
+    output = formatTree(tree, outputLocale, values, formats);
+  }
 
   return maxChars == null
     ? output
@@ -173,7 +176,10 @@ export function renderPrecomputedMessage(
       );
     }
   }
-  output ??= formatTree(tree, defaultLocale, values, formats);
+  if (output === undefined) {
+    outputLocale = config.getSourceFormatLocale(locale);
+    output = formatTree(tree, outputLocale, values, formats);
+  }
   return maxChars == null
     ? output
     : formatCutoff(output, {

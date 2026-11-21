@@ -92,6 +92,14 @@ describe('getFormatLocales', () => {
     ]);
   });
 
+  it('uses a dialect of the default locale, which reads the source as it is', () => {
+    setup({ locale: 'en-GB', locales: ['en', 'en-GB', 'fr'] });
+
+    expect(getFormatLocales({ locale: 'en-GB', enableI18n: true })).toEqual([
+      'en-GB',
+    ]);
+  });
+
   it('returns only the default locale when translation is disabled', () => {
     setup({ locale: 'fr', enableI18n: false });
 

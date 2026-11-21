@@ -33,7 +33,11 @@ import {
   type VNode,
   type VNodeChild,
 } from 'vue';
-import { getFormatLocales, isBranchAttribute } from '../components/utils';
+import {
+  getFormatLocales,
+  getSourceFormatLocale,
+  isBranchAttribute,
+} from '../components/utils';
 import type { GTState } from '../types';
 
 const variableTypes = {
@@ -216,7 +220,7 @@ export function translateVueChildren(
               source,
               state,
               identityRender,
-              state.defaultLocale
+              getSourceFormatLocale(state)
             )
           : renderNodes(
               source,

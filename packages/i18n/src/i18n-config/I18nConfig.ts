@@ -2,7 +2,10 @@ import type { LocaleConfig, CustomMapping } from '@generaltranslation/format';
 import { GTRuntime } from 'generaltranslation/runtime';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { GTIntl } from 'generaltranslation/internal';
-import { defaultDefaultLocale } from '@generaltranslation/format/internal';
+import {
+  defaultDefaultLocale,
+  isSourceLanguage,
+} from '@generaltranslation/format/internal';
 import type { GTConfig } from 'generaltranslation';
 import {
   getLoadTranslationsType,
@@ -40,6 +43,7 @@ export type LocaleCandidates = string | string[] | undefined;
 export class I18nConfig extends GTIntl {
   protected runtimeConfig: RuntimeConfig;
   private gtServicesEnabled: boolean;
+  private sourceFormatLocales = new Map<string, string>();
 
   constructor(params: I18nConfigParams = {}) {
     const gtServicesEnabled = resolveGTServicesEnabled(params);
@@ -98,6 +102,30 @@ export class I18nConfig extends GTIntl {
 
   resolveSupportedLocale(candidates?: LocaleCandidates): string {
     return this.determineLocale(candidates) || this.defaultLocale;
+  }
+
+  /**
+   * The locale source content formats in: `locale` when it reads the default
+   * locale's language, so en text keeps en-GB dates for en-GB, else the
+   * default locale.
+   */
+  getSourceFormatLocale(locale: string): string {
+    const { defaultLocale } = this;
+    if (locale === defaultLocale) return locale;
+    let formatLocale = this.sourceFormatLocales.get(locale);
+    if (formatLocale === undefined) {
+      formatLocale = isSourceLanguage(
+        this.resolveCanonicalLocale(locale),
+        this.resolveCanonicalLocale(defaultLocale)
+      )
+        ? locale
+        : defaultLocale;
+      // Kept for configured locales only: a request's locale is not a cache key.
+      if (this.locales.includes(locale)) {
+        this.sourceFormatLocales.set(locale, formatLocale);
+      }
+    }
+    return formatLocale;
   }
 
   resolveLocale(locale: string): string {

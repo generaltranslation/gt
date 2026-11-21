@@ -13,9 +13,9 @@ export function setSourceContent(source: SourceContent): void {
 
 /**
  * Returns the locale that content renders in, as a reactive `current`
- * property: the active locale, or the default locale while a `<T>` renders
- * its source content because it has no translation, as in gt-react. Call it
- * during component initialization.
+ * property: the active locale, or the locale source content formats in
+ * while a `<T>` renders its source content because it has no translation, as
+ * in gt-react. Call it during component initialization.
  */
 export function useContentLocale(): { readonly current: string } {
   const state = getGTState();
@@ -23,7 +23,7 @@ export function useContentLocale(): { readonly current: string } {
   return {
     get current() {
       return source?.current
-        ? getI18nConfig().getDefaultLocale()
+        ? getI18nConfig().getSourceFormatLocale(state.locale)
         : state.locale;
     },
   };

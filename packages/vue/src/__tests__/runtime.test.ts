@@ -2372,6 +2372,12 @@ describe('gt-vue runtime', () => {
       stripFragmentMarkers(await renderWithPlugin(MissingRoot, missingPlugin))
     ).toBe(`other|${expected('en-US')}`);
 
+    // British English reads the American source as it is, in its own formats.
+    await missingPlugin.setLocale('en-GB');
+    expect(
+      stripFragmentMarkers(await renderWithPlugin(MissingRoot, missingPlugin))
+    ).toBe(`other|${expected('en-GB')}`);
+
     const translatedPlugin = createGT({
       defaultLocale: 'en-US',
       loadTranslations: async () => ({
