@@ -102,12 +102,11 @@ export type SaveLocalEditsOutcome = {
 export const saveLocalEditsMessage = (
   outcome: SaveLocalEditsOutcome
 ): string => {
-  if (outcome.skipped > 0) {
-    return outcome.saved
-      ? `Local edits saved, ${outcome.skipped} could not be saved`
-      : `${outcome.skipped} local edit(s) could not be saved`;
-  }
+  // The count covers locales the collector skipped, which can include an
+  // untouched file whose baseline only failed to parse. Name the count
+  // instead of claiming the edits themselves were unsaved.
+  const skipped = outcome.skipped > 0 ? ` (skipped: ${outcome.skipped})` : '';
   return outcome.saved
-    ? 'Local edits saved successfully'
-    : 'No local edits were saved';
+    ? `Local edits saved successfully${skipped}`
+    : `No local edits were saved${skipped}`;
 };

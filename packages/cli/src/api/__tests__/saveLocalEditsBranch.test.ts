@@ -200,7 +200,7 @@ describe('saveLocalEdits - template lookup uses the resolved branch', () => {
     const outcome = await saveLocalEdits(settings);
 
     expect(outcome).toEqual({ saved: true, skipped: 1 });
-    expect(saveLocalEditsMessage(outcome)).toContain('1 could not be saved');
+    expect(saveLocalEditsMessage(outcome)).toContain('skipped: 1');
   });
 
   it('does not call a save partial because of an earlier unrelated warning', async () => {
@@ -233,8 +233,6 @@ describe('saveLocalEdits - template lookup uses the resolved branch', () => {
     const outcome = await saveLocalEdits(settings);
 
     expect(outcome).toEqual({ saved: false, skipped: 1 });
-    expect(saveLocalEditsMessage(outcome)).toContain(
-      '1 local edit(s) could not be saved'
-    );
+    expect(saveLocalEditsMessage(outcome)).toContain('skipped: 1');
   });
 });
