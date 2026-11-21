@@ -60,8 +60,8 @@ import { collectAndSendUserEditDiffs } from '../collectUserEditDiffs.js';
 import { runPublishWorkflow } from '../../workflows/publish.js';
 import { aggregateFiles } from '../../formats/files/aggregateFiles.js';
 import { BranchStep } from '../../workflows/steps/BranchStep.js';
-import { logger } from '../../console/logger.js';
 import { clearWarnings, recordWarning } from '../../state/translateWarnings.js';
+import { saveLocalEditsMessage } from '../saveLocalEdits.js';
 
 describe('saveLocalEdits - template lookup uses the resolved branch', () => {
   const originalCwd = process.cwd();
@@ -148,9 +148,9 @@ describe('saveLocalEdits - template lookup uses the resolved branch', () => {
     writeLockFile();
     vi.mocked(collectAndSendUserEditDiffs).mockResolvedValue(false);
 
-    const saved = await saveLocalEdits(settings);
+    const outcome = await saveLocalEdits(settings);
 
-    expect(saved).toBe(false);
+    expect(outcome).toEqual({ saved: false, skipped: 0 });
     expect(collectAndSendUserEditDiffs).toHaveBeenCalledTimes(1);
     // Nothing was published without a diff.
     expect(runPublishWorkflow).not.toHaveBeenCalled();
@@ -176,9 +176,9 @@ describe('saveLocalEdits - template lookup uses the resolved branch', () => {
       publishMap: new Map<string, boolean>(),
     });
 
-    const saved = await saveLocalEdits(settings);
+    const outcome = await saveLocalEdits(settings);
 
-    expect(saved).toBe(false);
+    expect(outcome).toEqual({ saved: false, skipped: 0 });
     expect(BranchStep).not.toHaveBeenCalled();
     expect(collectAndSendUserEditDiffs).not.toHaveBeenCalled();
   });
@@ -186,23 +186,37 @@ describe('saveLocalEdits - template lookup uses the resolved branch', () => {
   it('says a partial save is partial instead of reporting a clean success', async () => {
     const settings = buildSettings();
     writeLockFile();
-    // One locale was saved and another could not be, which the collector
-    // reports as a skipped file warning.
-    vi.mocked(collectAndSendUserEditDiffs).mockResolvedValueOnce(true);
-    recordWarning(
-      'skipped_file',
-      'docs/ja/doc.md',
-      'the ja baseline could not be retrieved'
-    );
-
-    await saveLocalEdits(settings);
-
-    const messages = vi
-      .mocked(logger.createSpinner)
-      .mock.results.flatMap((result) =>
-        result.value.stop.mock.calls.map(([message]) => String(message))
+    // The collector saved this locale and skipped another one, which it
+    // reports as a warning of its own.
+    vi.mocked(collectAndSendUserEditDiffs).mockImplementationOnce(async () => {
+      recordWarning(
+        'skipped_file',
+        'docs/ja/doc.md',
+        'the ja baseline could not be retrieved'
       );
-    expect(messages.join('\n')).toContain('could not be saved');
+      return true;
+    });
+
+    const outcome = await saveLocalEdits(settings);
+
+    expect(outcome).toEqual({ saved: true, skipped: 1 });
+    expect(saveLocalEditsMessage(outcome)).toContain('1 could not be saved');
+  });
+
+  it('does not call a save partial because of an earlier unrelated warning', async () => {
+    const settings = buildSettings();
+    writeLockFile();
+    // A warning left over from an earlier collection describes a different
+    // run and must not turn this run's clean save into a partial one.
+    recordWarning('skipped_file', 'docs/ja/old.md', 'unrelated earlier skip');
+    vi.mocked(collectAndSendUserEditDiffs).mockResolvedValueOnce(true);
+
+    const outcome = await saveLocalEdits(settings);
+
+    expect(outcome).toEqual({ saved: true, skipped: 0 });
+    expect(saveLocalEditsMessage(outcome)).toBe(
+      'Local edits saved successfully'
+    );
     clearWarnings();
   });
 });

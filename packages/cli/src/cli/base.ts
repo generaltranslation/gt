@@ -109,7 +109,10 @@ import {
   createLoadTranslationsFile,
   findLoadTranslationsFiles,
 } from '../fs/createLoadTranslationsFile.js';
-import { saveLocalEdits } from '../api/saveLocalEdits.js';
+import {
+  saveLocalEdits,
+  saveLocalEditsMessage,
+} from '../api/saveLocalEdits.js';
 import { resolveProjectId } from '../fs/utils.js';
 import {
   hasValidCredentials,
@@ -416,10 +419,8 @@ export class BaseCLI {
         });
         if (!hasValidCredentials(settings) || !hasValidServiceLocales(settings))
           return exitSync(1);
-        const saved = await saveLocalEdits(settings);
-        logger.endCommand(
-          saved === false ? 'No local edits were saved' : 'Saved local edits'
-        );
+        const outcome = await saveLocalEdits(settings);
+        logger.endCommand(saveLocalEditsMessage(outcome));
       });
   }
 
