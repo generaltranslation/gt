@@ -367,6 +367,8 @@ describe('branch component prop types', () => {
     const name = 'admin' as string;
     const isAdmin = true as boolean;
     const gender = 'other' as 'female' | 'other';
+    const mode = 'admin' as 'admin' | 'value';
+    const side = 'branch' as 'branch' | 'trunk';
     const elements = [
       <Select key={0} value={status} admin='A' guest='G' />,
       <Select key={1} value={status} admin='A' children='O' />,
@@ -395,7 +397,11 @@ describe('branch component prop types', () => {
       <Select key={16} value={gender} female='F' children='O' />,
       // @ts-expect-error the value other has no prop, so children are required
       <Select key={17} value={gender} female='F' />,
+      <Select key={18} value={mode} admin='A' children='O' />,
+      // @ts-expect-error the value named value has no prop, so children are required
+      <Select key={19} value={mode} admin='A' />,
+      <Select key={20} value={side} branch='B' trunk='T' />,
     ];
-    expect(elements).toHaveLength(17);
+    expect(elements).toHaveLength(20);
   });
 });
