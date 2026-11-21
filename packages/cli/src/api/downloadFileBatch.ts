@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import { stringifySortedJson } from '../fs/sortedJson.js';
 import * as path from 'path';
 import { isBinaryFileFormat, type ProjectHandle } from 'generaltranslation';
 import type { QueryFilesContentResponse } from '@generaltranslation/api';
@@ -84,16 +85,7 @@ function countGtJsonEntries(content: string): number | undefined {
 }
 
 function sortJsonString(data: string): string {
-  return JSON.stringify(JSON.parse(data), sortKeys, 2);
-}
-
-function sortKeys(_key: string, value: unknown): unknown {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return value;
-  }
-  return Object.fromEntries(
-    Object.entries(value).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-  );
+  return stringifySortedJson(JSON.parse(data));
 }
 
 /**

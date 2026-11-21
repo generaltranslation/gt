@@ -1,0 +1,18 @@
+{
+  "footer": {
+    "about": "About us",
+    "careers": "Jobs",
+    "privacy": "Privacy policy",
+    "copyright": "© {year} Acme Outfitters. All rights reserved.",
+    "newsletter": {
+      "title": "Join our newsletter",
+      "subscribe": [
+        "Subscribe",
+        {
+          "$context": "Newsletter signup button"
+        }
+      ],
+      "subscribers": "{count, plural, one {Join # other subscriber} other {Join # other subscribers}}"
+    }
+  }
+}

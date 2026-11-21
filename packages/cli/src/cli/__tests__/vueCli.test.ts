@@ -295,6 +295,7 @@ describe('Vue CLI', () => {
         'validate',
         'download',
         'enqueue',
+        'migrate',
       ];
       const reactCommands = [...inlineCommands, 'setup'];
 
