@@ -267,7 +267,7 @@ function getImportKey(
   const name = path.isImportSpecifier()
     ? getImportedName(path.node)
     : 'default';
-  return `${realPath(resolved, follower)}\0${name}`;
+  return `${resolved}\0${name}`;
 }
 
 /** The function a binding declares, defines as a const, or imports. */

@@ -1956,6 +1956,62 @@ ${
     }));
 
     expect(treeUpdates(result).map((u) => u.source)).toEqual(['Save']);
+
+    const { result: chain } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        '// @ts-ignore\n  var tr = t;\n  // @ts-ignore\n  var copy = tr;\n  // @ts-ignore\n  var tr = copy;\n  return tr`Chain`;'
+      ),
+    }));
+
+    expect(treeUpdates(chain).map((u) => u.source)).toEqual(['Chain']);
+  });
+
+  it('follows the same barrel through two symlinked paths to different helpers', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, (dir) => {
+      const root = path.join(projectDir, dir);
+      fs.mkdirSync(path.join(root, 'shared'), { recursive: true });
+      fs.writeFileSync(
+        path.join(root, 'shared/barrel.ts'),
+        "export { label } from './impl';\n"
+      );
+      for (const name of ['a', 'b']) {
+        fs.mkdirSync(path.join(root, name), { recursive: true });
+        fs.symlinkSync(
+          path.join(root, 'shared/barrel.ts'),
+          path.join(root, name, 'barrel.ts')
+        );
+      }
+      return {
+        'tsconfig.json': JSON.stringify({
+          compilerOptions: {
+            baseUrl: '.',
+            preserveSymlinks: true,
+            paths: { '@a': ['a/barrel.ts'], '@b': ['b/barrel.ts'] },
+          },
+        }),
+        'a/impl.ts': nav(
+          nextHost,
+          'export function label(t: GT) {\n  return t`A`;\n}'
+        ),
+        'b/impl.ts': nav(
+          nextHost,
+          'export function label(t: GT) {\n  return t`B`;\n}'
+        ),
+        'page.tsx': withTag(
+          nextHost,
+          'b(t);\n  return a(t);',
+          "import { label as a } from '@a';\nimport { label as b } from '@b';"
+        ),
+      };
+    });
+
+    expect(result.warnings).toEqual([]);
+    expect(
+      treeUpdates(result)
+        .map((u) => u.source)
+        .sort()
+    ).toEqual(['A', 'B']);
   });
 
   it("warns about a tag in a custom hook's array argument", async () => {
