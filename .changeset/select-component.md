@@ -13,7 +13,7 @@
 '@generaltranslation/react-core-linter': major
 '@generaltranslation/format': major
 'generaltranslation': major
-'gt-rrweb': patch
+'gt-rrweb': major
 ---
 
 **Breaking:** the `<Branch>` component is now `<Select>`, the name of the `select()` helper, and its `branch` prop is now `value`. It renders as before.
