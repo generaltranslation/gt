@@ -25,7 +25,7 @@ export type HtmlContentPropValuesRecord = Partial<
  * branches are stored under.
  */
 export const BRANCH_TRANSFORMATIONS = {
-  Branch: 'b',
+  Select: 'b',
   Plural: 'p',
   Ordinal: 'o',
 } as const;
@@ -94,7 +94,7 @@ export type Content = ContentFor<DataFormat>;
  * GT's persisted rich-content wire format.
  *
  * React preserves scalar boolean and null children, including nested element
- * content and Branch or Plural alternatives. Arrays omit those empty-rendering
+ * content and Select or Plural alternatives. Arrays omit those empty-rendering
  * primitives through React's child normalization.
  */
 export type JsxChildren = boolean | null | JsxChild | JsxChild[];

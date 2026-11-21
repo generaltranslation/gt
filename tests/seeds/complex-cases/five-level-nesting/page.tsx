@@ -1,20 +1,20 @@
-import { T, Plural, Branch, Var } from "gt-next";
+import { T, Plural, Select, Var } from "gt-next";
 export default function Home() {
   return (<T>
-    <Branch
-      branch="level1"
+    <Select
+      value="level1"
       option1={
         <Plural
           n={1}
           _1={
-            <Branch
-              branch="level2"
+            <Select
+              value="level2"
               option1={
                 <Plural
                   n={1}
                   _1={
-                    <Branch
-                      branch="level3"
+                    <Select
+                      value="level3"
                       option1={
                         <Plural
                           n={1}

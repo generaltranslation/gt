@@ -28,7 +28,7 @@ import {
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import { isStaticExpression } from '../../evaluateJsx.js';
 import {
-  BRANCH_COMPONENT,
+  SELECT_COMPONENT,
   COUNT_NODE_TYPE,
   DATA_ATTR_PREFIX,
   DERIVE_COMPONENT,
@@ -366,13 +366,13 @@ function buildJSXTree({
     const props: JSXProps = {};
 
     const branching =
-      componentType === BRANCH_COMPONENT ||
+      componentType === SELECT_COMPONENT ||
       componentType === PLURAL_COMPONENT ||
       componentType === ORDINAL_COMPONENT
         ? componentType
         : undefined;
-    const elementIsBranch = branching === BRANCH_COMPONENT;
-    const elementIsPlural = branching !== undefined && !elementIsBranch;
+    const elementIsSelect = branching === SELECT_COMPONENT;
+    const elementIsPlural = branching !== undefined && !elementIsSelect;
 
     element.openingElement.attributes.forEach((attr, index) => {
       const helperAttribute = helperPath
@@ -384,13 +384,13 @@ function buildJSXTree({
             ? attr.name.name
             : attr.name.name.name;
         let attrValue = null;
-        if (elementIsBranch && attrName.startsWith(DATA_ATTR_PREFIX)) {
+        if (elementIsSelect && attrName.startsWith(DATA_ATTR_PREFIX)) {
           const location = `${attr.loc?.start?.line}:${attr.loc?.start?.column}`;
           output.errors.push(
             warnDataAttrOnBranch(config.file, attrName, location)
           );
         }
-        if ((elementIsPlural || elementIsBranch) && attrName === 'other') {
+        if ((elementIsPlural || elementIsSelect) && attrName === 'other') {
           output.errors.push(
             warnBranchOtherPropSync(
               config.file,
@@ -429,8 +429,8 @@ function buildJSXTree({
             // If its a plural or branch prop
             if (
               (elementIsPlural && isAcceptedPluralForm(attrName as string)) ||
-              (elementIsBranch &&
-                attrName !== 'branch' &&
+              (elementIsSelect &&
+                attrName !== 'value' &&
                 attrName !== 'other' &&
                 !attrName.startsWith(DATA_ATTR_PREFIX))
             ) {
@@ -481,7 +481,7 @@ function buildJSXTree({
           }
         }
         props[attrName] = attrValue;
-      } else if (elementIsPlural || elementIsBranch) {
+      } else if (elementIsPlural || elementIsSelect) {
         // The runtime reads the props a spread carries, which the source does not show.
         output.errors.push(
           warnSpreadOnBranchSync(

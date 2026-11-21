@@ -1,12 +1,12 @@
-import { T, Branch, Var, Num, Currency } from "gt-next";
+import { T, Select, Var, Num, Currency } from "gt-next";
 export default function Home() {
   const variable = "test";
   const count = 5;
   const amount = 100.5;
   return (
     <T>
-      <Branch
-        branch="type"
+      <Select
+        value="type"
         option1={
           <div>
             First: <Var>{variable}</Var>

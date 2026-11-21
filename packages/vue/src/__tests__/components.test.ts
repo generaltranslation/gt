@@ -1,5 +1,5 @@
 import {
-  Branch as ReactBranch,
+  Select as ReactBranch,
   Plural as ReactPlural,
   Var as ReactVar,
   prepareT as prepareReactT,
@@ -21,7 +21,7 @@ import { renderToString } from 'vue/server-renderer';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { getFormatLocales, isBranchAttribute } from '../components/utils';
 import {
-  Branch,
+  Select,
   Currency,
   DateTime,
   Num,
@@ -84,7 +84,7 @@ const BRANCH_RENDER_MATRIX = BRANCH_SOURCE_CASES.flatMap((source) =>
   BRANCH_TARGET_CASES.map((target) => ({ source, target }))
 );
 
-describe('Branch and Plural attributes', () => {
+describe('Select and Plural attributes', () => {
   beforeAll(() => {
     initializeReactI18nConfig({ defaultLocale: 'en' });
   });
@@ -105,11 +105,11 @@ describe('Branch and Plural attributes', () => {
     ).toEqual([]);
   });
 
-  it('preserves direct boolean and null Branch attributes in the rich wire source', () => {
+  it('preserves direct boolean and null Select attributes in the rich wire source', () => {
     const source = serializeVueChildren([
-      h(Branch, {
+      h(Select, {
         active: true,
-        branch: 'active',
+        value: 'active',
         inactive: false,
         pending: '',
         unknown: null,
@@ -117,7 +117,7 @@ describe('Branch and Plural attributes', () => {
     ]);
 
     expect(source).toEqual({
-      t: 'Branch',
+      t: 'Select',
       i: 1,
       d: {
         b: {
@@ -204,11 +204,11 @@ describe('Branch and Plural attributes', () => {
     });
   });
 
-  it('serializes Branch and Plural named slots before same-name primitive attributes', () => {
+  it('serializes Select and Plural named slots before same-name primitive attributes', () => {
     const source = serializeVueChildren([
       h(
-        Branch,
-        { branch: 'formal', formal: false },
+        Select,
+        { value: 'formal', formal: false },
         {
           default: () => 'Fallback',
           formal: () => 'Named slot',
@@ -226,7 +226,7 @@ describe('Branch and Plural attributes', () => {
 
     expect(source).toEqual([
       {
-        t: 'Branch',
+        t: 'Select',
         i: 1,
         d: { b: { formal: 'Named slot', other: 'Fallback' }, t: 'b' },
       },
@@ -244,8 +244,8 @@ describe('Branch and Plural attributes', () => {
   it('preserves empty and literal named slots independently from default slots', () => {
     const source = serializeVueChildren([
       h(
-        Branch,
-        { branch: 'empty' },
+        Select,
+        { value: 'empty' },
         {
           empty: () => [],
           false: () => [false],
@@ -268,7 +268,7 @@ describe('Branch and Plural attributes', () => {
 
     expect(source).toEqual([
       {
-        t: 'Branch',
+        t: 'Select',
         i: 1,
         d: {
           b: { empty: [], false: false, null: null, true: true },
@@ -317,7 +317,7 @@ describe('Branch and Plural attributes', () => {
 
   it('rejects reserved, non-content, and non-primitive attributes', () => {
     const attributes: [string, unknown][] = [
-      ['branch', 'formal'],
+      ['value', 'formal'],
       ['class', 'secret'],
       ['style', 'color: red'],
       ['style', { color: 'red' }],
@@ -350,37 +350,37 @@ describe('Branch and Plural attributes', () => {
   it.each([
     [
       'class',
-      '<Branch branch="class" class="secret">Class fallback</Branch>',
+      '<Select value="class" class="secret">Class fallback</Select>',
       'Class fallback',
     ],
     [
       'style',
-      '<Branch branch="style" :style="{ color: \'red\' }">Style fallback</Branch>',
+      '<Select value="style" :style="{ color: \'red\' }">Style fallback</Select>',
       'Style fallback',
     ],
     [
       'listener',
-      '<Branch branch="onClick" @click="handler">Listener fallback</Branch>',
+      '<Select value="onClick" @click="handler">Listener fallback</Select>',
       'Listener fallback',
     ],
     [
       'object',
-      '<Branch branch="formal" :formal="payload">Object fallback</Branch>',
+      '<Select value="formal" :formal="payload">Object fallback</Select>',
       'Object fallback',
     ],
     [
       'function',
-      '<Branch branch="callback" :callback="handler">Function fallback</Branch>',
+      '<Select value="callback" :callback="handler">Function fallback</Select>',
       'Function fallback',
     ],
     [
       'data attribute',
-      '<Branch branch="data-note" data-note="secret">Data fallback</Branch>',
+      '<Select value="data-note" data-note="secret">Data fallback</Select>',
       'Data fallback',
     ],
     [
       'ARIA attribute',
-      '<Branch branch="aria-label" aria-label="secret">ARIA fallback</Branch>',
+      '<Select value="aria-label" aria-label="secret">ARIA fallback</Select>',
       'ARIA fallback',
     ],
   ])(
@@ -405,7 +405,7 @@ describe('Branch and Plural attributes', () => {
     'renders a standalone %s branch attribute as text',
     async (_label, branch, attribute, expected) => {
       const html = await renderTemplate(
-        `<Branch branch="${branch}" ${attribute}>Fallback</Branch>`
+        `<Select value="${branch}" ${attribute}>Fallback</Select>`
       );
 
       expect(html).toContain(expected);
@@ -421,7 +421,7 @@ describe('Branch and Plural attributes', () => {
     'treats a standalone %s attribute as a present empty branch',
     async (label, attribute) => {
       const html = await renderTemplate(
-        `<div>before<Branch branch="flag" ${attribute}>Fallback</Branch>after</div>`
+        `<div>before<Select value="flag" ${attribute}>Fallback</Select>after</div>`
       );
 
       expect(html).toContain('beforeafter');
@@ -430,9 +430,9 @@ describe('Branch and Plural attributes', () => {
     }
   );
 
-  it('prefers a named Branch slot over an attribute with the same name', async () => {
+  it('prefers a named Select slot over an attribute with the same name', async () => {
     const html = await renderTemplate(
-      '<Branch branch="formal" formal="Attribute"><template #formal>Slot</template>Fallback</Branch>'
+      '<Select value="formal" formal="Attribute"><template #formal>Slot</template>Fallback</Select>'
     );
 
     expect(html).toContain('Slot');
@@ -440,7 +440,7 @@ describe('Branch and Plural attributes', () => {
     expect(html).not.toContain('Fallback');
   });
 
-  it('keeps empty Branch slots and null Plural slots selected', async () => {
+  it('keeps empty Select slots and null Plural slots selected', async () => {
     const Root = defineComponent({
       setup() {
         return () =>
@@ -448,9 +448,9 @@ describe('Branch and Plural attributes', () => {
             default: () => [
               'before',
               h(
-                Branch,
-                { branch: 'empty' },
-                { default: () => ['Branch fallback'], empty: () => [] }
+                Select,
+                { value: 'empty' },
+                { default: () => ['Select fallback'], empty: () => [] }
               ),
               'after|',
               h(
@@ -470,7 +470,7 @@ describe('Branch and Plural attributes', () => {
 
   it('selects a data-* named slot without treating the matching attribute as content', async () => {
     const html = await renderTemplate(
-      '<Branch branch="data-note" data-note="Attribute"><template #data-note>Named slot</template>Fallback</Branch>'
+      '<Select value="data-note" data-note="Attribute"><template #data-note>Named slot</template>Fallback</Select>'
     );
 
     expect(html).toContain('Named slot');
@@ -480,7 +480,7 @@ describe('Branch and Plural attributes', () => {
 
   it('selects a data-* named slot inside default-locale rich content', async () => {
     const html = await renderTemplate(
-      '<T><Branch branch="data-note" data-note="Attribute"><template #data-note>Source named slot</template>Source fallback</Branch></T>'
+      '<T><Select value="data-note" data-note="Attribute"><template #data-note>Source named slot</template>Source fallback</Select></T>'
     );
 
     expect(html).toContain('Source named slot');
@@ -490,7 +490,7 @@ describe('Branch and Plural attributes', () => {
 
   it('selects a translated data-* named slot inside rich content', async () => {
     const source: JsxChildren = {
-      t: 'Branch',
+      t: 'Select',
       i: 1,
       d: {
         b: { 'data-note': 'Source named slot', other: 'Source fallback' },
@@ -498,7 +498,7 @@ describe('Branch and Plural attributes', () => {
       },
     };
     const target: JsxChildren = {
-      t: 'Branch',
+      t: 'Select',
       i: 1,
       d: {
         b: {
@@ -514,7 +514,7 @@ describe('Branch and Plural attributes', () => {
     await plugin.setLocale('fr');
 
     const html = await renderTemplate(
-      '<T><Branch branch="data-note" data-note="Attribute"><template #data-note>Source named slot</template>Source fallback</Branch></T>',
+      '<T><Select value="data-note" data-note="Attribute"><template #data-note>Source named slot</template>Source fallback</Select></T>',
       undefined,
       plugin
     );
@@ -525,9 +525,9 @@ describe('Branch and Plural attributes', () => {
     expect(html).not.toContain('Translated fallback');
   });
 
-  it('uses the same filtered inputs for a rich Branch hash', async () => {
+  it('uses the same filtered inputs for a rich Select hash', async () => {
     const source: JsxChildren = {
-      t: 'Branch',
+      t: 'Select',
       i: 1,
       d: {
         b: {
@@ -542,7 +542,7 @@ describe('Branch and Plural attributes', () => {
       },
     };
     const target: JsxChildren = {
-      t: 'Branch',
+      t: 'Select',
       i: 1,
       d: {
         b: {
@@ -562,7 +562,7 @@ describe('Branch and Plural attributes', () => {
     await plugin.setLocale('fr');
 
     const html = await renderTemplate(
-      '<T><Branch branch="formal" class="secret" :style="{ color: \'red\' }" @click="handler" formal="Attribute" :count="12" :large="12n" :flag="false" :empty="null" :payload="payload" :callback="handler" data-note="private" aria-label="Greeting"><template #formal>Slot source</template>Fallback</Branch></T>',
+      '<T><Select value="formal" class="secret" :style="{ color: \'red\' }" @click="handler" formal="Attribute" :count="12" :large="12n" :flag="false" :empty="null" :payload="payload" :callback="handler" data-note="private" aria-label="Greeting"><template #formal>Slot source</template>Fallback</Select></T>',
       () => ({
         handler: () => 'secret listener',
         payload: { label: 'secret object' },
@@ -617,7 +617,7 @@ describe('Branch and Plural attributes', () => {
       const html = await renderTemplate(
         typeof value === 'number'
           ? `<Plural :n="${value}" _0="None" one="One"><template #_1>Exactly one</template>Fallback</Plural>`
-          : `<Branch branch="${value}" admin="Admin">Someone</Branch>`
+          : `<Select value="${value}" admin="Admin">Someone</Select>`
       );
 
       expect(html).toContain(expected);
@@ -694,12 +694,12 @@ describe('Branch and Plural attributes', () => {
 
   it('lets the source pick when the translation has no branch for the value', async () => {
     const source: JsxChildren = {
-      t: 'Branch',
+      t: 'Select',
       i: 1,
       d: { b: { a: 'A', b: 'B', other: 'Other' }, t: 'b' },
     };
     const target: JsxChildren = {
-      t: 'Branch',
+      t: 'Select',
       i: 1,
       d: { b: { b: 'B traduit' }, t: 'b' },
     };
@@ -710,7 +710,7 @@ describe('Branch and Plural attributes', () => {
 
     expect(
       await renderTemplate(
-        '<T><Branch branch="a" a="A" b="B">Other</Branch></T>',
+        '<T><Select value="a" a="A" b="B">Other</Select></T>',
         undefined,
         plugin
       )
@@ -780,17 +780,17 @@ describe('Branch and Plural attributes', () => {
     const source: JsxChildren = [
       'before',
       {
-        t: 'Branch',
+        t: 'Select',
         i: 1,
         d: { b: { active: true }, t: 'b' },
       },
       {
-        t: 'Branch',
+        t: 'Select',
         i: 2,
         d: { b: { inactive: false }, t: 'b' },
       },
       {
-        t: 'Branch',
+        t: 'Select',
         i: 3,
         d: { b: { unknown: null }, t: 'b' },
       },
@@ -799,17 +799,17 @@ describe('Branch and Plural attributes', () => {
     const target: JsxChildren = [
       'avant',
       {
-        t: 'Branch',
+        t: 'Select',
         i: 1,
         d: { b: { active: false }, t: 'b' },
       },
       {
-        t: 'Branch',
+        t: 'Select',
         i: 2,
         d: { b: { inactive: true }, t: 'b' },
       },
       {
-        t: 'Branch',
+        t: 'Select',
         i: 3,
         d: { b: { unknown: null }, t: 'b' },
       },
@@ -821,9 +821,9 @@ describe('Branch and Plural attributes', () => {
           h(T, null, {
             default: () => [
               'before',
-              h(Branch, { active: true, branch: 'active' }),
-              h(Branch, { branch: 'inactive', inactive: false }),
-              h(Branch, { branch: 'unknown', unknown: null }),
+              h(Select, { active: true, value: 'active' }),
+              h(Select, { value: 'inactive', inactive: false }),
+              h(Select, { value: 'unknown', unknown: null }),
               'after',
             ],
           });
@@ -1080,7 +1080,7 @@ async function renderTemplate(
   plugin = createGT()
 ): Promise<string> {
   const Root = defineComponent({
-    components: { Branch, Ordinal, Plural, T } satisfies Record<
+    components: { Select, Ordinal, Plural, T } satisfies Record<
       string,
       Component
     >,
@@ -1142,7 +1142,7 @@ async function renderVueMatrixCase(
   );
 }
 
-/** Creates a React Branch or Plural with an explicit rich default. */
+/** Creates a React Select or Plural with an explicit rich default. */
 function createReactMatrixSource(
   transformation: BranchTransformation,
   sourceValue: BranchSourceValue
@@ -1151,7 +1151,7 @@ function createReactMatrixSource(
   const props: Record<string, unknown> = {
     children: React.createElement('em', null, 'SOURCE DEFAULT'),
     ...(transformation === 'branch'
-      ? { branch: branchName }
+      ? { value: branchName }
       : {
           _enableI18n: true,
           _locale: 'en',
@@ -1178,14 +1178,14 @@ function createReactMatrixSource(
   );
 }
 
-/** Creates a Vue Branch or Plural with the same explicit rich default. */
+/** Creates a Vue Select or Plural with the same explicit rich default. */
 function createVueMatrixSource(
   transformation: BranchTransformation,
   sourceValue: BranchSourceValue
 ): VNode {
   const branchName = transformation === 'branch' ? 'selected' : 'other';
   const props: Record<string, unknown> =
-    transformation === 'branch' ? { branch: branchName } : { n: 2 };
+    transformation === 'branch' ? { value: branchName } : { n: 2 };
   const slots: Record<string, () => VNodeChild> = {
     default: () => h('em', null, 'SOURCE DEFAULT'),
   };
@@ -1199,7 +1199,7 @@ function createVueMatrixSource(
   } else {
     props[branchName] = sourceValue;
   }
-  return h(transformation === 'branch' ? Branch : Plural, props, slots);
+  return h(transformation === 'branch' ? Select : Plural, props, slots);
 }
 
 /** Builds a translated transform record with an explicit target default. */
@@ -1209,7 +1209,7 @@ function createMatrixTarget(
 ): JsxChildren {
   const branchName = transformation === 'branch' ? 'selected' : 'other';
   return {
-    t: transformation === 'branch' ? 'Branch' : 'Plural',
+    t: transformation === 'branch' ? 'Select' : 'Plural',
     i: 1,
     d: {
       b: { [branchName]: value },

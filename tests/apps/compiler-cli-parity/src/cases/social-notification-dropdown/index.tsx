@@ -1,4 +1,4 @@
-import { Branch, Plural } from 'gt-react';
+import { Select, Plural } from 'gt-react';
 
 export default function SocialNotificationDropdown() {
   const notifications = [
@@ -23,12 +23,12 @@ export default function SocialNotificationDropdown() {
       <ul>
         {notifications.map((n) => (
           <li key={n.id}>
-            <Branch
-              branch={n.type}
+            <Select
+              value={n.type}
               like={<span><strong>{n.actor}</strong> liked {n.target}</span>}
               follow={<span><strong>{n.actor}</strong> started following you</span>}
               mention={<span><strong>{n.actor}</strong> mentioned you in {n.target}</span>}
-            ><span>New notification</span></Branch>
+            ><span>New notification</span></Select>
             <time>{n.time}</time>
           </li>
         ))}

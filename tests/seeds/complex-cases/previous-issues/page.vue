@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Branch, Plural, T, Var } from 'gt-vue';
+import { Select, Plural, T, Var } from 'gt-vue';
 import { Fragment } from 'vue';
 
 const count = 5;
@@ -17,9 +17,9 @@ const variable = 'test';
     >
       <template #_1><Fragment>Single file</Fragment></template>
     <template #default>Other files</template></Plural>
-    <Branch branch="context" option1="" option2="   padded   ">
+    <Select value="context" option1="" option2="   padded   ">
       <template #option3><Var>{{ variable }}</Var></template>
       <template #option4><Fragment>fragment content</Fragment></template>
       <template #option5><div>element content</div></template>
-    </Branch></T>
+    </Select></T>
 </template>

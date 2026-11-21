@@ -3,7 +3,7 @@ import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { getRuntimeEnvironment } from 'gt-i18n/internal';
 
 // Branches are keyed as in stored content: `=0`, a plural category, a
-// `<Branch>` value, or `other`. Stored content drops a branch whose content is
+// `<Select>` value, or `other`. Stored content drops a branch whose content is
 // undefined, so such a branch counts as absent here too.
 
 function pick<T>(branches: Record<string, T>, key: string): T | undefined {
@@ -33,11 +33,11 @@ export function selectPluralKey(
 
 /** The key of the branch named by the value, then `other`. */
 export function selectBranchKey(
-  branch: unknown,
+  value: unknown,
   branches: Record<string, unknown>
 ): string {
-  return branch != null && pick(branches, String(branch)) !== undefined
-    ? String(branch)
+  return value != null && pick(branches, String(value)) !== undefined
+    ? String(value)
     : 'other';
 }
 
@@ -84,21 +84,21 @@ export function getPluralBranch<T>(
 }
 
 /**
- * The source branch of a `<Branch>`, which reports a value with no branch.
+ * The source branch of a `<Select>`, which reports a value with no branch.
  * `key` is the branch a translation picked; without one the source picks.
  */
 export function getBranch<T>(
-  branch: unknown,
+  value: unknown,
   branches: Record<string, T>,
-  key = selectBranchKey(branch, branches)
+  key = selectBranchKey(value, branches)
 ): T | undefined {
   const selected = pickOrOther(branches, key);
   if (selected === undefined) {
     report({
-      whatHappened: '<Branch> has no branch for its value',
+      whatHappened: '<Select> has no branch for its value',
       fix: 'Give it children to render as the fallback',
       rendered: 'Nothing was rendered',
-      details: `branch: ${String(branch)}`,
+      details: `value: ${String(value)}`,
     });
   }
   return selected;

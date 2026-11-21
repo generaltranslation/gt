@@ -16,14 +16,13 @@ export type GTTag = {
   | { transformation?: 'fragment' | 'derive' }
   | { transformation: 'variable'; variableType: VariableType }
   | {
-      transformation: 'branch' | 'plural' | 'ordinal';
+      transformation: 'select' | 'plural' | 'ordinal';
       branches?: Record<string, TaggedChildren>;
     }
 );
 export type TaggedElementProps = Record<string, unknown> & {
   'data-_gt': GTTag;
   children?: TaggedChildren;
-  branch?: string | number | boolean;
   n?: number;
   key?: React.Key;
 };

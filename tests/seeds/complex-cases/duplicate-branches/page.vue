@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Branch, Num, T, Var } from 'gt-vue';
+import { Select, Num, T, Var } from 'gt-vue';
 import { Fragment } from 'vue';
 
 const count = 5;
@@ -7,7 +7,7 @@ const count = 5;
 
 <template>
   <T>
-    <Branch branch="copy">
+    <Select value="copy">
       <template #version1>
         <Fragment>Identical content with <Var>same variable</Var> and{{ ' ' }}<Num :value="count" /></Fragment>
       </template>
@@ -17,6 +17,6 @@ const count = 5;
       <template #different>
         <Fragment>Different content with <Var>other variable</Var> and{{ ' ' }}<Num :value="count + 1" /></Fragment>
       </template>
-    </Branch>
+    </Select>
   </T>
 </template>

@@ -243,7 +243,6 @@ describe('gt-next package exports', () => {
 
   // No `t` or `m`: Next has no synchronous global locale store (RSC's is async).
   const rootExports = [
-    'Branch',
     'Currency',
     'DateTime',
     'Derive',
@@ -257,6 +256,7 @@ describe('gt-next package exports', () => {
     'Plural',
     'RegionSelector',
     'RelativeTime',
+    'Select',
     'T',
     'Var',
     'date',

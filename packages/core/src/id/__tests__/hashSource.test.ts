@@ -12,7 +12,7 @@ describe('hashSource rich wire literals', () => {
     [{ t: 'div', i: 1, c: { t: 'span', i: 2, c: null } }, 'd8ef2c2b0a384ae8'],
     [
       {
-        t: 'Branch',
+        t: 'Select',
         i: 1,
         d: { t: 'b', b: { active: false, empty: null } },
       },

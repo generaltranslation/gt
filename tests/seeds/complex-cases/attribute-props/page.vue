@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { Branch, T } from 'gt-vue';
+import { Select, T } from 'gt-vue';
 </script>
 
 <template>
   <T>
-    <Branch branch="element">
-      <template #input><input placeholder="Branch placeholder" title="Branch title" /></template>
+    <Select value="element">
+      <template #input><input placeholder="Select placeholder" title="Select title" /></template>
       <template #image>
-        <img src="test.jpg" alt="Branch image" title="Branch image title" />
+        <img src="test.jpg" alt="Select image" title="Select image title" />
       </template>
       <template #link>
-        <a href="#" aria-label="Branch link" aria-describedby="desc">Link</a>
+        <a href="#" aria-label="Select link" aria-describedby="desc">Link</a>
       </template>
-    </Branch>
+    </Select>
   </T>
 </template>

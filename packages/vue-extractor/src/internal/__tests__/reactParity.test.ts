@@ -312,10 +312,10 @@ describe('React-authoritative rich-content extraction contract', () => {
       ),
     },
     {
-      name: 'Branch alternatives and fallback content',
+      name: 'Select alternatives and fallback content',
       expectedHash: 'a634a53ae6f90df6',
       expectedSource: {
-        t: 'Branch',
+        t: 'Select',
         i: 1,
         d: {
           b: {
@@ -326,14 +326,14 @@ describe('React-authoritative rich-content extraction contract', () => {
         },
       },
       sfc: templateFixture(
-        '<T><Branch branch="online"><template #online><strong>Online</strong></template><span>Unknown</span></Branch></T>',
+        '<T><Select value="online"><template #online><strong>Online</strong></template><span>Unknown</span></Select></T>',
         '',
-        'Branch, T'
+        'Select, T'
       ),
       jsx: jsxFixture(
-        '<T><Branch branch="online" v-slots={{ online: () => <strong>Online</strong>, default: () => <span>Unknown</span> }}/></T>',
+        '<T><Select value="online" v-slots={{ online: () => <strong>Online</strong>, default: () => <span>Unknown</span> }}/></T>',
         '',
-        'Branch, T'
+        'Select, T'
       ),
     },
     {
@@ -362,10 +362,10 @@ describe('React-authoritative rich-content extraction contract', () => {
       ),
     },
     {
-      name: 'custom components inside Branch alternatives',
+      name: 'custom components inside Select alternatives',
       expectedHash: '44a0464f3d6adcdd',
       expectedSource: {
-        t: 'Branch',
+        t: 'Select',
         i: 1,
         d: {
           b: {
@@ -380,24 +380,24 @@ describe('React-authoritative rich-content extraction contract', () => {
         },
       },
       sfc: templateFixture(
-        '<T><Branch branch="docs"><template #docs><DocsLink to="/docs">Read the docs</DocsLink></template><span>No destination</span></Branch></T>',
+        '<T><Select value="docs"><template #docs><DocsLink to="/docs">Read the docs</DocsLink></template><span>No destination</span></Select></T>',
         "import DocsLink from './DocsLink.vue';",
-        'Branch, T'
+        'Select, T'
       ),
       jsx: jsxFixture(
-        '<T><Branch branch="docs" v-slots={{ docs: () => <DocsLink to="/docs">Read the docs</DocsLink>, default: () => <span>No destination</span> }}/></T>',
+        '<T><Select value="docs" v-slots={{ docs: () => <DocsLink to="/docs">Read the docs</DocsLink>, default: () => <span>No destination</span> }}/></T>',
         "import DocsLink from './DocsLink.vue';",
-        'Branch, T'
+        'Select, T'
       ),
     },
     {
-      name: 'Branch and Var inside a custom component',
+      name: 'Select and Var inside a custom component',
       expectedHash: 'ed95d44c20f4618e',
       expectedSource: {
         t: 'Callout',
         i: 1,
         c: {
-          t: 'Branch',
+          t: 'Select',
           i: 2,
           d: {
             b: {
@@ -409,17 +409,17 @@ describe('React-authoritative rich-content extraction contract', () => {
         },
       },
       sfc: templateFixture(
-        '<T><Callout><Branch branch="welcome"><template #welcome>Welcome, <Var>{{ name }}</Var>!</template>Welcome!</Branch></Callout></T>',
+        '<T><Callout><Select value="welcome"><template #welcome>Welcome, <Var>{{ name }}</Var>!</template>Welcome!</Select></Callout></T>',
         "import Callout from './Callout.vue'; const name = getName();",
-        'Branch, T, Var'
+        'Select, T, Var'
       ),
       jsx: jsxFixture(
-        `<T><Callout><Branch branch="welcome" v-slots={{
+        `<T><Callout><Select value="welcome" v-slots={{
         welcome: () => ['Welcome, ', <Var>{name}</Var>, '!'],
         default: () => 'Welcome!',
       }}/></Callout></T>`,
         "import Callout from './Callout.vue'; const name = getName();",
-        'Branch, T, Var'
+        'Select, T, Var'
       ),
     },
     {
@@ -598,7 +598,7 @@ describe('React CLI parity audit', () => {
       const source = createSfc(
         `
         import {
-          Branch,
+          Select,
           Currency,
           DateTime,
           Num,
@@ -611,7 +611,7 @@ describe('React CLI parity audit', () => {
         const price = 12;
         const createdAt = new Date();
       `,
-        `<T><Branch branch="formal"><template #formal><section><Plural :n="count"><template #one>One <Var>{{ name }}</Var><Num :value="count" /></template><Currency :value="price" /> on <DateTime :value="createdAt" /></Plural></section></template><template #casual>Casual</template>Branch fallback</Branch><hr /><br /></T>`
+        `<T><Select value="formal"><template #formal><section><Plural :n="count"><template #one>One <Var>{{ name }}</Var><Num :value="count" /></template><Currency :value="price" /> on <DateTime :value="createdAt" /></Plural></section></template><template #casual>Casual</template>Select fallback</Select><hr /><br /></T>`
       );
       assertVueCompiles(source, 'nested-formatters');
 
@@ -621,7 +621,7 @@ describe('React CLI parity audit', () => {
       expect(richSources(output.results)).toEqual([
         [
           {
-            t: 'Branch',
+            t: 'Select',
             i: 1,
             d: {
               b: {
@@ -641,7 +641,7 @@ describe('React CLI parity audit', () => {
                   },
                 },
                 casual: 'Casual',
-                other: 'Branch fallback',
+                other: 'Select fallback',
               },
               t: 'b',
             },
@@ -654,8 +654,8 @@ describe('React CLI parity audit', () => {
 
     it('keeps numeric, empty, Unicode, and control branch values static', async () => {
       const source = createSfc(
-        `import { Branch, T } from 'gt-vue';`,
-        `<T><Branch branch="hex" :hex="0x10" :octal="0o10" :binary="0b10" :scientific="1e2" :negative="-3.5" :smallest="5e-324" :underflow="1e-324" :largest="1.7976931348623157e308" :negativeZero="-0" :epsilon="2.220446049250313e-16" empty="" :disabled="false" :nothing="null" unicode="你好" :control="'\\n\\t'">Fallback</Branch></T>`
+        `import { Select, T } from 'gt-vue';`,
+        `<T><Select value="hex" :hex="0x10" :octal="0o10" :binary="0b10" :scientific="1e2" :negative="-3.5" :smallest="5e-324" :underflow="1e-324" :largest="1.7976931348623157e308" :negativeZero="-0" :epsilon="2.220446049250313e-16" empty="" :disabled="false" :nothing="null" unicode="你好" :control="'\\n\\t'">Fallback</Select></T>`
       );
       assertVueCompiles(source, 'primitive-branches');
 
@@ -664,7 +664,7 @@ describe('React CLI parity audit', () => {
       expect(output.errors).toEqual([]);
       expect(richSources(output.results)).toEqual([
         {
-          t: 'Branch',
+          t: 'Select',
           i: 1,
           d: {
             b: {
@@ -779,8 +779,8 @@ describe('React CLI parity audit', () => {
 
     it('preserves empty translations and empty named branches', async () => {
       const source = createSfc(
-        `import { Branch, T } from 'gt-vue';`,
-        `<T></T><T><Branch branch="formal"><template #formal></template><template #casual>Casual</template></Branch></T>`
+        `import { Select, T } from 'gt-vue';`,
+        `<T></T><T><Select value="formal"><template #formal></template><template #casual>Casual</template></Select></T>`
       );
       assertVueCompiles(source, 'empty-content');
 
@@ -790,7 +790,7 @@ describe('React CLI parity audit', () => {
       expect(richSources(output.results)).toEqual([
         undefined,
         {
-          t: 'Branch',
+          t: 'Select',
           i: 1,
           d: { b: { formal: [], casual: 'Casual' }, t: 'b' },
         },
@@ -1083,10 +1083,10 @@ describe('shared rich-content wire format', () => {
   `,
     'independent-branch-numbering': `
     <script setup>
-    import { Branch, T, Var } from 'gt-vue';
+    import { Select, T, Var } from 'gt-vue';
     const name = 'Ada';
     </script>
-    <template><T><Branch branch="formal"><template #formal><strong>Hello</strong> <Var>{{ name }}</Var></template><template #casual><em>Hi</em> <Var>{{ name }}</Var></template>Fallback</Branch><span>After</span></T></template>
+    <template><T><Select value="formal"><template #formal><strong>Hello</strong> <Var>{{ name }}</Var></template><template #casual><em>Hi</em> <Var>{{ name }}</Var></template>Fallback</Select><span>After</span></T></template>
   `,
     'independent-plural-numbering': `
     <script setup>

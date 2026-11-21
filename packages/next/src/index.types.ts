@@ -26,7 +26,7 @@ import {
   N as _N,
   Num as _Num,
   Var as _Var,
-  Branch as _Branch,
+  Select as _Select,
   Ordinal as _Ordinal,
   Plural as _Plural,
   Derive as _Derive,
@@ -293,33 +293,33 @@ export const Derive: typeof _Derive = () => {
 Derive._gtt = { kind: 'derive' };
 
 /**
- * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
- * It allows for flexible content switching based on the `branch` prop and an object of possible branches (`...branches`).
- * If the specified `branch` is present in the `branches` object, it renders the content of that branch.
- * If the `branch` is not found, it renders the provided `children` as fallback content.
+ * The `<Select>` component dynamically renders a specified branch of content or a fallback child component.
+ * It allows for flexible content switching based on the `value` prop and an object of possible branches (`...branches`).
+ * If the specified `value` is present in the `branches` object, it renders the content of that branch.
+ * If the `value` is not found, it renders the provided `children` as fallback content.
  *
  * @example
  * ```jsx
- * <Branch
- *  branch={view}
+ * <Select
+ *  value={view}
  *  summary={<p>This is a summary</p>}
  *  details={<p>Details here</p>}
  * >
  *  <p>Fallback content</p>
- * </Branch>
+ * </Select>
  * ```
  * If `view` is `"summary"`, it renders `<p>This is a summary</p>`. If `view` matches none of the branches, it renders the children, `<p>Fallback content</p>`.
  *
- * @param {string | number | boolean} branch - The value that names the branch to render.
- * @param {any} [children] - The content to render when no branch matches. Required unless the branches cover every value `branch` can have.
+ * @param {string | number | boolean} value - The value that names the branch to render.
+ * @param {any} [children] - The content to render when no branch matches. Required unless the branches cover every value of `value`.
  * @param {...{[key: string]: any}} [branches] - The possible branches as keys and their content as values.
  * @returns {React.JSX.Element} The rendered branch.
  */
-export const Branch: typeof _Branch = () => {
+export const Select: typeof _Select = () => {
   throw new Error(typesFileError);
 };
 /** @internal _gtt - The GT transformation for the component. */
-Branch._gtt = { kind: 'branch' };
+Select._gtt = { kind: 'select' };
 
 /**
  * The `<Plural>` component renders the branch that fits the number `n`, chosen as ICU does: an exact

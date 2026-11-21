@@ -1,12 +1,12 @@
 import type { GTProp, JsxElement, Variable } from '@generaltranslation/format';
 import type { GTParsingFlags } from 'generaltranslation';
 
-/** A direct Branch or Plural source value preserved by the GT wire format. */
+/** A direct Select or Plural source value preserved by the GT wire format. */
 export type VueBranchSource = VueJsxChildren;
 
 /** GT element metadata with the complete branch-source wire contract. */
 export type VueGTProp = Omit<GTProp, 'b'> & {
-  /** Named Branch or Plural sources. */
+  /** Named Select or Plural sources. */
   b?: Record<string, VueBranchSource>;
 };
 
@@ -25,7 +25,7 @@ export type VueJsxChild = string | VueJsxElement | Variable;
  * The complete rich-source wire format returned by Vue extraction.
  *
  * Boolean and null values can occur at scalar root, element-child, Fragment,
- * Branch, and Plural positions. React removes those values from authored child
+ * Select, and Plural positions. React removes those values from authored child
  * arrays, so arrays retain the narrower {@link VueJsxChild} member type.
  * This Vue-specific export documents those exact recursive wire semantics for
  * consumers without requiring framework-internal casts.

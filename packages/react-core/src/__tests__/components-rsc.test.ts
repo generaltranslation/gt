@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 describe('@generaltranslation/react-core/components-rsc', () => {
   it('exports the placeholder RSC component surface', async () => {
     const mod = await import('../components-rsc');
-    expect(mod.Branch).toBeTypeOf('function');
-    expect(mod.GtInternalBranch).toBeTypeOf('function');
+    expect(mod.Select).toBeTypeOf('function');
+    expect(mod.GtInternalSelect).toBeTypeOf('function');
     expect(mod.Currency).toBeTypeOf('function');
     expect(mod.GtInternalCurrency).toBeTypeOf('function');
     expect(mod.DateTime).toBeTypeOf('function');

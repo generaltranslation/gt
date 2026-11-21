@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { T, Plural, Num, Var, Branch } from 'gt-svelte';
+  import { T, Plural, Num, Var, Select } from 'gt-svelte';
   let { count, status, name }: { count: number; status: string; name: string } =
     $props();
 </script>
@@ -14,9 +14,9 @@
 </p>
 <p class="branch">
   <T>
-    <Branch branch={status} away="Away">
+    <Select value={status} away="Away">
       {#snippet online()}<i>Online</i> as <Var>{name}</Var>{/snippet}
       Unknown
-    </Branch>
+    </Select>
   </T>
 </p>

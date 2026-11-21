@@ -1,9 +1,9 @@
-import { T, Branch } from "gt-next";
+import { T, Select } from "gt-next";
 export default function Home() {
   return (
     <T>
-      <Branch
-        branch="language"
+      <Select
+        value="language"
         english="Hello 👋 World"
         chinese="你好世界"
         arabic="مرحبا بالعالم"

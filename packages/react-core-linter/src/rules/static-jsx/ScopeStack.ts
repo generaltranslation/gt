@@ -1,7 +1,7 @@
 export type Scope =
   | 'no-T' // No check
   | 'T' // Check static
-  | 'Branch' // Check attrs
+  | 'Select' // Check attrs
   | 'Plural' // Check attrs; an Ordinal too
   | 'Branching-Attribute'; // Handle JsxExpressionContainers different
 
@@ -29,7 +29,7 @@ export class ScopeStack {
   }
   inBranchingComponent(): boolean {
     const scope = this.stack[this.stack.length - 1];
-    return scope === 'Branch' || scope === 'Plural';
+    return scope === 'Select' || scope === 'Plural';
   }
   inBranchingAttribute(): boolean {
     return this.stack[this.stack.length - 1] === 'Branching-Attribute';

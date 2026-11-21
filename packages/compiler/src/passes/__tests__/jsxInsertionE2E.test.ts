@@ -19,7 +19,7 @@ const REACT = `import { jsx, jsxs } from 'react/jsx-runtime';\nimport { Fragment
 // Vite production builds import only jsxs when a file has no single-child
 // element, but every inserted _Var is a jsx() call.
 const REACT_JSXS_ONLY = `import { jsxs } from 'react/jsx-runtime';\n`;
-const GT = `import { Branch, Plural, Derive } from 'gt-react';\n`;
+const GT = `import { Select, Plural, Derive } from 'gt-react';\n`;
 
 describe('JSX insertion -> collection E2E', () => {
   it.each([
@@ -32,8 +32,8 @@ describe('JSX insertion -> collection E2E', () => {
       `${REACT}jsxs("div", { children: ["Hello ", firstName, ", welcome to ", city, "!"] });`,
     ],
     [
-      '<div><Branch branch={x}>Fallback {name}</Branch></div>',
-      `${REACT}${GT}jsx("div", { children: jsxs(Branch, { branch: x, children: ["Fallback ", name] }) });`,
+      '<div><Select value={x}>Fallback {name}</Select></div>',
+      `${REACT}${GT}jsx("div", { children: jsxs(Select, { value: x, children: ["Fallback ", name] }) });`,
     ],
     [
       '<div><Plural n={count}>You have {count} items</Plural></div>',
@@ -56,8 +56,8 @@ describe('JSX insertion -> collection E2E', () => {
       `${REACT_JSXS_ONLY}jsxs("div", { children: ["Hello ", name] });`,
     ],
     [
-      '<div>Label: <Branch branch={x}>Fallback {name}</Branch></div> in a jsxs-only file',
-      `${REACT_JSXS_ONLY}${GT}jsxs("div", { children: ["Label: ", jsxs(Branch, { branch: x, children: ["Fallback ", name] })] });`,
+      '<div>Label: <Select value={x}>Fallback {name}</Select></div> in a jsxs-only file',
+      `${REACT_JSXS_ONLY}${GT}jsxs("div", { children: ["Label: ", jsxs(Select, { value: x, children: ["Fallback ", name] })] });`,
     ],
   ])('%s is collected without errors', (_jsx, code) => {
     const { errors, state } = fullPipeline(code);
@@ -74,7 +74,7 @@ describe('JSX insertion -> collection E2E', () => {
     expect(manifest).toEqual({ '': ['Hello ', { t: 'Derive', i: 1 }] });
   });
 
-  // Branch/Plural prop values and children are separate branches: the
+  // Select/Plural prop values and children are separate branches: the
   // children are `other`, and each starts counting from the element's id.
   it.each([
     [
@@ -97,14 +97,14 @@ describe('JSX insertion -> collection E2E', () => {
       },
     ],
     [
-      '<Branch branch="x" a={<span>Option A</span>}><>Default</></Branch>',
-      `jsx(Branch, {
-        branch: "x",
+      '<Select value="x" a={<span>Option A</span>}><>Default</></Select>',
+      `jsx(Select, {
+        value: "x",
         a: jsx("span", { children: "Option A" }),
         children: jsx(Fragment, { children: "Default" })
       });`,
       {
-        t: 'Branch',
+        t: 'Select',
         i: 1,
         d: {
           b: {

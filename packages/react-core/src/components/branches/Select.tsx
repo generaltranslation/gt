@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { getBranch } from '../../utils/plurals/getPluralBranch';
 import type { GTMarker } from '../../utils/marker';
 
-type BranchValue = string | number | boolean;
+type SelectValue = string | number | boolean;
 
 // True when some member is any string or number, like `string` or `id-${string}`.
 type IsOpen<K extends string> = K extends unknown
@@ -12,15 +12,15 @@ type IsOpen<K extends string> = K extends unknown
   : never;
 
 // A value named `other` has no prop of its own: it renders the children.
-type Named<V extends BranchValue> = Exclude<`${V}`, 'other'>;
+type Named<V extends SelectValue> = Exclude<`${V}`, 'other'>;
 
 /**
  * Like `select()`: a branch for every value of a finite union, or children as
- * the fallback, as `other` is in `select()`. `branch={isAdmin}` takes `true`
+ * the fallback, as `other` is in `select()`. `value={isAdmin}` takes `true`
  * and `false` branches.
  */
-type BranchProps<V extends BranchValue = BranchValue> = {
-  branch: V;
+type SelectProps<V extends SelectValue = SelectValue> = {
+  value: V;
 } & (true extends IsOpen<`${V}`>
   ? { children: ReactNode; [branch: string]: ReactNode }
   : Partial<Record<Named<V>, ReactNode>> &
@@ -31,8 +31,8 @@ type BranchProps<V extends BranchValue = BranchValue> = {
         | { children: ReactNode }
       ));
 
-type InternalBranchProps = {
-  branch?: BranchValue;
+type InternalSelectProps = {
+  value?: SelectValue;
   children?: ReactNode;
   [branch: string]: ReactNode;
 };
@@ -40,32 +40,32 @@ type InternalBranchProps = {
 // ===== Component ===== //
 
 /**
- * External-store version of the `<Branch>` component.
+ * External-store version of the `<Select>` component.
  */
-function GtInternalBranch({
-  branch,
+function GtInternalSelect({
+  value,
   children,
   ...branches
-}: InternalBranchProps): ReactNode {
+}: InternalSelectProps): ReactNode {
   return getBranch(
-    branch,
+    value,
     { ...branches, other: children },
     // Build tools inject data-* attributes, which are not branches.
-    String(branch).startsWith('data-') ? 'other' : undefined
+    String(value).startsWith('data-') ? 'other' : undefined
   );
 }
 
-function Branch<V extends BranchValue>(
-  props: BranchProps<V>
+function Select<V extends SelectValue>(
+  props: SelectProps<V>
 ): React.JSX.Element {
-  return <GtInternalBranch {...props} />;
+  return <GtInternalSelect {...props} />;
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-Branch._gtt = { kind: 'branch' } satisfies GTMarker;
-GtInternalBranch._gtt = { kind: 'branch', automatic: true } satisfies GTMarker;
+Select._gtt = { kind: 'select' } satisfies GTMarker;
+GtInternalSelect._gtt = { kind: 'select', automatic: true } satisfies GTMarker;
 
 // ===== Exports ===== //
 
-export { GtInternalBranch, Branch };
-export type { BranchProps };
+export { GtInternalSelect, Select };
+export type { SelectProps };

@@ -1,9 +1,9 @@
-import { Branch } from 'gt-react';
+import { Select } from 'gt-react';
 
 export default function BranchTextAlongside() {
   return (
     <div>
-      Results: <Branch branch={'view' as string} list="List view" grid="Grid view">Default view</Branch>
+      Results: <Select value={'view' as string} list="List view" grid="Grid view">Default view</Select>
     </div>
   );
 }

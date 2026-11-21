@@ -1,4 +1,4 @@
-import { Branch } from 'gt-react';
+import { Select } from 'gt-react';
 
 export default function CmsArticleEditor() {
   const article = {
@@ -14,14 +14,14 @@ export default function CmsArticleEditor() {
     <main>
       <header>
         <div>
-          <Branch
-            branch={article.status}
+          <Select
+            value={article.status}
             draft={<span>Draft</span>}
             published={<span>Published</span>}
             scheduled={<span>Scheduled</span>}
           >
             <span>Unknown</span>
-          </Branch>
+          </Select>
           <span>
             Last saved {article.lastSaved}
           </span>

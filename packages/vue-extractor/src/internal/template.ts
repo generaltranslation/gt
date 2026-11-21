@@ -145,7 +145,6 @@ type CompatibleSimpleExpressionNode = SimpleExpressionNode & {
 };
 
 const NON_BRANCH_ATTRIBUTE_NAMES = new Set([
-  'branch',
   'class',
   'n',
   'key',
@@ -155,6 +154,7 @@ const NON_BRANCH_ATTRIBUTE_NAMES = new Set([
   'ref-for',
   'ref-key',
   'style',
+  'value',
 ]);
 
 const RESERVED_T_PROPS = new Set([
@@ -411,7 +411,7 @@ function visitTemplateChildren(
  * A static default slot is React-equivalent `children` and therefore belongs
  * to the surrounding translation. Ordinary named slots are not materialized
  * by gt-vue's runtime, so they remain outside that translation and may contain
- * their own independent T. Branch and Plural are the deliberate exception:
+ * their own independent T. Select and Plural are the deliberate exception:
  * their named slots are persisted as translation branches.
  */
 function visitComponentSlotChildren(
@@ -1810,7 +1810,7 @@ function serializeElement(
           namedSlots: new Map<string, SlotContent>(),
         };
 
-  // The default slot of a Branch or a Plural is its `other` branch, which
+  // The default slot of a Select or a Plural is its `other` branch, which
   // readBranches serializes.
   const children = isBranchComponent(originalName)
     ? []
@@ -1845,7 +1845,7 @@ function serializeElement(
     if (Object.keys(branches).length > 0) {
       // Plural branches are stored under ICU keys: `_0` is `=0`.
       data.b =
-        originalName !== 'Branch'
+        originalName !== 'Select'
           ? Object.fromEntries(
               Object.entries(branches).map(([name, branch]) => [
                 getPluralBranchKey(name),
@@ -2109,7 +2109,7 @@ function validateRichElement(
         context,
         property.loc,
         `Found source-shaping directive ${readDirectiveSourceName(property)} inside a gt-vue <T> component`,
-        'Move conditional or repeated content outside <T>, or use Branch/Plural'
+        'Move conditional or repeated content outside <T>, or use Select/Plural'
       );
     } else if (property.name === 'bind' && !readDirectiveKey(property)) {
       addVueError(
@@ -2264,7 +2264,7 @@ function readBranches(
       continue;
     }
     // Vue's own slot flags start with `_`; an exact plural form is `_0`.
-    if (component !== 'Branch' ? !isAcceptedPluralForm(name) : name[0] === '_')
+    if (component !== 'Select' ? !isAcceptedPluralForm(name) : name[0] === '_')
       continue;
     branches[name] = collapseChildren(
       serializeChildren(
@@ -2303,7 +2303,7 @@ function readBranches(
       key &&
       (!isBranchAttributeName(key) ||
         Object.prototype.hasOwnProperty.call(branches, key) ||
-        (component !== 'Branch' && !isAcceptedPluralForm(key)))
+        (component !== 'Select' && !isAcceptedPluralForm(key)))
     ) {
       continue;
     }

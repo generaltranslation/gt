@@ -1,4 +1,4 @@
-import { Branch, Plural } from 'gt-react';
+import { Select, Plural } from 'gt-react';
 
 export default function SaasTeamMembers() {
   const members = [
@@ -50,12 +50,12 @@ export default function SaasTeamMembers() {
                 </div>
               </td>
               <td>
-                <Branch
-                  branch={member.role}
+                <Select
+                  value={member.role}
                   admin="Admin"
                   member="Member"
                   viewer="View only"
-                >Unknown role</Branch>
+                >Unknown role</Select>
               </td>
               <td>{member.lastActive}</td>
               <td>

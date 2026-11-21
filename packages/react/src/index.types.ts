@@ -17,7 +17,7 @@ export { BrowserGTProvider as GTProvider } from './provider/BrowserGTProvider';
 
 // ===== Components ===== //
 export {
-  Branch,
+  Select,
   Ordinal,
   Plural,
   Derive,
@@ -81,7 +81,7 @@ export {
 
 // ===== Types ===== //
 export type {
-  BranchProps,
+  SelectProps,
   CurrencyProps,
   DateTimeProps,
   JsxTranslationOptions,

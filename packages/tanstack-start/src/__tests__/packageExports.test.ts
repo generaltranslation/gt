@@ -90,7 +90,6 @@ function node(args: string[]): void {
 }
 
 const rootExportNames = [
-  'Branch',
   'Currency',
   'DateTime',
   'Derive',
@@ -102,6 +101,7 @@ const rootExportNames = [
   'Ordinal',
   'Plural',
   'RelativeTime',
+  'Select',
   'T',
   'Var',
   'date',

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Branch, Plural, T, T as T2, useGT } from 'gt-vue';
+import { Select, Plural, T, T as T2, useGT } from 'gt-vue';
 
 const t = useGT();
 const rows = [{ value: 'row' }];
@@ -19,10 +19,10 @@ const rows = [{ value: 'row' }];
     <template #default>Explicit default</template>
   </T>
   <T>
-    <Branch branch="formal">
+    <Select value="formal">
       <template #formal>First</template>
       <template #casual>Second</template>
-    </Branch>
+    </Select>
   </T>
   <T>
     <Plural :n="1">

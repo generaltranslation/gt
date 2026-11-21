@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import {
-  Branch,
+  Select,
   Currency,
   DateTime,
   Num,
@@ -175,7 +175,7 @@ async function changeLocale(event: Event) {
             </div>
             <T>
               <p class="note">
-                <Branch :branch="billing">
+                <Select :value="billing">
                   <template #monthly>
                     Billed every month. Cancel any time.
                   </template>
@@ -183,7 +183,7 @@ async function changeLocale(event: Event) {
                     Billed once a year. Two months are free.
                   </template>
                   <template #default>Billed per seat.</template>
-                </Branch>
+                </Select>
               </p>
             </T>
           </fieldset>

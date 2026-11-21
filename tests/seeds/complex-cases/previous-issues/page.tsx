@@ -1,4 +1,4 @@
-import { T, Plural, Branch, Var } from "gt-next";
+import { T, Plural, Select, Var } from "gt-next";
 export default function Home() {
   const count = 5;
   const variable = "test";
@@ -13,8 +13,8 @@ export default function Home() {
       many="Many files"
       _1={<>Single file</>}
     >Other files</Plural>
-    <Branch
-      branch="context"
+    <Select
+      value="context"
       option1=""
       option2="   padded   "
       option3={<Var>{variable}</Var>}

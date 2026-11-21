@@ -64,10 +64,10 @@ function createRenderDefaultChildren({
         );
       }
 
-      // Branch
-      if (generaltranslation?.transformation === 'branch') {
+      // Select
+      if (generaltranslation?.transformation === 'select') {
         return handleChildren(
-          getBranch(child.props.branch, generaltranslation.branches || {})
+          getBranch(child.props.value, generaltranslation.branches || {})
         );
       }
 

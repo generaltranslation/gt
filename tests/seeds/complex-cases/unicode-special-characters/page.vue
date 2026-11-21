@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { Branch, T } from 'gt-vue';
+import { Select, T } from 'gt-vue';
 </script>
 
 <template>
   <T>
-    <Branch
-      branch="language"
+    <Select
+      value="language"
       english="Hello 👋 World"
       chinese="你好世界"
       arabic="مرحبا بالعالم"

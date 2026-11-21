@@ -18,11 +18,11 @@ import {
   INTERNAL_TRANSLATION_COMPONENT,
   INTERNAL_VAR_COMPONENT,
   VARIABLE_COMPONENTS,
-  BRANCH_COMPONENT,
+  SELECT_COMPONENT,
   PLURAL_COMPONENTS,
   DEFAULT_GT_IMPORT_SOURCE,
   DERIVE_COMPONENT,
-  BRANCH_CONTROL_PROPS,
+  SELECT_CONTROL_PROPS,
   PLURAL_CONTROL_PROPS,
 } from '../constants.js';
 
@@ -164,10 +164,10 @@ function processJsxElement({
     return;
   }
 
-  // Branch/Plural/Derive → opaque, process props for dynamic Var
+  // Select/Plural/Derive → opaque, process props for dynamic Var
   // Must be checked BEFORE user variable check because Derive is in VARIABLE_COMPONENTS
   if (
-    canonicalName === BRANCH_COMPONENT ||
+    canonicalName === SELECT_COMPONENT ||
     PLURAL_COMPONENTS.has(canonicalName) ||
     canonicalName === DERIVE_COMPONENT
   ) {
@@ -366,10 +366,10 @@ function processOpaqueComponentProps({
   path: NodePath<t.JSXElement>;
   canonicalName: string | undefined;
 } & InsertionContext): void {
-  // Branch/Plural children (not rendered, still extracted) — process element-by-element before marking
+  // Select/Plural children (not rendered, still extracted) — process element-by-element before marking
   if (
     insideAutoT &&
-    (canonicalName === BRANCH_COMPONENT || PLURAL_COMPONENTS.has(canonicalName))
+    (canonicalName === SELECT_COMPONENT || PLURAL_COMPONENTS.has(canonicalName))
   ) {
     const childPaths = path.get('children');
     for (const childPath of childPaths) {
@@ -444,7 +444,7 @@ function processOpaqueComponentProps({
   // Mark remaining descendant JSX as processed, but skip auto-inserted nodes
   // so the top-level visitor can still discover JSX inside _Var wrappers.
   // For Derive, only mark props — leave children unmarked so the
-  // top-level visitor can independently process them (e.g. Branch/Plural
+  // top-level visitor can independently process them (e.g. Select/Plural
   // inside Derive should get their own _T, matching compiler behavior).
   if (canonicalName === DERIVE_COMPONENT) {
     for (const attrPath of path.get('openingElement').get('attributes')) {
@@ -467,8 +467,8 @@ function isControlProp(
   propName: string | null
 ): boolean {
   if (!propName) return false;
-  if (canonicalName === BRANCH_COMPONENT) {
-    return BRANCH_CONTROL_PROPS.has(propName) || propName.startsWith('data-');
+  if (canonicalName === SELECT_COMPONENT) {
+    return SELECT_CONTROL_PROPS.has(propName) || propName.startsWith('data-');
   }
   if (PLURAL_COMPONENTS.has(canonicalName)) {
     return PLURAL_CONTROL_PROPS.has(propName);
@@ -523,7 +523,7 @@ function hasOpaqueGTChild(
     if (!typeName) return false;
     const canonical = importAliases[typeName];
     return (
-      canonical === BRANCH_COMPONENT ||
+      canonical === SELECT_COMPONENT ||
       PLURAL_COMPONENTS.has(canonical) ||
       canonical === DERIVE_COMPONENT
     );

@@ -1,4 +1,4 @@
-import { Branch, Num } from 'gt-react';
+import { Select, Num } from 'gt-react';
 
 export default function CommerceOrderStatus() {
   const order = {
@@ -15,15 +15,15 @@ export default function CommerceOrderStatus() {
     <main>
       <header>
         <h1>Order #{order.id}</h1>
-        <Branch
-          branch={order.status}
+        <Select
+          value={order.status}
           processing={<span>Processing</span>}
           shipped={<span>Shipped</span>}
           delivered={<span>Delivered</span>}
           cancelled={<span>Cancelled</span>}
         >
           <span>Unknown</span>
-        </Branch>
+        </Select>
       </header>
 
       <section>

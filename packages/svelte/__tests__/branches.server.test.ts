@@ -2,7 +2,7 @@ import { createRawSnippet } from 'svelte';
 import { render } from 'svelte/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Content } from '@generaltranslation/format';
-import Branch from '../src/components/Branch.svelte';
+import Select from '../src/components/Select.svelte';
 import BareBranch from './fixtures/BareBranch.svelte';
 import Harness from './fixtures/Harness.svelte';
 import NestedBranches from './fixtures/NestedBranches.svelte';
@@ -21,7 +21,7 @@ function html(props: Record<string, unknown>): string {
 }
 
 const statusTranslation = {
-  t: 'Branch',
+  t: 'Select',
   i: 1,
   d: {
     t: 'b',
@@ -41,7 +41,7 @@ const renderFr = (status: unknown, translation: Content = statusTranslation) =>
     translations: { [statusHash]: translation },
   });
 
-// Branch values often come from user input, such as a query parameter.
+// Select values often come from user input, such as a query parameter.
 const prototypeMembers = [
   '__proto__',
   'constructor',
@@ -54,7 +54,7 @@ const prototypeMembers = [
   '__defineGetter__',
 ];
 
-describe('<Branch> values that name Object.prototype members', () => {
+describe('<Select> values that name Object.prototype members', () => {
   beforeEach(() => setupGT());
 
   it('renders matching branches in both locales', () => {
@@ -69,7 +69,7 @@ describe('<Branch> values that name Object.prototype members', () => {
   });
 
   it.each(prototypeMembers)(
-    'renders the translated fallback for branch=%s',
+    'renders the translated fallback for value=%s',
     (status) => {
       expect(renderFr(status)).toBe('Inconnu');
     }
@@ -91,16 +91,16 @@ describe('a branch value named other', () => {
     const children = createRawSnippet(() => ({
       render: () => '<b>Children</b>',
     }));
-    const { body } = render(Branch, {
-      props: { branch: 'other', other: 'Prop', children },
+    const { body } = render(Select, {
+      props: { value: 'other', other: 'Prop', children },
     });
     expect(withoutComments(body).trim()).toBe('<b>Children</b>');
   });
 
   it.each(['other', 'missing'])(
-    'renders nothing for branch=%s with an other prop and no children',
+    'renders nothing for value=%s with an other prop and no children',
     (branch) => {
-      const { body } = render(Branch, { props: { branch, other: 'Prop' } });
+      const { body } = render(Select, { props: { branch, other: 'Prop' } });
       expect(withoutComments(body).trim()).toBe('');
     }
   );
@@ -118,7 +118,7 @@ describe('malformed branch translations', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect(
       renderFr('online', {
-        t: 'Branch',
+        t: 'Select',
         i: 1,
         d: { t: 'b', b },
         c: 'x',
@@ -132,7 +132,7 @@ describe('malformed branch translations', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect(
       renderFr('away', {
-        t: 'Branch',
+        t: 'Select',
         i: 1,
         d: { t: 'b', b: { online: 'En ligne' } },
       })
@@ -150,7 +150,7 @@ describe('nested branches in sibling snippets', () => {
   // with, or the `female` plural's fragments are looked up under `male`.
   it('renders a translation whose nested plural uses snippets', () => {
     const translation = {
-      t: 'Branch',
+      t: 'Select',
       i: 1,
       d: {
         t: 'b',
@@ -213,7 +213,7 @@ describe('nested branches in sibling snippets', () => {
         locale: 'fr',
         translations: {
           [nestedHash]: {
-            t: 'Branch',
+            t: 'Select',
             i: 1,
             d: { t: 'b', b: { other: 'Des chats' } },
           },
