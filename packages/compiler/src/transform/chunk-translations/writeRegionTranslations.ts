@@ -78,7 +78,11 @@ export type RegionMap = {
 
 /** The file of a build that splits by module, and how it was fitted. */
 export type RegionAssignmentRecord = {
-  /** The hashes in each file, by the file's id */
+  /**
+   * The hashes in each file, by the file's id. In a build with hash
+   * minification, a pair for each chunk that reads a message there: the
+   * hash, then what names the module that reads it, see getPairKey.
+   */
   files: Record<string, string[]>;
   /**
    * What sample files of the translations compressed to, as pairs of raw and
@@ -201,6 +205,11 @@ const createFileKeyClashError = (key: string) =>
  * The file each message was in after an earlier build, and the size samples
  * that build fitted its estimate to, from the manifest it wrote. Undefined
  * when there is no file at the path.
+ *
+ * A build with hash minification wrote a pair for each chunk that reads a
+ * message, and looks its own pairs up. The manifest of a build without is
+ * of no use to it, nor its manifest to such a build: nothing is found, and
+ * the files are assigned as a first build assigns them.
  */
 export function readPreviousAssignment(
   file: string
@@ -248,7 +257,9 @@ export function readPreviousAssignment(
  *
  * - A file is named by its key (`gt-` and the id the assignment gave it), the
  *   locale and the hash of its own content, and written only when the locale
- *   translates one of its messages. No message is in two files.
+ *   translates one of its messages. No message is in two files, except in a
+ *   build with hash minification: there a message is in a file of each
+ *   chunk that reads it, see `pairs` of createRegionGraph.
  * - The map of a locale holds which files each dynamic import needs, by the
  *   imported chunk, and the hash in the name of each of those files. It is
  *   the one file a page finds every other by, so the page's startup script
@@ -346,12 +357,17 @@ export function renderRegionTranslations(
   for (const locale of locales) {
     const hashes: Record<string, string> = (fileHashes[locale] = {});
     for (const [id, messages] of assignment.files) {
-      // A message is in one file, once, for the id of each chunk that reads it
+      // A file holds a translation once, for every id that reads it there
       const source = JSON.stringify(
         passedIds && build.minifiedIds
           ? pickMinifiedTranslations(
               table[locale],
-              [...messages].flatMap((hash) => passedIds.get(hash) ?? []),
+              // Chunks that list the same messages pass the same ids
+              [
+                ...new Set(
+                  [...messages].flatMap((hash) => passedIds.get(hash) ?? [])
+                ),
+              ],
               build.minifiedIds
             )
           : pickTranslations(table[locale], [...messages])
@@ -506,6 +522,7 @@ export function writeRegionTranslations(
     emitFile,
     getModuleInfo,
     isLazy,
+    root,
   }: {
     gtFiles: GTOutputFileConfig;
     /** The URL the build's files are served from */
@@ -520,6 +537,8 @@ export function writeRegionTranslations(
     getModuleInfo: (id: string) => RegionModuleInfo | null;
     /** Whether a module runs only when it is first imported, see initialisesModulesLazily */
     isLazy: boolean;
+    /** The directory the build's modules are in, see getPairModule */
+    root: string;
   }
 ): {
   startupScripts: Map<string, (base: string) => string>;
@@ -559,16 +578,27 @@ export function writeRegionTranslations(
     build.minifiedIds &&
     readMinifiedIds(build.minifiedIds, build, table, chunks);
   const moduleIds = build.minifiedIds && readPlaceholders(build.minifiedIds);
-  const { graph } = createRegionGraph(chunks, getModuleInfo, build.hashes, {
-    isLazy,
-    ...(ids && { ids, moduleIds }),
-  });
-  const sizes = getMessageSizes(table, build.hashes);
+  // With ids, a message is assigned once for each chunk that reads it
+  const { graph, pairs } = createRegionGraph(
+    chunks,
+    getModuleInfo,
+    build.hashes,
+    { isLazy, ...(ids && { ids, moduleIds, pairs: { root } }) }
+  );
+  const hashSizes = getMessageSizes(table, build.hashes);
+  const sizes = pairs
+    ? new Map(
+        [...pairs.hashes].map(([pair, hash]) => [
+          pair,
+          hashSizes.get(hash) ?? 0,
+        ])
+      )
+    : hashSizes;
   const sampled = build.locales.find((locale) => table[locale]);
   const samples =
     previous?.samples ??
     (sampled
-      ? sampleCompressedSizes(table[sampled], sizes).map(
+      ? sampleCompressedSizes(table[sampled], hashSizes).map(
           ({ bytes, compressed }): [number, number] => [bytes, compressed]
         )
       : []);
@@ -589,8 +619,16 @@ export function writeRegionTranslations(
     // One list for an imported chunk, wherever the import is written
     getImportedFiles: (_importer, target) => imports.byModule.get(target) ?? [],
   });
-  if (uncovered.length)
-    throw new Error(createUncoveredMessagesError(uncovered));
+  if (uncovered.length) {
+    throw new Error(
+      createUncoveredMessagesError(
+        uncovered.map((message) => ({
+          ...message,
+          hash: pairs?.hashes.get(message.hash) ?? message.hash,
+        }))
+      )
+    );
+  }
 
   const { files, manifest, unsplit, startupScripts } = renderRegionTranslations(
     {
@@ -619,7 +657,13 @@ export function writeRegionTranslations(
       assetsDir,
       samples,
       unsplit: getUnsplitTranslations(table, build),
-      ...(ids && { passedIds: findPassedIds(chunks, ids) }),
+      ...(ids && {
+        passedIds: findPassedIds(
+          chunks,
+          ids,
+          (hash, chunk) => pairs?.byChunk.get(chunk.fileName)?.get(hash) ?? hash
+        ),
+      }),
     }
   );
   for (const file of files) emitFile({ type: 'asset', ...file });

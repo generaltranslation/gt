@@ -50,16 +50,30 @@ export type SplitTranslationsOptions = {
    * most of what a message costs a page beyond its text. With this on, the
    * call sites the build splits by chunk or by module pass an id in place of
    * their hash, and the translation files of chunks are keyed by it, which
-   * makes both smaller. An id is 8 characters that name the list of its
+   * makes both smaller. An id is 8 characters that name a list of its
    * chunk's messages, a digest of their hashes in the order of the hashes,
    * then a `.` and the place of its message in that list, as `kR3_x0Qa.12`.
-   * Every call site of a chunk repeats those characters, so they compress
+   * Every call site of a list repeats those characters, so they compress
    * to little. An id still follows from content alone: the same id names
-   * the same message in every build. A chunk's ids change only when the set
-   * of its own messages does, and a message that several chunks read has an
+   * the same message in every build. The ids of a list change only when the
+   * set of its messages does, and a message that several chunks read has an
    * id in each. The build writes the ids into every chunk that holds one of
    * those call sites after the bundler has rendered it, and the chunk's
    * source map follows them.
+   *
+   * With `by: 'module'`, a chunk's translations are then in the files of
+   * the entries and dynamic imports that reach its own call sites: a chunk
+   * that reads a message an earlier load holds for another chunk gets its
+   * own copy, and has one list for each group of its messages that the same
+   * entries and dynamic imports fetch. A file names only lists that are
+   * wholly in it, so it is rewritten when one of its own messages comes,
+   * goes or is translated anew, and not when a chunk that loads later
+   * changes. Which messages a list holds then follows from the imports of
+   * the whole app: when another entry or dynamic import comes to fetch some
+   * of a list's messages, as a new route does that imports one module of a
+   * shared chunk, that chunk gets other ids and another file name although
+   * its own code is the same, and without a chunk import map so does every
+   * chunk that imports it.
    *
    * The hash of a message stays what it is everywhere else: in the
    * translation files at `files.gt.output`, in the unsplit file, and at
