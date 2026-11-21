@@ -1,9 +1,10 @@
-import { TaggedChild, TaggedChildren, TaggedElement } from '../../utils/types';
-import { isValidTaggedElement } from '../../utils/utils';
 import {
-  minifyVariableType,
-  type Transformation,
-} from 'generaltranslation/internal';
+  GTTag,
+  TaggedChild,
+  TaggedChildren,
+  TaggedElement,
+} from '../../utils/types';
+import { isValidTaggedElement } from '../../utils/utils';
 import {
   GTProp,
   HTML_CONTENT_PROPS,
@@ -36,10 +37,16 @@ const getTagName = (child: TaggedElement): string => {
   if (props['data-_gt']?.id) return `C${props['data-_gt'].id}`;
   return 'function';
 };
+/** What each kind of branching element is stored as. */
+const TRANSFORMATION_CODES = {
+  branch: 'b',
+  plural: 'p',
+  ordinal: 'o',
+} as const;
+
 const createGTProp = (
-  transformation: Transformation,
-  props: Record<string, unknown>,
-  branches?: Record<string, TaggedChildren>
+  tag: GTTag,
+  props: Record<string, unknown>
 ): GTProp | undefined => {
   // Add translatable HTML content props
   let newGTProp: GTProp = Object.entries(HTML_CONTENT_PROPS).reduce<GTProp>(
@@ -54,12 +61,9 @@ const createGTProp = (
   );
 
   // Check if plural or branch
-  if (
-    (transformation === 'plural' || transformation === 'branch') &&
-    branches
-  ) {
+  if ('branches' in tag && tag.branches) {
     const newBranches: Record<string, JsxChildren> = {};
-    Object.entries(branches).forEach(
+    Object.entries(tag.branches).forEach(
       ([key, value]: [string, TaggedChildren]) => {
         // Empty children render as the fallback, but are no content to store.
         if (
@@ -74,7 +78,7 @@ const createGTProp = (
       newGTProp = {
         ...newGTProp,
         b: newBranches,
-        t: transformation === 'plural' ? 'p' : 'b',
+        t: TRANSFORMATION_CODES[tag.transformation],
       };
   }
 
@@ -98,15 +102,12 @@ const handleSingleChildElement = (
     const generaltranslation = props['data-_gt'];
 
     // Check if variable
-    const transformation = generaltranslation.transformation;
-    if (transformation === 'variable') {
-      const variableType = generaltranslation.variableType || 'variable';
-      const minifiedVariableType = minifyVariableType(variableType);
+    if (generaltranslation.transformation === 'variable') {
       return {
         i: generaltranslation.id,
         ...(typeof props.name === 'string' &&
           props.name !== '' && { k: props.name }),
-        v: minifiedVariableType,
+        v: generaltranslation.variableType,
       };
     }
 
@@ -114,11 +115,7 @@ const handleSingleChildElement = (
     minifiedElement.i = generaltranslation.id;
 
     // Add GT prop
-    minifiedElement.d = createGTProp(
-      transformation as Transformation,
-      props,
-      generaltranslation.branches
-    );
+    minifiedElement.d = createGTProp(generaltranslation, props);
   }
   if (props.children) {
     minifiedElement.c = writeChildrenAsObjects(props.children);

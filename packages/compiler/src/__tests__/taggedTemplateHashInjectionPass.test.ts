@@ -4,7 +4,7 @@ import { transformWithPlugin } from './transformWithPlugin';
 import wireFormatCases from '../../../../test-fixtures/message-tree-wire-format.json';
 
 const HELPERS =
-  't, msg, useGT, getGT, plural, selectordinal, select, number, date, time, part, derive, n';
+  't, msg, useGT, getGT, plural, ordinal, select, number, date, time, part, derive, n';
 /** For sources that bind `t` to useGT() or getGT() instead of importing it. */
 const HOOK_HELPERS = HELPERS.replace(/^t, /, '');
 

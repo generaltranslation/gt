@@ -236,6 +236,8 @@ const m = useMessages();
 - `<Plural :n="count">` selects a named slot as ICU does: an exact number such
   as `#_0`, then the locale's plural category such as `#one`, then the default
   slot.
+- `<Ordinal :n="place">` is `<Plural>` for ordinals such as 1st, 2nd and 3rd:
+  it selects among the locale's ordinal categories.
 - `<Branch :branch="key">` selects an arbitrary named slot, or the default slot
   when no slot matches.
 

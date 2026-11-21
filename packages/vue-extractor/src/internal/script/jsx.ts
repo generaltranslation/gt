@@ -6,6 +6,10 @@ import {
   type JsxChild,
   type JsxChildren,
 } from '@generaltranslation/format';
+import {
+  BRANCH_TRANSFORMATIONS,
+  type BranchElementName,
+} from '@generaltranslation/format/internal';
 import { isHTMLTag, isSVGTag } from '@vue/shared';
 import {
   getPluralBranchKey,
@@ -22,6 +26,7 @@ import {
   babelLocation,
   createInlineMetadata,
   type ExtractedTMetadata,
+  isBranchComponent,
   normalizeTMetadataKey,
   type StaticPrimitive,
   type StaticPrimitiveResult,
@@ -198,7 +203,7 @@ export function isNestedInVueJSXTranslation(
         }
         if (
           identity?.type === 'component' &&
-          (identity.name === 'Branch' || identity.name === 'Plural')
+          isBranchComponent(identity.name)
         ) {
           // Every stable Branch and Plural slot belongs to the outer source.
           current = current.parentPath;
@@ -704,7 +709,7 @@ function serializeElement(
       },
     ];
   }
-  if (component === 'Branch' || component === 'Plural') {
+  if (isBranchComponent(component)) {
     return [
       serializeBranchElement(
         element,
@@ -1250,7 +1255,7 @@ function addSuspenseRootError(
 function serializeBranchElement(
   element: babel.JSXElement,
   id: number,
-  component: 'Branch' | 'Plural',
+  component: BranchElementName,
   counter: Counter,
   scope: Scope,
   context: VueExtractionContext,
@@ -1258,14 +1263,14 @@ function serializeBranchElement(
 ): JsxChild {
   const slots = readJSXSlotLayout(element, scope, context, analysis);
   if (
-    component === 'Plural' &&
+    component !== 'Branch' &&
     !hasExplicitAttribute(element.openingElement, 'n')
   ) {
     addVueError(
       context,
       babelLocation(element.openingElement.loc),
-      'Found a gt-vue <Plural> component without an n prop',
-      'Pass the numeric selector through <Plural n={count} />'
+      `Found a gt-vue <${component}> component without an n prop`,
+      `Pass the numeric selector through <${component} n={count} />`
     );
   }
 
@@ -1288,7 +1293,7 @@ function serializeBranchElement(
       continue;
     }
     // Vue's own slot flags start with `_`; an exact plural form is `_0`.
-    if (component === 'Plural' ? !isAcceptedPluralForm(name) : name[0] === '_')
+    if (component !== 'Branch' ? !isAcceptedPluralForm(name) : name[0] === '_')
       continue;
     const result = serializeSlotFunction(
       slot,
@@ -1329,7 +1334,7 @@ function serializeBranchElement(
   if (Object.keys(branches).length > 0) {
     // Plural branches are stored under ICU keys: `_0` is `=0`.
     data.b =
-      component === 'Plural'
+      component !== 'Branch'
         ? Object.fromEntries(
             Object.entries(branches).map(([name, branch]) => [
               getPluralBranchKey(name),
@@ -1337,7 +1342,7 @@ function serializeBranchElement(
             ])
           )
         : branches;
-    data.t = component === 'Plural' ? 'p' : 'b';
+    data.t = BRANCH_TRANSFORMATIONS[component];
   }
   return {
     t: component,
@@ -1349,7 +1354,7 @@ function serializeBranchElement(
 function addOtherBranchError(
   context: VueExtractionContext,
   location: babel.SourceLocation | null | undefined,
-  component: 'Branch' | 'Plural'
+  component: BranchElementName
 ): void {
   addVueError(
     context,
@@ -1663,7 +1668,7 @@ function readStaticObjectKey(
 
 function readBranchAttributeSources(
   element: babel.JSXOpeningElement,
-  component: 'Branch' | 'Plural',
+  component: BranchElementName,
   branches: Record<string, JsxChildren>,
   scope: Scope,
   context: VueExtractionContext,
@@ -1679,7 +1684,7 @@ function readBranchAttributeSources(
     }
     if (
       !isBranchPropName(name) ||
-      (component === 'Plural' && !isAcceptedPluralForm(name))
+      (component !== 'Branch' && !isAcceptedPluralForm(name))
     ) {
       continue;
     }

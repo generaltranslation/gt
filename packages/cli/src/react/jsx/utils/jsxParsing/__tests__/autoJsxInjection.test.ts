@@ -744,6 +744,25 @@ describe('injection and extraction', () => {
       [{ t: 'Plural', i: 1, d: plural }],
     ],
     [
+      'an Ordinal with dynamic content (n is a control prop)',
+      page(
+        '<div><Ordinal n={place} one={<b>{place}st</b>}>{place}th</Ordinal></div>'
+      ),
+      [
+        {
+          t: 'Ordinal',
+          i: 1,
+          d: {
+            b: {
+              one: { t: 'b', i: 2, c: [variable(3), 'st'] },
+              other: [variable(2), 'th'],
+            },
+            t: 'o',
+          },
+        },
+      ],
+    ],
+    [
       'dynamic content in Branch children',
       page(
         '<>Hello, my good friend <Branch branch={userName}>Fallback with Var {userName}</Branch></>'

@@ -74,7 +74,17 @@ import {
   replaceUnsplitLoader,
 } from './transform/chunk-translations/unsplitTranslations';
 import { getPageBase } from './transform/chunk-translations/startupScript';
+import {
+  generateReplacementsMap,
+  moveChunkMap,
+  trackReplacements,
+  type BundledChunk,
+} from './transform/chunk-translations/chunkSourceMap';
 import { Logger } from './state/Logger';
+import {
+  getSourceMapRequest,
+  type ViteSourceMapConfig,
+} from './utils/sourceMapRequest';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import {
   createPrecomputedMessageSupport,
@@ -330,9 +340,14 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     const gtFiles = resolvedOptions.gtConfig?.files?.gt;
     // Vite's build() sets NODE_ENV after plugins are created, so read it when each hook runs, as transforms do
     const isProduction = () => process.env.NODE_ENV === 'production';
+    let viteConfig: ViteSourceMapConfig | undefined;
+    const keepViteConfig = (config: ViteSourceMapConfig) => {
+      viteConfig = config;
+    };
 
     const plugin: UnpluginOptions = {
       name: '@generaltranslation/GT_PLUGIN',
+      vite: { configResolved: keepViteConfig },
       buildStart() {
         if (
           isProduction() &&
@@ -435,10 +450,27 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             return null;
           }
 
-          return generate(ast, {
-            retainLines: true,
-            compact: false,
-          });
+          const sourceMap = getSourceMapRequest(
+            meta.framework,
+            this,
+            viteConfig,
+            code,
+            id
+          );
+          const output = generate(
+            ast,
+            {
+              retainLines: true,
+              compact: false,
+              ...(sourceMap && {
+                sourceMaps: true,
+                sourceFileName: id,
+                inputSourceMap: sourceMap.inputSourceMap,
+              }),
+            },
+            code
+          );
+          return { code: output.code, map: output.map };
         } catch (error) {
           // If the error is an instance of InvalidLibraryUsageError, throw it
           if (error instanceof InvalidLibraryUsageError) {
@@ -592,23 +624,47 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       }
     }
     // Chunks are rendered once every module is compiled, so every call site is known
-    function renderChunk(code: string): string | null {
+    function renderChunk(
+      code: string,
+      chunk?: { fileName: string },
+      rendered?: { sourcemap?: boolean | string }
+    ) {
       if (!isProduction()) return null;
+      const tracked =
+        chunk && rendered?.sourcemap ? trackReplacements(code) : undefined;
+      const withMap = (rewritten: string) =>
+        chunk && tracked?.replacements
+          ? {
+              code: rewritten,
+              map: generateReplacementsMap(
+                code,
+                chunk.fileName,
+                tracked.replacements
+              ),
+            }
+          : rewritten;
       // Before the chunk is named, so its name follows from its ids
       const minified = chunkTranslations!.minifiedIds
-        ? (minifyChunk(code, chunkTranslations!.minifiedIds) ?? code)
+        ? (minifyChunk(
+            code,
+            chunkTranslations!.minifiedIds,
+            tracked?.replace
+          ) ?? code)
         : code;
-      const passed = passPreloads(minified);
+      const passed = passPreloads(minified, tracked?.replace);
       if (!passed.includes(UNSPLIT_LOADER_PLACEHOLDER)) {
-        return passed === code ? null : passed;
+        return passed === code ? null : withMap(passed);
       }
       const unsplit = getUnsplitTranslations(
         loadChunkTranslationsTable(gtFiles!, chunkTranslations!),
         chunkTranslations!
       );
-      return (
-        replaceUnsplitLoader(passed, Object.keys(unsplit).length > 0) ?? null
+      const started = replaceUnsplitLoader(
+        passed,
+        Object.keys(unsplit).length > 0,
+        tracked?.replace
       );
+      return started === undefined ? null : withMap(started);
     }
     // The bundler's options say whether it writes a chunk import map
     const readBundlerOptions = (bundlerOptions: unknown): null => {
@@ -625,9 +681,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           {
             type: string;
             fileName: string;
-            code?: string;
             dynamicImports?: string[];
-          }
+            source?: unknown;
+          } & BundledChunk
         >
       ): void {
         if (!isProduction()) return;
@@ -650,13 +706,21 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             needsFiles,
             isLoadedWith
           );
+          // The chunk is minified by now, so a replacement moves the rest of its line
+          const tracked = chunk.map ? trackReplacements(chunk.code) : undefined;
           const replaced = replaceImportedChunks(
             source,
             needsFiles,
             importMap,
-            importedNames
+            importedNames,
+            tracked?.replace
           );
-          if (replaced.code !== chunk.code) chunk.code = replaced.code;
+          if (replaced.code !== chunk.code) {
+            chunk.code = replaced.code;
+            if (tracked?.replacements) {
+              moveChunkMap(bundle, chunk, source.code, tracked.replacements);
+            }
+          }
           if (ungated) {
             (replaced.unread ? unread : unwrapped).push({
               ...ungated,
@@ -675,10 +739,13 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         ...plugin,
         vite: {
           ...plugin.vite,
-          configResolved(config: {
-            base: string;
-            build: { assetsDir: string };
-          }) {
+          configResolved(
+            config: ViteSourceMapConfig & {
+              base: string;
+              build: { assetsDir: string };
+            }
+          ) {
+            keepViteConfig(config);
             base = config.base;
             assetsDir = config.build.assetsDir;
           },

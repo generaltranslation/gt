@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { MessageTree } from '@generaltranslation/icu';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { replaceInChunk, type ReplaceInChunk } from './chunkSourceMap';
 import type { TranslationsTable } from './loadTranslationFiles';
 
 /**
@@ -238,10 +239,13 @@ export function minifyHashes(hashes: Iterable<string>): Map<string, string> {
  *
  * Throws when an id already names another message: two different lists
  * share a digest, which chance does once in 2^48 pairs of them.
+ *
+ * @param replace What replaces the placeholders, see trackReplacements.
  */
 export function minifyChunk(
   code: string,
-  minified: MinifiedIds
+  minified: MinifiedIds,
+  replace: ReplaceInChunk = replaceInChunk
 ): string | undefined {
   if (!code.includes(MINIFIED_ID_PLACEHOLDER)) return undefined;
   const ids = minifyHashes(
@@ -255,7 +259,8 @@ export function minifyChunk(
     }
     minified.hashes.set(id, hash);
   }
-  return code.replace(
+  return replace(
+    code,
     PLACEHOLDER,
     (_match, quote: string, hash: string) => `${quote}${ids.get(hash)}${quote}`
   );

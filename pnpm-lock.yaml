@@ -1040,16 +1040,25 @@ importers:
       '@generaltranslation/icu':
         specifier: workspace:*
         version: link:../icu
+      '@jridgewell/sourcemap-codec':
+        specifier: ^1.5.5
+        version: 1.6.0
       generaltranslation:
         specifier: workspace:*
         version: link:../core
       gt-i18n:
         specifier: workspace:*
         version: link:../i18n
+      magic-string:
+        specifier: ^0.30.21
+        version: 0.30.21
       unplugin:
-        specifier: ^2.3.10
-        version: 2.3.10
+        specifier: ^2.3.11
+        version: 2.3.11
     devDependencies:
+      '@jridgewell/trace-mapping':
+        specifier: ^0.3.31
+        version: 0.3.31
       '@types/babel__core':
         specifier: ^7.20.0
         version: 7.20.5
@@ -2882,6 +2891,9 @@ importers:
       '@generaltranslation/compiler':
         specifier: workspace:*
         version: link:../../../packages/compiler
+      '@jridgewell/trace-mapping':
+        specifier: ^0.3.31
+        version: 0.3.31
       '@types/node':
         specifier: 'catalog:'
         version: 22.13.10
@@ -21614,8 +21626,8 @@ packages:
     resolution: {integrity: sha512-gwXJnPRewT4rT7sBi/IvxKTjsms7jX7QIDLOClApuZwR49SXbrB1z2NLUZ+vDHyqCj/n58OzRRqaW+B8OZi8vg==}
     engines: {node: '>=18.12.0'}
 
-  unplugin@2.3.10:
-    resolution: {integrity: sha512-6NCPkv1ClwH+/BGE9QeoTIl09nuiAt0gS28nn1PvYXsGKRwM2TCbFA2QiilmehPDTXIe684k4rZI1yl3A1PCUw==}
+  unplugin@2.3.11:
+    resolution: {integrity: sha512-5uKD0nqiYVzlmCRs01Fhs2BdkEgBS3SAVP6ndrBsuK42iC2+JHyxM05Rm9G8+5mkmRtzMZGY8Ct5+mliZxU/Ww==}
     engines: {node: '>=18.12.0'}
 
   unplugin@3.3.0:
@@ -27046,7 +27058,7 @@ snapshots:
       jiti: 2.7.0
       json5: 2.2.3
       jsonc-parser: 3.3.1
-      unplugin: 2.3.10
+      unplugin: 2.3.11
       urlpattern-polyfill: 10.1.0
       valibot: 1.5.0(typescript@5.9.3)
     optionalDependencies:
@@ -27063,7 +27075,7 @@ snapshots:
       jiti: 2.7.0
       json5: 2.2.3
       magic-string: 0.30.21
-      unplugin: 2.3.10
+      unplugin: 2.3.11
       urlpattern-polyfill: 10.1.0
       valibot: 1.5.0(typescript@5.9.3)
     optionalDependencies:
@@ -45366,11 +45378,11 @@ snapshots:
       pathe: 2.0.3
       picomatch: 4.0.7
 
-  unplugin@2.3.10:
+  unplugin@2.3.11:
     dependencies:
       '@jridgewell/remapping': 2.3.5
-      acorn: 8.15.0
-      picomatch: 4.0.3
+      acorn: 8.19.0
+      picomatch: 4.0.7
       webpack-virtual-modules: 0.6.2
 
   unplugin@3.3.0(esbuild@0.28.1)(rolldown@1.2.15)(rollup@4.63.5)(vite@7.3.1(@types/node@22.13.10)(jiti@2.7.0)(lightningcss@1.33.0)(sass@1.77.4)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.0))(webpack@5.111.1(esbuild@0.28.1)(lightningcss@1.33.0)(postcss@8.5.19)):

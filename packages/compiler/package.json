@@ -43,11 +43,14 @@
     "@babel/types": "^7.23.0",
     "@generaltranslation/format": "workspace:*",
     "@generaltranslation/icu": "workspace:*",
+    "@jridgewell/sourcemap-codec": "^1.5.5",
     "generaltranslation": "workspace:*",
     "gt-i18n": "workspace:*",
-    "unplugin": "^2.3.10"
+    "magic-string": "^0.30.21",
+    "unplugin": "^2.3.11"
   },
   "devDependencies": {
+    "@jridgewell/trace-mapping": "^0.3.31",
     "@types/babel__core": "^7.20.0",
     "@types/babel__generator": "^7.6.0",
     "@types/babel__traverse": "^7.20.0",

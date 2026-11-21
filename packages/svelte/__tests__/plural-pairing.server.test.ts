@@ -9,8 +9,9 @@ import BarePlural from './fixtures/BarePlural.svelte';
 import ExactPluralBranch from './fixtures/ExactPluralBranch.svelte';
 import Harness from './fixtures/Harness.svelte';
 import NestedPluralForms from './fixtures/NestedPluralForms.svelte';
+import Places from './fixtures/Places.svelte';
 import { initializeGT } from '../src/runtime/config';
-import { setupGT, withoutComments } from './helpers';
+import { hashesOf, setupGT, withoutComments } from './helpers';
 
 const analyze = (fixture: string) =>
   analyzeSvelteSource(
@@ -66,6 +67,47 @@ describe('plural forms a translation leaves out', () => {
         translations: { [exact.hash]: translation },
       })
     ).toBe('<p><b>Items</b></p>');
+  });
+});
+
+describe('an <Ordinal>', () => {
+  beforeEach(() => setupGT());
+
+  const places = (n: number, locale = 'en', translations = {}) =>
+    html({ component: Places, props: { n }, locale, translations });
+
+  it('selects with English ordinal rules, inside <T> and outside it', () => {
+    const numbers = [1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 101, 111];
+    expect(
+      numbers.map((n) => /<p class="rich">(.*?)<\/p>/.exec(places(n))?.[1])
+    ).toEqual(
+      '1st 2nd 3rd 4th 11th 12th 13th 21st 22nd 23rd 101st 111th'.split(' ')
+    );
+    expect(
+      [1, 2, 3, 4, 21].map(
+        (n) => /<p class="bare">(.*?)<\/p>/.exec(places(n))?.[1]
+      )
+    ).toEqual(['winner', 'second', 'third', 'later', 'first']);
+  });
+
+  it('is stored as an ordinal plural, which a translation selects from', () => {
+    const [, placeHash] = hashesOf('Places.svelte');
+    const translation = (t: 'o' | 'p') => ({
+      t: 'Ordinal',
+      i: 1,
+      d: { t, b: { one: 'premier', other: 'suivant' } },
+    });
+    // French counts 0 as "one" in cardinals and as "other" in ordinals.
+    expect(places(0, 'fr', { [placeHash]: translation('o') })).toContain(
+      '<p class="place">suivant</p>'
+    );
+    expect(places(1, 'fr', { [placeHash]: translation('o') })).toContain(
+      '<p class="place">premier</p>'
+    );
+    expect(analyze('Places.svelte').source).toMatchObject({
+      t: 'Ordinal',
+      d: { t: 'o' },
+    });
   });
 });
 

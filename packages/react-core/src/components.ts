@@ -2,6 +2,7 @@
 // context internally, so this entrypoint is intentionally not RSC-safe.
 
 export { Branch, GtInternalBranch } from './components/branches/Branch';
+export { GtInternalOrdinal, Ordinal } from './components/branches/Ordinal';
 export { GtInternalPlural, Plural } from './components/branches/Plural';
 export { Derive, GtInternalDerive } from './components/derivation/Derive';
 export { GtInternalTranslateJsx, T } from './components/translation/T';

@@ -13,6 +13,8 @@ describe('@generaltranslation/react-core/components-rsc', () => {
     expect(mod.GtInternalDerive).toBeTypeOf('function');
     expect(mod.Num).toBeTypeOf('function');
     expect(mod.GtInternalNum).toBeTypeOf('function');
+    expect(mod.Ordinal).toBeTypeOf('function');
+    expect(mod.GtInternalOrdinal).toBeTypeOf('function');
     expect(mod.Plural).toBeTypeOf('function');
     expect(mod.GtInternalPlural).toBeTypeOf('function');
     expect(mod.RelativeTime).toBeTypeOf('function');

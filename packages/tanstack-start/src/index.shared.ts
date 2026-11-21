@@ -1,6 +1,7 @@
 export {
   // ===== Components ===== //
   Branch,
+  Ordinal,
   Plural,
   Derive,
   T,
@@ -34,7 +35,7 @@ export {
   mFallback,
   derive,
   plural,
-  selectordinal,
+  ordinal,
   select,
   number,
   date,

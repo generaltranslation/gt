@@ -3,12 +3,17 @@ import { describe, expect, it, vi } from 'vitest';
 import { hashSource } from 'generaltranslation/id';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import { addGTIdentifier } from '../addGTIdentifier';
+import type { GTMarker } from '../../marker';
 import { writeChildrenAsObjects } from '../writeChildrenAsObjects';
 import {
   renderDefaultChildren,
   renderTranslatedChildren,
 } from '../../rendering/renderPipeline.rsc';
 import { Branch } from '../../../components/branches/Branch';
+import {
+  GtInternalOrdinal,
+  Ordinal,
+} from '../../../components/branches/Ordinal';
 import { Plural } from '../../../components/branches/Plural';
 import {
   GtInternalRelativeTime,
@@ -20,10 +25,15 @@ import { Var } from '../../../components/variables/Var';
 import { renderPlural } from '../../../components/branches/Plural.shared';
 import { Num } from '../../../components/variables/Num';
 import { fillCount } from '../../plurals/fillCount';
-import type { GTTag, TaggedElement } from '../../types';
+import type { GTTag, TaggedElement, TranslatedChildren } from '../../types';
 
 function gtTag(node: unknown): GTTag {
   return (node as TaggedElement).props['data-_gt'];
+}
+
+function gtBranches(node: unknown) {
+  const tag = gtTag(node);
+  return 'branches' in tag ? tag.branches : undefined;
 }
 
 // Resolves function components to their output so tests can read the text a
@@ -109,6 +119,47 @@ describe('<N>, the count of its <Plural>', () => {
 
     expect(render(21, target)).toBe('21 файл');
     expect(render(22, target)).toBe('22 файла');
+  });
+
+  it('is the count of an <Ordinal> too', () => {
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+    const place = (n: number) =>
+      addGTIdentifier(
+        <Ordinal n={n} one={[<N key='count' />, 'st']}>
+          {[<N key='count' />, 'th']}
+        </Ordinal>
+      );
+    const count = { i: 2, v: '#' };
+
+    expect(writeChildrenAsObjects(place(21))).toEqual({
+      t: 'Ordinal',
+      i: 1,
+      d: { b: { one: [count, 'st'], other: [count, 'th'] }, t: 'o' },
+    });
+    expect(
+      renderText(
+        renderDefaultChildren({
+          children: place(21),
+          defaultLocale: 'en',
+          enableI18n: true,
+        })
+      )
+    ).toBe('21st');
+    // French ordinals have one and other.
+    expect(
+      renderText(
+        renderTranslatedChildren({
+          source: place(2),
+          target: {
+            t: 'Ordinal',
+            i: 1,
+            d: { b: { one: [count, 'er'], other: [count, 'e'] }, t: 'o' },
+          } as never,
+          locales: ['fr'],
+          enableI18n: true,
+        })
+      )
+    ).toBe('2e');
   });
 
   it('renders the count in a named branch of a <Branch>', () => {
@@ -236,11 +287,11 @@ describe('<N>, the count of its <Plural>', () => {
     function Count(props: object) {
       return <RscN {...props} {...conditions} />;
     }
-    Count._gtt = 'variable-count';
+    Count._gtt = { kind: 'variable', variableType: '#' } satisfies GTMarker;
     function Nested(props: { n: number; children: ReactNode }) {
       return renderPlural({ ...props, ...conditions });
     }
-    Nested._gtt = 'plural';
+    Nested._gtt = { kind: 'plural' } satisfies GTMarker;
     const bare = (children: ReactNode) =>
       renderPlural({ ...conditions, n: 5, children });
 
@@ -305,7 +356,7 @@ describe('addGTIdentifier with <RelativeTime>', () => {
 
     expect(gtTag(tagged)).toMatchObject({
       transformation: 'variable',
-      variableType: 'relativetime',
+      variableType: 'rt',
       injectionType: 'manual',
     });
   });
@@ -328,7 +379,7 @@ describe('addGTIdentifier with <RelativeTime>', () => {
     );
 
     expect(gtTag(tagged)).toMatchObject({
-      variableType: 'relativetime',
+      variableType: 'rt',
       injectionType: 'automatic',
     });
   });
@@ -340,8 +391,8 @@ describe('addGTIdentifier with <RelativeTime>', () => {
       </Plural>
     );
 
-    expect(gtTag(gtTag(tagged).branches?.one)).toMatchObject({
-      variableType: 'relativetime',
+    expect(gtTag(gtBranches(tagged)?.one)).toMatchObject({
+      variableType: 'rt',
     });
   });
 
@@ -366,6 +417,54 @@ describe('addGTIdentifier with <RelativeTime>', () => {
     ).toBe('None');
   });
 
+  it('stores and renders an Ordinal as an ordinal plural', () => {
+    const tagged = addGTIdentifier(
+      <Ordinal n={2} one='1st' two='2nd' _1='Winner' {...{ other: 'Prop' }}>
+        nth
+      </Ordinal>
+    );
+    const b = { one: '1st', two: '2nd', '=1': 'Winner', other: 'nth' };
+
+    expect(writeChildrenAsObjects(tagged)).toEqual({
+      t: 'Ordinal',
+      i: 1,
+      d: { b, t: 'o' },
+    });
+    expect(
+      writeChildrenAsObjects(
+        addGTIdentifier(
+          <Plural n={2} one='1st' two='2nd' _1='Winner'>
+            nth
+          </Plural>
+        )
+      )
+    ).toEqual({ t: 'Plural', i: 1, d: { b, t: 'p' } });
+    expect(
+      renderDefaultChildren({
+        children: tagged,
+        defaultLocale: 'en',
+        enableI18n: true,
+      })
+    ).toBe('2nd');
+    // French ordinals have one and other.
+    expect(
+      renderTranslatedChildren({
+        source: tagged,
+        target: {
+          d: { b: { one: '1er', other: 'e' }, t: 'o' },
+        } as TranslatedChildren,
+        locales: ['fr'],
+        enableI18n: true,
+      })
+    ).toBe('e');
+    expect(
+      gtTag(addGTIdentifier(<GtInternalOrdinal n={2}>nth</GtInternalOrdinal>))
+    ).toMatchObject({
+      transformation: 'ordinal',
+      injectionType: 'automatic',
+    });
+  });
+
   it('stores the children of a Branch as other, over an other prop', () => {
     const tagged = addGTIdentifier(
       <Branch branch='x' {...{ other: 'Prop' }}>
@@ -373,7 +472,7 @@ describe('addGTIdentifier with <RelativeTime>', () => {
       </Branch>
     );
 
-    expect(gtTag(tagged).branches).toEqual({ other: 'Children' });
+    expect(gtBranches(tagged)).toEqual({ other: 'Children' });
   });
 
   it('neither stores nor renders an other prop of a Branch with no children', () => {
@@ -417,15 +516,23 @@ describe('addGTIdentifier with <RelativeTime>', () => {
           </Plural>,
           ' after',
         ],
+        [
+          'Before ',
+          <Ordinal key='o' n={2}>
+            {empty}
+          </Ordinal>,
+          ' after',
+        ],
       ].map((source) => writeChildrenAsObjects(addGTIdentifier(source)));
 
       expect(sources).toEqual([
         ['Before ', { t: 'Branch', i: 1 }, ' after'],
         ['Before ', { t: 'Plural', i: 1 }, ' after'],
+        ['Before ', { t: 'Ordinal', i: 1 }, ' after'],
       ]);
       expect(
         sources.map((source) => hashSource({ dataFormat: 'JSX', source }))
-      ).toEqual(['b5a6ee4eef4e3071', 'b5a6ee4eef4e3071']);
+      ).toEqual(['b5a6ee4eef4e3071', 'b5a6ee4eef4e3071', 'b5a6ee4eef4e3071']);
     }
   );
 

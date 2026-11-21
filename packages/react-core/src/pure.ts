@@ -23,6 +23,7 @@ export type {
   RenderMethod,
   RenderVariable,
 } from './utils/types';
+export type { GTMarker } from './utils/marker';
 
 export {
   internalInitializeGTSRA,

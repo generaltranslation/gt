@@ -61,6 +61,12 @@ pnpm --filter gt-test-vite-chunk-translations check
 (`minifyHashes` of `experimentalSplitTranslations`), and checks the ids and the
 translation files the build wrote.
 
+`check` ends with `check:source-maps` (`scripts/check-source-maps.mjs`), which
+needs no browser: it builds the app with `--sourcemap`, without the split and
+with each way of splitting, with and without hash minification, and checks
+that the bundler reports no broken source map and that positions in the
+emitted chunks map back to their file, line and column.
+
 Run the browser automation for every browser-capable development app, or select
 a comma-separated subset. The React Native app remains a manual native test:
 

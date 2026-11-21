@@ -32,7 +32,7 @@ import type {
 /** A variable placeholder: `v` = minified type, `k` = its name, if any. Renders one text node. */
 type GtVariable = { i: number; v: string; k?: string };
 /** GT metadata on an element; `b` present ⇒ plural/branch (no single rendered form). */
-type GtProp = { b?: Record<string, GtJsxChildren>; t?: 'p' | 'b' };
+type GtProp = { b?: Record<string, GtJsxChildren>; t?: 'p' | 'o' | 'b' };
 /** An element: `t` = tag, `c` = children. */
 type GtElement = { t?: string; i?: number; d?: GtProp; c?: GtJsxChildren };
 export type GtJsxChild = string | GtElement | GtVariable;

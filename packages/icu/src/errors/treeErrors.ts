@@ -5,7 +5,7 @@ export const createInvalidBranchKeyError = (key: string) =>
   `Branch key "${key}" is not a valid ICU selector: a key must be non-empty with no whitespace or ICU syntax characters such as - or ., and only plural keys can be =N with an integer N.`;
 
 export const createPluralCountOutsidePluralError = () =>
-  'The plural count is used outside a plural or selectordinal branch.';
+  'The plural count is used outside a cardinal or ordinal plural branch.';
 
 export const createReservedVariablePrefixError = (
   name: string,

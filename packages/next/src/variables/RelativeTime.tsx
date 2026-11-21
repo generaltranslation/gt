@@ -4,6 +4,7 @@ import {
 } from 'gt-react';
 import { getRequestConditions } from '../request/getRequestConditions';
 import type { ReactNode } from 'react';
+import type { GTMarker } from '@generaltranslation/react-core/pure';
 
 export async function RelativeTime(
   props: RelativeTimeProps
@@ -13,4 +14,4 @@ export async function RelativeTime(
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-RelativeTime._gtt = 'variable-relativetime';
+RelativeTime._gtt = { kind: 'variable', variableType: 'rt' } satisfies GTMarker;

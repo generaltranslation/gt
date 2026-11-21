@@ -60,7 +60,7 @@ export function sources(result: { updates: Updates }) {
 }
 
 const GT_NAMES =
-  /<(T|Var|Num|N|Currency|DateTime|RelativeTime|Branch|Plural|Derive)\b|\b(derive)\(/g;
+  /<(T|Var|Num|N|Currency|DateTime|RelativeTime|Branch|Plural|Ordinal|Derive)\b|\b(derive)\(/g;
 
 /**
  * Builds a module whose Page component returns `jsx`. `body` goes inside the

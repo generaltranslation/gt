@@ -23,6 +23,7 @@ const scope = {
   RelativeTime: ReactComponents.RelativeTime,
   Branch: ReactComponents.Branch,
   Plural: ReactComponents.Plural,
+  Ordinal: ReactComponents.Ordinal,
   Link,
   name: 'Ada',
   count: 2,

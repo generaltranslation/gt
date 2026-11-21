@@ -16,17 +16,19 @@ export const isCount = (n: unknown): n is number | bigint =>
 /**
  * The key of the branch ICU picks for `n`: an exact key, then the locale's
  * plural category, then `other`. A value that is not a number only fits `other`.
+ * `ordinal` picks among ordinal categories, as `<Ordinal>` does.
  */
 export function selectPluralKey(
   n: unknown,
   locales: string[],
-  branches: Record<string, unknown>
+  branches: Record<string, unknown>,
+  ordinal?: boolean
 ): string {
   if (!isCount(n)) return 'other';
   const keys = Object.keys(branches).filter(
     (key) => branches[key] !== undefined
   );
-  return getPluralForm(n, keys, locales);
+  return getPluralForm(n, keys, locales, ordinal ? 'ordinal' : 'cardinal');
 }
 
 /** The key of the branch named by the value, then `other`. */
@@ -47,19 +49,22 @@ function pickOrOther<T>(branches: Record<string, T>, key: string) {
 }
 
 /**
- * The source branch of a `<Plural>`, which reports a count it cannot use.
- * `key` is the branch a translation picked; without one the source picks.
+ * The source branch of a `<Plural>` or an `<Ordinal>`, which reports a count
+ * it cannot use. `key` is the branch a translation picked; without one the
+ * source picks.
  */
 export function getPluralBranch<T>(
   n: unknown,
   locales: string[],
   branches: Record<string, T>,
-  key = selectPluralKey(n, locales, branches)
+  ordinal?: boolean,
+  key = selectPluralKey(n, locales, branches, ordinal)
 ): T | undefined {
   const selected = pickOrOther(branches, key);
+  const component = ordinal ? '<Ordinal>' : '<Plural>';
   if (!isCount(n)) {
     report({
-      whatHappened: '<Plural> needs a number or a bigint for n',
+      whatHappened: `${component} needs a number or a bigint for n`,
       fix: 'Convert the value before passing it, like n={Number(count)}',
       rendered:
         selected === undefined
@@ -69,7 +74,7 @@ export function getPluralBranch<T>(
     });
   } else if (selected === undefined) {
     report({
-      whatHappened: '<Plural> has no branch for n',
+      whatHappened: `${component} has no branch for n`,
       fix: 'Give it children to render as the fallback',
       rendered: 'Nothing was rendered',
       details: `n: ${n}`,

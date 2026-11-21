@@ -39,7 +39,7 @@ A tagged template is stored as a message tree, not as an ICU string, and its has
 
 - `t` and the function from `useGT()` or `getGT()`: `t('Hello, {name}!', { name })` → `` t`Hello, ${{ name }}!` ``. Template text is literal, so `{`, `#` and `'` need no escaping.
 - Options: `$context`, `$maxChars` and `$requiresReview` → `t({ context, maxChars, requiresReview })` before the template. `$id`, `$format`, `$locale` and `$_hash` have no replacement.
-- ICU `plural`, `selectordinal` and `select` arguments → `plural()`, `selectordinal()` and `select()`, with `` part`...` `` for a branch that holds values and `n` for the count. ICU number, date and time arguments → `number()`, `date()` and `time()`. The main entries now export these helpers.
+- ICU `plural`, `selectordinal` and `select` arguments → `plural()`, `ordinal()` and `select()`, with `` part`...` `` for a branch that holds values and `n` for the count. ICU number, date and time arguments → `number()`, `date()` and `time()`. The main entries now export these helpers.
 - `useGT(messages)`, `useMessages(messages)` and `getGT(messages)` → `useGT()`, `useMessages()` and `getGT()`: they take no argument.
 - `msg('Hello, {name}!', { name })` → `` msg`Hello, ${{ name }}!` ``, and `msg('Save', { $context: 'button' })` → `` msg({ context: 'button' })`Save` ``. `msg('Save')` still works. `msg(['Save', 'Cancel'])` → one `msg()` call for each message.
 - `m(message, options)` from `useMessages()` or `getMessages()`, and `mFallback(message, options)` → `m(message, values)` and `mFallback(message, values)`: the second argument holds values only, and a string is rendered as literal text.

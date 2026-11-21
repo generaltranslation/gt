@@ -101,6 +101,13 @@ ruleTester.run('static-jsx: scope', staticJsx, {
       ),
     },
     {
+      name: 'Ordinal: n prop is not checked, static and JSX prop values',
+      code: t(
+        '<Ordinal n={place} one="1st" two={<b>2nd</b>}>nth</Ordinal>',
+        'T, Ordinal'
+      ),
+    },
+    {
       name: 'dynamic content outside T',
       code: component(
         "import { T } from 'gt-react';",
@@ -182,7 +189,7 @@ ruleTester.run('static-jsx: scope', staticJsx, {
         'T, Branch'
       ),
       output: t(
-        '<Branch branch={x} a=<Branch branch={cond} true="one">two</Branch>>fallback</Branch>',
+        '<Branch branch={x} a={<Branch branch={cond} true="one">two</Branch>}>fallback</Branch>',
         'T, Branch'
       ),
       errors: errors(),
@@ -191,7 +198,7 @@ ruleTester.run('static-jsx: scope', staticJsx, {
       name: 'identifier in a Branch prop value',
       code: t('<Branch branch={x} a={label}>fallback</Branch>', 'T, Branch'),
       output: t(
-        '<Branch branch={x} a=<Var>{label}</Var>>fallback</Branch>',
+        '<Branch branch={x} a={<Var>{label}</Var>}>fallback</Branch>',
         'T, Branch, Var'
       ),
       errors: errors(),
@@ -200,8 +207,17 @@ ruleTester.run('static-jsx: scope', staticJsx, {
       name: 'identifier in a Plural prop value',
       code: t('<Plural n={n} one={label}>items</Plural>', 'T, Plural'),
       output: t(
-        '<Plural n={n} one=<Var>{label}</Var>>items</Plural>',
+        '<Plural n={n} one={<Var>{label}</Var>}>items</Plural>',
         'T, Plural, Var'
+      ),
+      errors: errors(),
+    },
+    {
+      name: 'identifier in an Ordinal prop value',
+      code: t('<Ordinal n={n} one={label}>nth</Ordinal>', 'T, Ordinal'),
+      output: t(
+        '<Ordinal n={n} one={<Var>{label}</Var>}>nth</Ordinal>',
+        'T, Ordinal, Var'
       ),
       errors: errors(),
     },
@@ -536,7 +552,7 @@ ruleTester.run('static-jsx: ternary to Branch', staticJsx, {
           'T, Branch'
         ),
         t(
-          '<Branch branch={cond} true=<Var>{getLabel()}</Var>>default</Branch>',
+          '<Branch branch={cond} true={<Var>{getLabel()}</Var>}>default</Branch>',
           'T, Branch, Var'
         ),
       ],

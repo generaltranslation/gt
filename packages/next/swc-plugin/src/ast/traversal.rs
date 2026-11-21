@@ -331,10 +331,11 @@ impl<'a> JsxTraversal<'a> {
             Box::new(SanitizedChild::Fragment(Box::new(children))),
           );
         }
+        // As in the runtime, an element with no branch stores no transformation.
         if !branches.is_empty() {
           sanitized_element.b = Some(branches);
+          sanitized_element.t = component_info.transformation;
         }
-        sanitized_element.t = component_info.transformation;
       } else {
         // Handle other GT components (T, etc.) with GT data
         let gt_prop = SanitizedGtProp {
@@ -418,8 +419,13 @@ impl<'a> JsxTraversal<'a> {
     false
   }
 
-  /// Check if this is a Plural component
+  /// Check if this is a Plural or an Ordinal component
   pub fn is_plural_component(&self, tag_name: &str) -> bool {
+    self.plural_transformation(tag_name).is_some()
+  }
+
+  /// The stored transformation of a Plural ("p") or an Ordinal ("o")
+  fn plural_transformation(&self, tag_name: &str) -> Option<&'static str> {
     // Named import
     if let Some(translation_variable) = self
       .visitor
@@ -427,13 +433,13 @@ impl<'a> JsxTraversal<'a> {
       .scope_tracker
       .get_translation_variable(&Atom::from(tag_name))
     {
-      if translation_variable.original_name.as_str() == "Plural" {
-        return true;
+      if let Some(transformation) = plural_transformation(translation_variable.original_name.as_str()) {
+        return Some(transformation);
       }
     }
 
     // Namespace import
-    if tag_name.ends_with(".Plural") {
+    if let Some((_, component)) = tag_name.rsplit_once('.') {
       let namespace = tag_name.split('.').next().unwrap_or("");
       if self
         .visitor
@@ -441,11 +447,11 @@ impl<'a> JsxTraversal<'a> {
         .namespace_imports
         .contains(&Atom::from(namespace))
       {
-        return true;
+        return plural_transformation(component);
       }
     }
 
-    false
+    None
   }
 
   /// Analyze if this is a GT component and extract relevant info
@@ -469,8 +475,8 @@ impl<'a> JsxTraversal<'a> {
       if self.is_branch_component(tag_name) {
         info.transformation = Some(String::from("b"));
         info.branches = self.extract_branch_props(attrs);
-      } else if self.is_plural_component(tag_name) {
-        info.transformation = Some(String::from("p"));
+      } else if let Some(transformation) = self.plural_transformation(tag_name) {
+        info.transformation = Some(String::from(transformation));
         info.branches = self.extract_plural_props(attrs);
       }
     } else if self
@@ -504,8 +510,8 @@ impl<'a> JsxTraversal<'a> {
               info.transformation = Some("b".to_string());
               info.branches = self.extract_branch_props(attrs);
             }
-            "Plural" => {
-              info.transformation = Some("p".to_string());
+            "Plural" | "Ordinal" => {
+              info.transformation = plural_transformation(component).map(String::from);
               info.branches = self.extract_plural_props(attrs);
             }
             _ => {
@@ -748,6 +754,16 @@ fn has_dynamic_content_recursive(children: &[JSXElementChild]) -> bool {
     JSXElementChild::JSXSpreadChild(_) => true,
     _ => false,
   })
+}
+
+/// The stored transformation of a component: "p" for a Plural, "o" for an
+/// Ordinal, which differs only in its categories.
+fn plural_transformation(component: &str) -> Option<&'static str> {
+  match component {
+    "Plural" => Some("p"),
+    "Ordinal" => Some("o"),
+    _ => None,
+  }
 }
 
 impl Default for HtmlContentProps {
@@ -1265,6 +1281,86 @@ mod tests {
       );
       // hashSource({ source: { t: 'Plural', i: 1, d: { b: { one: 'One', other: 'Many' }, t: 'p' } }, dataFormat: 'JSX' })
       assert_eq!(hash, "50e2943adf4fe3dd");
+    }
+
+    #[test]
+    fn an_ordinal_is_stored_as_an_ordinal_plural() {
+      let mut visitor = create_test_visitor();
+      visitor.import_tracker.scope_tracker.track_variable(
+        Atom::new("Place"),
+        Atom::new("Ordinal"),
+        true,
+      );
+      let mut traversal = JsxTraversal::new(&visitor);
+      let mut ordinal = create_jsx_element_with_children("Place", vec![create_jsx_text_child("nth")]);
+      ordinal.opening.attrs = vec![
+        create_number_attr("n", 2.0),
+        create_string_attr("_1", "Winner"),
+        create_string_attr("one", "1st"),
+        // `other` is not a prop, and `_01` is not an exact number
+        create_string_attr("other", "Ignored"),
+        create_string_attr("_01", "Ignored"),
+      ];
+      let element = create_jsx_element_with_children(
+        "T",
+        vec![JSXElementChild::JSXElement(Box::new(ordinal))],
+      );
+
+      let (hash, json_string) = traversal.calculate_element_hash(&element);
+
+      assert_eq!(
+        json_string,
+        r#"{"dataFormat":"JSX","source":{"b":{"=1":"Winner","one":"1st","other":"nth"},"t":"o"}}"#
+      );
+      // hashSource({ source: { t: 'Ordinal', i: 1, d: { b: { '=1': 'Winner', one: '1st', other: 'nth' }, t: 'o' } }, dataFormat: 'JSX' })
+      assert_eq!(hash, "d154cccb78f09539");
+    }
+
+    #[test]
+    fn a_lone_empty_fallback_stores_no_branch_data() {
+      // <T>Before <Plural n={2}>{null}</Plural> after</T>, and {false} and {''}
+      let empties = || {
+        [
+          Lit::Null(Null { span: DUMMY_SP }),
+          Lit::Bool(Bool { span: DUMMY_SP, value: false }),
+          Lit::Str(Str { span: DUMMY_SP, value: Atom::new("").into(), raw: None }),
+        ]
+      };
+      for (component, selector) in [("Branch", "branch"), ("Plural", "n"), ("Ordinal", "n")] {
+        for empty in empties() {
+          let mut visitor = create_test_visitor();
+          visitor.import_tracker.scope_tracker.track_variable(
+            Atom::new(component),
+            Atom::new(component),
+            true,
+          );
+          let mut traversal = JsxTraversal::new(&visitor);
+          let fallback = JSXElementChild::JSXExprContainer(JSXExprContainer {
+            span: DUMMY_SP,
+            expr: JSXExpr::Expr(Box::new(Expr::Lit(empty.clone()))),
+          });
+          let mut branching = create_jsx_element_with_children(component, vec![fallback]);
+          branching.opening.attrs = vec![create_number_attr(selector, 2.0)];
+          let element = create_jsx_element_with_children(
+            "T",
+            vec![
+              create_jsx_text_child("Before "),
+              JSXElementChild::JSXElement(Box::new(branching)),
+              create_jsx_text_child(" after"),
+            ],
+          );
+
+          let (hash, json_string) = traversal.calculate_element_hash(&element);
+
+          assert_eq!(
+            json_string,
+            r#"{"dataFormat":"JSX","source":["Before ",{}," after"]}"#,
+            "{component} {empty:?}"
+          );
+          // The hash react-core's addGTIdentifier test pins for the same content
+          assert_eq!(hash, "b5a6ee4eef4e3071", "{component} {empty:?}");
+        }
+      }
     }
 
     #[test]

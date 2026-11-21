@@ -10,15 +10,15 @@ import {
   minifyVariableTypeMap,
 } from '../../../utils/getVariableName.js';
 import {
+  BRANCH_TRANSFORMATIONS,
+  type BranchElementName,
+} from '@generaltranslation/format/internal';
+import {
   getPluralBranchKey,
   isAcceptedPluralForm,
 } from 'generaltranslation/internal';
 import { MultipliedTreeNode } from './types.js';
-import {
-  DATA_ATTR_PREFIX,
-  BRANCH_COMPONENT,
-  PLURAL_COMPONENT,
-} from '../constants.js';
+import { DATA_ATTR_PREFIX, BRANCH_COMPONENT } from '../constants.js';
 
 // The children of a <Plural> or a <Branch> are its `other` branch.
 function addFallbackBranch(
@@ -44,7 +44,7 @@ function addFallbackBranch(
  * @returns The data-_gt prop
  */
 function constructGTProp(
-  type: string,
+  branching: BranchElementName | undefined,
   props: Record<string, unknown>,
   id: number,
   gtVariableNames?: Set<string>
@@ -61,7 +61,7 @@ function constructGTProp(
   }, {});
 
   // Plural
-  if (type === PLURAL_COMPONENT) {
+  if (branching && branching !== BRANCH_COMPONENT) {
     const pluralBranches = Object.entries(props).reduce(
       (acc: Record<string, JsxChildren>, [branchName, branch]) => {
         if (isAcceptedPluralForm(branchName)) {
@@ -77,12 +77,12 @@ function constructGTProp(
     addFallbackBranch(pluralBranches, props.children, id, gtVariableNames);
     // Add plural branches to the generaltranslation
     if (Object.keys(pluralBranches).length) {
-      generaltranslation.t = 'p';
+      generaltranslation.t = BRANCH_TRANSFORMATIONS[branching];
       generaltranslation.b = pluralBranches;
     }
 
     // Branch
-  } else if (type === BRANCH_COMPONENT) {
+  } else if (branching === BRANCH_COMPONENT) {
     const { children, branch: _branch, other: _other, ...allBranches } = props;
     // Filter out data-* attributes injected by build tools
     const branches = Object.fromEntries(
@@ -103,7 +103,7 @@ function constructGTProp(
     addFallbackBranch(resultBranches, children, id, gtVariableNames);
     // Add branches to the generaltranslation
     if (Object.keys(resultBranches).length) {
-      generaltranslation.t = 'b';
+      generaltranslation.t = BRANCH_TRANSFORMATIONS[branching];
       generaltranslation.b = resultBranches;
     }
   }
@@ -141,7 +141,7 @@ export default function addGTIdentifierToSyntaxTree(
     // Handle JSX elements
     if (child && typeof child === 'object') {
       let { type } = child;
-      const { props } = child;
+      const { props, branching } = child;
       indexObject.index += 1;
 
       // Handle fragments
@@ -167,7 +167,7 @@ export default function addGTIdentifierToSyntaxTree(
 
       // Construct the data-_gt prop
       const generaltranslation = constructGTProp(
-        type as string,
+        branching,
         (props || {}) as Record<string, unknown>,
         indexObject.index,
         gtVariableNames
@@ -176,12 +176,11 @@ export default function addGTIdentifierToSyntaxTree(
       // Save current index and recurse. The children of a Branch or a Plural
       // are a branch, constructed above.
       const currentIndex = indexObject.index;
-      const children =
-        type === PLURAL_COMPONENT || type === BRANCH_COMPONENT
-          ? false
-          : handleChildren(
-              props?.children === undefined ? null : props?.children
-            );
+      const children = branching
+        ? false
+        : handleChildren(
+            props?.children === undefined ? null : props?.children
+          );
 
       // Enforce boolean rendering behavior
       // <T>{true}</T> -> true <- this is a boolean value, not a string

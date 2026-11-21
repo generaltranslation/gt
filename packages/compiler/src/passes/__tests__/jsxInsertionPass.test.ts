@@ -13,7 +13,7 @@ import {
 const IMPORTS = `
   import { jsx, jsxs } from 'react/jsx-runtime';
   import { Fragment } from 'react';
-  import { T, Var, Num, Currency, DateTime, RelativeTime, Branch, Plural, Derive } from 'gt-react';
+  import { T, Var, Num, Currency, DateTime, RelativeTime, Branch, Plural, Ordinal, Derive } from 'gt-react';
 `;
 
 function insert(code: string, options: Record<string, unknown> = {}) {
@@ -499,6 +499,11 @@ describe('jsxInsertionPass', () => {
         '<div><Plural n={count}>You have {count} items</Plural></div>',
         `jsx("div", { children: jsxs(Plural, { n: count, children: ["You have ", count, " items"] }) })`,
         [/n:\s*count/, /"You have "/, /" items"/],
+      ],
+      [
+        '<div><Ordinal n={place} one="1st">Place {place}</Ordinal></div>',
+        `jsx("div", { children: jsxs(Ordinal, { n: place, one: "1st", children: ["Place ", place] }) })`,
+        [/n:\s*place/, /"Place "/],
       ],
     ])(
       '%s wraps only the dynamic identifier in _Var',

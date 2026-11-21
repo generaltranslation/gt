@@ -4,23 +4,22 @@ import type {
   VariableType,
 } from '@generaltranslation/format';
 import type { GTConfig } from 'generaltranslation';
-import type {
-  VariableTransformationSuffix,
-  TransformationPrefix,
-  InjectionType,
-} from 'generaltranslation/internal';
 import React from 'react';
 
-/**
- * TaggedElement is a React element with a GTProp property.
- */
+export type InjectionType = 'automatic' | 'manual';
+
+/** What `addGTIdentifier()` records on an element of a `<T>`'s children. */
 export type GTTag = {
   id: number;
   injectionType: InjectionType;
-  transformation?: TransformationPrefix;
-  branches?: Record<string, TaggedChildren>;
-  variableType?: VariableTransformationSuffix;
-};
+} & (
+  | { transformation?: 'fragment' | 'derive' }
+  | { transformation: 'variable'; variableType: VariableType }
+  | {
+      transformation: 'branch' | 'plural' | 'ordinal';
+      branches?: Record<string, TaggedChildren>;
+    }
+);
 export type TaggedElementProps = Record<string, unknown> & {
   'data-_gt': GTTag;
   children?: TaggedChildren;

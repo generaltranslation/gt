@@ -7,7 +7,8 @@
     "dev": "vite --port 5176 --strictPort",
     "build": "vite build",
     "translate": "node scripts/pseudo-translate.mjs",
-    "check": "node scripts/check.mjs && node scripts/check.mjs map && node scripts/check-module.mjs",
+    "check": "node scripts/check.mjs && node scripts/check.mjs map && node scripts/check-module.mjs && node scripts/check-source-maps.mjs",
+    "check:source-maps": "node scripts/check-source-maps.mjs",
     "check:templates": "CHECK_PRECOMPUTE=false pnpm run check",
     "check:minify-hashes": "CHECK_MINIFY_HASHES=true pnpm run check",
     "check:install": "playwright-core install chromium-headless-shell",
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@generaltranslation/compiler": "workspace:*",
+    "@jridgewell/trace-mapping": "^0.3.31",
     "@types/node": "catalog:",
     "@types/react": "^19",
     "@types/react-dom": "^19",

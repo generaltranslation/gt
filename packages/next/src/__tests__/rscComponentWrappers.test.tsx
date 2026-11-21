@@ -11,6 +11,7 @@ const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
     LocaleSelector: vi.fn(),
     N: vi.fn(),
     Num: vi.fn(),
+    Ordinal: vi.fn(),
     Plural: vi.fn(),
     RelativeTime: vi.fn(),
     RscT: vi.fn(),
@@ -64,6 +65,7 @@ describe('rsc component wrappers', () => {
     ],
     ['N', () => import('../variables/N'), mockComponents.N],
     ['Num', () => import('../variables/Num'), mockComponents.Num],
+    ['Ordinal', () => import('../branches/Ordinal'), mockComponents.Ordinal],
     ['Plural', () => import('../branches/Plural'), mockComponents.Plural],
     [
       'RelativeTime',
@@ -104,18 +106,25 @@ describe('rsc component wrappers', () => {
     expect(module.GTProvider).toBeTypeOf('function');
     expect(module.T).toBeTypeOf('function');
     expect(module.GtInternalTranslateJsx).toBeTypeOf('function');
-    expect(module.GtInternalTranslateJsx._gtt).toBe(
-      'translate-server-automatic'
-    );
+    expect(module.GtInternalTranslateJsx._gtt).toEqual({
+      kind: 'translate',
+      automatic: true,
+    });
     expect(module.Var).toBeTypeOf('function');
     expect(module.GtInternalVar).toBeTypeOf('function');
-    expect(module.GtInternalVar._gtt).toBe('variable-variable-automatic');
+    expect(module.GtInternalVar._gtt).toEqual({
+      kind: 'variable',
+      variableType: 'v',
+      automatic: true,
+    });
     expect(module.N).toBeTypeOf('function');
     expect(module.Num).toBeTypeOf('function');
     expect(module.Currency).toBeTypeOf('function');
     expect(module.DateTime).toBeTypeOf('function');
     expect(module.RelativeTime).toBeTypeOf('function');
     expect(module.Branch).toBe(mockComponents.Branch);
+    expect(module.Ordinal).toBeTypeOf('function');
+    expect(module.Ordinal._gtt).toEqual({ kind: 'ordinal' });
     expect(module.Plural).toBeTypeOf('function');
     expect(module.LocaleSelector).toBe(mockComponents.LocaleSelector);
     expect(module.Derive).toBe(mockComponents.Derive);
@@ -124,7 +133,7 @@ describe('rsc component wrappers', () => {
       'mFallback',
       'derive',
       'plural',
-      'selectordinal',
+      'ordinal',
       'select',
       'number',
       'date',

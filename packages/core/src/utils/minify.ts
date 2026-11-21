@@ -1,5 +1,4 @@
 import type { VariableType } from '@generaltranslation/format';
-import type { VariableTransformationSuffix } from '../types-dir/transformations';
 
 const VARIABLE_TRANSFORMATION_SUFFIXES_TO_MINIFIED_NAMES = {
   variable: 'v',
@@ -11,7 +10,7 @@ const VARIABLE_TRANSFORMATION_SUFFIXES_TO_MINIFIED_NAMES = {
 } as const;
 
 export function minifyVariableType(
-  variableType: VariableTransformationSuffix
+  variableType: keyof typeof VARIABLE_TRANSFORMATION_SUFFIXES_TO_MINIFIED_NAMES
 ): VariableType {
   return VARIABLE_TRANSFORMATION_SUFFIXES_TO_MINIFIED_NAMES[variableType];
 }

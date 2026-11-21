@@ -19,8 +19,8 @@ ruleTester.run('static-branch', staticBranch, {
     const admins = part\`admins of \${{ team }}\`;
     t\`\${select({ role }, { admin: admins, other: 'everyone' })}\`;`,
     // Aliased imports
-    `import { t, selectordinal as ordinal, part as p, n } from 'gt-next';
-    t\`\${ordinal({ place }, { one: p\`\${n}st\`, other: p\`\${n}th\` })}\`;`,
+    `import { t, ordinal as nth, part as p, n } from 'gt-next';
+    t\`\${nth({ place }, { one: p\`\${n}st\`, other: p\`\${n}th\` })}\`;`,
     // A non-GT plural, which takes other branch shapes
     `import { plural } from 'some-lib';
     plural(count, { other: \`\${count} items\` });`,

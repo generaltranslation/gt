@@ -4,7 +4,7 @@ import { analyzeSvelteSource } from '../../index.js';
 import { serializeReactT } from './reactParity.js';
 
 const IMPORTS = `<script>
-  import { T, Var, Num, Currency, DateTime, RelativeTime, Branch, Plural } from 'gt-svelte';
+  import { T, Var, Num, Currency, DateTime, RelativeTime, Branch, Plural, Ordinal } from 'gt-svelte';
   import Link from './Link.svelte';
   let name = 'Ada';
   let count = 2;
@@ -129,6 +129,11 @@ const cases: { name: string; svelte: string; tsx: string }[] = [
     name: 'plural with string branches',
     svelte: `<T><Plural n={count} _0="No items" one="One item">Many items</Plural></T>`,
     tsx: `<T><Plural n={count} _0="No items" one="One item">Many items</Plural></T>`,
+  },
+  {
+    name: 'ordinal with string and snippet branches beside a plural',
+    svelte: `<T><Ordinal n={count} _1="Winner" one="1st">{#snippet two()}<b>2nd</b>{/snippet}<Num value={count} />th</Ordinal><Plural n={count} one="1st">nth</Plural></T>`,
+    tsx: `<T><Ordinal n={count} _1="Winner" one="1st" two={<><b>2nd</b></>}><Num>{count}</Num>th</Ordinal><Plural n={count} one="1st">nth</Plural></T>`,
   },
   {
     name: 'branch with string, snippet, and nested plural',

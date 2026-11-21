@@ -3,6 +3,7 @@ import {
   computeRelativeTime,
   type RelativeTimeProps,
 } from './RelativeTime.shared';
+import type { GTMarker } from '../../utils/marker';
 
 // ===== Component ===== //
 
@@ -19,8 +20,12 @@ function RelativeTime(props: RelativeTimeProps): React.JSX.Element {
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-GtInternalRelativeTime._gtt = 'variable-relativetime-automatic';
-RelativeTime._gtt = 'variable-relativetime';
+GtInternalRelativeTime._gtt = {
+  kind: 'variable',
+  variableType: 'rt',
+  automatic: true,
+} satisfies GTMarker;
+RelativeTime._gtt = { kind: 'variable', variableType: 'rt' } satisfies GTMarker;
 
 // ===== Exports ===== //
 

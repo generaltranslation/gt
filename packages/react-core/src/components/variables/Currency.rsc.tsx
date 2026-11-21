@@ -1,4 +1,5 @@
 import { computeCurrency, type ResolvedCurrencyProps } from './Currency.shared';
+import type { GTMarker } from '../../utils/marker';
 
 // RSC implementation: request conditions are passed explicitly instead of
 // being read from hooks. This module must stay free of hook/context imports
@@ -13,8 +14,12 @@ function RscCurrency(props: ResolvedCurrencyProps): React.JSX.Element {
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-RscCurrency._gtt = 'variable-currency';
-RscGtInternalCurrency._gtt = 'variable-currency-automatic';
+RscCurrency._gtt = { kind: 'variable', variableType: 'c' } satisfies GTMarker;
+RscGtInternalCurrency._gtt = {
+  kind: 'variable',
+  variableType: 'c',
+  automatic: true,
+} satisfies GTMarker;
 
 // ===== Exports ===== //
 
