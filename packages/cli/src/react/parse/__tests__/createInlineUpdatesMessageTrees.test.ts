@@ -1189,7 +1189,8 @@ ${
     entries = ['page.tsx'],
     parsingFlags = {}
   ) {
-    const dir = fs.mkdtempSync(path.join(projectDir, 'p-'));
+    // The CLI scans from process.cwd(), which is a physical path.
+    const dir = fs.realpathSync(fs.mkdtempSync(path.join(projectDir, 'p-')));
     tempFiles.push(dir);
     for (const [name, code] of Object.entries(files(path.basename(dir)))) {
       fs.mkdirSync(path.dirname(path.join(dir, name)), { recursive: true });
@@ -2204,6 +2205,67 @@ ${
       }),
       ['page.ts']
     );
+
+    expect(result.warnings).toEqual([]);
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Save']);
+  });
+
+  it('follows a symlinked directory to the files beside each link', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, (dir) => {
+      const root = path.join(projectDir, dir);
+      fs.mkdirSync(path.join(root, 'real/shared'), { recursive: true });
+      fs.writeFileSync(
+        path.join(root, 'real/shared/index.ts'),
+        "export { label } from '../impl';\n"
+      );
+      for (const name of ['a', 'b']) {
+        fs.mkdirSync(path.join(root, name), { recursive: true });
+        fs.symlinkSync(
+          path.join(root, 'real/shared'),
+          path.join(root, name, 'shared'),
+          'dir'
+        );
+      }
+      return {
+        'tsconfig.json': JSON.stringify({
+          compilerOptions: {
+            baseUrl: '.',
+            preserveSymlinks: true,
+            paths: { '@a': ['a/shared/index.ts'], '@b': ['b/shared/index.ts'] },
+          },
+        }),
+        'a/impl.ts': nav(
+          nextHost,
+          'export function label(t: GT) {\n  return t`A`;\n}'
+        ),
+        'b/impl.ts': nav(
+          nextHost,
+          'export function label(t: GT) {\n  return t`B`;\n}'
+        ),
+        'page.tsx': withTag(
+          nextHost,
+          'b(t);\n  return a(t);',
+          "import { label as a } from '@a';\nimport { label as b } from '@b';"
+        ),
+      };
+    });
+
+    expect(result.warnings).toEqual([]);
+    expect(
+      treeUpdates(result)
+        .map((u) => u.source)
+        .sort()
+    ).toEqual(['A', 'B']);
+  });
+
+  it("recognizes React's default export imported by name", async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        'return R.useMemo(() => t`Save`, [t]);',
+        "import { default as R } from 'react';"
+      ),
+    }));
 
     expect(result.warnings).toEqual([]);
     expect(treeUpdates(result).map((u) => u.source)).toEqual(['Save']);

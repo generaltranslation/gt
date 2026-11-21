@@ -32,7 +32,6 @@ export type FollowedParameter = {
 export type HelperFollower = {
   parsingOptions: ParsingConfigOptions;
   resolvedImports: Map<string, string | null>;
-  realPaths: Map<string, string>;
   /** The names each file exports, which decide whether to traverse it. */
   exportSummaries: Map<string, ExportSummary | null>;
   /** Recently traversed files, bounded because a traversed file is large. */
@@ -58,7 +57,6 @@ export function createHelperFollower(
   return {
     parsingOptions,
     resolvedImports: new Map(),
-    realPaths: new Map(),
     exportSummaries: new Map(),
     programs: new Map(),
     followed: new Map(),
@@ -123,7 +121,7 @@ export function followTagArgument(
   if (param === null) return followable;
   const key = getOptionsKey();
   if (key === undefined) return true;
-  const paramKey = `${realPath(found.file, follower)}\0${param.identifier.start}`;
+  const paramKey = `${found.file}\0${param.identifier.start}`;
   if (importKey) {
     follower.importedParameters.set(`${importKey}\0${index}`, {
       paramKey,
@@ -142,26 +140,6 @@ export function followTagArgument(
     });
   }
   return followable;
-}
-
-/**
- * `file` with its directory's symlinks resolved. A symlinked file keeps its
- * own directory, which its relative imports resolve from.
- */
-function realPath(file: string, follower: HelperFollower): string {
-  let real = follower.realPaths.get(file);
-  if (real === undefined) {
-    try {
-      real = nodePath.join(
-        fs.realpathSync(nodePath.dirname(file)),
-        nodePath.basename(file)
-      );
-    } catch {
-      real = file;
-    }
-    follower.realPaths.set(file, real);
-  }
-  return real;
 }
 
 /**
@@ -275,7 +253,7 @@ function getImportKey(
   const name = path.isImportSpecifier()
     ? getImportedName(path.node)
     : 'default';
-  return `${realPath(resolved, follower)}\0${name}`;
+  return `${resolved}\0${name}`;
 }
 
 /** The function a binding declares, defines as a const, or imports. */

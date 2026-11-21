@@ -264,7 +264,9 @@ function getReactImportName(callee: NodePath): string | undefined {
     const specifier = importOf(callee.get('object'));
     const property = callee.node.property;
     return (specifier?.isImportNamespaceSpecifier() ||
-      specifier?.isImportDefaultSpecifier()) &&
+      specifier?.isImportDefaultSpecifier() ||
+      (specifier?.isImportSpecifier() &&
+        getImportedName(specifier.node) === 'default')) &&
       fromReact(specifier) &&
       t.isIdentifier(property)
       ? property.name
