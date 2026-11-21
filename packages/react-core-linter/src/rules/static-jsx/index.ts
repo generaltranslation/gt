@@ -73,6 +73,18 @@ export const staticJsx = createRule({
       const fixes: ReturnType<RuleFixer['replaceText']>[] = [];
       const gtImportDecls = getGTImportDecls(context.sourceCode, libs);
       const expr = node.expression as TSESTree.Expression;
+      // A name the file binds where the fix is written, to a UI component for one.
+      const isBound = (name: string) => {
+        for (
+          let scope: ReturnType<typeof context.sourceCode.getScope> | null =
+            context.sourceCode.getScope(node);
+          scope;
+          scope = scope.upper
+        ) {
+          if (scope.set.has(name)) return true;
+        }
+        return false;
+      };
       // JSX as an attribute value keeps its braces: gt reads only a string or
       // an expression there.
       const replace = (jsx: string) =>
@@ -90,7 +102,8 @@ export const staticJsx = createRule({
           gtImportDecls,
           SELECT_COMPONENT_NAME,
           fixes,
-          fixer
+          fixer,
+          isBound
         );
         fixes.push(
           replace(generateBranch(expr, branchTag, context.sourceCode))
@@ -105,7 +118,8 @@ export const staticJsx = createRule({
           gtImportDecls,
           SELECT_COMPONENT_NAME,
           fixes,
-          fixer
+          fixer,
+          isBound
         );
         fixes.push(
           replace(generateLogicalAnd(expr, branchTag, context.sourceCode))
@@ -119,7 +133,8 @@ export const staticJsx = createRule({
         gtImportDecls,
         VAR_COMPONENT_NAME,
         fixes,
-        fixer
+        fixer,
+        isBound
       );
       const sourceCode = context.sourceCode.getText(node);
       fixes.push(replace(`<${varTag}>${sourceCode}</${varTag}>`));

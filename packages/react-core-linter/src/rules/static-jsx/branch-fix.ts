@@ -16,6 +16,7 @@ import {
   isBranchableConditional,
   isBranchableLogicalAnd,
 } from '../../utils/expression-utils.js';
+import { SELECT_COMPONENT_VALUE_PROPERTY } from '../../utils/branching-utils.js';
 
 const VALID_JSX_PROP_NAME = /^[a-zA-Z_$][a-zA-Z0-9_$-]*$/;
 
@@ -62,8 +63,12 @@ export function extractBranchInfo(
         literal.value != null
       ) {
         const propName = String(literal.value);
-        // `other` is not a prop: the fallback is the children.
-        if (propName !== 'other' && VALID_JSX_PROP_NAME.test(propName)) {
+        // Neither is a branch prop: `other` is the children, `value` the selector.
+        if (
+          propName !== 'other' &&
+          propName !== SELECT_COMPONENT_VALUE_PROPERTY &&
+          VALID_JSX_PROP_NAME.test(propName)
+        ) {
           return {
             branchExpr: sourceCode.getText(variable),
             propName,
