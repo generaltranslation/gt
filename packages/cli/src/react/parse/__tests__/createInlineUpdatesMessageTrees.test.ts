@@ -2271,6 +2271,20 @@ ${
     expect(treeUpdates(result).map((u) => u.source)).toEqual(['Save']);
   });
 
+  it('extracts a gt-svelte module in a .ts file with a <T> assertion', async () => {
+    const { result } = await extractProject(
+      Libraries.GT_SVELTE,
+      () => ({
+        'labels.ts':
+          "import { msg } from 'gt-svelte';\nconst count = <number>1;\nexport const save = msg('Save');\n",
+      }),
+      ['labels.ts']
+    );
+
+    expect(result.errors).toEqual([]);
+    expect(result.updates.map((u) => u.source)).toContain('Save');
+  });
+
   it('does not extract a function that never receives a tag', async () => {
     const { result } = await extractProject(Libraries.GT_NEXT, () => ({
       'page.tsx': withTag(

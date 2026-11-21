@@ -98,7 +98,7 @@ export async function createInlineUpdates(
         parse: (source) =>
           parse(source, {
             sourceType: 'module',
-            plugins: ['estree', 'jsx', 'typescript'],
+            plugins: ['estree', ...getSourceParserPlugins(file)],
           }).program,
         includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
       });
