@@ -27,4 +27,5 @@
 - `value` is no longer a branch name, and `branch` is one like any other.
 - The `BranchProps` type is `SelectProps`.
 - The lint rule `no-data-attrs-on-branch` is `no-data-attrs-on-select`.
+- The `static-jsx` fix imports a component as `GT<name>`, as in `Select as GTSelect`, when the file already has something of that name, such as a UI library's `Select`.
 - The compiler inserts `GtInternalSelect` where it inserted `GtInternalBranch`, so the compiler and the runtime packages must be upgraded together.

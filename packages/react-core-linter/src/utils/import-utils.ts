@@ -51,7 +51,8 @@ export function findImportedSpecifier(
 /**
  * Returns the local tag name for `componentName`. If the component is
  * already imported (possibly aliased), returns the alias. Otherwise
- * appends an import-fix to `fixes` and returns the canonical name.
+ * appends an import-fix to `fixes` and returns the name it imports it under:
+ * the canonical one, or `GT<name>` when the file binds that name already.
  *
  * NOTE: If no native GT import has named specifiers (e.g. namespace import
  * `import * as GT from 'gt-react'`), no import fix is emitted. The
@@ -63,10 +64,15 @@ export function addComponentImport(
   gtImportDecls: TSESTree.ImportDeclaration[],
   componentName: string,
   fixes: ReturnType<RuleFixer['replaceText']>[],
-  fixer: RuleFixer
+  fixer: RuleFixer,
+  isBound: (name: string) => boolean
 ): string {
   const spec = findImportedSpecifier(gtImportDecls, componentName);
   if (spec) return spec.local.name;
+  // shortcut: GT<name> is assumed free, pick a unique name if a file binds both.
+  const localName = isBound(componentName)
+    ? `GT${componentName}`
+    : componentName;
   // The core package and compat entries don't export components, and a
   // type-only import would make the component type-only.
   const target = gtImportDecls.find(
@@ -84,10 +90,12 @@ export function addComponentImport(
       fixes.push(
         fixer.insertTextAfter(
           namedSpecs[namedSpecs.length - 1],
-          `, ${componentName}`
+          localName === componentName
+            ? `, ${componentName}`
+            : `, ${componentName} as ${localName}`
         )
       );
     }
   }
-  return componentName;
+  return localName;
 }

@@ -177,8 +177,8 @@ ruleTester.run('static-jsx: scope', staticJsx, {
         '<T><Var>{name}</Var></T>'
       ),
       output: component(
-        "import { T, Var } from 'gt-react';\nimport { Var } from 'some-other-library';",
-        '<T><Var><Var>{name}</Var></Var></T>'
+        "import { T, Var as GTVar } from 'gt-react';\nimport { Var } from 'some-other-library';",
+        '<T><Var><GTVar>{name}</GTVar></Var></T>'
       ),
       errors: errors(),
     },
@@ -256,6 +256,18 @@ ruleTester.run('static-jsx: imports', staticJsx, {
       name: 'Select already imported',
       code: t('{cond ? "yes" : "no"}', 'T, Select'),
       output: t('<Select value={cond} true="yes">no</Select>', 'T, Select'),
+      errors: errors(),
+    },
+    {
+      name: 'a Select the file already has keeps its name',
+      code: component(
+        `import { Select } from './ui';\nimport { T } from 'gt-react';`,
+        '<T>{cond ? "yes" : "no"}</T>'
+      ),
+      output: component(
+        `import { Select } from './ui';\nimport { T, Select as GTSelect } from 'gt-react';`,
+        '<T><GTSelect value={cond} true="yes">no</GTSelect></T>'
+      ),
       errors: errors(),
     },
     {
@@ -589,6 +601,11 @@ ruleTester.run('static-jsx: ternary test to branch prop', staticJsx, {
       '==',
       '{status == "active" ? "on" : "off"}',
       '<Select value={status} active="on">off</Select>',
+    ],
+    [
+      'value is the selector, so a comparison with it stays a boolean',
+      '{mode === "value" ? "Label" : "Other"}',
+      '<Select value={mode === "value"} true="Label">Other</Select>',
     ],
     [
       '!== swaps the branches',

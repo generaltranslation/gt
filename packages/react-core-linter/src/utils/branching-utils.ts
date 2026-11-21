@@ -1,7 +1,7 @@
 import { SELECT_COMPONENT_NAME, BRANCH_COMPONENT_NAMES } from './constants.js';
 import { TSESTree } from '@typescript-eslint/utils';
 
-const SELECT_COMPONENT_VALUE_PROPERTY = 'value';
+export const SELECT_COMPONENT_VALUE_PROPERTY = 'value';
 const PLURAL_COMPONENT_BRANCH_PROPERTY = 'n';
 
 function getBranchingProp(
