@@ -959,7 +959,12 @@ function serializeNode(
       );
     if (branches.length) {
       data.b = Object.fromEntries(branches);
-      data.t = node.transformation === 'plural' ? 'p' : 'b';
+      data.t =
+        node.transformation !== 'plural'
+          ? 'b'
+          : isOrdinal(node.vnode)
+            ? 'o'
+            : 'p';
     }
   }
 
@@ -1163,7 +1168,12 @@ function renderElement(
     const selectKey = (branches: object) =>
       source.transformation === 'branch'
         ? getBranchKey(source.vnode.props?.branch, branches)
-        : getPluralKey(source.vnode.props?.n, Object.keys(branches), state);
+        : getPluralKey(
+            source.vnode.props?.n,
+            Object.keys(branches),
+            isOrdinal(source.vnode),
+            state
+          );
     const targetBranch = selectKey(targetBranches);
     // The translation picks the branch. The source pairs with it by key, or
     // with `other` when it has no branch of that name. A translation with no
@@ -1220,6 +1230,7 @@ function getBranchKey(branch: unknown, branches: object): string {
 function getPluralKey(
   n: unknown,
   branches: string[],
+  ordinal: boolean,
   state: GTState,
   locale = state.getLocale()
 ): string {
@@ -1227,8 +1238,14 @@ function getPluralKey(
   return getPluralForm(
     n,
     branches,
-    getFormatLocales(locale, state.resolveFormattingLocale)
+    getFormatLocales(locale, state.resolveFormattingLocale),
+    ordinal ? 'ordinal' : 'cardinal'
   );
+}
+
+/** Whether a plural is an `<Ordinal>`, which selects among ordinal categories. */
+function isOrdinal(vnode: VNode): boolean {
+  return getGTMetadata(vnode) === 'plural-ordinal';
 }
 
 function getSelectedSourceBranch(
@@ -1328,7 +1345,13 @@ function renderDefaultNode(
   }
   if (node.transformation === 'plural') {
     const n = node.vnode.props?.n;
-    const branch = getPluralKey(n, Object.keys(node.branches), state, locale);
+    const branch = getPluralKey(
+      n,
+      Object.keys(node.branches),
+      isOrdinal(node.vnode),
+      state,
+      locale
+    );
     return renderDefaultNodes(
       getSelectedSourceBranch(node, branch).nodes,
       state,

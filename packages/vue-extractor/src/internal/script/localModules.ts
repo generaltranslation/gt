@@ -35,6 +35,7 @@ const GT_EXPORT_NAMES = [
   'DateTime',
   'Currency',
   'Plural',
+  'Ordinal',
   'Branch',
   'msg',
   't',

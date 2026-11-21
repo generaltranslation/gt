@@ -52,6 +52,7 @@ export { RegionSelector } from './components/RegionSelector';
 // ===== Components ===== //
 export {
   Branch,
+  Ordinal,
   Plural,
   Derive,
   GtInternalTranslateJsx,
@@ -93,7 +94,7 @@ export {
   mFallback,
   derive,
   plural,
-  selectordinal,
+  ordinal,
   select,
   number,
   date,

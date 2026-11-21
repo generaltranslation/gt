@@ -25,6 +25,7 @@ import {
   Currency,
   DateTime,
   Num,
+  Ordinal,
   Plural,
   T,
   Var,
@@ -128,6 +129,49 @@ describe('Branch and Plural attributes', () => {
         t: 'b',
       },
     });
+  });
+
+  it('stores an Ordinal as an ordinal plural and selects with ordinal rules', async () => {
+    const places = (component: Component, n: number) =>
+      h(
+        component,
+        { n, _1: 'Winner', one: `${n}st`, two: `${n}nd`, few: `${n}rd` },
+        { default: () => `${n}th` }
+      );
+    const b = {
+      '=1': 'Winner',
+      one: '2st',
+      two: '2nd',
+      few: '2rd',
+      other: '2th',
+    };
+    expect(
+      serializeVueChildren([places(Ordinal, 2), places(Plural, 2)])
+    ).toEqual([
+      { t: 'Ordinal', i: 1, d: { b, t: 'o' } },
+      { t: 'Plural', i: 2, d: { b, t: 'p' } },
+    ]);
+
+    const numbers = [1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 101, 111];
+    const template = (wrap: (plural: string) => string) =>
+      numbers
+        .map((n) =>
+          wrap(
+            `<Ordinal :n="${n}" one="${n}st" two="${n}nd" few="${n}rd">${n}th</Ordinal>`
+          )
+        )
+        .join(' ');
+    const expected =
+      '1st 2nd 3rd 4th 11th 12th 13th 21st 22nd 23rd 101st 111th';
+    expect(await renderTemplate(template((plural) => plural))).toBe(expected);
+    expect(await renderTemplate(template((plural) => `<T>${plural}</T>`))).toBe(
+      expected
+    );
+    expect(
+      await renderTemplate(
+        '<Ordinal :n="1" _1="Winner" one="1st">nth</Ordinal> <Plural :n="2" one="1st" two="2nd">nth</Plural>'
+      )
+    ).toBe('Winner nth');
   });
 
   it('preserves primitive accepted Plural forms and rejects other attributes in the rich wire source', () => {
@@ -673,6 +717,32 @@ describe('Branch and Plural attributes', () => {
     ).toBe('A');
   });
 
+  it('picks an ordinal branch among the branches of the translation', async () => {
+    const source: JsxChildren = {
+      t: 'Ordinal',
+      i: 1,
+      d: { b: { one: '1st', two: '2nd', other: 'nth' }, t: 'o' },
+    };
+    // Swedish counts 2 as "one" in ordinals and as "other" in cardinals.
+    const target: JsxChildren = {
+      t: 'Ordinal',
+      i: 1,
+      d: { b: { one: ':a', other: ':e' }, t: 'o' },
+    };
+    const plugin = createGT({
+      loadTranslations: async () => ({ [jsxHash(source)]: target }),
+    });
+    await plugin.setLocale('sv');
+
+    expect(
+      await renderTemplate(
+        '<T><Ordinal :n="2" one="1st" two="2nd">nth</Ordinal></T>',
+        undefined,
+        plugin
+      )
+    ).toBe(':a');
+  });
+
   it('uses the same filtered inputs for a rich Plural hash', async () => {
     const source: JsxChildren = {
       t: 'Plural',
@@ -1010,7 +1080,10 @@ async function renderTemplate(
   plugin = createGT()
 ): Promise<string> {
   const Root = defineComponent({
-    components: { Branch, Plural, T } satisfies Record<string, Component>,
+    components: { Branch, Ordinal, Plural, T } satisfies Record<
+      string,
+      Component
+    >,
     render: compile(template),
     setup,
   });

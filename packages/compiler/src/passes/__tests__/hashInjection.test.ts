@@ -23,7 +23,7 @@ const jsxHash = (source: JsxChildren) =>
 
 const JSX_IMPORTS = `
   import { jsx, jsxs } from 'react/jsx-runtime';
-  import { T, Var, Num, Branch, Plural, Derive, derive } from 'gt-react';
+  import { T, Var, Num, Branch, Plural, Ordinal, Derive, derive } from 'gt-react';
 `;
 
 describe('<T> hash injection', () => {
@@ -280,22 +280,52 @@ describe('JSX ids of Branch/Plural children, which are the other branch', () => 
 });
 
 describe('an other prop on Branch/Plural', () => {
-  it.each(['Plural', 'Branch'])('is an error on <%s>', (component) => {
+  it.each(['Plural', 'Ordinal', 'Branch'])(
+    'is an error on <%s>',
+    (component) => {
+      const { errors, code } = transform(
+        `${JSX_IMPORTS}jsx(T, { children: jsx(${component}, { n: count, branch: status, one: "One", other: "Many" }) });`
+      );
+      expect(errors).toEqual([
+        expect.stringContaining(
+          `<${component}> has no other prop. Write the fallback as its children.`
+        ),
+      ]);
+      expect(code).not.toContain('_hash');
+    }
+  );
+});
+
+describe('<Ordinal>', () => {
+  // <T><Ordinal n={place} _1="Winner" one="1st">nth</Ordinal></T>
+  it.each([
+    ['Ordinal', 'o'],
+    ['Plural', 'p'],
+  ] as const)('hashes <%s> as t: %s', (component, t) => {
     const { errors, code } = transform(
-      `${JSX_IMPORTS}jsx(T, { children: jsx(${component}, { n: count, branch: status, one: "One", other: "Many" }) });`
+      `${JSX_IMPORTS}jsx(T, { children: jsx(${component}, { n: place, _1: "Winner", one: "1st", children: "nth" }) });`
     );
-    expect(errors).toEqual([
-      expect.stringContaining(
-        `<${component}> has no other prop. Write the fallback as its children.`
-      ),
-    ]);
-    expect(code).not.toContain('_hash');
+    expect(errors).toEqual([]);
+    expect(code).toContain(
+      `_hash: "${jsxHash({ t: component, i: 1, d: { b: { '=1': 'Winner', one: '1st', other: 'nth' }, t } })}"`
+    );
   });
+
+  it.each(['null', 'false', '""'])(
+    'hashes a lone %s as no branches',
+    (empty) => {
+      const { code } = transform(
+        `${JSX_IMPORTS}jsx(T, { children: jsx(Ordinal, { n: place, children: ${empty} }) });`
+      );
+      expect(code).toContain(`_hash: "${jsxHash({ t: 'Ordinal', i: 1 })}"`);
+    }
+  );
 });
 
 describe('a spread on Branch/Plural', () => {
   it.each([
     ['Plural', '<Plural n={count} {...forms} />', '{ n: count, ...forms }'],
+    ['Ordinal', '<Ordinal n={place} {...forms} />', '{ n: place, ...forms }'],
     [
       'Branch',
       '<Branch branch={status} {...branches}>Closed</Branch>',

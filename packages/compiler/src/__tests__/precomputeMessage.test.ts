@@ -29,7 +29,7 @@ import { findPrecomputedMessageSupport } from '../transform/injection/precompute
 import { transformWithPlugin } from './transformWithPlugin';
 
 const HELPERS =
-  't, m, msg, useGT, plural, selectordinal, select, number, date, time, part, derive, n';
+  't, m, msg, useGT, plural, ordinal, select, number, date, time, part, derive, n';
 
 const module = (body: string) =>
   `import { ${HELPERS} } from 'gt-react';\n${body}\n`;
@@ -105,8 +105,8 @@ describe('emitted messages', () => {
       {},
     ],
     [
-      'selectordinal',
-      't`${selectordinal({ place }, { one: part`${n}st`, other: part`${n}th` })}`;',
+      'ordinal',
+      't`${ordinal({ place }, { one: part`${n}st`, other: part`${n}th` })}`;',
       '{ $_hash: "#", $_tree: [["place", "selectordinal", { one: [0, "st"], other: [0, "th"] }]] }',
       't(@, { place });',
       [['place', 'selectordinal', { one: [0, 'st'], other: [0, 'th'] }]],
@@ -779,8 +779,8 @@ const CASES: Case[] = [
     ],
   },
   {
-    name: 'a selectordinal',
-    body: 't`${selectordinal({ place: props.count }, { one: part`${n}st`, two: part`${n}nd`, few: part`${n}rd`, other: part`${n}th` })} place`',
+    name: 'an ordinal',
+    body: 't`${ordinal({ place: props.count }, { one: part`${n}st`, two: part`${n}nd`, few: part`${n}rd`, other: part`${n}th` })} place`',
     translation: [
       ['place', 'selectordinal', { one: [0, 're'], other: [0, 'e'] }],
       ' place',

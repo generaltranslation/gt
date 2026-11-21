@@ -11,7 +11,8 @@ export type GTComponentKind =
   | 'DateTime'
   | 'RelativeTime'
   | 'Branch'
-  | 'Plural';
+  | 'Plural'
+  | 'Ordinal';
 
 /** gt-svelte function exports the string extractor understands. */
 export type GTFunctionKind = 'useGT' | 'msg';
@@ -25,6 +26,7 @@ const COMPONENT_EXPORTS = new Set<string>([
   'RelativeTime',
   'Branch',
   'Plural',
+  'Ordinal',
 ]);
 
 const FUNCTION_EXPORTS = new Set<string>(['useGT', 'msg']);

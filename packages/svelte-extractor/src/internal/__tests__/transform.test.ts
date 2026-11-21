@@ -101,6 +101,21 @@ describe('transformSvelteSource', () => {
     expect(() => compile(code, { filename: 'Fixture.svelte' })).not.toThrow();
   });
 
+  it('marks an Ordinal for the runtime and selects it on n', () => {
+    const result = transform(`<script>
+  import { T, Ordinal } from 'gt-svelte';
+  let place = $state(1);
+</script>
+<T><Ordinal n={place} _1="Winner" one="1st">nth</Ordinal></T>`);
+    expect(result?.errors).toEqual([]);
+    expect(result!.code).toContain(
+      '_gtm={{"b":{"1":{"t":"o","b":["=1","one","other"]}}}}'
+    );
+    expect(result!.code).toContain(
+      '{#snippet __gt_e_1(__gt_pick)}{@render __gt_pick((place))}{/snippet}'
+    );
+  });
+
   it('needs no runtime metadata for repeated variable names', () => {
     const result = transform(`<script>
   import { T, Var } from 'gt-svelte';
@@ -359,7 +374,7 @@ ${SCSS}
 describe('errors', () => {
   const errorsFor = (markup: string, script = '') =>
     analyzeSvelteSource(
-      `<script>import { T, Var, Plural, Branch } from 'gt-svelte';${script}</script>${markup}`,
+      `<script>import { T, Var, Plural, Ordinal, Branch } from 'gt-svelte';${script}</script>${markup}`,
       { parse }
     ).errors.map((error) => error.whatHappened);
 
@@ -451,6 +466,9 @@ describe('errors', () => {
     expect(
       errorsFor('<T><Plural n={1}>{#snippet lots()}a{/snippet}</Plural></T>')
     ).toEqual(['{#snippet lots()} is not a plural form']);
+    expect(
+      errorsFor('<T><Ordinal n={1}>{#snippet _01()}a{/snippet}</Ordinal></T>')
+    ).toEqual(['{#snippet _01()} is not a plural form']);
   });
 
   it('rejects spread props on Plural and Branch', () => {
@@ -458,6 +476,11 @@ describe('errors', () => {
       errorsFor('<T><Plural n={1} {...forms} /></T>', 'let forms;')
     ).toEqual([
       'Spread props are not supported on <Plural> because its branches must be known at build time',
+    ]);
+    expect(
+      errorsFor('<T><Ordinal n={1} {...forms} /></T>', 'let forms;')
+    ).toEqual([
+      'Spread props are not supported on <Ordinal> because its branches must be known at build time',
     ]);
     expect(
       errorsFor(
@@ -506,6 +529,14 @@ describe('errors', () => {
       errorsFor('<T><Plural n={n} one="One" other="Many" /></T>', 'let n = 1;')
     ).toEqual([
       '<Plural> has no other branch. Write the fallback as its children',
+    ]);
+    expect(
+      errorsFor(
+        '<T><Ordinal n={n} one="1st">{#snippet other()}nth{/snippet}</Ordinal></T>',
+        'let n = 1;'
+      )
+    ).toEqual([
+      '<Ordinal> has no other branch. Write the fallback as its children',
     ]);
     expect(
       errorsFor(

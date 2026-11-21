@@ -45,13 +45,14 @@ function createBranchElement(
 
 function createPluralElement(
   n: number,
-  branches: Record<string, React.ReactNode>
+  branches: Record<string, React.ReactNode>,
+  ordinal?: boolean
 ): TaggedElement {
   const props = {
     'data-_gt': {
       id: 1,
       injectionType: 'manual',
-      transformation: 'plural',
+      transformation: ordinal ? 'ordinal' : 'plural',
       branches,
     },
     n,
@@ -186,7 +187,7 @@ describe('plural rendering', () => {
       }) as unknown as TaggedElementProps;
     const size = React.createElement(
       'span',
-      tagged(2, { transformation: 'variable', variableType: 'number' }),
+      tagged(2, { transformation: 'variable', variableType: 'n' }),
       100
     );
     const render = (
@@ -284,6 +285,30 @@ describe('plural rendering', () => {
       expect(result).toMatchObject([shows(undefined)]);
     });
   });
+
+  it.each([
+    [true, ':a'],
+    [false, ':e'],
+  ])(
+    'picks among the branches of the translation with ordinal=%s rules',
+    (ordinal, expected) => {
+      // Swedish counts 2 as "one" in ordinals and as "other" in cardinals.
+      const result = renderTranslatedChildren({
+        source: createPluralElement(
+          2,
+          { one: '1st', two: '2nd', other: 'nth' },
+          ordinal
+        ),
+        target: {
+          d: { b: { one: ':a', other: ':e' } },
+        } as unknown as TranslatedChildren,
+        locales: ['sv'],
+        enableI18n: true,
+      });
+
+      expect(result).toBe(expected);
+    }
+  );
 
   it('renders the source branch when the translation has no branch', () => {
     const result = renderTranslatedChildren({

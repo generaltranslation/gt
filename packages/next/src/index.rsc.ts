@@ -24,6 +24,7 @@ export { DateTime } from './variables/DateTime';
 export { GTProvider } from './provider/GTProvider';
 export { N } from './variables/N';
 export { Num } from './variables/Num';
+export { Ordinal } from './branches/Ordinal';
 export { Plural } from './branches/Plural';
 export { RelativeTime } from './variables/RelativeTime';
 export { GtInternalTranslateJsx, T } from './server-dir/buildtime/T';
@@ -108,7 +109,7 @@ export {
   part,
   plural,
   select,
-  selectordinal,
+  ordinal,
   time,
 } from 'gt-i18n';
 export { isLocaleSupported } from './request/localeValidation';

@@ -5,6 +5,7 @@ import {
   renderTranslatedChildren,
   renderVariable,
 } from '../renderPipeline.rsc';
+import { getMarker } from '../../marker';
 import type { TaggedElement } from '../../types';
 
 function createNumberVariable(value: number): TaggedElement {
@@ -15,7 +16,7 @@ function createNumberVariable(value: number): TaggedElement {
         id: 1,
         injectionType: 'manual',
         transformation: 'variable',
-        variableType: 'number',
+        variableType: 'n',
       },
     },
     value
@@ -59,7 +60,10 @@ describe('renderVariable locale handling', () => {
       _locale: string;
       _enableI18n: boolean;
     }>;
-    expect((element.type as { _gtt?: string })._gtt).toBe('variable-number');
+    expect(getMarker(element.type)).toEqual({
+      kind: 'variable',
+      variableType: 'n',
+    });
     expect(element.props._locale).toBe('fr');
     expect(element.props._enableI18n).toBe(true);
   });
@@ -76,9 +80,11 @@ describe('renderVariable locale handling', () => {
 
     expect(React.isValidElement(result)).toBe(true);
     if (!React.isValidElement(result)) return;
-    expect((result.type as { _gtt?: string })._gtt).toBe(
-      'variable-variable-automatic'
-    );
+    expect(getMarker(result.type)).toEqual({
+      kind: 'variable',
+      variableType: 'v',
+      automatic: true,
+    });
   });
 
   it('uses the external raw variable component for manual variables', () => {
@@ -93,7 +99,10 @@ describe('renderVariable locale handling', () => {
 
     expect(React.isValidElement(result)).toBe(true);
     if (!React.isValidElement(result)) return;
-    expect((result.type as { _gtt?: string })._gtt).toBe('variable-variable');
+    expect(getMarker(result.type)).toEqual({
+      kind: 'variable',
+      variableType: 'v',
+    });
   });
 
   it('passes the default locale when rendering source variables', () => {

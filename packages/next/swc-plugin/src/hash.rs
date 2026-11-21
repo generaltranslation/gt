@@ -58,7 +58,7 @@ pub struct SanitizedGtProp {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub b: Option<BTreeMap<String, Box<SanitizedChild>>>, // Branches
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub t: Option<String>, // Branch Transformation ('p' for plural, 'b' for branch)
+  pub t: Option<String>, // Branch Transformation ('p' for plural, 'o' for ordinal plural, 'b' for branch)
   #[serde(flatten)]
   pub html_props: HtmlContentProps, // HTML content properties
 }

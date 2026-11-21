@@ -96,8 +96,8 @@
     "hash": "0e19cec014da66bd"
   },
   {
-    "name": "selectordinal",
-    "template": "t`You finished ${selectordinal({ place }, { one: part`${n}st`, two: part`${n}nd`, few: part`${n}rd`, other: part`${n}th` })}!`",
+    "name": "ordinal",
+    "template": "t`You finished ${ordinal({ place }, { one: part`${n}st`, two: part`${n}nd`, few: part`${n}rd`, other: part`${n}th` })}!`",
     "options": {},
     "tree": [
       "You finished ",

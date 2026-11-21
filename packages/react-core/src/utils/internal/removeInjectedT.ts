@@ -1,8 +1,4 @@
-import {
-  isAcceptedPluralForm,
-  InjectionType,
-  TransformationPrefix,
-} from 'generaltranslation/internal';
+import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import {
   ReactNode,
   ReactElement,
@@ -10,6 +6,7 @@ import {
   cloneElement,
   Children,
 } from 'react';
+import { getMarker } from '../marker';
 
 /**
  * Remove injected _T components at runtime. This is only for i18n-context T components to use.
@@ -45,18 +42,18 @@ function handleSingleChildElement(
   derivationDepth: number
 ): ReactNode {
   const { type: elementType, props: elementProps } = child;
-  const transformation = getTransformation(elementType);
+  const marker = getMarker(elementType);
 
-  if (transformation) {
-    const { componentType, injectionType } = transformation;
+  if (marker) {
+    const { kind, automatic } = marker;
 
     // (1) If the element is a variable component, hands off
-    if (componentType === 'variable') {
+    if (kind === 'variable') {
       return child;
     }
 
     // (2) If the element is a branching component, explore respective branches
-    else if (componentType === 'branch') {
+    else if (kind === 'branch') {
       // Traverse into each branch
       const newProps = Object.entries(elementProps).reduce<
         Record<string, unknown>
@@ -76,7 +73,7 @@ function handleSingleChildElement(
       return cloneElement(child, {
         ...newProps,
       });
-    } else if (componentType === 'plural') {
+    } else if (kind === 'plural' || kind === 'ordinal') {
       // Traverse into each branch
       const newProps = Object.entries(elementProps).reduce<
         Record<string, unknown>
@@ -100,7 +97,7 @@ function handleSingleChildElement(
     }
 
     // (3) If the element is a derivation component, add/remove derivation depth
-    else if (componentType === 'derive') {
+    else if (kind === 'derive') {
       return cloneElement(child, {
         ...elementProps,
         ...('children' in elementProps && {
@@ -113,18 +110,14 @@ function handleSingleChildElement(
     }
 
     // (4) If the element is a translation component, remove _T if within a derivation context, just return the children
-    else if (
-      componentType === 'translate' &&
-      injectionType === 'automatic' &&
-      derivationDepth > 0
-    ) {
+    else if (kind === 'translate' && automatic && derivationDepth > 0) {
       return 'children' in elementProps
         ? handleChildren(elementProps.children as ReactNode, derivationDepth)
         : undefined;
     }
 
-    // Note: componentType === 'translate': means that there is a <_T> inside of a <T>/<_T>
-    else if (componentType === 'translate' && injectionType === 'automatic') {
+    // Note: kind === 'translate': means that there is a <_T> inside of a <T>/<_T>
+    else if (kind === 'translate' && automatic) {
       console.warn(warnNestedInternalTComponent);
     }
   }
@@ -171,40 +164,6 @@ function handleChildren(
     );
   }
   return handleSingleChild(children, derivationDepth);
-}
-
-// ----- Helper Functions ----- //
-
-/**
- * Extracts the transformation from the element type.
- * @param elementType - The element type to extract the transformation from.
- * @returns The transformation.
- */
-function getTransformation(elementType: ReactElement['type']):
-  | {
-      componentType: TransformationPrefix;
-      injectionType: InjectionType;
-    }
-  | undefined {
-  // Extract transformation string
-  const transformation =
-    typeof elementType === 'function' && '_gtt' in elementType
-      ? elementType._gtt
-      : undefined;
-  if (typeof transformation !== 'string') return undefined;
-
-  // Extract metadata from transformation string
-  const parts = transformation.split('-');
-  const componentType = parts[0] as TransformationPrefix;
-  const injectionType =
-    parts[1] === 'automatic' || parts[2] === 'automatic'
-      ? 'automatic'
-      : 'manual';
-
-  return {
-    componentType,
-    injectionType,
-  };
 }
 
 const warnNestedInternalTComponent = `'@generaltranslation/react-core Warning: A <_T> component was found injected outside of a <Derive> boundary. This may affect translation resolution for this component.`;

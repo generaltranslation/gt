@@ -18,6 +18,7 @@ export { BrowserGTProvider as GTProvider } from './provider/BrowserGTProvider';
 // ===== Components ===== //
 export {
   Branch,
+  Ordinal,
   Plural,
   Derive,
   GtInternalTranslateJsx,
@@ -59,7 +60,7 @@ export {
   mFallback,
   derive,
   plural,
-  selectordinal,
+  ordinal,
   select,
   number,
   date,

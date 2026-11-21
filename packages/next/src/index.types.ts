@@ -27,6 +27,7 @@ import {
   Num as _Num,
   Var as _Var,
   Branch as _Branch,
+  Ordinal as _Ordinal,
   Plural as _Plural,
   Derive as _Derive,
   useLocaleDirection as _useLocaleDirection,
@@ -51,7 +52,7 @@ import {
   part,
   plural,
   select,
-  selectordinal,
+  ordinal,
   time,
   getDefaultLocale,
   getLocaleProperties,
@@ -113,12 +114,12 @@ export const T: typeof _T = () => {
   throw new Error(typesFileError);
 };
 /** @internal _gtt - The GT transformation for the component. */
-T._gtt = 'translate';
+T._gtt = { kind: 'translate' };
 
 export const GtInternalTranslateJsx: typeof _GtInternalTranslateJsx = () => {
   throw new Error(typesFileError);
 };
-GtInternalTranslateJsx._gtt = 'translate-client-automatic';
+GtInternalTranslateJsx._gtt = { kind: 'translate', automatic: true };
 
 /**
  * The `<Currency>` component renders a formatted currency string, allowing customization of name, default value, currency type, and formatting options.
@@ -141,7 +142,7 @@ export const Currency: typeof _Currency = () => {
   throw new Error(typesFileError);
 };
 /** @internal _gtt - The GT transformation for the component. */
-Currency._gtt = 'variable-currency';
+Currency._gtt = { kind: 'variable', variableType: 'c' };
 
 /**
  * The `<DateTime>` component renders a formatted date or time string, allowing customization of the name, default value, and formatting options.
@@ -162,7 +163,7 @@ export const DateTime: typeof _DateTime = () => {
   throw new Error(typesFileError);
 };
 /** @internal _gtt - The GT transformation for the component. */
-DateTime._gtt = 'variable-datetime';
+DateTime._gtt = { kind: 'variable', variableType: 'd' };
 
 /**
  * The `<RelativeTime>` component renders a localized relative time string
@@ -184,7 +185,7 @@ export const RelativeTime: typeof _RelativeTime = () => {
   throw new Error(typesFileError);
 };
 /** @internal _gtt - The GT transformation for the component. */
-RelativeTime._gtt = 'variable-relativetime';
+RelativeTime._gtt = { kind: 'variable', variableType: 'rt' };
 
 /**
  * The `<N>` component renders the count of the `<Plural>` it is in, formatted as a number, as `#` does in ICU.
@@ -203,7 +204,7 @@ export const N: typeof _N = () => {
   throw new Error(typesFileError);
 };
 /** @internal _gtt - The GT transformation for the component. */
-N._gtt = 'variable-count';
+N._gtt = { kind: 'variable', variableType: '#' };
 
 /**
  * The `<Num>` component renders a formatted number string, allowing customization of the name, default value, and formatting options.
@@ -226,7 +227,7 @@ export const Num: typeof _Num = () => {
   throw new Error(typesFileError);
 };
 /** @internal _gtt - The GT transformation for the component. */
-Num._gtt = 'variable-number';
+Num._gtt = { kind: 'variable', variableType: 'n' };
 
 /**
  * The `<Var>` component renders a variable value, which can either be passed as `children` or a `value`.
@@ -246,12 +247,12 @@ export const Var: typeof _Var = () => {
   throw new Error(typesFileError);
 };
 /** @internal _gtt - The GT transformation for the component. */
-Var._gtt = 'variable-variable';
+Var._gtt = { kind: 'variable', variableType: 'v' };
 
 export const GtInternalVar: typeof _GtInternalVar = () => {
   throw new Error(typesFileError);
 };
-GtInternalVar._gtt = 'variable-variable-automatic';
+GtInternalVar._gtt = { kind: 'variable', variableType: 'v', automatic: true };
 
 /**
  * Marks JSX children as derivable by the GT compiler and CLI.
@@ -289,7 +290,7 @@ export const Derive: typeof _Derive = () => {
   throw new Error(typesFileError);
 };
 /** @internal _gtt - The GT transformation for the component. */
-Derive._gtt = 'derive';
+Derive._gtt = { kind: 'derive' };
 
 /**
  * The `<Branch>` component dynamically renders a specified branch of content or a fallback child component.
@@ -318,7 +319,7 @@ export const Branch: typeof _Branch = () => {
   throw new Error(typesFileError);
 };
 /** @internal _gtt - The GT transformation for the component. */
-Branch._gtt = 'branch';
+Branch._gtt = { kind: 'branch' };
 
 /**
  * The `<Plural>` component renders the branch that fits the number `n`, chosen as ICU does: an exact
@@ -344,7 +345,37 @@ export const Plural: typeof _Plural = () => {
   throw new Error(typesFileError);
 };
 /** @internal _gtt - The GT transformation for the component. */
-Plural._gtt = 'plural';
+Plural._gtt = { kind: 'plural' };
+
+/**
+ * The `<Ordinal>` component is `<Plural>` for ordinals such as 1st, 2nd and 3rd: it renders the branch that
+ * fits the number `n`, an exact branch such as `_1` first, then the ordinal category of `n` in the current
+ * locale (`zero`, `one`, `two`, `few`, `many`), then the children.
+ *
+ * @example
+ * ```jsx
+ * <Ordinal
+ *   n={place}
+ *   one={<><Num>{place}</Num>st</>}
+ *   two={<><Num>{place}</Num>nd</>}
+ *   few={<><Num>{place}</Num>rd</>}
+ * >
+ *   <Num>{place}</Num>th
+ * </Ordinal>
+ * ```
+ * In English this renders `1st`, `2nd`, `3rd`, `4th`, `11th`, `21st` and so on.
+ *
+ * @param {number | bigint} n - The number that picks the branch.
+ * @param {any} children - The content to render when no branch fits.
+ * @param {...{[key: string]: any}} [branches] - Branches for the ordinal categories `zero`, `one`, `two`, `few` and `many`,
+ * and for exact numbers, written `_0`, `_1` and so on.
+ * @returns {React.JSX.Element} The rendered content of the branch that fits `n`.
+ */
+export const Ordinal: typeof _Ordinal = () => {
+  throw new Error(typesFileError);
+};
+/** @internal _gtt - The GT transformation for the component. */
+Ordinal._gtt = { kind: 'ordinal' };
 
 /**
  * A dropdown component that allows users to select a locale.
@@ -538,7 +569,7 @@ export {
   part,
   plural,
   select,
-  selectordinal,
+  ordinal,
   time,
   getTranslationsSnapshot,
   getDefaultLocale,

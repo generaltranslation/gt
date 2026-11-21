@@ -24,15 +24,10 @@ type BranchProps = {
   branch?: string | number | boolean;
 };
 
-/**
- * Selects a plural slot or attribute for `n` as ICU does: an exact number such
- * as `_0`, then the active locale's plural category such as `one`, then the
- * default slot.
- */
-export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
-  /* @__PURE__ */ defineComponent({
+function definePlural(name: string, type: Intl.PluralRuleType) {
+  return defineComponent({
     inheritAttrs: false,
-    name: 'Plural',
+    name,
     props: {
       /** Number used to select a plural branch. */
       n: {
@@ -53,7 +48,8 @@ export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
             ...branches.map(getPluralBranchKey),
             ...(slots.default ? ['other'] : []),
           ],
-          getFormatLocales(state.getLocale(), state.resolveFormattingLocale)
+          getFormatLocales(state.getLocale(), state.resolveFormattingLocale),
+          type
         );
         const branch = branches.find(
           (name) => getPluralBranchKey(name) === form
@@ -67,8 +63,26 @@ export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
         );
       };
     },
-  }),
+  });
+}
+
+/**
+ * Selects a plural slot or attribute for `n` as ICU does: an exact number such
+ * as `_0`, then the active locale's plural category such as `one`, then the
+ * default slot.
+ */
+export const Plural = /* @__PURE__ */ withGTMetadata<PluralProps>(
+  /* @__PURE__ */ definePlural('Plural', 'cardinal'),
   'plural'
+);
+
+/**
+ * `Plural` for ordinals such as 1st, 2nd and 3rd: it selects among the active
+ * locale's ordinal categories.
+ */
+export const Ordinal = /* @__PURE__ */ withGTMetadata<PluralProps>(
+  /* @__PURE__ */ definePlural('Ordinal', 'ordinal'),
+  'plural-ordinal'
 );
 
 /**

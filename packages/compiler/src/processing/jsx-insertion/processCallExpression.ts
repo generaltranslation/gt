@@ -6,6 +6,7 @@ import {
   BRANCH_CONTROL_PROPS,
   PLURAL_CONTROL_PROPS,
 } from '../../utils/constants/gt/constants';
+import { isPluralComponent } from '../../utils/constants/gt/helpers';
 import { OTHER_IDENTIFIERS_ENUM } from '../../utils/constants/other/constants';
 import { REACT_FUNTIONS } from '../../utils/constants/react/constants';
 import { isReactJsxFunction } from '../../utils/constants/resolveIdentifier/isReactJsxFunction';
@@ -478,8 +479,7 @@ function processOpaqueComponentProps({
     if (propName === 'children') {
       if (
         insideAutoT &&
-        (gtName === GT_COMPONENT_TYPES.Branch ||
-          gtName === GT_COMPONENT_TYPES.Plural)
+        (gtName === GT_COMPONENT_TYPES.Branch || isPluralComponent(gtName))
       ) {
         processChildren({ childrenPath: valuePath, insideAutoT: true, state });
       }
@@ -520,7 +520,7 @@ function isControlProp(
   if (gtName === GT_COMPONENT_TYPES.Branch) {
     return BRANCH_CONTROL_PROPS.has(propName) || propName.startsWith('data-');
   }
-  if (gtName === GT_COMPONENT_TYPES.Plural) {
+  if (isPluralComponent(gtName)) {
     return PLURAL_CONTROL_PROPS.has(propName);
   }
   return false;

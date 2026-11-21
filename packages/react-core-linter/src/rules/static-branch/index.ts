@@ -1,5 +1,5 @@
 /**
- * Static branch rule for plural, selectordinal, and select.
+ * Static branch rule for plural, ordinal, and select.
  *
  * A branch is extracted as written, so it must be static text or a part`...`
  * template. A plain template literal with values turns them into text before
@@ -19,7 +19,6 @@ import type {
   RuleFix,
   RuleFixer,
 } from '@typescript-eslint/utils/ts-eslint';
-import type { BranchingKind } from '@generaltranslation/icu/internal';
 import {
   isGTMessageImportSource,
   type GTMessageHelperName,
@@ -33,9 +32,9 @@ type Context = Readonly<RuleContext<MessageIds, []>>;
 
 const CHOICE_HELPERS: ReadonlySet<string> = new Set([
   'plural',
-  'selectordinal',
+  'ordinal',
   'select',
-] satisfies BranchingKind[]);
+] satisfies GTMessageHelperName[]);
 const PART_HELPER = 'part' satisfies GTMessageHelperName;
 
 /** Whether a specifier imports only a type, which can't run as a tag. */
@@ -177,7 +176,7 @@ export const staticBranch = createRule<[], MessageIds>({
     type: 'problem',
     docs: {
       description:
-        'Require plural, selectordinal, and select branches to be static text or part`...`.',
+        'Require plural, ordinal, and select branches to be static text or part`...`.',
     },
     hasSuggestions: true,
     schema: [],

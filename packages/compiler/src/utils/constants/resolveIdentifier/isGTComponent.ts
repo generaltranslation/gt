@@ -1,6 +1,6 @@
 import { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { isGTImportSource } from '../gt/helpers';
+import { isGTImportSource, isPluralComponent } from '../gt/helpers';
 import { GT_COMPONENT_TYPES } from '../gt/constants';
 
 /**
@@ -52,14 +52,12 @@ export function isUserVariableComponent(
   ].includes((name ?? '') as GT_COMPONENT_TYPES);
 }
 
-/** Check if first arg is Branch or Plural */
+/** Check if first arg is Branch, Plural or Ordinal */
 export function isGTBranchComponent(
   firstArgPath: NodePath<t.Expression>
 ): boolean {
   const name = resolveFirstArgGTName(firstArgPath);
-  return (
-    name === GT_COMPONENT_TYPES.Branch || name === GT_COMPONENT_TYPES.Plural
-  );
+  return name === GT_COMPONENT_TYPES.Branch || isPluralComponent(name);
 }
 
 /** Check if first arg is Derive */

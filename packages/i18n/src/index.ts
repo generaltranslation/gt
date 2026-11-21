@@ -7,7 +7,7 @@ export {
   part,
   plural,
   select,
-  selectordinal,
+  ordinal,
   time,
   type Part,
   type Placeholder,

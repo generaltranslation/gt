@@ -6,6 +6,7 @@ import {
   JsxElement,
   Variable,
 } from '@generaltranslation/format';
+import { BRANCH_TRANSFORMATIONS } from '@generaltranslation/format/internal';
 import { TransformState } from '../../state/types';
 import * as t from '@babel/types';
 import type { NodePath } from '@babel/traverse';
@@ -27,7 +28,6 @@ import {
 } from '../../utils/constants/gt/helpers';
 import { validateStringLiteralPropertyFromArg } from './validation/validateStringLiteralPropertyFromArg';
 import {
-  GT_COMPONENT_TYPES,
   VARIABLE_COMPONENT_TYPES,
   type VariableComponent,
 } from '../../utils/constants/gt/constants';
@@ -563,7 +563,7 @@ function constructGTProp(
 
     if (Object.keys(branches).length > 0) {
       value['b'] = branches;
-      value['t'] = canonicalName === GT_COMPONENT_TYPES.Branch ? 'b' : 'p';
+      value['t'] = BRANCH_TRANSFORMATIONS[canonicalName];
     }
   } else {
     // Get the html content props

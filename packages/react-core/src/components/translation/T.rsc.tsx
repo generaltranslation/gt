@@ -7,6 +7,7 @@ import {
   type ResolvedTProps,
 } from '../../utils/translation/prepareT.shared';
 import { JsxChildren } from '@generaltranslation/format';
+import type { GTMarker } from '../../utils/marker';
 
 // RSC implementation: request conditions are passed explicitly instead of
 // being read from hooks. This module must stay free of hook/context imports
@@ -74,7 +75,7 @@ async function RscT({
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-RscT._gtt = 'translate-server';
+RscT._gtt = { kind: 'translate' } satisfies GTMarker;
 
 // ===== Exports ===== //
 

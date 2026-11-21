@@ -90,30 +90,37 @@ describe('getBranchComponentParameters', () => {
     expect(keys).toEqual(['other', 'morning']);
   });
 
-  it('warns about malformed exact numbers, which are not rendered', () => {
-    const warn = vi.fn();
-    const expression = makeObjectExpression({
-      n: '5',
-      _0: 'No items',
-      _01: 'One item',
-      _1e3: 'A thousand items',
-      children: 'Many items',
-    });
+  it.each([GT_COMPONENT_TYPES.Plural, GT_COMPONENT_TYPES.Ordinal])(
+    'warns about malformed exact numbers on <%s>',
+    (component) => {
+      const warn = vi.fn();
+      const expression = makeObjectExpression({
+        n: '5',
+        _0: 'No items',
+        _01: 'One item',
+        _1e3: 'A thousand items',
+        children: 'Many items',
+      });
 
-    const result = getBranchComponentParameters(
-      getObjectExpressionPath(expression),
-      GT_COMPONENT_TYPES.Plural,
-      warn
-    );
+      const result = getBranchComponentParameters(
+        getObjectExpressionPath(expression),
+        component,
+        warn
+      );
 
-    expect(result.map(([key]) => key)).toEqual(['=0', 'other']);
-    expect(warn.mock.calls.map(([diagnostic]) => diagnostic)).toEqual([
-      'Ignored the _01 prop of <Plural> because it is not an exact number. Write the number without a leading zero or an exponent, as in _0 or _1000.',
-      'Ignored the _1e3 prop of <Plural> because it is not an exact number. Write the number without a leading zero or an exponent, as in _0 or _1000.',
-    ]);
-  });
+      expect(result.map(([key]) => key)).toEqual(['=0', 'other']);
+      expect(warn.mock.calls.map(([diagnostic]) => diagnostic)).toEqual([
+        `Ignored the _01 prop of <${component}> because it is not an exact number. Write the number without a leading zero or an exponent, as in _0 or _1000.`,
+        `Ignored the _1e3 prop of <${component}> because it is not an exact number. Write the number without a leading zero or an exponent, as in _0 or _1000.`,
+      ]);
+    }
+  );
 
-  it.each([GT_COMPONENT_TYPES.Plural, GT_COMPONENT_TYPES.Branch])(
+  it.each([
+    GT_COMPONENT_TYPES.Plural,
+    GT_COMPONENT_TYPES.Ordinal,
+    GT_COMPONENT_TYPES.Branch,
+  ])(
     'fails an other prop on <%s>, whose fallback is its children',
     (component) => {
       const fail = vi.fn();

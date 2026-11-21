@@ -1189,6 +1189,28 @@ describe('Vue JSX rich extraction', () => {
     }
   );
 
+  it('stores an Ordinal as an ordinal plural in JSX', async () => {
+    const output = await extractFromVueSource(
+      `
+        import { Ordinal, Plural, T } from 'gt-vue';
+        export const View = () => (
+          <T>
+            <Ordinal n={2} _1="Winner" singular="Ignored" one="1st" v-slots={{ two: () => '2nd' }}>nth</Ordinal>
+            <Plural n={2} _1="Winner" one="1st" v-slots={{ two: () => '2nd' }}>nth</Plural>
+          </T>
+        );
+      `,
+      '/project/src/View.tsx'
+    );
+
+    expect(output.errors).toEqual([]);
+    const b = { '=1': 'Winner', one: '1st', two: '2nd', other: 'nth' };
+    expect(output.results[0]?.source).toEqual([
+      { t: 'Ordinal', i: 1, d: { b, t: 'o' } },
+      { t: 'Plural', i: 2, d: { b, t: 'p' } },
+    ]);
+  });
+
   it('preserves direct boolean and null props for accepted Plural forms', async () => {
     const output = await extractFromVueSource(
       `
@@ -1389,6 +1411,21 @@ describe('Vue JSX rich extraction', () => {
       name: 'other prop on Plural, whose fallback is its children',
       source: `<T><Plural n={2} one="One" other="Other" /></T>`,
       diagnostic: 'other branch on a gt-vue <Plural>',
+    },
+    {
+      name: 'other prop on Ordinal, whose fallback is its children',
+      source: `<T><Ordinal n={2} one="1st" other="nth" /></T>`,
+      diagnostic: 'other branch on a gt-vue <Ordinal>',
+    },
+    {
+      name: 'spread Ordinal props',
+      source: `<T><Ordinal n={2} {...forms} /></T>`,
+      diagnostic: 'spread prop',
+    },
+    {
+      name: 'missing ordinal selector',
+      source: `<T><Ordinal one="1st">nth</Ordinal></T>`,
+      diagnostic: 'gt-vue <Ordinal> component without an n prop',
     },
     {
       name: 'other slot on Branch, whose fallback is its children',
@@ -1593,7 +1630,7 @@ describe('Vue JSX rich extraction', () => {
     const output = await extractFromVueSource(
       `
         import { Suspense } from 'vue';
-        import { Branch, DateTime, Num, Plural, T, Var } from 'gt-vue';
+        import { Branch, DateTime, Num, Ordinal, Plural, T, Var } from 'gt-vue';
         ${setup}
         export const View = () => (${source});
       `,

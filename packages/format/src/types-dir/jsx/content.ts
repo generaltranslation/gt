@@ -21,13 +21,25 @@ export type HtmlContentPropValuesRecord = Partial<
 >;
 
 /**
+ * The elements whose props are branches, each with the transformation its
+ * branches are stored under.
+ */
+export const BRANCH_TRANSFORMATIONS = {
+  Branch: 'b',
+  Plural: 'p',
+  Ordinal: 'o',
+} as const;
+
+export type BranchElementName = keyof typeof BRANCH_TRANSFORMATIONS;
+
+/**
  * GTProp is an internal property used to contain data for translating and rendering elements.
  * note, transformations are only read on the server side if they are 'plural' or 'branch'
  */
 export type GTProp = {
   // Branches. `other` is the fallback; a plural's exact number N is `=N`.
   b?: Record<string, JsxChildren>;
-  t?: 'p' | 'b'; // Branch Transformation
+  t?: (typeof BRANCH_TRANSFORMATIONS)[BranchElementName]; // Branch transformation
 } & HtmlContentPropKeysRecord;
 
 export type JsxElement = {

@@ -19,7 +19,7 @@ import {
   INTERNAL_VAR_COMPONENT,
   VARIABLE_COMPONENTS,
   BRANCH_COMPONENT,
-  PLURAL_COMPONENT,
+  PLURAL_COMPONENTS,
   DEFAULT_GT_IMPORT_SOURCE,
   DERIVE_COMPONENT,
   BRANCH_CONTROL_PROPS,
@@ -168,7 +168,7 @@ function processJsxElement({
   // Must be checked BEFORE user variable check because Derive is in VARIABLE_COMPONENTS
   if (
     canonicalName === BRANCH_COMPONENT ||
-    canonicalName === PLURAL_COMPONENT ||
+    PLURAL_COMPONENTS.has(canonicalName) ||
     canonicalName === DERIVE_COMPONENT
   ) {
     if (!insideAutoT) {
@@ -369,7 +369,7 @@ function processOpaqueComponentProps({
   // Branch/Plural children (not rendered, still extracted) — process element-by-element before marking
   if (
     insideAutoT &&
-    (canonicalName === BRANCH_COMPONENT || canonicalName === PLURAL_COMPONENT)
+    (canonicalName === BRANCH_COMPONENT || PLURAL_COMPONENTS.has(canonicalName))
   ) {
     const childPaths = path.get('children');
     for (const childPath of childPaths) {
@@ -470,7 +470,7 @@ function isControlProp(
   if (canonicalName === BRANCH_COMPONENT) {
     return BRANCH_CONTROL_PROPS.has(propName) || propName.startsWith('data-');
   }
-  if (canonicalName === PLURAL_COMPONENT) {
+  if (PLURAL_COMPONENTS.has(canonicalName)) {
     return PLURAL_CONTROL_PROPS.has(propName);
   }
   return false;
@@ -524,7 +524,7 @@ function hasOpaqueGTChild(
     const canonical = importAliases[typeName];
     return (
       canonical === BRANCH_COMPONENT ||
-      canonical === PLURAL_COMPONENT ||
+      PLURAL_COMPONENTS.has(canonical) ||
       canonical === DERIVE_COMPONENT
     );
   });

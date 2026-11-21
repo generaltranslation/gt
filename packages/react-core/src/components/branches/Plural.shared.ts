@@ -27,13 +27,10 @@ type PluralConditions = {
 
 type ResolvedPluralProps = PluralProps & PluralConditions;
 
-function renderPlural({
-  _enableI18n,
-  _locale,
-  n,
-  children,
-  ...props
-}: ResolvedPluralProps): ReactNode {
+function renderPlural(
+  { _enableI18n, _locale, n, children, ...props }: ResolvedPluralProps,
+  ordinal?: boolean
+): ReactNode {
   const locales = getFormatLocales({
     locale: _locale,
     enableI18n: _enableI18n,
@@ -44,7 +41,7 @@ function renderPlural({
       .map(([prop, branch]) => [getPluralBranchKey(prop), branch]),
     ['other', children],
   ]);
-  const branch: ReactNode = getPluralBranch(n, locales, branches);
+  const branch: ReactNode = getPluralBranch(n, locales, branches, ordinal);
   // An `n` that is no number is reported where the branch is picked.
   return isCount(n) ? fillCount(branch, n) : branch;
 }

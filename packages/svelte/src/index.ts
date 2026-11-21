@@ -7,6 +7,7 @@ export { default as DateTime } from './components/DateTime.svelte';
 export { default as RelativeTime } from './components/RelativeTime.svelte';
 export { default as Branch } from './components/Branch.svelte';
 export { default as Plural } from './components/Plural.svelte';
+export { default as Ordinal } from './components/Ordinal.svelte';
 export {
   getLocaleDirection,
   initializeGT,

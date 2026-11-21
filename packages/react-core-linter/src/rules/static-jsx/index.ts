@@ -73,6 +73,15 @@ export const staticJsx = createRule({
       const fixes: ReturnType<RuleFixer['replaceText']>[] = [];
       const gtImportDecls = getGTImportDecls(context.sourceCode, libs);
       const expr = node.expression as TSESTree.Expression;
+      // JSX as an attribute value keeps its braces: gt reads only a string or
+      // an expression there.
+      const replace = (jsx: string) =>
+        fixer.replaceText(
+          node,
+          node.parent.type === TSESTree.AST_NODE_TYPES.JSXAttribute
+            ? `{${jsx}}`
+            : jsx
+        );
 
       if (isBranchableConditional(expr)) {
         // { cond ? "yes" : "no" }
@@ -84,10 +93,7 @@ export const staticJsx = createRule({
           fixer
         );
         fixes.push(
-          fixer.replaceText(
-            node,
-            generateBranch(expr, branchTag, context.sourceCode)
-          )
+          replace(generateBranch(expr, branchTag, context.sourceCode))
         );
         return fixes;
       }
@@ -102,10 +108,7 @@ export const staticJsx = createRule({
           fixer
         );
         fixes.push(
-          fixer.replaceText(
-            node,
-            generateLogicalAnd(expr, branchTag, context.sourceCode)
-          )
+          replace(generateLogicalAnd(expr, branchTag, context.sourceCode))
         );
         return fixes;
       }
@@ -119,9 +122,7 @@ export const staticJsx = createRule({
         fixer
       );
       const sourceCode = context.sourceCode.getText(node);
-      fixes.push(
-        fixer.replaceText(node, `<${varTag}>${sourceCode}</${varTag}>`)
-      );
+      fixes.push(replace(`<${varTag}>${sourceCode}</${varTag}>`));
       return fixes;
     }
 

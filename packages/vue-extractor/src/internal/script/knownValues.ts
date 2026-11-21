@@ -9,6 +9,7 @@ export const COMPONENT_IMPORTS = new Set<GTComponentName>([
   'DateTime',
   'Currency',
   'Plural',
+  'Ordinal',
   'Branch',
 ]);
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { TxProps } from '../../utils/types';
 import { Tx as Core_Tx } from 'gt-react';
 import { getRequestConditions } from '../../request/getRequestConditions';
+import type { GTMarker } from '@generaltranslation/react-core/pure';
 
 /**
  * Runtime translation component that renders its children in the user's given locale.
@@ -36,4 +37,4 @@ export async function Tx({
   );
 }
 /** @internal _gtt - The GT transformation for the component. */
-Tx._gtt = 'translate-runtime';
+Tx._gtt = { kind: 'translate' } satisfies GTMarker;

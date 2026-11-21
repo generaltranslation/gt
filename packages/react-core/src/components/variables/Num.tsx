@@ -1,5 +1,6 @@
 import { useEnableI18n, useLocale } from '../../hooks/condition-store';
 import { computeNum, type NumProps } from './Num.shared';
+import type { GTMarker } from '../../utils/marker';
 
 // ===== Component ===== //
 
@@ -16,8 +17,12 @@ function Num(props: NumProps): React.JSX.Element {
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-GtInternalNum._gtt = 'variable-number-automatic';
-Num._gtt = 'variable-number';
+GtInternalNum._gtt = {
+  kind: 'variable',
+  variableType: 'n',
+  automatic: true,
+} satisfies GTMarker;
+Num._gtt = { kind: 'variable', variableType: 'n' } satisfies GTMarker;
 
 // ===== Exports ===== //
 

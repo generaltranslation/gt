@@ -68,7 +68,6 @@ function createRenderTranslatedChildren({
     // Get props and generaltranslation
     const { props: sourceProps } = sourceElement;
     const sourceGT = sourceProps['data-_gt'];
-    const transformation = sourceGT?.transformation;
 
     // Get translated props
     const unprocessedTargetGT = targetElement.d;
@@ -87,16 +86,21 @@ function createRenderTranslatedChildren({
 
     // The translation chooses a branch; when it has none for the value, the
     // source chooses its own, which then renders untranslated.
-    if (transformation === 'plural') {
+    if (
+      sourceGT?.transformation === 'plural' ||
+      sourceGT?.transformation === 'ordinal'
+    ) {
       const n = sourceElement.props.n;
+      const ordinal = sourceGT.transformation === 'ordinal';
       const targetBranches = targetElement.d?.b || {};
-      const key = selectPluralKey(n, locales, targetBranches);
+      const key = selectPluralKey(n, locales, targetBranches, ordinal);
       const target = targetBranches[key] as TranslatedChildren;
       return renderTranslatedChildren({
         source: getPluralBranch(
           n,
           locales,
           sourceGT.branches || {},
+          ordinal,
           target === undefined ? undefined : key
         ),
         target,
@@ -107,7 +111,7 @@ function createRenderTranslatedChildren({
       });
     }
 
-    if (transformation === 'branch') {
+    if (sourceGT?.transformation === 'branch') {
       const { branch } = sourceProps;
       const targetBranches = targetElement.d?.b || {};
       const key = selectBranchKey(branch, targetBranches);
@@ -126,7 +130,7 @@ function createRenderTranslatedChildren({
     }
 
     // fragment (create a valid fragment)
-    if (transformation === 'fragment' && targetElement.c) {
+    if (sourceGT?.transformation === 'fragment' && targetElement.c) {
       return React.createElement(React.Fragment, {
         key: sourceElement.props.key,
         children: renderTranslatedChildren({

@@ -30,6 +30,7 @@ export {
   LocaleSelector,
   N,
   Num,
+  Ordinal,
   Plural,
   RegionSelector,
   RelativeTime,
@@ -66,7 +67,7 @@ export {
   part,
   plural,
   select,
-  selectordinal,
+  ordinal,
   time,
 } from 'gt-i18n';
 export { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';

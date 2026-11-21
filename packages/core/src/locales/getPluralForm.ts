@@ -10,12 +10,14 @@ import { defaultDefaultLocale } from '@generaltranslation/format/internal';
  *
  * @param n - The number to pick a branch for.
  * @param forms - The keys of the branches there are.
+ * @param type - `ordinal` for the categories of 1st, 2nd, 3rd.
  * @returns The key of the branch, or an empty string if none fit.
  */
 export function getPluralForm(
   n: number | bigint,
   forms: readonly string[] = pluralForms,
-  locales: string[] = [defaultDefaultLocale]
+  locales: string[] = [defaultDefaultLocale],
+  type: Intl.PluralRuleType = 'cardinal'
 ): string {
   const exact = `=${n}`;
   if (forms.includes(exact)) return exact;
@@ -25,7 +27,7 @@ export function getPluralForm(
     (form) => form !== 'other' && form[0] !== '='
   );
   if (categories.length) {
-    const category = getCachedPluralRules(locales).select(
+    const category = getCachedPluralRules(locales, { type }).select(
       toPluralRulesNumber(n)
     );
     if (categories.includes(category)) return category;

@@ -198,9 +198,9 @@ export function handleChildrenWhitespace(
     return newChildren.length === 1 ? newChildren[0] : newChildren;
   } else if (isElementNode(currentTree)) {
     // Process all props recursively
-    // What if there is a different component sharing the same name?
-    const elementIsPlural = currentTree.type === 'Plural';
-    const elementIsBranch = currentTree.type === 'Branch';
+    const elementIsBranch = currentTree.branching === 'Branch';
+    const elementIsPlural =
+      currentTree.branching !== undefined && !elementIsBranch;
     const processedProps = !currentTree.props
       ? undefined
       : Object.fromEntries(
@@ -251,6 +251,7 @@ export function handleChildrenWhitespace(
     return {
       nodeType: 'element',
       type: currentTree.type,
+      ...(currentTree.branching && { branching: currentTree.branching }),
       ...(processedProps ? { props: processedProps } : {}),
     };
   } else if (isExpressionNode(currentTree)) {
