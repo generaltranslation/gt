@@ -80,9 +80,7 @@ export async function saveLocalEdits(
   const warningsBefore = getWarnings().length;
   const hadDiffs = await collectAndSendUserEditDiffs(uploads, settings);
   const skipped = getWarnings().slice(warningsBefore).length;
-  const outcome: SaveLocalEditsOutcome = !hadDiffs
-    ? { saved: false, skipped: 0 }
-    : { saved: true, skipped };
+  const outcome: SaveLocalEditsOutcome = { saved: hadDiffs, skipped };
   spinner.stop(saveLocalEditsMessage(outcome));
 
   // Publish files to CDN if diffs were detected and publish config exists
@@ -101,9 +99,15 @@ export type SaveLocalEditsOutcome = {
 };
 
 /** The one completion message the command footer also uses. */
-export const saveLocalEditsMessage = (outcome: SaveLocalEditsOutcome): string =>
-  !outcome.saved
-    ? 'No local edits were saved'
-    : outcome.skipped > 0
+export const saveLocalEditsMessage = (
+  outcome: SaveLocalEditsOutcome
+): string => {
+  if (outcome.skipped > 0) {
+    return outcome.saved
       ? `Local edits saved, ${outcome.skipped} could not be saved`
-      : 'Local edits saved successfully';
+      : `${outcome.skipped} local edit(s) could not be saved`;
+  }
+  return outcome.saved
+    ? 'Local edits saved successfully'
+    : 'No local edits were saved';
+};

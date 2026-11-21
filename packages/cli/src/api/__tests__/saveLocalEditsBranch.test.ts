@@ -219,4 +219,22 @@ describe('saveLocalEdits - template lookup uses the resolved branch', () => {
     );
     clearWarnings();
   });
+
+  it('reports the skipped edits when every edit was skipped', async () => {
+    const settings = buildSettings();
+    writeLockFile();
+    // Nothing was submitted and an edit was skipped, so reporting only "no
+    // edits were saved" would hide that the edit was detected.
+    vi.mocked(collectAndSendUserEditDiffs).mockImplementationOnce(async () => {
+      recordWarning('skipped_file', 'docs/ja/doc.md', 'baseline unavailable');
+      return false;
+    });
+
+    const outcome = await saveLocalEdits(settings);
+
+    expect(outcome).toEqual({ saved: false, skipped: 1 });
+    expect(saveLocalEditsMessage(outcome)).toContain(
+      '1 local edit(s) could not be saved'
+    );
+  });
 });
