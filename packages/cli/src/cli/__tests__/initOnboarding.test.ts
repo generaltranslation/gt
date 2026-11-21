@@ -33,6 +33,7 @@ vi.mock('open', () => ({ default: vi.fn() }));
 vi.mock('../../console/logging.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../console/logging.js')>()),
   displayHeader: vi.fn(),
+  setBannerAnimation: vi.fn(),
   exitSync: vi.fn((code: number) => {
     throw new Error(`exit ${code}`);
   }),

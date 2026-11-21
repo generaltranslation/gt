@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import chalk from 'chalk';
 import { logger } from '../console/logger.js';
+import { globeBanner } from '../console/globe/banner.js';
 
 export type Formatter = 'prettier' | 'biome' | 'eslint';
 
@@ -79,6 +80,8 @@ export async function formatFiles(
 
     if (detectedFormatter === 'biome') {
       logger.message(chalk.dim('Cleaning up with biome...'));
+      // Biome writes to the terminal directly, so the banner must land first.
+      await globeBanner.settle();
       try {
         await new Promise<void>((resolve) => {
           const args = [

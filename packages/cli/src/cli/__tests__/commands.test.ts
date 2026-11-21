@@ -32,6 +32,7 @@ vi.mock('@generaltranslation/auth', async (importOriginal) => ({
 }));
 vi.mock('../../console/logging.js', () => ({
   displayHeader: vi.fn(),
+  setBannerAnimation: vi.fn(),
   exitSync: vi.fn((code: number) => {
     throw new Error(`exit ${code}`);
   }),

@@ -20,6 +20,7 @@ import {
   promptMultiSelect,
   promptSelect,
   promptGlobPatterns,
+  setBannerAnimation,
 } from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import { describeApiError, lottieTranslateError } from '../console/index.js';
@@ -283,6 +284,10 @@ export class BaseCLI {
       '-q, --quiet',
       'Suppress informational output; only warnings and errors are shown'
     );
+    this.program.option(
+      '--no-animation',
+      'Show the startup banner without animation'
+    );
     // Select console routing for this command before anything else logs:
     // root hooks run before subclass hooks (version checks) and the action's
     // settings resolution. `gt api-key create` prints the new secret on
@@ -309,6 +314,7 @@ export class BaseCLI {
     // nested commands (e.g. `gt git setup --quiet`).
     this.program.hook('preAction', () => {
       logger.setQuiet(Boolean(this.program.opts().quiet));
+      setBannerAnimation(this.program.opts().animation !== false);
     });
     this.program.hook('preAction', async (thisCommand, actionCommand) => {
       // Nested commands (e.g. `gt git setup`) can share leaf names with

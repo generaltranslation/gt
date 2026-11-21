@@ -31,6 +31,7 @@ vi.mock('../../console/displayTranslateSummary.js', () => ({
 }));
 vi.mock('../../console/logging.js', () => ({
   displayHeader: vi.fn(),
+  setBannerAnimation: vi.fn(),
   exitSync: vi.fn(),
   logErrorAndExit: vi.fn((message: string) => {
     throw new Error(message);

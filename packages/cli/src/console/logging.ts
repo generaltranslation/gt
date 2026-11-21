@@ -13,6 +13,10 @@ import chalk from 'chalk';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { getCLIVersion } from '../utils/packageJson.js';
 import { logger } from './logger.js';
+import { globeBanner } from './globe/banner.js';
+import { getGlobeFrames } from './globe/frames.js';
+import { decideBanner } from './globe/motion.js';
+import { paintFrame } from './globe/paint.js';
 import { TEMPLATE_FILE_NAME } from '../utils/constants.js';
 import type { CustomMapping } from '@generaltranslation/format';
 import type { FileToUpload } from 'generaltranslation';
@@ -61,15 +65,32 @@ export function exitSync(code: number): never {
   process.exit(code);
 }
 
+// --no-animation, applied by the root command before any action runs.
+let bannerAnimation = true;
+
+export function setBannerAnimation(enabled: boolean): void {
+  bannerAnimation = enabled;
+}
+
 // GT specific logging
 export function displayHeader(introString?: string) {
-  // The ASCII banner is pure chatter and writes to console directly, bypassing
-  // the logger, so gate it here to honor --quiet and to keep json/agent output
+  // The banner is pure chatter and writes to console directly, bypassing the
+  // logger, so gate it here to honor --quiet and to keep json/agent output
   // free of decoration. startCommand stays outside the gate: it is
   // quiet-aware itself and must still run so the file log gets its [START]
   // marker.
   if (!logger.isQuiet() && logger.getLogFormat() === 'default') {
-    displayAsciiTitle();
+    const stream = process.stdout;
+    const banner = decideBanner({ stream, animationFlag: bannerAnimation });
+    if (banner.mode === 'animate' && globeBanner.start({ stream })) {
+      // The header and intro print once the globe lands.
+      globeBanner.defer(() => {
+        displayInitializingText();
+        if (introString) logger.startCommand(introString);
+      });
+      return;
+    }
+    if (banner.mode === 'static') displayStaticGlobe();
     displayInitializingText();
   }
 
@@ -78,30 +99,20 @@ export function displayHeader(introString?: string) {
   }
 }
 
-function displayAsciiTitle() {
-  // eslint-disable-next-line no-console
-  console.log(
-    chalk.cyan(
-      `\n    @@@@@@@@@@@@@@@@@@@@@@
-  @@  @@@@@@@@@@@@ @@@@@@@
- @@ @@@          @ @
-@@ @@            @ @
-@@ @      @@@@@  @ @
-@@ @@     @@@ @  @ @
- @@ @@      @ @  @ @
-  @@  @@@@@@@ @  @ @
-    @@@@@@@@@    @ @`
-    )
-  );
+// The animation's landing frame, for terminals that don't animate.
+function displayStaticGlobe() {
+  const { rest, columns } = getGlobeFrames();
+  // chalk does not read NO_COLOR, so honor it here.
+  const color = chalk.level > 0 && !process.env.NO_COLOR;
+  process.stdout.write(`\n${paintFrame(rest, columns, color).join('\n')}\n`);
 }
 
 function displayInitializingText() {
   const version = getCLIVersion();
-  // eslint-disable-next-line no-console
-  console.log(
+  process.stdout.write(
     `\n${chalk.bold.blue('General Translation, Inc.')}
 ${chalk.dim('https://generaltranslation.com/docs')}
-${chalk.dim(`CLI Version: ${version}\n`)}`
+${chalk.dim(`CLI Version: ${version}\n`)}\n`
   );
 }
 
@@ -137,6 +148,7 @@ export async function promptText({
   defaultValue?: string;
   validate?: (value: string) => boolean | string;
 }) {
+  await globeBanner.settle();
   const result = await text({
     message,
     placeholder: defaultValue,
@@ -232,6 +244,7 @@ export async function promptLocale({
   defaultValue?: string;
   customMapping?: CustomMapping;
 }) {
+  await globeBanner.settle();
   const result = await autocomplete<string>({
     message,
     placeholder: 'Type to search locales',
@@ -256,6 +269,7 @@ export async function promptLocaleList({
   required?: boolean;
   customMapping?: CustomMapping;
 }) {
+  await globeBanner.settle();
   const result = await autocompleteMultiselect<string>({
     message,
     placeholder: 'Type to search, Tab or Space to select',
@@ -292,6 +306,7 @@ export async function promptSelect<T>({
   options: Array<{ value: T; label: string; hint?: string }>;
   defaultValue?: T;
 }) {
+  await globeBanner.settle();
   const result = await select({
     message,
     options: options as Option<T>[],
@@ -309,6 +324,7 @@ export async function promptMultiSelect<T extends string>({
   options: Array<{ value: T; label: string; hint?: string }>;
   required?: boolean;
 }) {
+  await globeBanner.settle();
   const result = await multiselect({
     message,
     options: options as Option<T>[],
@@ -326,6 +342,7 @@ export async function promptConfirm({
   defaultValue?: boolean;
   cancelMessage?: string;
 }) {
+  await globeBanner.settle();
   const result = await confirm({
     message,
     initialValue: defaultValue,
