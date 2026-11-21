@@ -1,7 +1,21 @@
 import { getCookieValue as getCookieValueFromString } from 'gt-i18n/internal/cookies';
 import { oncePerTask } from './oncePerTask';
 
-const cookieValues = oncePerTask(() => new Map<string, string | undefined>());
+type Cookies = { header: string; values: Map<string, string | undefined> };
+
+let lastCookies: Cookies | undefined;
+
+const cookies = oncePerTask(() => {
+  const header = typeof document === 'undefined' ? '' : document.cookie;
+  // Most tasks find the cookies as the last one read them, already parsed.
+  if (lastCookies?.header !== header) {
+    lastCookies = { header, values: new Map() };
+  }
+  return lastCookies;
+});
+
+/** The cookies as this task reads them: one object until a cookie changes. */
+export const getTaskCookies = cookies.get;
 
 /**
  * Minimally parses a cookie value for a given cookie name
@@ -13,13 +27,9 @@ export function getCookieValue({
 }: {
   cookieName: string;
 }): string | undefined {
-  if (typeof document === 'undefined') return undefined;
-  const values = cookieValues.get();
+  const { header, values } = cookies.get();
   if (!values.has(cookieName)) {
-    values.set(
-      cookieName,
-      getCookieValueFromString(document.cookie, cookieName)
-    );
+    values.set(cookieName, getCookieValueFromString(header, cookieName));
   }
   return values.get(cookieName);
 }
@@ -39,5 +49,5 @@ export function setCookieValue({
 }): void {
   if (typeof document === 'undefined') return;
   document.cookie = `${cookieName}=${value};path=/`;
-  cookieValues.clear();
+  cookies.clear();
 }

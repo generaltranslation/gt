@@ -11,21 +11,9 @@ import {
   useSetRegion,
 } from '@generaltranslation/react-core/hooks';
 import { createOrUpdateBrowserConditionStore } from '../../condition-store/createBrowserConditionStore';
+import { stubDocumentCookie } from '../../condition-store/__tests__/stubDocumentCookie';
 
-// An in-memory cookie jar stands in for document.cookie, so no DOM is needed.
-const cookieValues = vi.hoisted(() => new Map<string, string>());
-
-vi.mock('../../condition-store/cookies', () => ({
-  getCookieValue: ({ cookieName }: { cookieName: string }) =>
-    cookieValues.get(cookieName),
-  setCookieValue: ({
-    cookieName,
-    value,
-  }: {
-    cookieName: string;
-    value: string;
-  }) => cookieValues.set(cookieName, value),
-}));
+const cookieValues = new Map<string, string>();
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
@@ -35,8 +23,14 @@ function resetGTGlobals() {
 }
 
 describe('SPA hooks without a provider', () => {
-  beforeEach(resetGTGlobals);
-  afterEach(resetGTGlobals);
+  beforeEach(() => {
+    resetGTGlobals();
+    stubDocumentCookie(cookieValues);
+  });
+  afterEach(() => {
+    resetGTGlobals();
+    vi.unstubAllGlobals();
+  });
 
   it('reads and writes the initialized condition store', () => {
     initializeI18nConfig(
