@@ -143,11 +143,18 @@ export function followTagArgument(
   return followable;
 }
 
+/**
+ * `file` with its directory's symlinks resolved. A symlinked file keeps its
+ * own directory, which its relative imports resolve from.
+ */
 function realPath(file: string, follower: HelperFollower): string {
   let real = follower.realPaths.get(file);
   if (real === undefined) {
     try {
-      real = fs.realpathSync(file);
+      real = nodePath.join(
+        fs.realpathSync(nodePath.dirname(file)),
+        nodePath.basename(file)
+      );
     } catch {
       real = file;
     }
@@ -267,7 +274,7 @@ function getImportKey(
   const name = path.isImportSpecifier()
     ? getImportedName(path.node)
     : 'default';
-  return `${resolved}\0${name}`;
+  return `${realPath(resolved, follower)}\0${name}`;
 }
 
 /** The function a binding declares, defines as a const, or imports. */

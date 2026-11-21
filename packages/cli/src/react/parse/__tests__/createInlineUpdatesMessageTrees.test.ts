@@ -2145,6 +2145,53 @@ ${
     expect(untracked.map((w) => w.match(/\((\d+):\d+\)/)?.[1])).toEqual(['9']);
   });
 
+  it('follows a symlinked helper that forwards t to a relative import, from each path', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, (dir) => {
+      const root = path.join(projectDir, dir);
+      fs.mkdirSync(path.join(root, 'shared'), { recursive: true });
+      fs.writeFileSync(
+        path.join(root, 'shared/relay.ts'),
+        "import { label } from './impl';\nexport function relay(t: any) {\n  return label(t);\n}\n"
+      );
+      for (const name of ['a', 'b']) {
+        fs.mkdirSync(path.join(root, name), { recursive: true });
+        fs.symlinkSync(
+          path.join(root, 'shared/relay.ts'),
+          path.join(root, name, 'relay.ts')
+        );
+      }
+      return {
+        'tsconfig.json': JSON.stringify({
+          compilerOptions: {
+            baseUrl: '.',
+            preserveSymlinks: true,
+            paths: { '@a': ['a/relay.ts'], '@b': ['b/relay.ts'] },
+          },
+        }),
+        'a/impl.ts': nav(
+          nextHost,
+          'export function label(t: GT) {\n  return t`A`;\n}'
+        ),
+        'b/impl.ts': nav(
+          nextHost,
+          'export function label(t: GT) {\n  return t`B`;\n}'
+        ),
+        'page.tsx': withTag(
+          nextHost,
+          'b(t);\n  return a(t);',
+          "import { relay as a } from '@a';\nimport { relay as b } from '@b';"
+        ),
+      };
+    });
+
+    expect(result.warnings).toEqual([]);
+    expect(
+      treeUpdates(result)
+        .map((u) => u.source)
+        .sort()
+    ).toEqual(['A', 'B']);
+  });
+
   it('does not extract a function that never receives a tag', async () => {
     const { result } = await extractProject(Libraries.GT_NEXT, () => ({
       'page.tsx': withTag(
