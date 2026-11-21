@@ -1,16 +1,6 @@
-import type { Transformation } from 'generaltranslation/internal';
 import { Children, cloneElement, isValidElement, type ReactNode } from 'react';
-
-function getTransformation(type: unknown): Transformation | undefined {
-  // Reading a property of a client reference throws in a server component.
-  try {
-    return typeof type === 'function'
-      ? (type as { _gtt?: Transformation })._gtt
-      : undefined;
-  } catch {
-    return undefined;
-  }
-}
+import { getMarker } from '../marker';
+import { COUNT_VARIABLE_TYPE } from '../variables/_getVariableProps';
 
 /**
  * Gives each `<N>` in a plural's branch the count it shows. A nested
@@ -27,15 +17,16 @@ export function fillCount(branch: ReactNode, n: number | bigint): ReactNode {
         : Children.toArray(filled);
     }
     if (!isValidElement<Record<string, unknown>>(node)) return node;
-    const transformation = getTransformation(node.type);
-    // The component, or the one the compiler inserts for it.
-    const is = (component: Transformation) =>
-      transformation === component ||
-      transformation === `${component}-automatic`;
-    if (is('variable-count')) return cloneElement(node, { _count: n });
-    if (is('plural') || is('plural-ordinal')) return node;
+    const marker = getMarker(node.type);
+    if (
+      marker?.kind === 'variable' &&
+      marker.variableType === COUNT_VARIABLE_TYPE
+    )
+      return cloneElement(node, { _count: n });
+    if (marker?.kind === 'plural' || marker?.kind === 'ordinal') return node;
     // A <Branch> keeps its named branches in its props.
-    const names = is('branch') ? Object.keys(node.props) : ['children'];
+    const names =
+      marker?.kind === 'branch' ? Object.keys(node.props) : ['children'];
     const filled = names
       .map((name) => [name, fill(node.props[name] as ReactNode)] as const)
       .filter(([name, value]) => !Object.is(value, node.props[name]));

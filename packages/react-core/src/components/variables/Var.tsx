@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { GTMarker } from '../../utils/marker';
 
 type VarProps<T extends ReactNode> = {
   children: T;
@@ -25,8 +26,12 @@ function GtInternalVar<T extends ReactNode>({ children }: VarProps<T>): T {
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-Var._gtt = 'variable-variable';
-GtInternalVar._gtt = 'variable-variable-automatic';
+Var._gtt = { kind: 'variable', variableType: 'v' } satisfies GTMarker;
+GtInternalVar._gtt = {
+  kind: 'variable',
+  variableType: 'v',
+  automatic: true,
+} satisfies GTMarker;
 
 // ===== Exports ===== //
 

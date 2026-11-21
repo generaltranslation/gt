@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useEnableI18n, useLocale } from '../../hooks/condition-store';
 import { renderPlural, type PluralProps } from './Plural.shared';
+import type { GTMarker } from '../../utils/marker';
 
 // ===== Component ===== //
 
@@ -20,8 +21,11 @@ function Ordinal(props: PluralProps): React.JSX.Element {
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-Ordinal._gtt = 'plural-ordinal';
-GtInternalOrdinal._gtt = 'plural-ordinal-automatic';
+Ordinal._gtt = { kind: 'ordinal' } satisfies GTMarker;
+GtInternalOrdinal._gtt = {
+  kind: 'ordinal',
+  automatic: true,
+} satisfies GTMarker;
 
 // ===== Exports ===== //
 

@@ -1,7 +1,3 @@
-import {
-  VariableTransformationSuffix,
-  minifyVariableType,
-} from 'generaltranslation/internal';
 import type { VariableType } from '@generaltranslation/format';
 import { GTTag, VariableProps } from '../types';
 
@@ -30,12 +26,9 @@ export function isVariableElementProps(
 }
 
 export function getVariableProps(props: VariableElementProps): VariableProps {
-  const variableType: VariableTransformationSuffix =
-    props['data-_gt']?.variableType || 'variable';
-
   const result: VariableProps = {
     variableId: props['data-_gt'].id,
-    variableType: minifyVariableType(variableType),
+    variableType: props['data-_gt'].variableType,
     injectionType: props['data-_gt']?.injectionType || 'manual',
     variableValue: (() => {
       if (typeof props.value !== 'undefined') return props.value;

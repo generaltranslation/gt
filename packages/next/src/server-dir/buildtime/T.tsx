@@ -5,6 +5,7 @@ import {
 } from '@generaltranslation/react-core/components-rsc';
 import { renderPreparedT } from './renderPipeline';
 import type { ReactNode } from 'react';
+import type { GTMarker } from '@generaltranslation/react-core/pure';
 
 /**
  * Build-time translation component that renders its children in the user's given locale.
@@ -29,5 +30,8 @@ async function renderT(props: TProps): Promise<ReactNode> {
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-T._gtt = 'translate-server';
-GtInternalTranslateJsx._gtt = 'translate-server-automatic';
+T._gtt = { kind: 'translate' } satisfies GTMarker;
+GtInternalTranslateJsx._gtt = {
+  kind: 'translate',
+  automatic: true,
+} satisfies GTMarker;

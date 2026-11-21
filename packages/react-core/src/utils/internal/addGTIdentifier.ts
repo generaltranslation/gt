@@ -2,10 +2,8 @@ import React, { ReactElement, isValidElement, ReactNode } from 'react';
 import {
   getPluralBranchKey,
   isAcceptedPluralForm,
-  Transformation,
-  TransformationPrefix,
-  VariableTransformationSuffix,
 } from 'generaltranslation/internal';
+import { getMarker } from '../marker';
 import { fillCount } from '../plurals/fillCount';
 import { isCount, reportMissingCount } from '../plurals/getPluralBranch';
 import {
@@ -15,10 +13,7 @@ import {
   TaggedElement,
   TaggedElementProps,
 } from '../types';
-
-type GTComponentType = {
-  _gtt?: Transformation;
-};
+import { COUNT_VARIABLE_TYPE } from '../variables/_getVariableProps';
 
 export function addGTIdentifier(
   children: ReactNode,
@@ -44,40 +39,37 @@ export function addGTIdentifier(
   const createGTTag = (child: ReactElement<Record<string, unknown>>): GTTag => {
     const { type, props } = child;
     index += 1;
-    const result: GTTag = { id: index, injectionType: 'manual' };
-    let transformation: Transformation | undefined;
-    try {
-      transformation =
-        typeof type === 'function' ? (type as GTComponentType)._gtt : undefined;
-    } catch {
-      /* empty */
+    const marker = getMarker(type);
+    const tag = {
+      id: index,
+      injectionType: marker?.automatic ? 'automatic' : 'manual',
+    } as const;
+    if (!marker) {
+      return type === React.Fragment
+        ? { ...tag, transformation: 'fragment' }
+        : tag;
     }
-    if (transformation) {
-      const transformationParts = transformation.split('-');
-      // If the component was inserted automatically by the compiler
-      if (
-        transformationParts[1] === 'automatic' ||
-        transformationParts[2] === 'automatic'
-      ) {
-        result.injectionType = 'automatic';
-      }
-
-      if (transformationParts[0] === 'translate') {
-        // Convert nested <T> to fragments
-        // This will nullify translation specific attributes of child, i.e. id, context, etc.
-        transformationParts[0] = 'fragment';
-      }
-      if (transformationParts[0] === 'variable') {
-        result.variableType =
-          (transformationParts?.[1] as VariableTransformationSuffix) ||
-          'variable';
+    switch (marker.kind) {
+      case 'translate':
+        // A nested <T> is a fragment, which drops its id, context and so on.
+        return { ...tag, transformation: 'fragment' };
+      case 'derive':
+        return { ...tag, transformation: 'derive' };
+      case 'variable':
         // A plural fills its branches before they are tagged.
-        if (result.variableType === 'count' && props._count === undefined) {
+        if (
+          marker.variableType === COUNT_VARIABLE_TYPE &&
+          props._count === undefined
+        ) {
           reportMissingCount();
         }
-      }
-      if (transformationParts[0] === 'plural') {
-        if (transformationParts[1] === 'ordinal') result.ordinal = true;
+        return {
+          ...tag,
+          transformation: 'variable',
+          variableType: marker.variableType,
+        };
+      case 'plural':
+      case 'ordinal': {
         const { n } = props;
         const fill = (branch: unknown) =>
           isCount(n)
@@ -95,10 +87,15 @@ export function addGTIdentifier(
           {} as Record<string, TaggedChildren>
         );
         addFallbackBranch(pluralBranches, fill(props.children));
-        if (Object.keys(pluralBranches).length)
-          result.branches = pluralBranches;
+        return {
+          ...tag,
+          transformation: marker.kind,
+          ...(Object.keys(pluralBranches).length > 0 && {
+            branches: pluralBranches,
+          }),
+        };
       }
-      if (transformationParts[0] === 'branch') {
+      case 'branch': {
         const { children, branch: _branch, other: _other, ...branches } = props;
         // Filter out data-* attributes injected by build tools
         const filteredBranches = Object.fromEntries(
@@ -113,12 +110,15 @@ export function addGTIdentifier(
           {} as Record<string, TaggedChildren>
         );
         addFallbackBranch(resultBranches, children);
-        if (Object.keys(resultBranches).length)
-          result.branches = resultBranches;
+        return {
+          ...tag,
+          transformation: 'branch',
+          ...(Object.keys(resultBranches).length > 0 && {
+            branches: resultBranches,
+          }),
+        };
       }
-      result.transformation = transformationParts[0] as TransformationPrefix;
     }
-    return result;
   };
 
   function handleSingleChildElement(
@@ -134,15 +134,16 @@ export function addGTIdentifier(
     };
     if (
       generaltranslation.transformation === 'plural' ||
+      generaltranslation.transformation === 'ordinal' ||
       generaltranslation.transformation === 'branch'
     ) {
       // Stored as the `other` branch above.
       newProps.children = undefined;
-    } else if (props.children && !generaltranslation.variableType) {
+    } else if (
+      props.children &&
+      generaltranslation.transformation !== 'variable'
+    ) {
       newProps.children = handleChildren(props.children as ReactNode);
-    }
-    if (child.type === React.Fragment) {
-      newProps['data-_gt'].transformation = 'fragment';
     }
     return React.cloneElement(child, newProps) as TaggedElement;
   }

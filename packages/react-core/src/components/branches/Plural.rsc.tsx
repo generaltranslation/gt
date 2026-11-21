@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { renderPlural, type ResolvedPluralProps } from './Plural.shared';
+import type { GTMarker } from '../../utils/marker';
 
 // RSC implementation: request conditions are passed explicitly instead of
 // being read from hooks. This module must stay free of hook/context imports
@@ -14,8 +15,11 @@ function RscPlural(props: ResolvedPluralProps): React.JSX.Element {
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-RscPlural._gtt = 'plural';
-RscGtInternalPlural._gtt = 'plural-automatic';
+RscPlural._gtt = { kind: 'plural' } satisfies GTMarker;
+RscGtInternalPlural._gtt = {
+  kind: 'plural',
+  automatic: true,
+} satisfies GTMarker;
 
 // ===== Exports ===== //
 

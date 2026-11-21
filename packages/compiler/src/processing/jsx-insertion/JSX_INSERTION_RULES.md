@@ -517,7 +517,7 @@ The function uses a `derivationDepth` counter:
 
 - Entering `<Derive>` increments the depth
 - When depth > 0 and an auto-injected \_T is encountered, it is unwrapped (replaced by its children)
-- User-written `<T>` components are never removed (distinguished by the `_gtt` transformation tag: `'translate-client'` vs `'translate-client-automatic'`)
+- User-written `<T>` components are never removed (distinguished by the `_gtt` marker: only the inserted component's has `automatic: true`)
 
 ### Runtime solution: `renderVariable()` removes \_Var
 

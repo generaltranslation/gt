@@ -106,12 +106,17 @@ describe('rsc component wrappers', () => {
     expect(module.GTProvider).toBeTypeOf('function');
     expect(module.T).toBeTypeOf('function');
     expect(module.GtInternalTranslateJsx).toBeTypeOf('function');
-    expect(module.GtInternalTranslateJsx._gtt).toBe(
-      'translate-server-automatic'
-    );
+    expect(module.GtInternalTranslateJsx._gtt).toEqual({
+      kind: 'translate',
+      automatic: true,
+    });
     expect(module.Var).toBeTypeOf('function');
     expect(module.GtInternalVar).toBeTypeOf('function');
-    expect(module.GtInternalVar._gtt).toBe('variable-variable-automatic');
+    expect(module.GtInternalVar._gtt).toEqual({
+      kind: 'variable',
+      variableType: 'v',
+      automatic: true,
+    });
     expect(module.N).toBeTypeOf('function');
     expect(module.Num).toBeTypeOf('function');
     expect(module.Currency).toBeTypeOf('function');
@@ -119,7 +124,7 @@ describe('rsc component wrappers', () => {
     expect(module.RelativeTime).toBeTypeOf('function');
     expect(module.Branch).toBe(mockComponents.Branch);
     expect(module.Ordinal).toBeTypeOf('function');
-    expect(module.Ordinal._gtt).toBe('plural-ordinal');
+    expect(module.Ordinal._gtt).toEqual({ kind: 'ordinal' });
     expect(module.Plural).toBeTypeOf('function');
     expect(module.LocaleSelector).toBe(mockComponents.LocaleSelector);
     expect(module.Derive).toBe(mockComponents.Derive);

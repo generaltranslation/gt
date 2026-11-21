@@ -4,6 +4,7 @@ import { useRef, type ReactNode } from 'react';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline.rsc';
 import type { TProps } from '../../utils/translation/prepareT.shared';
 import { usePrepareT } from '../../utils/translation/usePrepareT';
+import type { GTMarker } from '../../utils/marker';
 
 // ===== Component ===== //
 
@@ -19,8 +20,11 @@ function GtInternalTranslateJsx(props: TProps): ReactNode {
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-T._gtt = 'translate-client';
-GtInternalTranslateJsx._gtt = 'translate-client-automatic';
+T._gtt = { kind: 'translate' } satisfies GTMarker;
+GtInternalTranslateJsx._gtt = {
+  kind: 'translate',
+  automatic: true,
+} satisfies GTMarker;
 
 export { GtInternalTranslateJsx, T };
 

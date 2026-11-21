@@ -50,13 +50,16 @@ function createRenderDefaultChildren({
       }
 
       // Plural
-      if (generaltranslation?.transformation === 'plural') {
+      if (
+        generaltranslation?.transformation === 'plural' ||
+        generaltranslation?.transformation === 'ordinal'
+      ) {
         return handleChildren(
           getPluralBranch(
             child.props.n,
             [defaultLocale],
             generaltranslation.branches || {},
-            generaltranslation.ordinal
+            generaltranslation.transformation === 'ordinal'
           )
         );
       }

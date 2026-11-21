@@ -1,6 +1,7 @@
 import { reportMissingCount } from '../../utils/plurals/getPluralBranch';
 import { GtInternalNum } from './Num';
 import type { NProps } from './N.shared';
+import type { GTMarker } from '../../utils/marker';
 
 // ===== Component ===== //
 
@@ -14,7 +15,7 @@ function N({ _count }: NProps): React.JSX.Element {
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-N._gtt = 'variable-count';
+N._gtt = { kind: 'variable', variableType: '#' } satisfies GTMarker;
 
 // ===== Exports ===== //
 

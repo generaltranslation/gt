@@ -52,9 +52,8 @@ function createPluralElement(
     'data-_gt': {
       id: 1,
       injectionType: 'manual',
-      transformation: 'plural',
+      transformation: ordinal ? 'ordinal' : 'plural',
       branches,
-      ordinal,
     },
     n,
   } as unknown as TaggedElementProps;
@@ -188,7 +187,7 @@ describe('plural rendering', () => {
       }) as unknown as TaggedElementProps;
     const size = React.createElement(
       'span',
-      tagged(2, { transformation: 'variable', variableType: 'number' }),
+      tagged(2, { transformation: 'variable', variableType: 'n' }),
       100
     );
     const render = (

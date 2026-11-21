@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { GTMarker } from '../../utils/marker';
 
 type DeriveProps<T extends ReactNode> = {
   children: T;
@@ -17,8 +18,8 @@ function Derive<T extends ReactNode>(props: DeriveProps<T>): React.JSX.Element {
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-Derive._gtt = 'derive';
-GtInternalDerive._gtt = 'derive-automatic';
+Derive._gtt = { kind: 'derive' } satisfies GTMarker;
+GtInternalDerive._gtt = { kind: 'derive', automatic: true } satisfies GTMarker;
 
 // ===== Exports ===== //
 

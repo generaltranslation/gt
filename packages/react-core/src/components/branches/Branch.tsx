@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { getBranch } from '../../utils/plurals/getPluralBranch';
+import type { GTMarker } from '../../utils/marker';
 
 type BranchValue = string | number | boolean;
 
@@ -61,8 +62,8 @@ function Branch<V extends BranchValue>(
 }
 
 /** @internal _gtt - The GT transformation for the component. */
-Branch._gtt = 'branch';
-GtInternalBranch._gtt = 'branch-automatic';
+Branch._gtt = { kind: 'branch' } satisfies GTMarker;
+GtInternalBranch._gtt = { kind: 'branch', automatic: true } satisfies GTMarker;
 
 // ===== Exports ===== //
 

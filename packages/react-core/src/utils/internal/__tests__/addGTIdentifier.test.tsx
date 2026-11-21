@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { hashSource } from 'generaltranslation/id';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import { addGTIdentifier } from '../addGTIdentifier';
+import type { GTMarker } from '../../marker';
 import { writeChildrenAsObjects } from '../writeChildrenAsObjects';
 import {
   renderDefaultChildren,
@@ -28,6 +29,11 @@ import type { GTTag, TaggedElement, TranslatedChildren } from '../../types';
 
 function gtTag(node: unknown): GTTag {
   return (node as TaggedElement).props['data-_gt'];
+}
+
+function gtBranches(node: unknown) {
+  const tag = gtTag(node);
+  return 'branches' in tag ? tag.branches : undefined;
 }
 
 // Resolves function components to their output so tests can read the text a
@@ -281,11 +287,11 @@ describe('<N>, the count of its <Plural>', () => {
     function Count(props: object) {
       return <RscN {...props} {...conditions} />;
     }
-    Count._gtt = 'variable-count';
+    Count._gtt = { kind: 'variable', variableType: '#' } satisfies GTMarker;
     function Nested(props: { n: number; children: ReactNode }) {
       return renderPlural({ ...props, ...conditions });
     }
-    Nested._gtt = 'plural';
+    Nested._gtt = { kind: 'plural' } satisfies GTMarker;
     const bare = (children: ReactNode) =>
       renderPlural({ ...conditions, n: 5, children });
 
@@ -350,7 +356,7 @@ describe('addGTIdentifier with <RelativeTime>', () => {
 
     expect(gtTag(tagged)).toMatchObject({
       transformation: 'variable',
-      variableType: 'relativetime',
+      variableType: 'rt',
       injectionType: 'manual',
     });
   });
@@ -373,7 +379,7 @@ describe('addGTIdentifier with <RelativeTime>', () => {
     );
 
     expect(gtTag(tagged)).toMatchObject({
-      variableType: 'relativetime',
+      variableType: 'rt',
       injectionType: 'automatic',
     });
   });
@@ -385,8 +391,8 @@ describe('addGTIdentifier with <RelativeTime>', () => {
       </Plural>
     );
 
-    expect(gtTag(gtTag(tagged).branches?.one)).toMatchObject({
-      variableType: 'relativetime',
+    expect(gtTag(gtBranches(tagged)?.one)).toMatchObject({
+      variableType: 'rt',
     });
   });
 
@@ -454,8 +460,7 @@ describe('addGTIdentifier with <RelativeTime>', () => {
     expect(
       gtTag(addGTIdentifier(<GtInternalOrdinal n={2}>nth</GtInternalOrdinal>))
     ).toMatchObject({
-      transformation: 'plural',
-      ordinal: true,
+      transformation: 'ordinal',
       injectionType: 'automatic',
     });
   });
@@ -467,7 +472,7 @@ describe('addGTIdentifier with <RelativeTime>', () => {
       </Branch>
     );
 
-    expect(gtTag(tagged).branches).toEqual({ other: 'Children' });
+    expect(gtBranches(tagged)).toEqual({ other: 'Children' });
   });
 
   it('neither stores nor renders an other prop of a Branch with no children', () => {
