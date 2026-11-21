@@ -31,7 +31,7 @@ export const GT_MESSAGE_HELPER_NAMES = [
   'plural',
   'ordinal',
   'select',
-  'number',
+  'num',
   'date',
   'time',
   'part',

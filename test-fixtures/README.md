@@ -18,7 +18,7 @@ every select/plural, branch keys and date/time fields sorted), and the
 persisted `hash`. Builders and extractors must produce the same tree for the
 same template.
 
-A tree holds only the message options of `number()`, `date()` and `time()`
+A tree holds only the message options of `num()`, `date()` and `time()`
 (a style or unit, a date or time style, or date and time fields). Formatting
 context, such as a `currency`, a `timeZone` or digit options, may be dynamic
 and is neither in the tree nor hashed: `number-intl-options` and

@@ -88,7 +88,7 @@ export {
   mFallback,
   msg,
   n,
-  number,
+  num,
   part,
   plural,
   select,

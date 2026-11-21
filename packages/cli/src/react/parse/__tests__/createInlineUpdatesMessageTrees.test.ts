@@ -15,7 +15,7 @@ import wireFormatCases from '../../../../../../test-fixtures/message-tree-wire-f
 vi.mock('../../../fs/matchFiles.js', () => ({ matchFiles: vi.fn() }));
 
 const MESSAGE_HELPERS =
-  'msg, useGT, getGT, plural, ordinal, select, number, date, time, part, derive, n';
+  'msg, useGT, getGT, plural, ordinal, select, num, date, time, part, derive, n';
 
 // The fixtures' free variables, typed as in fixtureParity.test.ts: the CLI
 // skips an undeclared value, since TypeScript types it any.
@@ -384,7 +384,7 @@ describe('createInlineUpdates: tagged templates', () => {
       'an aliased helper',
       "const many = plural;\nt`${many({ count }, { other: '#' })}`;",
     ],
-    ['a conditional helper', 't`${flag ? number({ a }) : number({ b })}`;'],
+    ['a conditional helper', 't`${flag ? num({ a }) : num({ b })}`;'],
     ['a conditional fragment', 't`${flag ? part`a` : part`b`}`;'],
     [
       'a helper result returned from a function',
@@ -408,11 +408,11 @@ describe('createInlineUpdates: tagged templates', () => {
     ],
     [
       'an unnamed number value that holds a { name: value } object',
-      'const vars = { price: 2 };\nt`${number(vars)}`;',
+      'const vars = { price: 2 };\nt`${num(vars)}`;',
     ],
   ])('skips a value typed as a placeholder: %s', async (_name, code) => {
     const result = await extract(
-      `import { t, plural, number, part, select, n } from 'gt-react';\n${code}\n`
+      `import { t, plural, num, part, select, n } from 'gt-react';\n${code}\n`
     );
 
     expect(treeUpdates(result)).toEqual([]);
@@ -733,7 +733,7 @@ describe('createInlineUpdates: tagged templates', () => {
   describe('Intl options', () => {
     const extractTrees = async (message: string) => {
       const result = await extract(
-        `import { t, number, date, time } from 'gt-react';\ndeclare const zone: string, code: () => string;\n${message};\n`
+        `import { t, num, date, time } from 'gt-react';\ndeclare const zone: string, code: () => string;\n${message};\n`
       );
       return { warnings: result.warnings, updates: treeUpdates(result) };
     };
@@ -741,8 +741,8 @@ describe('createInlineUpdates: tagged templates', () => {
     it.each([
       [
         'currency',
-        "t`${number({ p }, { style: 'currency', currency: code() })}`",
-        "t`${number({ p }, { style: 'currency', currency: 'USD' })}`",
+        "t`${num({ p }, { style: 'currency', currency: code() })}`",
+        "t`${num({ p }, { style: 'currency', currency: 'USD' })}`",
       ],
       [
         'timeZone',
@@ -781,8 +781,8 @@ describe('createInlineUpdates: tagged templates', () => {
 
     it.each([
       ['style', 't`${date({ d }, { style: zone as "short" })}`'],
-      ['style', 't`${number({ p }, { style: zone as "percent" })}`'],
-      ['unit', "t`${number({ p }, { style: 'unit', unit: code() })}`"],
+      ['style', 't`${num({ p }, { style: zone as "percent" })}`'],
+      ['unit', "t`${num({ p }, { style: 'unit', unit: code() })}`"],
     ])('skips a non-literal %s with a warning', async (key, message) => {
       const { warnings, updates } = await extractTrees(message);
 
@@ -813,13 +813,13 @@ describe('createInlineUpdates: tagged templates', () => {
       [
         // Formatting context never reaches the tree; the runtime reports this.
         'two formatting contexts',
-        't`${number({ p }, { maximumFractionDigits: 1 })} ${number({ p }, { maximumFractionDigits: 2 })}`',
+        't`${num({ p }, { maximumFractionDigits: 1 })} ${num({ p }, { maximumFractionDigits: 2 })}`',
       ],
       [
         'a dynamic and a literal context value',
-        "t`${number({ p }, { currency: code(), style: 'currency' })} ${number({ p }, { currency: 'USD', style: 'currency' })}`",
+        "t`${num({ p }, { currency: code(), style: 'currency' })} ${num({ p }, { currency: 'USD', style: 'currency' })}`",
       ],
-      ['an argument and a number', 't`${{ n }} (${number({ n })})`'],
+      ['an argument and a number', 't`${{ n }} (${num({ n })})`'],
     ])('extracts a name reused with %s', async (_name, message) => {
       const { warnings, updates } = await extractTrees(message);
 

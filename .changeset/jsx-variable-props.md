@@ -12,7 +12,7 @@
 'gt': patch
 ---
 
-The variable components `<Num>`, `<Currency>`, `<DateTime>` and `<RelativeTime>` take the same values and format the same way as `number()`, `date()` and `time()` in a `` t`…` `` message. In gt-vue and gt-svelte the value is the `value` prop where gt-react takes children.
+The variable components `<Num>`, `<Currency>`, `<DateTime>` and `<RelativeTime>` take the same values and format the same way as `num()`, `date()` and `time()` in a `` t`…` `` message. In gt-vue and gt-svelte the value is the `value` prop where gt-react takes children.
 
 - `<Currency>` requires `currency`; it no longer defaults to `USD`: `<Currency>{price}</Currency>` → `<Currency currency="USD">{price}</Currency>`.
 - `<Num>` and `<Currency>` take a `number` or a `bigint`, not a string: `<Num>1000</Num>` → `<Num>{1000}</Num>`, `<Num>{text}</Num>` → `<Num>{Number(text)}</Num>`. gt-vue no longer renders text that is not a number as it is.
