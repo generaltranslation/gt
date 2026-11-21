@@ -1946,6 +1946,57 @@ ${
     expect(skipped[0]).toContain(`page.tsx (${configuredLine}:`);
   });
 
+  it('stops at an alias cycle that var redeclarations create', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        'return label(t);',
+        'function label(t: GT) {\n  var alias = t;\n  // @ts-ignore\n  var t = alias;\n  return t`Save`;\n}'
+      ),
+    }));
+
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Save']);
+  });
+
+  it("warns about a tag in a custom hook's array argument", async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        "return useLabels('menu', [t]);",
+        'declare function useLabels(id: string, tags: GT[]): string;'
+      ),
+    }));
+
+    expect(
+      result.warnings.filter((w) => w.includes('Could not follow this use'))
+    ).toHaveLength(1);
+  });
+
+  it.each([
+    ['configured first', 'label(t({}), false);\n  return label(t, true);'],
+    ['unconfigured first', 'label(t, true);\n  return label(t({}), false);'],
+  ])(
+    'follows an unconfigured and a configured tag separately, %s',
+    async (_, body) => {
+      const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+        'page.tsx': withTag(
+          nextHost,
+          body,
+          "function label(tr: GT, withContext: boolean) {\n  return withContext ? tr({ context: 'nav' })`Settings` : tr`Home`;\n}"
+        ),
+      }));
+
+      expect(
+        treeUpdates(result)
+          .map((u) => [u.source, u.metadata.context])
+          .sort()
+      ).toEqual([
+        ['Home', undefined],
+        ['Settings', 'nav'],
+      ]);
+    }
+  );
+
   it('does not extract a function that never receives a tag', async () => {
     const { result } = await extractProject(Libraries.GT_NEXT, () => ({
       'page.tsx': withTag(

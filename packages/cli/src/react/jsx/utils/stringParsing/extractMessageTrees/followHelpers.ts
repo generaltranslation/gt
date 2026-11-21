@@ -73,11 +73,14 @@ type FoundFunction = {
   reassigned?: boolean;
 };
 
-/** Equal for the same metadata, whatever order its options are written in. */
-export function getMetadataKey(metadata: MessageTreeHashMetadata): string {
-  return JSON.stringify(
+/** Key of a tag that is not configured, which a helper can still configure. */
+export const unconfiguredTagKey = 'unconfigured';
+
+/** Key of a configured tag, equal whatever order its options are written in. */
+export function getConfiguredTagKey(metadata: MessageTreeHashMetadata): string {
+  return `configured:${JSON.stringify(
     Object.entries(metadata).sort(([a], [b]) => (a < b ? -1 : 1))
-  );
+  )}`;
 }
 
 /**
@@ -200,9 +203,13 @@ function getParameter(
   return fn.scope.getOwnBinding(id.name);
 }
 
+const argumentReads = new WeakMap<t.Function, boolean>();
+
 /** Whether `fn` reads its own `arguments` object. */
 function readsArguments(fn: NodePath<t.Function>): boolean {
   if (fn.isArrowFunctionExpression()) return false;
+  const cached = argumentReads.get(fn.node);
+  if (cached !== undefined) return cached;
   let reads = false;
   fn.traverse({
     Function(inner) {
@@ -215,6 +222,7 @@ function readsArguments(fn: NodePath<t.Function>): boolean {
       }
     },
   });
+  argumentReads.set(fn.node, reads);
   return reads;
 }
 

@@ -9,7 +9,8 @@ import { loadTypeScript } from '../../typeChecker.js';
 import { NonStaticMessageError, formatLocation } from './diagnostics.js';
 import {
   followTagArgument,
-  getMetadataKey,
+  getConfiguredTagKey,
+  unconfiguredTagKey,
   type HelperFollower,
 } from './followHelpers.js';
 import { parseMessageOptions } from './parseMessageOptions.js';
@@ -31,6 +32,8 @@ export type TagContext = {
   optionsFile?: string;
   /** The `t({ ... })` call that configured the tag, where its options are reported. */
   configuredAt?: t.Node;
+  /** Bindings being processed, which `var` redeclarations can make cyclic. */
+  aliasPath?: ReadonlySet<Binding>;
 };
 
 /** Follows `const t = useGT()` / `const t = await getGT()` to the t binding. */
@@ -60,7 +63,7 @@ export function processHookReference(
       config.file,
       config.file,
       follower,
-      () => getMetadataKey({})
+      () => unconfiguredTagKey
     )
   ) {
     return;
@@ -120,12 +123,14 @@ export function processTagBinding(
   context: TagContext
 ): void {
   const { config, output } = context;
+  if (context.aliasPath?.has(binding)) return;
+  const aliasPath = new Set(context.aliasPath).add(binding);
   for (const violation of binding.constantViolations) {
     warnUntrackedTag(violation.node, config, output);
   }
   // Exported declarations count as references, so they warn below.
   for (const ref of binding.referencePaths) {
-    processTagReference(ref, options, context);
+    processTagReference(ref, options, { ...context, aliasPath });
   }
 }
 
@@ -229,26 +234,37 @@ function processTagReference(
   warnUntrackedTag(ref.node, config, output);
 }
 
+/** The argument position of each React hook's dependency array. */
+const reactHookDependencyPositions: Record<string, number> = {
+  useCallback: 1,
+  useMemo: 1,
+  useEffect: 1,
+  useLayoutEffect: 1,
+  useInsertionEffect: 1,
+  useImperativeHandle: 2,
+};
+
 /** Whether `path` is listed in a React hook's dependency array. */
 function isHookDependency(path: NodePath): boolean {
   const array = path.parentPath;
   const call = array?.parentPath;
   if (!array?.isArrayExpression() || !call?.isCallExpression()) return false;
-  const position = call.node.arguments.indexOf(
-    array.node as (typeof call.node.arguments)[number]
-  );
   const { callee } = call.node;
   const name = t.isIdentifier(callee)
     ? callee.name
     : t.isMemberExpression(callee) && t.isIdentifier(callee.property)
       ? callee.property.name
       : undefined;
-  return position > 0 && !!name && /^use[A-Z]/.test(name);
+  return (
+    name !== undefined &&
+    Object.hasOwn(reactHookDependencyPositions, name) &&
+    call.node.arguments[reactHookDependencyPositions[name]] === array.node
+  );
 }
 
 /**
- * Key of the metadata `options` give a message, equal for options written in
- * any order. Invalid options are reported in `file` and give undefined.
+ * Key of the tag `options` configure, or of an unconfigured tag. Invalid
+ * options are reported in `file` and give undefined.
  */
 function getOptionsKey(
   options: TagOptions | undefined,
@@ -256,8 +272,9 @@ function getOptionsKey(
   file: string,
   { config, output }: TagContext
 ): string | undefined {
+  if (!options) return unconfiguredTagKey;
   try {
-    return getMetadataKey(parseMessageOptions(options, fallback));
+    return getConfiguredTagKey(parseMessageOptions(options, fallback));
   } catch (error) {
     if (!(error instanceof NonStaticMessageError)) throw error;
     reportSkippedMessage(error, file, config, output);
