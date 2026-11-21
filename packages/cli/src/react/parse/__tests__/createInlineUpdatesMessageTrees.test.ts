@@ -1923,6 +1923,29 @@ ${
     }
   });
 
+  it('reports invalid options of a configured alias at the t() call', async () => {
+    const { dir, result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        'const tag = t();\n\n  return getNavLabels(tag);',
+        "import { getNavLabels } from './nav';"
+      ),
+      'nav.ts': nav(
+        nextHost,
+        'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+      ),
+    }));
+
+    const lines = fs
+      .readFileSync(path.join(dir, 'page.tsx'), 'utf8')
+      .split('\n');
+    const configuredLine =
+      lines.findIndex((line) => line.includes('const tag = t()')) + 1;
+    const skipped = [...result.warnings, ...result.errors];
+    expect(skipped).toHaveLength(1);
+    expect(skipped[0]).toContain(`page.tsx (${configuredLine}:`);
+  });
+
   it('does not extract a function that never receives a tag', async () => {
     const { result } = await extractProject(Libraries.GT_NEXT, () => ({
       'page.tsx': withTag(

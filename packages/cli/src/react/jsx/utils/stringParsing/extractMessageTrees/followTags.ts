@@ -29,6 +29,8 @@ export type TagContext = {
   follower?: HelperFollower;
   /** The file a configured tag's options are written in, when not `config.file`. */
   optionsFile?: string;
+  /** The `t({ ... })` call that configured the tag, where its options are reported. */
+  configuredAt?: t.Node;
 };
 
 /** Follows `const t = useGT()` / `const t = await getGT()` to the t binding. */
@@ -165,6 +167,7 @@ function processTagReference(
       processTagBinding(alias, parent.node.arguments, {
         ...context,
         optionsFile: config.file,
+        configuredAt: parent.node,
       });
       return;
     }
@@ -210,7 +213,13 @@ function processTagReference(
       optionsFile,
       config.file,
       follower,
-      () => getOptionsKey(configuredOptions, ref.node, optionsFile, context)
+      () =>
+        getOptionsKey(
+          configuredOptions,
+          context.configuredAt ?? ref.node,
+          optionsFile,
+          context
+        )
     )
   ) {
     return;
