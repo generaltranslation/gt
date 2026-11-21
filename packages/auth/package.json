@@ -6,6 +6,9 @@
   "types": "dist/index.d.ts",
   "type": "module",
   "sideEffects": false,
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "author": "General Translation, Inc.",
   "license": "MIT",
   "scripts": {
