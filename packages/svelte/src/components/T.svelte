@@ -14,6 +14,7 @@
 <script lang="ts">
   import { untrack, type Snippet } from 'svelte';
   import GtNodes from './GtNodes.svelte';
+  import { getPluralLocales } from '../runtime/format';
   import { lookupJsxTranslation } from '../runtime/lookup';
   import type { GTRuntimeMetadata } from '@generaltranslation/svelte-extractor';
   import { validateTarget, type RenderContext } from '../runtime/nodes';
@@ -68,7 +69,7 @@
   const renderContext: RenderContext = $derived({
     snippets,
     meta: _gtm ?? {},
-    locales: [state.locale],
+    locales: getPluralLocales(state.locale),
   });
 
   const valid = $derived.by(() => {
