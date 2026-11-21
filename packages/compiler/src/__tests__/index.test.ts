@@ -644,6 +644,134 @@ describe('source map of the transform', () => {
   );
 });
 
+/**
+ * A JSX transform given an import source other than React's imports the same
+ * calls from that source's runtimes, which the compiler does not read.
+ */
+describe("JSX compiled against a runtime other than React's", () => {
+  const SOURCE = '@emotion/react';
+  const compiledAgainst = (source: string, code: string) =>
+    code.replaceAll('react/jsx-', `${source}/jsx-`);
+  const warningOf = (source: string, file: string) =>
+    `@generaltranslation/compiler Warning: The compiler skipped the JSX in ${file} because it is compiled against "${source}", and the compiler reads only JSX compiled against React's runtime; this is said once per build, for the first file compiled against that source. The build continues, and the JSX of such files gets no automatic <T>, no build-time hash and no usage checks. Compile the app's JSX against React's runtime, so that its files import react/jsx-runtime and react/jsx-dev-runtime. To keep the other runtime, resolve those two modules to it for the app's own files only, not for the runtime's own imports of them.`;
+
+  const PRODUCTION_CODE = `
+    import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+    import { T } from 'gt-react';
+    export function App({ name }) {
+      return _jsxs("main", { children: [
+        _jsxs("p", { children: ["Signed in as ", name] }),
+        _jsx(T, { children: _jsx("p", { children: "Saved" }) })
+      ] });
+    }
+  `;
+  const DEVELOPMENT_CODE = `
+    import { jsxDEV as _jsxDEV } from "react/jsx-dev-runtime";
+    export const el = _jsxDEV("p", { children: ["Signed in as ", name] }, void 0, true);
+  `;
+  const NAMESPACE_CODE = `
+    import { jsx as _jsx } from "react/jsx-runtime";
+    import * as GT from 'gt-react';
+    export const el = _jsx(GT.T, { children: "Saved" });
+  `;
+  // Hashed the same whatever the JSX is compiled against
+  const STRINGS_ONLY_CODE = `
+    import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+    import { useGT, msg } from 'gt-react';
+    const LABEL = msg('Orders');
+    export function App({ name }) {
+      const t = useGT();
+      return _jsxs("main", { children: [
+        _jsx("h1", { children: t\`Welcome back\` }),
+        _jsx("p", { title: t('Signed in'), children: name })
+      ] });
+    }
+  `;
+
+  it.each<[name: string, options: GTUnpluginOptions, code: string]>([
+    [
+      'a file that imports a General Translation component',
+      {},
+      PRODUCTION_CODE,
+    ],
+    [
+      'a file that imports a General Translation package as a namespace',
+      {},
+      NAMESPACE_CODE,
+    ],
+    [
+      'any file of a build with automatic <T>',
+      { enableAutoJsxInjection: true },
+      DEVELOPMENT_CODE,
+    ],
+  ])(
+    'warns once per build of the source of %s, and leaves the files as they are',
+    async (_name, options, code) => {
+      const cwd = createProject();
+      const { outputs, warnings } = await runPlugin(
+        { ...PROJECT_SETTINGS, ...options },
+        compiledAgainst(SOURCE, code),
+        { cwd, files: ['One.tsx', 'Two.tsx'] }
+      );
+      expect(outputs).toEqual([null, null]);
+      expect(warnings).toEqual([warningOf(SOURCE, path.join(cwd, 'One.tsx'))]);
+    }
+  );
+
+  it('does not warn of a dependency, which the app cannot compile again, and warns of an app file after it', async () => {
+    const cwd = createProject();
+    const { warnings } = await runPlugin(
+      { ...PROJECT_SETTINGS, enableAutoJsxInjection: true },
+      compiledAgainst(SOURCE, DEVELOPMENT_CODE),
+      { cwd, files: ['node_modules/some-library/Button.js', 'App.tsx'] }
+    );
+    expect(warnings).toEqual([warningOf(SOURCE, path.join(cwd, 'App.tsx'))]);
+  });
+
+  it.each<
+    [
+      name: string,
+      options: GTUnpluginOptions,
+      code: string,
+      transformed: boolean,
+    ]
+  >([
+    ["React's production runtime", {}, PRODUCTION_CODE, true],
+    [
+      "React's development runtime",
+      { enableAutoJsxInjection: true },
+      DEVELOPMENT_CODE,
+      true,
+    ],
+    ['a file with no JSX', { precomputeMessages: false }, USEGT_CODE, true],
+    [
+      'a file the compiler has no work in',
+      {},
+      compiledAgainst(SOURCE, DEVELOPMENT_CODE),
+      false,
+    ],
+    [
+      'a file that uses only the strings of General Translation',
+      { precomputeMessages: false },
+      compiledAgainst(SOURCE, STRINGS_ONLY_CODE),
+      true,
+    ],
+    [
+      'a build whose log level is error',
+      { logLevel: 'error' },
+      compiledAgainst(SOURCE, PRODUCTION_CODE),
+      false,
+    ],
+  ])('does not warn of %s', async (_name, options, code, transformed) => {
+    const { outputs, warnings } = await runPlugin(
+      { ...PROJECT_SETTINGS, ...options },
+      code
+    );
+    expect(outputs[0] !== null).toBe(transformed);
+    expect(warnings).toEqual([]);
+  });
+});
+
 describe('bundler adapters', () => {
   it('exposes a factory for every supported bundler, including rspack', () => {
     for (const adapter of [webpack, vite, rollup, rspack, esbuild]) {
