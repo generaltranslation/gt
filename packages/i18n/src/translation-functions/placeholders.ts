@@ -417,7 +417,7 @@ type CheckNumberOptions<F> = {
         : "unit needs style 'unit', like { style: 'unit', unit: 'kilometer' }"
       : K extends keyof NumberFormattingContext
         ? F[K]
-        : NotAnOption<'number'>;
+        : NotAnOption<'num'>;
 };
 
 // Intl throws a TypeError for a style combined with fields.
