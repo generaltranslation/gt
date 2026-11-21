@@ -4,10 +4,7 @@ import {
   isWhitespaceMultiplicationNode,
   isWhitespaceJsxTree,
 } from '../types.js';
-import {
-  isAcceptedPluralForm,
-  isPluralComponentName,
-} from 'generaltranslation/internal';
+import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import { BRANCH_COMPONENT, BRANCH_CONTROL_PROPS } from '../../constants.js';
 
 export type MultiplicationNodeResult = {
@@ -74,8 +71,8 @@ export function findMultiplicationNode(
 
       // For Plural/Branch, also search translatable content props
       // Mirrors the prop filtering in handleChildrenWhitespace.ts and autoInsertion.ts
-      const elementIsPlural = isPluralComponentName(curr.branching);
       const elementIsBranch = curr.branching === BRANCH_COMPONENT;
+      const elementIsPlural = curr.branching !== undefined && !elementIsBranch;
       if (elementIsPlural || elementIsBranch) {
         for (const [propKey, propValue] of Object.entries(curr.props)) {
           if (propKey === 'children') continue;

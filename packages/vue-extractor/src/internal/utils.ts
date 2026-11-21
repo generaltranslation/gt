@@ -1,12 +1,24 @@
 import path from 'node:path';
 import type * as t from '@babel/types';
+import type { BranchElementName } from '@generaltranslation/format/internal';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type {
   VueExtractionMetadata,
   VueExtractionResult,
   VueSourceCode,
 } from '../types.js';
-import type { ExtractionLocation, VueExtractionContext } from './types.js';
+import type {
+  ExtractionLocation,
+  GTComponentName,
+  VueExtractionContext,
+} from './types.js';
+
+/** Whether a GT component is one whose slots and attributes are branches. */
+export function isBranchComponent(
+  name: GTComponentName | undefined
+): name is BranchElementName {
+  return name === 'Branch' || name === 'Plural' || name === 'Ordinal';
+}
 
 export function createVueExtractionContext(
   file: string,

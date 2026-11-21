@@ -1,7 +1,4 @@
-import {
-  isAcceptedPluralForm,
-  isPluralComponentName,
-} from 'generaltranslation/internal';
+import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import {
   ElementNode,
   ExpressionNode,
@@ -201,8 +198,9 @@ export function handleChildrenWhitespace(
     return newChildren.length === 1 ? newChildren[0] : newChildren;
   } else if (isElementNode(currentTree)) {
     // Process all props recursively
-    const elementIsPlural = isPluralComponentName(currentTree.branching);
     const elementIsBranch = currentTree.branching === 'Branch';
+    const elementIsPlural =
+      currentTree.branching !== undefined && !elementIsBranch;
     const processedProps = !currentTree.props
       ? undefined
       : Object.fromEntries(

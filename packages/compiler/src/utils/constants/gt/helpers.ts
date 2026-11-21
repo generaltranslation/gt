@@ -13,6 +13,7 @@ import {
   HTML_CONTENT_PROPS,
   HtmlContentPropValuesRecord,
 } from '@generaltranslation/format';
+import type { BranchElementName } from '@generaltranslation/format/internal';
 
 /**
  * Check if a name is a GT function
@@ -75,6 +76,22 @@ export function isVariableComponent(name: string): name is VariableComponent {
  */
 export function isDeriveComponent(name: string): name is GT_COMPONENT_TYPES {
   return name === GT_COMPONENT_TYPES.Derive;
+}
+
+/**
+ * Check if a name is a GT plural component: a Plural or an Ordinal
+ */
+export function isPluralComponent(name: string | null): boolean {
+  return (
+    name === GT_COMPONENT_TYPES.Plural || name === GT_COMPONENT_TYPES.Ordinal
+  );
+}
+
+/**
+ * Check if a name is a GT branch component
+ */
+export function isBranchComponent(name: string): name is BranchElementName {
+  return name === GT_COMPONENT_TYPES.Branch || isPluralComponent(name);
 }
 
 /**

@@ -3,13 +3,13 @@ import type { NodePath } from '@babel/traverse';
 import {
   getPluralBranchKey,
   isAcceptedPluralForm,
-  isPluralComponentName,
 } from 'generaltranslation/internal';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import {
   BRANCH_CONTROL_PROPS,
   GT_COMPONENT_TYPES,
 } from '../../../utils/constants/gt/constants';
+import { isPluralComponent } from '../../../utils/constants/gt/helpers';
 
 export const createOtherPropError = (component: string) =>
   createDiagnosticMessage({
@@ -85,7 +85,7 @@ export function getBranchComponentParameters(
       ) {
         return null;
       } else if (
-        isPluralComponentName(canonicalName) &&
+        isPluralComponent(canonicalName) &&
         !isAcceptedPluralForm(propertyName)
       ) {
         // `_01` looks like an exact number but is not a branch.
@@ -99,7 +99,7 @@ export function getBranchComponentParameters(
       }
 
       return [
-        isPluralComponentName(canonicalName)
+        isPluralComponent(canonicalName)
           ? getPluralBranchKey(propertyName)
           : propertyName,
         valuePath as NodePath<t.Expression>,

@@ -22,6 +22,11 @@ export const N_COMPONENT = 'N';
 export const COUNT_NODE_TYPE = '#';
 export const PLURAL_COMPONENT = 'Plural';
 export const ORDINAL_COMPONENT = 'Ordinal';
+/** `<Plural>` and `<Ordinal>` are read alike; only the stored transformation differs. */
+export const PLURAL_COMPONENTS = new Set<string | undefined>([
+  PLURAL_COMPONENT,
+  ORDINAL_COMPONENT,
+]);
 
 // GT translation functions
 export const GT_TRANSLATION_FUNCS = [

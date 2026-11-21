@@ -7,6 +7,10 @@ export function getCachedPluralRules(
   return intlCache.get('PluralRules', locales, options);
 }
 
+export {
+  BRANCH_TRANSFORMATIONS,
+  type BranchElementName,
+} from './types-dir/jsx/content';
 export { localeMatchers, snapshotLocaleConfig } from './intl/localeConfig';
 export {
   defaultDefaultLocale,

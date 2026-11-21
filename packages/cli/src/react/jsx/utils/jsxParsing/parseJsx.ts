@@ -25,17 +25,16 @@ import {
   warnDeriveNonConstVariableSync,
   warnDeriveDestructuringSync,
 } from '../../../../console/index.js';
-import {
-  isAcceptedPluralForm,
-  isBranchComponentName,
-  isPluralComponentName,
-} from 'generaltranslation/internal';
+import { isAcceptedPluralForm } from 'generaltranslation/internal';
 import { isStaticExpression } from '../../evaluateJsx.js';
 import {
+  BRANCH_COMPONENT,
   COUNT_NODE_TYPE,
   DATA_ATTR_PREFIX,
   DERIVE_COMPONENT,
   N_COMPONENT,
+  ORDINAL_COMPONENT,
+  PLURAL_COMPONENT,
   TRANSLATION_COMPONENT,
   INTERNAL_TRANSLATION_COMPONENT,
   VARIABLE_COMPONENTS,
@@ -366,8 +365,14 @@ function buildJSXTree({
 
     const props: JSXProps = {};
 
-    const elementIsPlural = isPluralComponentName(componentType);
-    const elementIsBranch = componentType === 'Branch';
+    const branching =
+      componentType === BRANCH_COMPONENT ||
+      componentType === PLURAL_COMPONENT ||
+      componentType === ORDINAL_COMPONENT
+        ? componentType
+        : undefined;
+    const elementIsBranch = branching === BRANCH_COMPONENT;
+    const elementIsPlural = branching !== undefined && !elementIsBranch;
 
     element.openingElement.attributes.forEach((attr, index) => {
       const helperAttribute = helperPath
@@ -570,9 +575,7 @@ function buildJSXTree({
       // if componentType is undefined, use typeName
       // Basically, if componentType is not a GT component, use typeName such as <div>
       type: componentType ?? typeName,
-      ...(isBranchComponentName(componentType) && {
-        branching: componentType,
-      }),
+      ...(branching && { branching }),
       props,
     };
   }

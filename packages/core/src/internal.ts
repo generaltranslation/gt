@@ -29,12 +29,6 @@ export {
   type ResolvedCredentials,
 } from './config/credentials';
 export { getPluralBranchKey, isAcceptedPluralForm } from './settings/plurals';
-export {
-  branchComponentTransformations,
-  isBranchComponentName,
-  isPluralComponentName,
-  type BranchComponentName,
-} from './settings/branchComponents';
 export type {
   InjectionType,
   Transformation,

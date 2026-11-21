@@ -16,11 +16,12 @@ import {
   type JsxChildren,
 } from '@generaltranslation/format';
 import {
-  branchComponentTransformations,
-  type BranchComponentName,
+  BRANCH_TRANSFORMATIONS,
+  type BranchElementName,
+} from '@generaltranslation/format/internal';
+import {
   getPluralBranchKey,
   isAcceptedPluralForm,
-  isBranchComponentName,
 } from 'generaltranslation/internal';
 import { ElementTypes, NodeTypes } from './compilerAst.js';
 import { processVueStringCall } from './stringCalls.js';
@@ -41,6 +42,7 @@ import {
   applyStaticTMetadataValue,
   createInlineMetadata,
   type ExtractedTMetadata,
+  isBranchComponent,
   normalizeTMetadataKey,
   readStaticGlobalPrimitive,
   readStaticPrimitive,
@@ -387,7 +389,7 @@ function visitTemplateChildren(
         childBindings,
         expressionPlugins,
         context,
-        isBranchComponentName(component?.originalName) ||
+        isBranchComponent(component?.originalName) ||
           component?.originalName === 'T'
       );
     } else {
@@ -1797,7 +1799,7 @@ function serializeElement(
           shadowed,
           expressionPlugins,
           context,
-          isBranchComponentName(originalName) ? 'serialize' : 'opaque'
+          isBranchComponent(originalName) ? 'serialize' : 'opaque'
         )
       : {
           defaultSlot: {
@@ -1810,7 +1812,7 @@ function serializeElement(
 
   // The default slot of a Branch or a Plural is its `other` branch, which
   // readBranches serializes.
-  const children = isBranchComponentName(originalName)
+  const children = isBranchComponent(originalName)
     ? []
     : serializeChildren(
         slotLayout.defaultSlot.children,
@@ -1829,7 +1831,7 @@ function serializeElement(
     );
   }
 
-  if (isBranchComponentName(originalName)) {
+  if (isBranchComponent(originalName)) {
     const branches = readBranches(
       element,
       slotLayout,
@@ -1851,7 +1853,7 @@ function serializeElement(
               ])
             )
           : branches;
-      data.t = branchComponentTransformations[originalName];
+      data.t = BRANCH_TRANSFORMATIONS[originalName];
     }
   }
 
@@ -2241,7 +2243,7 @@ function readBranches(
   element: ElementNode,
   slots: SlotLayout,
   branchElementId: number,
-  component: BranchComponentName,
+  component: BranchElementName,
   shadowed: Set<string>,
   bindings: TemplateBindings,
   expressionPlugins: ParserPlugin[],

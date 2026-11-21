@@ -10,11 +10,12 @@ import {
   minifyVariableTypeMap,
 } from '../../../utils/getVariableName.js';
 import {
-  branchComponentTransformations,
-  type BranchComponentName,
+  BRANCH_TRANSFORMATIONS,
+  type BranchElementName,
+} from '@generaltranslation/format/internal';
+import {
   getPluralBranchKey,
   isAcceptedPluralForm,
-  isPluralComponentName,
 } from 'generaltranslation/internal';
 import { MultipliedTreeNode } from './types.js';
 import { DATA_ATTR_PREFIX, BRANCH_COMPONENT } from '../constants.js';
@@ -43,7 +44,7 @@ function addFallbackBranch(
  * @returns The data-_gt prop
  */
 function constructGTProp(
-  branching: BranchComponentName | undefined,
+  branching: BranchElementName | undefined,
   props: Record<string, unknown>,
   id: number,
   gtVariableNames?: Set<string>
@@ -60,7 +61,7 @@ function constructGTProp(
   }, {});
 
   // Plural
-  if (isPluralComponentName(branching)) {
+  if (branching && branching !== BRANCH_COMPONENT) {
     const pluralBranches = Object.entries(props).reduce(
       (acc: Record<string, JsxChildren>, [branchName, branch]) => {
         if (isAcceptedPluralForm(branchName)) {
@@ -76,7 +77,7 @@ function constructGTProp(
     addFallbackBranch(pluralBranches, props.children, id, gtVariableNames);
     // Add plural branches to the generaltranslation
     if (Object.keys(pluralBranches).length) {
-      generaltranslation.t = branchComponentTransformations[branching];
+      generaltranslation.t = BRANCH_TRANSFORMATIONS[branching];
       generaltranslation.b = pluralBranches;
     }
 
@@ -102,7 +103,7 @@ function constructGTProp(
     addFallbackBranch(resultBranches, children, id, gtVariableNames);
     // Add branches to the generaltranslation
     if (Object.keys(resultBranches).length) {
-      generaltranslation.t = branchComponentTransformations[branching];
+      generaltranslation.t = BRANCH_TRANSFORMATIONS[branching];
       generaltranslation.b = resultBranches;
     }
   }

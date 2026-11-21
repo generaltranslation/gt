@@ -6,13 +6,14 @@ import {
   type JsxChild,
   type JsxChildren,
 } from '@generaltranslation/format';
+import {
+  BRANCH_TRANSFORMATIONS,
+  type BranchElementName,
+} from '@generaltranslation/format/internal';
 import { isHTMLTag, isSVGTag } from '@vue/shared';
 import {
-  branchComponentTransformations,
-  type BranchComponentName,
   getPluralBranchKey,
   isAcceptedPluralForm,
-  isBranchComponentName,
 } from 'generaltranslation/internal';
 import type {
   ExtractionLocation,
@@ -25,6 +26,7 @@ import {
   babelLocation,
   createInlineMetadata,
   type ExtractedTMetadata,
+  isBranchComponent,
   normalizeTMetadataKey,
   type StaticPrimitive,
   type StaticPrimitiveResult,
@@ -201,7 +203,7 @@ export function isNestedInVueJSXTranslation(
         }
         if (
           identity?.type === 'component' &&
-          isBranchComponentName(identity.name)
+          isBranchComponent(identity.name)
         ) {
           // Every stable Branch and Plural slot belongs to the outer source.
           current = current.parentPath;
@@ -707,7 +709,7 @@ function serializeElement(
       },
     ];
   }
-  if (isBranchComponentName(component)) {
+  if (isBranchComponent(component)) {
     return [
       serializeBranchElement(
         element,
@@ -1253,7 +1255,7 @@ function addSuspenseRootError(
 function serializeBranchElement(
   element: babel.JSXElement,
   id: number,
-  component: BranchComponentName,
+  component: BranchElementName,
   counter: Counter,
   scope: Scope,
   context: VueExtractionContext,
@@ -1340,7 +1342,7 @@ function serializeBranchElement(
             ])
           )
         : branches;
-    data.t = branchComponentTransformations[component];
+    data.t = BRANCH_TRANSFORMATIONS[component];
   }
   return {
     t: component,
@@ -1352,7 +1354,7 @@ function serializeBranchElement(
 function addOtherBranchError(
   context: VueExtractionContext,
   location: babel.SourceLocation | null | undefined,
-  component: BranchComponentName
+  component: BranchElementName
 ): void {
   addVueError(
     context,
@@ -1666,7 +1668,7 @@ function readStaticObjectKey(
 
 function readBranchAttributeSources(
   element: babel.JSXOpeningElement,
-  component: BranchComponentName,
+  component: BranchElementName,
   branches: Record<string, JsxChildren>,
   scope: Scope,
   context: VueExtractionContext,

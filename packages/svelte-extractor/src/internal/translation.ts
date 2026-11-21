@@ -7,11 +7,12 @@ import type {
 } from '@generaltranslation/format';
 import { HTML_CONTENT_PROPS } from '@generaltranslation/format';
 import {
-  branchComponentTransformations,
-  type BranchComponentName,
+  BRANCH_TRANSFORMATIONS,
+  type BranchElementName,
+} from '@generaltranslation/format/internal';
+import {
   getPluralBranchKey,
   isAcceptedPluralForm,
-  isBranchComponentName,
   minifyVariableType,
 } from 'generaltranslation/internal';
 import { hashSource } from 'generaltranslation/id';
@@ -397,7 +398,7 @@ class TranslationBuilder {
     if (kind && kind in VARIABLE_TYPES) {
       return this.convertVariable(node, kind, scope, counter);
     }
-    if (isBranchComponentName(kind)) {
+    if (kind === 'Branch' || kind === 'Plural' || kind === 'Ordinal') {
       return this.convertBranch(node, kind, scope, counter, whitespace);
     }
     return this.convertElement(node, scope, counter, whitespace);
@@ -549,7 +550,7 @@ class TranslationBuilder {
 
   private convertBranch(
     node: SvelteElementNode,
-    kind: BranchComponentName,
+    kind: BranchElementName,
     scope: string,
     counter: Counter,
     whitespace: FragmentWhitespace
@@ -679,7 +680,7 @@ class TranslationBuilder {
       d = {
         ...d,
         b: branches,
-        t: branchComponentTransformations[kind],
+        t: BRANCH_TRANSFORMATIONS[kind],
       };
     }
     if (d) element.d = d;
@@ -687,7 +688,7 @@ class TranslationBuilder {
     const selector = findAttribute(node, kind !== 'Branch' ? 'n' : 'branch');
     const snippetName = `${RESERVED_PREFIX}e_${scope}${id}`;
     (this.runtimeMetadata.b ??= {})[`${scope}${id}`] = {
-      t: branchComponentTransformations[kind],
+      t: BRANCH_TRANSFORMATIONS[kind],
       b: branchNames,
     };
     this.snippets.push(
@@ -765,7 +766,7 @@ const CONTENT_PROP_NAMES = new Map<string, string>(
 const createOtherBranchProblem = (component: string) =>
   `<${component}> has no other branch. Write the fallback as its children`;
 
-function isBranchName(kind: BranchComponentName, name: string): boolean {
+function isBranchName(kind: BranchElementName, name: string): boolean {
   if (kind !== 'Branch') return isAcceptedPluralForm(name);
   return name !== 'branch' && name !== 'children' && !name.startsWith('data-');
 }
