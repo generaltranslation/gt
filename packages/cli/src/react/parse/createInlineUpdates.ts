@@ -14,6 +14,7 @@ import type {
 } from '../../types/parsing.js';
 import { getPathsAndAliases } from '../jsx/utils/getPathsAndAliases.js';
 import { extractMessageTrees } from '../jsx/utils/stringParsing/extractMessageTrees/index.js';
+import { createHelperFollower } from '../jsx/utils/stringParsing/extractMessageTrees/followHelpers.js';
 import type { ParsingConfig } from '../jsx/utils/stringParsing/types.js';
 import {
   GTLibrary,
@@ -50,6 +51,7 @@ export async function createInlineUpdates(
   const warnings: Set<string> = new Set();
 
   const pkgs = getUpstreamPackages(pkg);
+  const helperFollower = createHelperFollower(parsingOptions);
 
   // Use the provided app directory or default to the current directory
   const files = matchFiles(process.cwd(), filePatterns || DEFAULT_SRC_PATTERNS);
@@ -80,11 +82,13 @@ export async function createInlineUpdates(
     };
 
     // Tagged-template messages, extracted as message trees
-    await extractMessageTrees(ast, pkgs, stringParsingConfig, {
-      updates,
-      errors,
-      warnings,
-    });
+    await extractMessageTrees(
+      ast,
+      pkgs,
+      stringParsingConfig,
+      { updates, errors, warnings },
+      helperFollower
+    );
 
     // gt-svelte's string API. Its extractor reads ESTree, as in a .svelte file's scripts
     if (pkg === Libraries.GT_SVELTE) {

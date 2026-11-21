@@ -5,16 +5,31 @@ import {
   warnUntrackedMessageTagSync,
 } from '../../../../../console/index.js';
 import type { ParsingConfig, ParsingOutput } from '../types.js';
+import { loadTypeScript } from '../../typeChecker.js';
 import { formatLocation } from './diagnostics.js';
+import { followTagArgument, type HelperFollower } from './followHelpers.js';
 import { processMessage } from './processMessage.js';
 import { processMsgCall } from './processMsgCall.js';
 import type { TagOptions } from './types.js';
+
+/**
+ * Where a tag's messages are written to. `follower` is set for a tag that
+ * useGT() or getGT() returns, which is followed into the functions it is
+ * passed to; `isMsg` also extracts literal calls, as in `msg('Save')`.
+ */
+export type TagContext = {
+  config: ParsingConfig;
+  output: ParsingOutput;
+  isMsg: boolean;
+  follower?: HelperFollower;
+};
 
 /** Follows `const t = useGT()` / `const t = await getGT()` to the t binding. */
 export function processHookReference(
   hookRef: NodePath,
   config: ParsingConfig,
-  output: ParsingOutput
+  output: ParsingOutput,
+  follower: HelperFollower
 ): void {
   const call = hookRef.parentPath;
   if (call?.isTSTypeQuery()) return;
@@ -37,37 +52,63 @@ export function processHookReference(
     warnUntrackedTag(call.node, config, output);
     return;
   }
-  processTagBinding(binding, undefined, config, output);
+  processTagBinding(binding, undefined, {
+    config,
+    output,
+    isMsg: false,
+    follower,
+  });
+}
+
+/**
+ * Extracts the uses of each parameter a tag was passed to, in the order they
+ * were found, loading the types of each parameter's file first.
+ */
+export async function processFollowedParameters(
+  config: ParsingConfig,
+  output: ParsingOutput,
+  follower: HelperFollower
+): Promise<void> {
+  for (
+    let next = follower.pending.shift();
+    next;
+    next = follower.pending.shift()
+  ) {
+    await loadTypeScript(next.file);
+    processTagBinding(next.binding, next.options, {
+      config: { ...config, file: next.file },
+      output,
+      isMsg: false,
+      follower,
+    });
+  }
 }
 
 /**
  * Processes every use of a t/msg binding. `options` is set when the binding
- * is a configured tag, as in `const save = t({ context })`. `isMsg` also
- * extracts literal calls, as in `msg('Save')`.
+ * is a configured tag, as in `const save = t({ context })`.
  */
 export function processTagBinding(
   binding: Binding,
   options: TagOptions | undefined,
-  config: ParsingConfig,
-  output: ParsingOutput,
-  isMsg = false
+  context: TagContext
 ): void {
+  const { config, output } = context;
   for (const violation of binding.constantViolations) {
     warnUntrackedTag(violation.node, config, output);
   }
   // Exported declarations count as references, so they warn below.
   for (const ref of binding.referencePaths) {
-    processTagReference(ref, options, config, output, isMsg);
+    processTagReference(ref, options, context);
   }
 }
 
 function processTagReference(
   ref: NodePath,
   configuredOptions: TagOptions | undefined,
-  config: ParsingConfig,
-  output: ParsingOutput,
-  isMsg: boolean
+  context: TagContext
 ): void {
+  const { config, output, isMsg, follower } = context;
   const parent = ref.parentPath;
   // `typeof t` in a type has no runtime use.
   if (parent?.isTSTypeQuery()) return;
@@ -96,14 +137,42 @@ function processTagReference(
     // const save = t({ ...options })
     const alias = getConstAliasBinding(outer, parent.node);
     if (alias) {
-      processTagBinding(alias, parent.node.arguments, config, output, isMsg);
+      processTagBinding(alias, parent.node.arguments, context);
+      return;
+    }
+    // helper(t({ ...options }))
+    if (
+      follower &&
+      outer &&
+      followTagArgument(
+        outer,
+        parent.node,
+        parent.node.arguments,
+        config.file,
+        follower
+      )
+    ) {
       return;
     }
   }
   // const translate = t
   const alias = getConstAliasBinding(parent, ref.node);
   if (alias) {
-    processTagBinding(alias, configuredOptions, config, output, isMsg);
+    processTagBinding(alias, configuredOptions, context);
+    return;
+  }
+  // helper(t)
+  if (
+    follower &&
+    parent &&
+    followTagArgument(
+      parent,
+      ref.node,
+      configuredOptions,
+      config.file,
+      follower
+    )
+  ) {
     return;
   }
   warnUntrackedTag(ref.node, config, output);
