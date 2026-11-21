@@ -60,6 +60,8 @@ import { collectAndSendUserEditDiffs } from '../collectUserEditDiffs.js';
 import { runPublishWorkflow } from '../../workflows/publish.js';
 import { aggregateFiles } from '../../formats/files/aggregateFiles.js';
 import { BranchStep } from '../../workflows/steps/BranchStep.js';
+import { logger } from '../../console/logger.js';
+import { clearWarnings, recordWarning } from '../../state/translateWarnings.js';
 
 describe('saveLocalEdits - template lookup uses the resolved branch', () => {
   const originalCwd = process.cwd();
@@ -179,5 +181,28 @@ describe('saveLocalEdits - template lookup uses the resolved branch', () => {
     expect(saved).toBe(false);
     expect(BranchStep).not.toHaveBeenCalled();
     expect(collectAndSendUserEditDiffs).not.toHaveBeenCalled();
+  });
+
+  it('says a partial save is partial instead of reporting a clean success', async () => {
+    const settings = buildSettings();
+    writeLockFile();
+    // One locale was saved and another could not be, which the collector
+    // reports as a skipped file warning.
+    vi.mocked(collectAndSendUserEditDiffs).mockResolvedValueOnce(true);
+    recordWarning(
+      'skipped_file',
+      'docs/ja/doc.md',
+      'the ja baseline could not be retrieved'
+    );
+
+    await saveLocalEdits(settings);
+
+    const messages = vi
+      .mocked(logger.createSpinner)
+      .mock.results.flatMap((result) =>
+        result.value.stop.mock.calls.map(([message]) => String(message))
+      );
+    expect(messages.join('\n')).toContain('could not be saved');
+    clearWarnings();
   });
 });

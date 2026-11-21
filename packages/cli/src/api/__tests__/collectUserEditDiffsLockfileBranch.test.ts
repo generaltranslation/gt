@@ -177,7 +177,9 @@ describe('collectAndSendUserEditDiffs - lockfile branch selection', () => {
     expect(hadDiffs).toBe(true);
   });
 
-  it('keeps the caller-supplied branch when settings already carries one', async () => {
+  it('uses the branch resolved for this run, not one persisted by an earlier run', async () => {
+    // `_branchId` is persisted into the config by an earlier translation, so it
+    // can name a different branch than the one resolved for this invocation.
     const settings = {
       ...buildSettings(),
       _branchId: 'stale-branch',
@@ -186,9 +188,10 @@ describe('collectAndSendUserEditDiffs - lockfile branch selection', () => {
     writeLocal();
     mockServerForCurrentVersion();
 
-    // An explicit branch on the settings is authoritative: it reads the stale
-    // branch's entry, which has no server version to diff against.
-    await collectAndSendUserEditDiffs(filesUnderTest(), settings);
+    const hadDiffs = await collectAndSendUserEditDiffs(
+      filesUnderTest(),
+      settings
+    );
 
     const [{ translatedFiles }] = [
       vi.mocked(api.queryFileData).mock.calls[0][0] as {
@@ -196,9 +199,11 @@ describe('collectAndSendUserEditDiffs - lockfile branch selection', () => {
       },
     ];
     expect(translatedFiles.map((file) => file.versionId)).toEqual([
-      'version-stale',
+      'version-current',
     ]);
-    expect(api.submitUserEditDiffs).not.toHaveBeenCalled();
+    expect(api.submitUserEditDiffs).toHaveBeenCalledTimes(1);
+    expect(hadDiffs).toBe(true);
+    expect(settings._branchId).toBe('stale-branch');
   });
 
   it('warns when a known local edit has no server version to compare against', async () => {

@@ -174,15 +174,17 @@ const contentBytes = (content: string, fileFormat: FileFormat): Buffer =>
     : Buffer.from(content, 'utf8');
 
 /**
- * The branch the files were uploaded under. `readLockfile` needs it to pick the
- * matching entries out of a v1 lockfile, which keeps every branch it has seen;
- * without it the file's entries are read from whichever branch is listed first.
+ * The branch these files were uploaded under. `readLockfile` needs it to pick
+ * the matching entries out of a v1 lockfile, which keeps every branch it has
+ * seen; without it the file's entries are read from whichever branch is listed
+ * first. The files carry the branch resolved for this invocation, while
+ * `settings._branchId` can still hold the value persisted by an earlier run.
  */
 const lockfileBranchId = (
   files: FileReference[],
   settings: Settings
 ): string | undefined =>
-  settings._branchId ?? files.find((file) => file.branchId)?.branchId;
+  files.find((file) => file.branchId)?.branchId ?? settings._branchId;
 
 const findLatestDownloadedVersion = (
   entryMap: EntryMap,
@@ -346,11 +348,13 @@ export async function collectAndSendUserEditDiffs(
       // Absent means the batch did not return this file, so there is no
       // baseline. An empty payload is a baseline of nothing, which the user
       // may well have written against. When the recorded hash already showed
-      // an edit, say so rather than leaving the run looking clean.
+      // an edit, say so rather than leaving the run looking clean. An empty
+      // map cannot tell a version the server does not have from a batch that
+      // failed to return it, so the message covers both.
       if (!payload) {
         if (c.knownEdited) {
           const relativePath = getRelative(c.outputPath);
-          const reason = `the ${c.locale} version recorded in the lockfile is not available on the server, so the edit could not be compared`;
+          const reason = `the ${c.locale} baseline recorded in the lockfile could not be retrieved, so the edit could not be compared`;
           logger.warn(unsavedJsonEditsWarning(relativePath, c.locale, reason));
           recordWarning('skipped_file', relativePath, reason);
         }

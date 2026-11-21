@@ -12,6 +12,7 @@ import { runPublishWorkflow } from '../workflows/publish.js';
 import { readLockfile } from '../fs/config/downloadedVersions.js';
 import { TEMPLATE_FILE_ID, TEMPLATE_FILE_NAME } from '../utils/constants.js';
 import { shouldPublishGt } from '../utils/resolvePublish.js';
+import { getWarnings } from '../state/translateWarnings.js';
 
 /**
  * Uploads current source files to obtain file references, then collects and sends
@@ -72,10 +73,20 @@ export async function saveLocalEdits(settings: Settings): Promise<boolean> {
   spinner.start('Saving local edits...');
 
   const hadDiffs = await collectAndSendUserEditDiffs(uploads, settings);
+  // A locale whose baseline could not be retrieved is reported by the
+  // collector, so a run that saved something but skipped something else says
+  // so rather than claiming an unqualified success.
+  const skipped = getWarnings().filter(
+    (warning) => warning.category === 'skipped_file'
+  ).length;
   spinner.stop(
-    hadDiffs
-      ? chalk.green('Local edits saved successfully')
-      : chalk.yellow('No local edits were saved')
+    !hadDiffs
+      ? chalk.yellow('No local edits were saved')
+      : skipped > 0
+        ? chalk.yellow(
+            `Local edits saved, ${skipped} could not be saved (see the warnings above)`
+          )
+        : chalk.green('Local edits saved successfully')
   );
 
   // Publish files to CDN if diffs were detected and publish config exists
