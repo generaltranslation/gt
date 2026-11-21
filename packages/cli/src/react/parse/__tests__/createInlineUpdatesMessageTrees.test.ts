@@ -2102,6 +2102,49 @@ ${
     expect(treeUpdates(result).map((u) => u.source)).toEqual(['Self']);
   });
 
+  it('extracts the configured message of a var that redeclares the parameter', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        'return label(t);',
+        "function label(t: GT) {\n  // @ts-ignore\n  var t = t({ context: 'nav' });\n  return t`Save`;\n}"
+      ),
+    }));
+
+    expect(
+      treeUpdates(result).map((u) => [u.source, u.metadata.context])
+    ).toContainEqual(['Save', 'nav']);
+  });
+
+  it('recognizes React hooks by their import, not their local name', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        [
+          'const a = useCached(() => t`Cached`, [t]);',
+          'const b = React.useCallback(() => t`Namespaced`, [t]);',
+          "return [a, b, helpers.useMemo('nav', [t])];",
+        ].join('\n  '),
+        [
+          "import { useMemo as useCached } from 'react';",
+          "import * as React from 'react';",
+          'declare const helpers: { useMemo(id: string, tags: GT[]): string };',
+        ].join('\n')
+      ),
+    }));
+
+    expect(
+      treeUpdates(result)
+        .map((u) => u.source)
+        .sort()
+    ).toEqual(['Cached', 'Namespaced']);
+    const untracked = result.warnings.filter((w) =>
+      w.includes('Could not follow this use')
+    );
+    // Only the [t] passed to helpers.useMemo, on the component's third line.
+    expect(untracked.map((w) => w.match(/\((\d+):\d+\)/)?.[1])).toEqual(['9']);
+  });
+
   it('does not extract a function that never receives a tag', async () => {
     const { result } = await extractProject(Libraries.GT_NEXT, () => ({
       'page.tsx': withTag(

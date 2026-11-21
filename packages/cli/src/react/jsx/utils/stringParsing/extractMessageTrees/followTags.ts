@@ -16,6 +16,7 @@ import {
 import { parseMessageOptions } from './parseMessageOptions.js';
 import { processMessage, reportSkippedMessage } from './processMessage.js';
 import { processMsgCall } from './processMsgCall.js';
+import { getImportedName } from './imports.js';
 import type { TagOptions } from './types.js';
 
 /**
@@ -170,10 +171,12 @@ function processTagReference(
     const configured = unwrapTypeExpressions(parent);
     const alias = getAliasBinding(configured.parentPath, configured.node);
     if (alias) {
+      // A configured tag is never configured again, so its aliases start a new path.
       processTagBinding(alias, parent.node.arguments, {
         ...context,
         optionsFile: config.file,
         configuredAt: parent.node,
+        aliasPath: undefined,
       });
       return;
     }
@@ -244,17 +247,37 @@ const reactHookDependencyPositions: Record<string, number> = {
   useImperativeHandle: 2,
 };
 
+/** The name `react` exports `callee` as: `useMemo`, `R.useMemo` or a renamed import. */
+function getReactImportName(callee: NodePath): string | undefined {
+  const importOf = (id: NodePath) =>
+    id.isIdentifier() ? id.scope.getBinding(id.node.name)?.path : undefined;
+  const fromReact = (specifier: NodePath | undefined) =>
+    specifier?.parentPath?.isImportDeclaration() &&
+    specifier.parentPath.node.source.value === 'react';
+  if (callee.isIdentifier()) {
+    const specifier = importOf(callee);
+    return specifier?.isImportSpecifier() && fromReact(specifier)
+      ? getImportedName(specifier.node)
+      : undefined;
+  }
+  if (callee.isMemberExpression() && !callee.node.computed) {
+    const specifier = importOf(callee.get('object'));
+    const property = callee.node.property;
+    return (specifier?.isImportNamespaceSpecifier() ||
+      specifier?.isImportDefaultSpecifier()) &&
+      fromReact(specifier) &&
+      t.isIdentifier(property)
+      ? property.name
+      : undefined;
+  }
+}
+
 /** Whether `path` is listed in a React hook's dependency array. */
 function isHookDependency(path: NodePath): boolean {
   const array = path.parentPath;
   const call = array?.parentPath;
   if (!array?.isArrayExpression() || !call?.isCallExpression()) return false;
-  const { callee } = call.node;
-  const name = t.isIdentifier(callee)
-    ? callee.name
-    : t.isMemberExpression(callee) && t.isIdentifier(callee.property)
-      ? callee.property.name
-      : undefined;
+  const name = getReactImportName(call.get('callee'));
   return (
     name !== undefined &&
     Object.hasOwn(reactHookDependencyPositions, name) &&
