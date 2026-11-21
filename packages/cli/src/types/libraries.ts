@@ -54,8 +54,16 @@ export function isInlineLibrary(lib: string): lib is InlineLibrary {
 /** Returns the framework-specific label for the shared inline GTJSON file. */
 export function getInlineElementsLabel(
   inlineLibrary?: InlineLibrary
-): 'Vue Elements' | 'React Elements' {
-  return inlineLibrary === Libraries.GT_VUE ? 'Vue Elements' : 'React Elements';
+): 'Vue Elements' | 'React Elements' | 'Strings' {
+  if (inlineLibrary === Libraries.GT_VUE) return 'Vue Elements';
+  if (
+    inlineLibrary === undefined ||
+    (REACT_LIBRARIES as readonly string[]).includes(inlineLibrary)
+  ) {
+    return 'React Elements';
+  }
+  // gt-node, gt-i18n and the Python libraries translate strings, not elements.
+  return 'Strings';
 }
 
 /**
