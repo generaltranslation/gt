@@ -1,5 +1,20 @@
 # gt-sanity
 
+## 5.0.0-samsara.5
+
+### Patch Changes
+
+- Updated dependencies [8f82244]
+- Updated dependencies [fcf06f1]
+- Updated dependencies [8f82244]
+- Updated dependencies [fcf06f1]
+- Updated dependencies [5b1c74c]
+- Updated dependencies [5b1c74c]
+- Updated dependencies [5b1c74c]
+  - @generaltranslation/api@0.7.0-samsara.4
+  - generaltranslation@10.0.0-samsara.12
+  - @generaltranslation/format@1.0.0-samsara.12
+
 ## 5.0.0-samsara.4
 
 ### Patch Changes

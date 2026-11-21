@@ -1,5 +1,108 @@
 # gtx-cli
 
+## 3.0.0-samsara.13
+
+### Major Changes
+
+- 5b1c74c: **Breaking:** the `selectordinal()` helper is now `ordinal()`, the name of the `<Ordinal>` component. It takes the same arguments and builds the same message, so hashes and translations do not change.
+
+  ```ts
+  // Before
+  import { selectordinal } from 'gt-react';
+  t`You finished ${selectordinal(
+    { place },
+    {
+      one: part`${n}st`,
+      two: part`${n}nd`,
+      few: part`${n}rd`,
+      other: part`${n}th`,
+    }
+  )}!`;
+
+  // After
+  import { ordinal } from 'gt-react';
+  t`You finished ${ordinal(
+    { place },
+    {
+      one: part`${n}st`,
+      two: part`${n}nd`,
+      few: part`${n}rd`,
+      other: part`${n}th`,
+    }
+  )}!`;
+  ```
+
+  `gt-i18n`, `gt-react`, `gt-react-native`, `gt-next`, `gt-tanstack-start` and `gt-node` export it under the new name, and `selectordinal` is no longer exported. `gt`, the compiler and the `static-branch` lint rule recognize `ordinal`, and `GTMessageHelperName` from `generaltranslation/internal` lists it in place of `selectordinal`. The ICU keyword in a message string and the `selectordinal` node of a message tree keep their name. The error for a plural count outside a branch now says "a cardinal or ordinal plural branch", which names no helper.
+
+### Minor Changes
+
+- b541712: The startup banner is the new General Translation globe, animated. In an interactive terminal it turns into place as a lit armillary sphere and keeps turning while the command works, showing its progress on a status line under the globe; it lands on the logo before any prompt, warning or error, when the command finishes, or after 10 seconds, and the command's output follows in order. The command's work never waits on the animation, and on a terminal that can't keep up (such as a slow SSH connection) the globe lands right away.
+
+  Everywhere else the banner is the still globe: when output is not a terminal, in CI, with `TERM=dumb`, in a background job, in windows of 30 rows or fewer, or when motion is turned off. Turn it off for one run with `--no-animation`, for a shell with `GT_NO_ANIMATION=1` or `REDUCE_MOTION=1`, or for good with `{ "animation": false }` in `~/.config/gt/config.json` (or `$XDG_CONFIG_HOME/gt/config.json`). The banner also stays still when `NO_COLOR` is set (uncolored) or the system's Reduce Motion setting is on (macOS and GNOME), and shows only the text header in windows narrower than 52 columns.
+
+- 5b1c74c: `<Ordinal>` is `<Plural>` for ordinals such as 1st, 2nd and 3rd: it picks among the locale's ordinal categories, where `<Plural>` picks among its plural categories.
+
+  ```jsx
+  <Ordinal
+    n={place}
+    one={
+      <>
+        <Num>{place}</Num>st
+      </>
+    }
+    two={
+      <>
+        <Num>{place}</Num>nd
+      </>
+    }
+    few={
+      <>
+        <Num>{place}</Num>rd
+      </>
+    }
+  >
+    <Num>{place}</Num>th
+  </Ordinal>
+  ```
+
+  In English this renders 1st, 2nd, 3rd, 4th, 11th, 21st and so on. Everything else is as in `<Plural>`: the category branches `zero`, `one`, `two`, `few` and `many`, exact branches such as `_1`, the children as the fallback, `<N />` for its count in React, and the same errors and warnings. A translation picks among its own branches with the target locale's ordinal rules: French has `one` and the fallback, and Welsh has all six categories.
+
+  `gt-react`, `gt-react-native`, `gt-next` and `gt-tanstack-start` export it wherever they export `<Plural>`. `gt-vue` and `gt-svelte` have the same component: `<Ordinal :n="place" one="1st" two="2nd">nth</Ordinal>` in Vue, and `<Ordinal {n} one="first" two="second">later</Ordinal>` in Svelte, with slots and snippets for the branches as in `<Plural>`.
+
+  `gt`, the compiler, the gt-next SWC plugin and the Vue and Svelte extractors read `<Ordinal>` as they read `<Plural>`: an `other` prop, slot or snippet and a spread attribute in translated content are errors. The `static-jsx` lint rule checks its branches as it checks those of `<Plural>`.
+
+  Stored content marks an ordinal plural with `t: 'o'` in an element's GT data, beside `'p'` for a plural and `'b'` for a branch, so `GTProp['t']` from `@generaltranslation/format` is now `'p' | 'o' | 'b'`. An `<Ordinal>` hashes differently from a `<Plural>` with the same branches.
+
+### Patch Changes
+
+- f4f6490: With `enableAutoJsxInjection`, `gt` now places the automatic `<T>` where the compiler does for children written in braces, as the JSX insertion rules say. Before, the two disagreed on such JSX, so the compiled app looked up a message `gt` had not extracted and rendered its source text. No id that a compiled app looks up changes.
+  - A string in braces, such as `{' · '}`, `{'Hello'}` or a static template literal, counts as translatable text. `gt` saw only JSX text, so for an element whose only text was written in braces, which is how a separator with spaces around it is usually written, it extracted nothing (`<p>{left}{' · '}{right}</p>`) or a child element's text on its own (`Go back` for `<p><a>Go back</a>{' · '}</p>`).
+  - An element or fragment in braces, such as `{<b>Bold words</b>}`, is the child element it compiles to. For `<div>Lead {<b>Bold words</b>}</div>`, `gt` placed a second automatic `<T>` inside the braces, extracted `Bold words` on its own and stopped with `Found nested <GtInternalTranslateJsx> component`. It also left an expression inside such an element without its `Var`, and did not count a `Branch`, `Plural` or `Derive` in braces when deciding where the `<T>` goes.
+
+- c4457d5: `gt` now reads a `children` prop that holds text as the element's text, as the compiler and the runtime do: `<p children="Save" />` is the same element as `<p>Save</p>`. No id that a compiled app looks up changes.
+  - With `enableAutoJsxInjection`, text in a `children` prop (`children="Save"`, `children={'Save'}` or a static template literal) claims its element for the automatic `<T>`. Before, `gt` extracted nothing for `<Label children="," />`, while the compiled app looked the message up and rendered its source text. An empty or whitespace-only `children` prop is still not translated.
+  - Inside a message, a `children` prop written in braces with a static value (`<T>Total <b children={'due today'} /></T>`, also a number) is part of the message, as a string `children` prop already was. Before, `gt` left it out, so the message's id differed from the one the app looked up. This also applies to a hand-written `<T children={'Save'} />`.
+
+- 8f82244: A font or a saved local edit too large for one 4MB request is now uploaded and sent by reference, where the API rejected it. `gt save-local` no longer runs `git` to confirm an edit, so a large edit to a single-line file is saved where it was silently skipped.
+- 5b1c74c: `gt` no longer reads a component of your own named `Plural`, `Ordinal` or `Branch` as the General Translation component. Inside a `<T>` it is extracted as an ordinary element, as the runtime renders it. Before, its children were stored as a fallback branch and the translation was never found. A General Translation import is still recognized under an alias, and now also when its name is quoted, as in `import { 'Plural' as Plural } from 'gt-next'`.
+- Updated dependencies [8f82244]
+- Updated dependencies [fcf06f1]
+- Updated dependencies [082c21a]
+- Updated dependencies [8f82244]
+- Updated dependencies [fcf06f1]
+- Updated dependencies [5b1c74c]
+- Updated dependencies [5b1c74c]
+- Updated dependencies [5b1c74c]
+  - @generaltranslation/api@0.7.0-samsara.4
+  - @generaltranslation/auth@0.1.0-samsara.1
+  - generaltranslation@10.0.0-samsara.12
+  - @generaltranslation/format@1.0.0-samsara.12
+  - @generaltranslation/vue-extractor@1.0.0-samsara.5
+  - @generaltranslation/svelte-extractor@0.1.0-samsara.13
+  - @generaltranslation/icu@1.0.0-samsara.10
+  - @generaltranslation/python-extractor@1.0.0-samsara.5
+  - @generaltranslation/supported-locales@2.1.49-samsara.5
+
 ## 3.0.0-samsara.12
 
 ### Major Changes

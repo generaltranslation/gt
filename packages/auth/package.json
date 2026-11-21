@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/auth",
-  "version": "0.1.0-samsara.0",
+  "version": "0.1.0-samsara.1",
   "description": "General Translation account login for command-line tools",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
