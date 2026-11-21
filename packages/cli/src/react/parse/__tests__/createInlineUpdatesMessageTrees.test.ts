@@ -2053,6 +2053,55 @@ ${
     }
   );
 
+  it.each([
+    ['useGT', 'const t = useGT() as GT;\n  return label(t);', undefined],
+    [
+      'useGT',
+      'const t = useGT();\n  const tr = t as GT;\n  return label(tr);',
+      undefined,
+    ],
+    [
+      'useGT',
+      "const t = useGT();\n  const tag = t({ context: 'nav' })!;\n  return label(tag);",
+      'nav',
+    ],
+    ['getGT', 'const t = (await getGT())!;\n  return label(t);', undefined],
+    ['getGT', 'return label(await getGT()!);', undefined],
+    ['getGT', 'return label((await getGT())!);', undefined],
+  ])(
+    'extracts the same entry when a %s tag is bound through an assertion: %s',
+    async (hook, body, context) => {
+      const host = hosts.find(([, h]) => h.hook === hook)![1];
+      const component =
+        hook === 'useGT'
+          ? `export function Component() {\n  ${body}\n}`
+          : `export async function load() {\n  ${body}\n}`;
+      const { result } = await extractProject(host.library, () => ({
+        'page.tsx': `import { ${hook}, type GT } from '${host.source}';\nimport { label } from './nav';\n${component}\n`,
+        'nav.ts': nav(
+          host,
+          'export function label(t: GT) {\n  return t`Save`;\n}'
+        ),
+      }));
+
+      expect(result.warnings).toEqual([]);
+      expect(
+        treeUpdates(result).map((u) => [u.source, u.metadata.context])
+      ).toEqual([['Save', context]]);
+    }
+  );
+
+  it('stops at a var alias initialized from itself', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        '// @ts-ignore\n  var tr = t;\n  // @ts-ignore\n  var tr = tr;\n  return tr`Self`;'
+      ),
+    }));
+
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Self']);
+  });
+
   it('does not extract a function that never receives a tag', async () => {
     const { result } = await extractProject(Libraries.GT_NEXT, () => ({
       'page.tsx': withTag(

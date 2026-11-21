@@ -50,15 +50,15 @@ export function processHookReference(
     warnUntrackedTag(hookRef.node, config, output);
     return;
   }
-  const created = call.parentPath?.isAwaitExpression() ? call.parentPath : call;
+  // await getGT(), useGT() as GT, (await getGT())!
+  const created = unwrapTypeExpressions(call, true);
   const declarator = created.parentPath;
-  // helper(useGT()), helper(useGT() as GT)
-  const argument = unwrapTypeExpressions(created);
+  // helper(useGT())
   if (
-    argument.parentPath &&
+    declarator &&
     followTagArgument(
-      argument.parentPath,
-      argument.node,
+      declarator,
+      created.node,
       undefined,
       config.file,
       config.file,
@@ -166,8 +166,9 @@ function processTagReference(
     }
     // msg('Save')
     if (isMsg && processMsgCall(parent, config, output)) return;
-    // const save = t({ ...options })
-    const alias = getAliasBinding(outer, parent.node);
+    // const save = t({ ...options }), const save = t({ ...options })!
+    const configured = unwrapTypeExpressions(parent);
+    const alias = getAliasBinding(configured.parentPath, configured.node);
     if (alias) {
       processTagBinding(alias, parent.node.arguments, {
         ...context,
@@ -177,7 +178,6 @@ function processTagReference(
       return;
     }
     // helper(t({ ...options })), helper(t({ ...options })!)
-    const configured = unwrapTypeExpressions(parent);
     if (
       follower &&
       configured.parentPath &&
@@ -200,14 +200,14 @@ function processTagReference(
       return;
     }
   }
-  // const translate = t
-  const alias = getAliasBinding(parent, ref.node);
+  const argument = unwrapTypeExpressions(ref);
+  // const translate = t, const translate = t as GT
+  const alias = getAliasBinding(argument.parentPath, argument.node);
   if (alias) {
     processTagBinding(alias, configuredOptions, context);
     return;
   }
   // helper(t), helper(t as GT)
-  const argument = unwrapTypeExpressions(ref);
   if (
     follower &&
     argument.parentPath &&
@@ -327,18 +327,24 @@ function warnUntrackedTag(
   );
 }
 
-/** The outermost of `node as T`, `node!` and `node satisfies T` around `path`. */
-function unwrapTypeExpressions(path: NodePath): NodePath {
+/**
+ * The outermost of `node as T`, `node!`, `node satisfies T` and `<T>node`
+ * around `path`, and of `await node` too when `awaits` is set.
+ */
+function unwrapTypeExpressions(path: NodePath, awaits = false): NodePath {
   let current = path;
-  while (
-    current.parentPath &&
-    (current.parentPath.isTSAsExpression() ||
-      current.parentPath.isTSNonNullExpression() ||
-      current.parentPath.isTSSatisfiesExpression() ||
-      current.parentPath.isTSTypeAssertion()) &&
-    current.parentPath.node.expression === current.node
-  ) {
-    current = current.parentPath;
+  for (;;) {
+    const parent = current.parentPath;
+    const wraps =
+      ((parent?.isTSAsExpression() ||
+        parent?.isTSNonNullExpression() ||
+        parent?.isTSSatisfiesExpression() ||
+        parent?.isTSTypeAssertion()) &&
+        parent.node.expression === current.node) ||
+      (awaits &&
+        parent?.isAwaitExpression() &&
+        parent.node.argument === current.node);
+    if (!wraps || !parent) return current;
+    current = parent;
   }
-  return current;
 }
