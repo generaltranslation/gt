@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { initializeI18nConfig } from 'gt-i18n/internal';
 import {
   renderDefaultChildren,
+  renderPreparedT,
   renderTranslatedChildren,
 } from '../renderPipeline.rsc';
 import { renderPlural } from '../../../components/branches/Plural.shared';
@@ -358,6 +359,60 @@ describe('shared plural component renderer', () => {
         children: false,
       })
     ).toBe(false);
+  });
+});
+
+describe('a plural in a locale alias Intl cannot read', () => {
+  beforeEach(() => {
+    resetGTGlobals();
+    initializeI18nConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'portal_uk', 'portal_fr'],
+      customMapping: {
+        portal_uk: { code: 'en-GB' },
+        portal_fr: { code: 'fr' },
+      },
+    });
+  });
+
+  afterEach(resetGTGlobals);
+
+  it('selects in the code of an alias of the default language', () => {
+    expect(
+      renderPlural({
+        _enableI18n: true,
+        _locale: 'portal_uk',
+        n: 1,
+        one: 'one item',
+        children: 'many items',
+      })
+    ).toBe('one item');
+    expect(
+      renderPreparedT({
+        taggedSourceChildren: createPluralElement(1, {
+          one: 'one item',
+          other: 'many items',
+        }),
+        targetJsxChildren: undefined,
+        locale: 'portal_uk',
+        defaultLocale: 'en',
+        enableI18n: true,
+        shouldTranslate: false,
+      })
+    ).toBe('one item');
+  });
+
+  it('selects in the code of an alias of another language', () => {
+    // French counts 0 as "one".
+    expect(
+      renderPlural({
+        _enableI18n: true,
+        _locale: 'portal_fr',
+        n: 0,
+        one: 'un',
+        children: 'plusieurs',
+      })
+    ).toBe('un');
   });
 });
 

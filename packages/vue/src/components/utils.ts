@@ -1,9 +1,11 @@
+import { isSourceLanguage } from '@generaltranslation/format/internal';
 import {
   type Component,
   type DefineComponent,
   type Slots,
   type VNodeChild,
 } from 'vue';
+import type { GTState } from '../types';
 
 const NON_BRANCH_ATTRIBUTE_NAMES = new Set([
   'branch',
@@ -52,6 +54,24 @@ export function getFormatLocales(
 
 function identityLocale(locale: string): string {
   return locale;
+}
+
+/**
+ * The locale source content formats in: the active locale when it reads the
+ * default locale's language, so en text keeps en-GB dates for en-GB, else the
+ * default locale.
+ *
+ * @internal
+ */
+export function getSourceFormatLocale(state: GTState): string {
+  const locale = state.getLocale();
+  const resolveLocale = state.resolveFormattingLocale ?? identityLocale;
+  return isSourceLanguage(
+    resolveLocale(locale),
+    resolveLocale(state.defaultLocale)
+  )
+    ? locale
+    : state.defaultLocale;
 }
 
 /**

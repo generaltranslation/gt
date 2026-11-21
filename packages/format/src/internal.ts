@@ -12,6 +12,7 @@ export {
   type BranchElementName,
 } from './types-dir/jsx/content';
 export { localeMatchers, snapshotLocaleConfig } from './intl/localeConfig';
+export { isSourceLanguage } from './locales/isSameLanguage';
 export {
   defaultDefaultLocale,
   defaultLocaleMatcher,

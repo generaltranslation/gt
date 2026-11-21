@@ -132,6 +132,7 @@ vi.mock('gt-i18n/internal', async (importOriginal) => {
     getI18nConfig: () => {
       const c: Record<string, unknown> = {
         getDefaultLocale: () => 'en',
+        getSourceFormatLocale: () => 'en',
         requiresTranslation: () => false,
         isDevHotReloadEnabled: () => false,
       };

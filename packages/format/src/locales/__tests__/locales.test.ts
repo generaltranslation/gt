@@ -16,6 +16,7 @@ import {
   createCustomLocaleProperties,
 } from '../getLocaleProperties';
 import { getRegionProperties } from '../getRegionProperties';
+import { isSourceLanguage } from '../isSameLanguage';
 import { _isValidLocale, _standardizeLocale } from '../isValidLocale';
 import { _resolveAliasLocale } from '../resolveAliasLocale';
 
@@ -118,6 +119,22 @@ describe('_isValidLocale', () => {
     } finally {
       get.mockRestore();
     }
+  });
+});
+
+describe('isSourceLanguage', () => {
+  it.each([
+    ['en-GB', 'en', true],
+    ['en-GB', 'en-US', true],
+    ['zh-Hant-TW', 'zh-CN', true],
+    ['source', 'source', true],
+    ['fr', 'en', false],
+    ['fr_FR', 'fr', false],
+  ])('reads %s content in %s: %s', (locale, sourceLocale, expected) => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(isSourceLanguage(locale, sourceLocale)).toBe(expected);
+    expect(error).not.toHaveBeenCalled();
+    error.mockRestore();
   });
 });
 

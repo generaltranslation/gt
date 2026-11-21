@@ -874,6 +874,27 @@ describe('gt-i18n precomputed messages', () => {
     expect(() => call(t, ...args)).toThrow(error);
   });
 
+  it.each([
+    ['a dialect of the default locale in it', 'en', 'en-GB', '2 Jan 2024'],
+    ['another dialect of its language in it', 'en-US', 'en-GB', '2 Jan 2024'],
+    ['an alias of such a dialect in it', 'en', 'brand', '2 Jan 2024'],
+    ['another language in the default locale', 'en', 'fr', 'Jan 2, 2024'],
+  ])('formats the source for %s', (_name, defaultLocale, locale, expected) => {
+    initializeI18nConfig({
+      defaultLocale,
+      locales: [defaultLocale, 'en-GB', 'fr', 'brand'],
+      customMapping: { brand: { code: 'en-GB' } },
+      timeZone: 'UTC',
+    });
+    setI18nCache(new I18nCache({ loadTranslations: async () => ({}) }));
+    const gt = createGT({ getLocale: () => locale });
+    const render = (
+      tag: (strings: TemplateStringsArray, ...holes: unknown[]) => unknown
+    ) => tag`Due ${date({ due })}`;
+    expect(render(gt)).toBe(`Due ${expected}`);
+    expect(call(gt, ...(render(precompute()) as Call))).toBe(`Due ${expected}`);
+  });
+
   it('renders a catalog entry that changes, and one that expires', async () => {
     vi.useFakeTimers();
     try {

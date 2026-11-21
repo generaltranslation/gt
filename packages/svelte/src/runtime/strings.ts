@@ -191,8 +191,8 @@ function createGT(state: GTState): GTFunctionType {
     // Read the revision so template calls re-run after async cache updates.
     void state.revision;
     const config = getI18nConfig();
-    const sourceLocale = config.getDefaultLocale();
     const locale = (options.$locale as string | undefined) ?? state.locale;
+    const sourceLocale = config.getSourceFormatLocale(locale);
     const lookupOptions = createLookupOptions<StringFormat>(
       locale,
       options,

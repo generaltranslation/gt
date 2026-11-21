@@ -1,6 +1,7 @@
 import type { RenderDefaultChildrenArgs } from './renderDefaultChildren.shared';
 import type { RenderTranslatedChildrenArgs } from './renderTranslatedChildren.shared';
 import type { JsxChildren } from '@generaltranslation/format';
+import { getI18nConfig } from 'gt-i18n/internal';
 import {
   cloneElement,
   createElement,
@@ -119,7 +120,9 @@ function createRenderPreparedT({
       !shouldTranslate || targetJsxChildren == null
         ? renderSource({
             taggedSourceChildren,
-            defaultLocale,
+            defaultLocale: enableI18n
+              ? getI18nConfig().getSourceFormatLocale(locale)
+              : defaultLocale,
             enableI18n,
           })
         : renderTarget({
