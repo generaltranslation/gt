@@ -4,7 +4,7 @@ import { transformWithPlugin } from './transformWithPlugin';
 import wireFormatCases from '../../../../test-fixtures/message-tree-wire-format.json';
 
 const HELPERS =
-  't, msg, useGT, getGT, plural, ordinal, select, number, date, time, part, derive, n';
+  't, msg, useGT, getGT, plural, ordinal, select, num, date, time, part, derive, n';
 /** For sources that bind `t` to useGT() or getGT() instead of importing it. */
 const HOOK_HELPERS = HELPERS.replace(/^t, /, '');
 
@@ -125,7 +125,7 @@ describe('taggedTemplateHashInjectionPass', () => {
     ['a __proto__ variable', 't`Hello ${{ __proto__: name }}`;'],
     ['a __proto__ branch', "t`${select({ role }, { __proto__: 'x' })}`;"],
     ['a dynamic branch', 't`${plural({ count }, { other: label })}`;'],
-    ['a dynamic message option', 't`${number({ n }, { style: code })}`;'],
+    ['a dynamic message option', 't`${num({ n }, { style: code })}`;'],
     ['a placeholder variable', 'const role = derive(admin);\nt`Role ${role}`;'],
     ['an object variable', 'const vars = { name };\nt`Hi ${vars}`;'],
     [
@@ -179,7 +179,7 @@ describe('taggedTemplateHashInjectionPass', () => {
     ],
     [
       'a call result passed to a helper',
-      'const values = () => ({ count: 2 });\nt`Count: ${number(values())}`;',
+      'const values = () => ({ count: 2 });\nt`Count: ${num(values())}`;',
     ],
     ['a call result', 't`Hi ${getName()}`;'],
     [
@@ -295,7 +295,7 @@ describe('taggedTemplateHashInjectionPass', () => {
   it.each([
     [
       'currency',
-      "t`${number({ p }, { style: 'currency', currency: code() })}`;",
+      "t`${num({ p }, { style: 'currency', currency: code() })}`;",
       [['p', 'number', 'currency']],
     ],
     [
@@ -311,7 +311,7 @@ describe('taggedTemplateHashInjectionPass', () => {
     [
       // Formatting context never reaches the tree; the runtime checks it.
       'or literal maximumFractionDigits',
-      't`${number({ n }, { maximumFractionDigits: digits() })}${number({ n }, { maximumFractionDigits: 1 })}`;',
+      't`${num({ n }, { maximumFractionDigits: digits() })}${num({ n }, { maximumFractionDigits: 1 })}`;',
       [
         ['n', 'number'],
         ['n', 'number'],

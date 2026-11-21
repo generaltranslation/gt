@@ -246,7 +246,7 @@ type CheckBranch<T, AllowsPluralCount extends boolean> = [T] extends [string]
   : AllowsPluralCount extends true
     ? T
     : T extends Part<true>
-      ? 'n is not the plural count inside select, as in ICU: use number({ count }) instead'
+      ? 'n is not the plural count inside select, as in ICU: use num({ count }) instead'
       : T;
 // A key as the string a value is compared with: the computed key
 // `[Plan.Free]` is 'free', and `{ 10: ... }` is '10'.
@@ -448,7 +448,7 @@ type CheckTimeOptions<F> = CheckDateTimeOptions<
  * `unit` are part of the message, so they are literals; the other options,
  * such as `currency`, are set here and may be any value.
  */
-export function number<
+export function num<
   const O extends Record<string, number | bigint>,
   const F extends NumberOptions = {},
 >(
@@ -456,7 +456,7 @@ export function number<
   options?: CheckNumberOptions<F> &
     Uninferred<F, NumberMessageOptions & NumberFormattingContext>
 ): Placeholder;
-export function number(
+export function num(
   value: number | bigint | Record<string, number | bigint>,
   options?: Intl.NumberFormatOptions
 ): Placeholder {
