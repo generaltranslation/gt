@@ -15,6 +15,8 @@ no locale-data polyfills are shipped.
   `getPluralCategories()`, `getPluralCategoryCounts()` and `isExactKey()` are
   the plural rules those checks apply, for a format that keeps plural
   branches another way.
+  `moveToExactBranches()` and `getExactBranchCount()` say which plural
+  branches of a source are exact branches in a translation.
 - `@generaltranslation/icu/parser`: the ICU string parser. `parse()`,
   `formatIcu()`, `printAST()` and the syntax-tree types.
 - `@generaltranslation/icu/internal`: shared by General Translation packages;
@@ -177,6 +179,36 @@ getPluralCategoryCounts('de', 'cardinal', 'one'); // { counts: [1], more: false 
 isExactKey('=1'); // true
 isExactKey('=01'); // false
 ```
+
+A plural category is not a number. English `one` is only 1, so a source may
+say "One file" there in words. Russian `one` is also 21 and Japanese has no
+`one`, so in a translation that text is right as the exact branch `=1` and
+nowhere else. `moveToExactBranches()` rewrites a source the way it is
+translated from one locale into another, and `getExactBranchCount()` is the
+rule it applies, for a format that keeps plural branches another way:
+
+```ts
+import {
+  getExactBranchCount,
+  icuToMessage,
+  moveToExactBranches,
+} from '@generaltranslation/icu/convert';
+
+const source = icuToMessage('{n, plural, one {One file} other {# files}}').tree;
+moveToExactBranches(source, 'en', 'ru');
+// {n, plural, =1 {One file} other {# files}}
+moveToExactBranches(source, 'en', 'de');
+// unchanged: German `one` is only 1 too
+
+getExactBranchCount('one', 'en', 'ru'); // 1
+getExactBranchCount('one', 'en', 'ja'); // 1
+getExactBranchCount('one', 'en', 'de'); // undefined
+```
+
+A branch that shows the count, like `one {# file}`, stays: it reads right at
+every number its category takes. So does a branch whose number has an exact
+branch already, and an ordinal. Check a translation against the rewritten
+source, and `checkTranslation()` asks it to keep `=1`.
 
 Use `checkTranslation()` for a message tree, and `checkIcuTranslation()` for
 ICU strings from any library, such as FormatJS or ICU4J. It applies the same

@@ -121,6 +121,8 @@ module.exports = [
   icuImport('{ checkIcuTranslation }', 'convert', '9.5 kB'),
   // Neither rule needs the parser or the checks.
   icuImport('{ getPluralCategories, isExactKey }', 'convert', '0.5 kB'),
+  // The tree walk and the plural rules, without the parser or the checks.
+  icuImport('{ moveToExactBranches }', 'convert', '1 kB'),
 
   i18n('gt-i18n', 'index'),
   i18n('gt-i18n/internal', 'internal'),

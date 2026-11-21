@@ -13,4 +13,8 @@ export {
   getPluralCategoryCounts,
   type PluralCategoryCounts,
 } from './convert/pluralCategories';
+export {
+  getExactBranchCount,
+  moveToExactBranches,
+} from './convert/exactBranches';
 export { isExactKey } from './settings/syntax';

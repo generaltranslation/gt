@@ -3,12 +3,14 @@ import { IntlMessageFormat } from 'intl-messageformat';
 import { describe, expect, it } from 'vitest';
 import {
   checkTranslation,
+  getExactBranchCount,
   getPluralCategories,
   getPluralCategoryCounts,
   icuToMessage,
   isExactKey,
   messageToIcu,
   messageTreeToIcu,
+  moveToExactBranches,
 } from '../convert';
 import {
   validateMessageTree,
@@ -1191,6 +1193,179 @@ describe('getPluralCategoryCounts', () => {
 
   it('answers nothing for a locale Intl has no plural rules for', () => {
     expect(getPluralCategoryCounts('tlh', 'cardinal', 'one')).toBeUndefined();
+  });
+});
+
+describe('getExactBranchCount', () => {
+  it.each([
+    // Russian "one" is also 21, French "one" is also 0, and Japanese has no "one".
+    ['one', 'en', 'ru', 1],
+    ['one', 'en', 'fr', 1],
+    ['one', 'en', 'ja', 1],
+    ['zero', 'ar', 'en', 0],
+    ['two', 'ar', 'en', 2],
+    // German "one" is only 1 too.
+    ['one', 'en', 'de', undefined],
+    ['one', 'ar', 'en', undefined],
+    // A category the source picks for more than one number says none of them in words.
+    ['one', 'ru', 'en', undefined],
+    ['other', 'en', 'ru', undefined],
+    // English never picks "zero".
+    ['zero', 'en', 'ar', undefined],
+    ['=1', 'en', 'ru', undefined],
+  ] as const)(
+    'gives the count of %s from %s into %s',
+    (category, sourceLocale, targetLocale, count) => {
+      expect(getExactBranchCount(category, sourceLocale, targetLocale)).toBe(
+        count
+      );
+    }
+  );
+
+  it.each([
+    ['tlh', 'ru'],
+    ['en', 'tlh'],
+  ])(
+    'answers nothing when Intl has no plural rules for a locale',
+    (sourceLocale, targetLocale) => {
+      expect(
+        getExactBranchCount('one', sourceLocale, targetLocale)
+      ).toBeUndefined();
+    }
+  );
+});
+
+describe('moveToExactBranches', () => {
+  const tree = (icu: string) => icuToMessage(icu).tree;
+  const move = (icu: string, sourceLocale = 'en', targetLocale = 'ru') =>
+    moveToExactBranches(tree(icu), sourceLocale, targetLocale);
+
+  const messages =
+    '{n, plural, one {You have one unread message.} other {You have many unread messages.}}';
+  const exactMessages =
+    '{n, plural, =1 {You have one unread message.} other {You have many unread messages.}}';
+
+  it.each(['ru', 'fr', 'ja'])(
+    'moves a branch that says its one number in words, into %s',
+    (targetLocale) => {
+      expect(move(messages, 'en', targetLocale)).toEqual(tree(exactMessages));
+    }
+  );
+
+  it('leaves a branch the target locale also picks for that number alone', () => {
+    expect(move(messages, 'en', 'de')).toEqual(tree(messages));
+  });
+
+  it('moves a branch beside one that shows the count', () => {
+    expect(move('{n, plural, one {One file} other {# files}}')).toEqual(
+      tree('{n, plural, =1 {One file} other {# files}}')
+    );
+  });
+
+  it.each([
+    '{n, plural, one {# file} other {# files}}',
+    '{n, plural, one {{n} file} other {{n} files}}',
+    '{n, plural, one {{n, number} file} other {{n, number} files}}',
+    '{n, plural, one {<b>#</b> file} other {# files}}',
+    '{n, plural, one {{g, select, male {his {n} file} other {their file}}} other {# files}}',
+  ])('leaves a branch that shows the count: %s', (icu) => {
+    expect(move(icu)).toEqual(tree(icu));
+  });
+
+  it('leaves a branch whose number already has an exact branch', () => {
+    const icu = '{n, plural, =1 {Just the one} one {One file} other {# files}}';
+
+    expect(move(icu)).toEqual(tree(icu));
+  });
+
+  it('leaves an ordinal', () => {
+    const icu = '{n, selectordinal, one {first} other {later}}';
+
+    expect(move(icu, 'en', 'fr')).toEqual(tree(icu));
+  });
+
+  it('moves the branches of every plural in the message', () => {
+    expect(
+      move(
+        '{g, select, male {<b>{n, plural, one {One file} other {# files}}</b>} other {{m, plural, one {One folder} other {# folders}}}}'
+      )
+    ).toEqual(
+      tree(
+        '{g, select, male {<b>{n, plural, =1 {One file} other {# files}}</b>} other {{m, plural, =1 {One folder} other {# folders}}}}'
+      )
+    );
+  });
+
+  // The # of a plural inside the branch is that plural's count.
+  it('reads the count of a plural inside a branch as its own', () => {
+    expect(
+      move(
+        '{n, plural, one {One folder with {m, plural, one {# file} other {# files}}} other {# folders}}'
+      )
+    ).toEqual(
+      tree(
+        '{n, plural, =1 {One folder with {m, plural, one {# file} other {# files}}} other {# folders}}'
+      )
+    );
+  });
+
+  // With an offset a category is picked by the number less the offset, and an exact branch by the number.
+  it('moves a branch of a plural with an offset to the number it is picked for', () => {
+    expect(
+      move(
+        '{n, plural, offset:1 one {You and one other} other {You and # others}}'
+      )
+    ).toEqual(
+      tree(
+        '{n, plural, offset:1 =2 {You and one other} other {You and # others}}'
+      )
+    );
+  });
+
+  it('moves each branch of a source whose categories are one number each', () => {
+    expect(
+      move(
+        '{n, plural, zero {No files} one {One file} two {Two files} few {A few files} many {Many files} other {# files}}',
+        'ar',
+        'en'
+      )
+    ).toEqual(
+      tree(
+        '{n, plural, =0 {No files} =2 {Two files} few {A few files} many {Many files} one {One file} other {# files}}'
+      )
+    );
+  });
+
+  it('returns a message without plurals as it is', () => {
+    expect(moveToExactBranches('Save', 'en', 'ru')).toBe('Save');
+    expect(move('Hi {name}!')).toEqual(tree('Hi {name}!'));
+  });
+
+  it('answers a tree the translation check accepts a translation of', () => {
+    const source = moveToExactBranches(
+      icuToMessage('{n, plural, one {One file} other {# files}}').tree,
+      'en',
+      'ru'
+    );
+
+    expect(
+      checkTranslation(
+        source,
+        icuToMessage(
+          '{n, plural, =1 {Один файл} one {# файл} few {# файла} many {# файлов} other {# файла}}'
+        ),
+        { locale: 'ru' }
+      )
+    ).toBeUndefined();
+    expect(
+      checkTranslation(
+        source,
+        icuToMessage(
+          '{n, plural, one {# файл} few {# файла} many {# файлов} other {# файла}}'
+        ),
+        { locale: 'ru' }
+      )
+    ).toContain('missing the exact branch =1');
   });
 });
 
