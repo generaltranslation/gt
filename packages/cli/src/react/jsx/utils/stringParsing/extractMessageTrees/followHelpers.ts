@@ -121,8 +121,7 @@ export function followTagArgument(
   if (param === null) return followable;
   const key = getOptionsKey();
   if (key === undefined) return true;
-  // On Windows, scanned paths use / and resolved paths use \.
-  const paramKey = `${nodePath.resolve(found.file)}\0${param.identifier.start}`;
+  const paramKey = `${toPlatformSeparators(found.file)}\0${param.identifier.start}`;
   if (importKey) {
     follower.importedParameters.set(`${importKey}\0${index}`, {
       paramKey,
@@ -223,6 +222,15 @@ function findLocalFunction(
   return findBindingFunction(scope.getBinding(name), file, follower, seen);
 }
 
+/**
+ * `file` with the platform's separators: on Windows, scanned paths use / and
+ * resolved ones use \. Other spelling, such as `link/..`, is kept because a
+ * symlink makes it a different file.
+ */
+function toPlatformSeparators(file: string): string {
+  return file.split(nodePath.posix.sep).join(nodePath.sep);
+}
+
 /** The resolved file and export name of an imported value binding. */
 function getImportKey(
   binding: Binding | undefined,
@@ -254,7 +262,7 @@ function getImportKey(
   const name = path.isImportSpecifier()
     ? getImportedName(path.node)
     : 'default';
-  return `${nodePath.resolve(resolved)}\0${name}`;
+  return `${toPlatformSeparators(resolved)}\0${name}`;
 }
 
 /** The function a binding declares, defines as a const, or imports. */

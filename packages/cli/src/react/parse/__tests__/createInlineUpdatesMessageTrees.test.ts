@@ -2304,6 +2304,45 @@ ${
     logged.mockRestore();
   });
 
+  it('keeps a path through a symlink and .. apart from the plain path', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, (dir) => {
+      const root = path.join(projectDir, dir);
+      fs.mkdirSync(path.join(root, 'other/deep'), { recursive: true });
+      fs.symlinkSync(
+        path.join(root, 'other/deep'),
+        path.join(root, 'link'),
+        'dir'
+      );
+      return {
+        'tsconfig.json': JSON.stringify({
+          compilerOptions: {
+            baseUrl: '.',
+            paths: { '@src/*': ['*'] },
+          },
+        }),
+        'nav.ts': nav(
+          nextHost,
+          'export function label(t: GT) {\n  return t`Near`;\n}'
+        ),
+        'other/nav.ts': nav(
+          nextHost,
+          'export function label(t: GT) {\n  return t`Far`;\n}'
+        ),
+        'page.tsx': withTag(
+          nextHost,
+          'near(t);\n  return far(t);',
+          "import { label as far } from '@src/link/../nav';\nimport { label as near } from '@src/nav';"
+        ),
+      };
+    });
+
+    expect(
+      treeUpdates(result)
+        .map((u) => u.source)
+        .sort()
+    ).toEqual(['Far', 'Near']);
+  });
+
   it('does not extract a function that never receives a tag', async () => {
     const { result } = await extractProject(Libraries.GT_NEXT, () => ({
       'page.tsx': withTag(
