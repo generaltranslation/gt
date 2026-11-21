@@ -2,6 +2,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import generate from '@babel/generator';
+import * as parser from '@babel/parser';
+import { build } from 'esbuild';
 import type {
   TransformResult,
   UnpluginBuildContext,
@@ -16,6 +19,7 @@ import gtUnplugin, {
   webpack,
 } from '../index';
 import type { GTUnpluginOptions } from '../index';
+import { locate, trace } from './sourcePositions';
 
 // These tests drive the real unplugin transform, because config loading and
 // the gating between passes live in index.ts.
@@ -290,6 +294,354 @@ describe('pass gating by plugin options', () => {
       expect(outputs[0]).not.toContain(text);
     }
   });
+});
+
+describe('source map of the transform', () => {
+  // A <T>, a t template and a plain call on one line: the compiler writes a
+  // hash into each of the first two, which moves the third
+  const CODE = [
+    "import { jsx } from 'react/jsx-runtime';",
+    "import { T, useGT } from 'gt-react';",
+    'export function App() {',
+    '  const t = useGT();',
+    '  return [jsx(T, { children: "Hello" }), t`Save`, report(1)];',
+    '}',
+  ].join('\n');
+
+  type Framework = 'vite' | 'rollup' | 'esbuild' | 'webpack' | 'rspack';
+
+  /**
+   * Transforms `code` as the bundler would call the plugin: `native` is what
+   * unplugin's getNativeBuildContext() returns there, `viteConfig` the config
+   * Vite resolved, and `environment` what Vite 6 and later give the
+   * transform as `this.environment`.
+   */
+  async function transformFor(
+    framework: Framework,
+    {
+      code = CODE,
+      native,
+      viteConfig,
+      environment,
+    }: {
+      code?: string;
+      native?: object;
+      viteConfig?: object;
+      environment?: object;
+    } = {}
+  ) {
+    const cwd = createProject();
+    const file = path.join(cwd, 'App.tsx');
+    const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(cwd);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const plugin = gtUnplugin.raw({ precomputeMessages: false }, {
+        framework,
+      } as Parameters<typeof gtUnplugin.raw>[1]);
+      if (typeof plugin.transform !== 'function') {
+        throw new Error('Expected transform hook to be a function');
+      }
+      const { configResolved } = plugin.vite ?? {};
+      if (viteConfig && typeof configResolved === 'function') {
+        await configResolved.call({} as never, viteConfig as never);
+      }
+      const result: TransformResult = await plugin.transform.call(
+        {
+          ...testContext,
+          getNativeBuildContext: () => native as never,
+          ...(environment && { environment }),
+        },
+        code,
+        file
+      );
+      if (!result || typeof result === 'string') {
+        throw new Error('Expected the transform to return code and a map');
+      }
+      expect(result.code).toContain('t({ $_hash: "');
+      expect(result.code).toContain(', _hash: "');
+      return { ...result, file };
+    } finally {
+      cwdSpy.mockRestore();
+      warnSpy.mockRestore();
+    }
+  }
+
+  it.each(['jsx(T', 't(', 'report', 'App'])(
+    'maps %s back to its line and column',
+    async (token) => {
+      const { code, map, file } = await transformFor('rollup');
+      const written = locate(code, token);
+      const original = locate(CODE, token === 't(' ? 't`' : token);
+      // The rewrites of this line move what follows them
+      if (token === 'report') {
+        expect(written.column).toBeGreaterThan(original.column);
+      }
+      expect(trace(map, code, token)).toEqual({ source: file, ...original });
+    }
+  );
+
+  it.each<
+    [
+      name: string,
+      framework: Framework,
+      context: { native?: object; viteConfig?: object; environment?: object },
+      mapped: boolean,
+    ]
+  >([
+    [
+      'a Vite build with source maps',
+      'vite',
+      { viteConfig: { command: 'build', build: { sourcemap: 'hidden' } } },
+      true,
+    ],
+    [
+      'a Vite dev server',
+      'vite',
+      { viteConfig: { command: 'serve', build: { sourcemap: false } } },
+      true,
+    ],
+    [
+      'a Vite build without source maps',
+      'vite',
+      { viteConfig: { command: 'build', build: { sourcemap: false } } },
+      false,
+    ],
+    // Vite 6 and later: the environments of a build can differ
+    [
+      'a Vite build whose environment asks for source maps',
+      'vite',
+      {
+        viteConfig: { command: 'build', build: { sourcemap: false } },
+        environment: {
+          config: { command: 'build', build: { sourcemap: true } },
+        },
+      },
+      true,
+    ],
+    [
+      'a Vite build whose environment asks for no source map',
+      'vite',
+      {
+        viteConfig: { command: 'build', build: { sourcemap: true } },
+        environment: {
+          config: { command: 'build', build: { sourcemap: false } },
+        },
+      },
+      false,
+    ],
+    // Vite writes a map for an output that asks for one
+    [
+      'a Vite build whose output asks for source maps',
+      'vite',
+      {
+        viteConfig: {
+          command: 'build',
+          build: {
+            sourcemap: false,
+            rollupOptions: { output: { sourcemap: true } },
+          },
+        },
+      },
+      true,
+    ],
+    [
+      'a Vite build with an output of several that asks for source maps',
+      'vite',
+      {
+        viteConfig: {
+          command: 'build',
+          build: {
+            sourcemap: false,
+            rollupOptions: { output: [{}, { sourcemap: 'hidden' }] },
+          },
+        },
+      },
+      true,
+    ],
+    [
+      'a Vite build whose outputs ask for no source map',
+      'vite',
+      {
+        viteConfig: {
+          command: 'build',
+          build: {
+            sourcemap: false,
+            rollupOptions: { output: [{}, { sourcemap: false }] },
+          },
+        },
+      },
+      false,
+    ],
+    [
+      'an esbuild build with source maps',
+      'esbuild',
+      {
+        native: {
+          framework: 'esbuild',
+          build: { initialOptions: { sourcemap: true } },
+        },
+      },
+      true,
+    ],
+    [
+      'an esbuild build without source maps',
+      'esbuild',
+      { native: { framework: 'esbuild', build: { initialOptions: {} } } },
+      false,
+    ],
+    // unplugin could only drop the map, or put it in place of an earlier loader's
+    [
+      'a webpack loader that received no map',
+      'webpack',
+      { native: { framework: 'webpack' } },
+      false,
+    ],
+    [
+      'an Rspack loader that received no map',
+      'rspack',
+      { native: { framework: 'rspack' } },
+      false,
+    ],
+  ])('writes a map only where one is read: %s', async (...row) => {
+    const [, framework, context, mapped] = row;
+    const { code, map, file } = await transformFor(framework, context);
+    if (!mapped) {
+      expect(map).toBeNull();
+      return;
+    }
+    expect(trace(map, code, 'report')).toEqual({
+      source: file,
+      ...locate(CODE, 'report'),
+    });
+  });
+
+  it.each(['webpack', 'rspack'] as const)(
+    'traces its map through the map a %s loader received',
+    async (framework) => {
+      // What an earlier loader made of a source with other lines and columns
+      const source = CODE.replace('export', '\n\nexport').replace(
+        'report',
+        '    report'
+      );
+      const earlier = generate(
+        parser.parse(source, { sourceType: 'module' }),
+        { sourceMaps: true, sourceFileName: '/app/src/App.tsx' },
+        source
+      );
+      expect(locate(earlier.code, 'report')).not.toEqual(
+        locate(source, 'report')
+      );
+      const { code, map } = await transformFor(framework, {
+        code: earlier.code,
+        native: { framework, inputSourceMap: earlier.map },
+      });
+      expect(trace(map, code, 'report')).toEqual({
+        source: '/app/src/App.tsx',
+        ...locate(source, 'report'),
+      });
+      expect((map as { sourcesContent: string[] }).sourcesContent).toEqual([
+        source,
+      ]);
+    }
+  );
+
+  // esbuild reads the map a file names, and once the transform returns one,
+  // only that: unplugin appends it to the file as another comment
+  it.each<
+    [
+      name: string,
+      input: { sources: string[]; sourceRoot?: string; inline?: boolean },
+      source: string,
+    ]
+  >([
+    // An inline map is in the file, so its sources are relative to the file
+    ['inline', { sources: ['../src/App.tsx'], inline: true }, '../src/App.tsx'],
+    ['in a file', { sources: ['../../src/App.tsx'] }, '../src/App.tsx'],
+    [
+      'in a file, under a root that is a path',
+      { sources: ['App.tsx'], sourceRoot: '../../src' },
+      '../src/App.tsx',
+    ],
+    [
+      'in a file, under a root that is a URL',
+      { sources: ['App.tsx'], sourceRoot: 'https://example.com/src/' },
+      'https://example.com/src/App.tsx',
+    ],
+    [
+      'inline, under a root that is a URL',
+      {
+        sources: ['App.tsx'],
+        sourceRoot: 'https://example.com/src/',
+        inline: true,
+      },
+      'https://example.com/src/App.tsx',
+    ],
+    [
+      'in a file, under a root with a scheme of a bundler',
+      { sources: ['App.tsx'], sourceRoot: 'webpack:///src/' },
+      'webpack:///src/App.tsx',
+    ],
+    [
+      'inline, under a root with a scheme of a bundler',
+      { sources: ['App.tsx'], sourceRoot: 'webpack:///src/', inline: true },
+      'webpack:///src/App.tsx',
+    ],
+    [
+      'inline, with a source that is a URL',
+      { sources: ['webpack://app/src/App.tsx'], inline: true },
+      'webpack://app/src/App.tsx',
+    ],
+  ])(
+    'traces its map through the map an esbuild input names %s',
+    async (_name, { inline, ...input }, expected) => {
+      const cwd = createProject();
+      const source = CODE.replace('export', '\n\nexport').replace(
+        'report',
+        '    report'
+      );
+      const earlier = generate(
+        parser.parse(source, { sourceType: 'module' }),
+        { sourceMaps: true, sourceFileName: 'App.tsx' },
+        source
+      );
+      fs.mkdirSync(path.join(cwd, 'lib/maps'), { recursive: true });
+      const map = JSON.stringify({ ...earlier.map, ...input });
+      fs.writeFileSync(path.join(cwd, 'lib/maps/compiled.js.map'), map);
+      const url = inline
+        ? `data:application/json;base64,${btoa(map)}`
+        : 'maps/compiled.js.map';
+      fs.writeFileSync(
+        path.join(cwd, 'lib/compiled.js'),
+        `${earlier.code}\n//# sourceMappingURL=${url}\n`
+      );
+      const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(cwd);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      try {
+        const { outputFiles } = await build({
+          absWorkingDir: cwd,
+          entryPoints: ['lib/compiled.js'],
+          outdir: 'dist',
+          bundle: true,
+          format: 'esm',
+          sourcemap: 'external',
+          write: false,
+          external: ['gt-react', 'react/jsx-runtime'],
+          plugins: [esbuild({ precomputeMessages: false })],
+          logLevel: 'silent',
+        });
+        const [bundled, code] = outputFiles.map((file) => file.text);
+        expect(code).toContain('t({ $_hash: "');
+        expect(trace(bundled, code, 'report')).toEqual({
+          source: expected,
+          ...locate(source, 'report'),
+        });
+        expect(JSON.parse(bundled).sourcesContent).toEqual([source]);
+      } finally {
+        cwdSpy.mockRestore();
+        warnSpy.mockRestore();
+      }
+    }
+  );
 });
 
 describe('bundler adapters', () => {

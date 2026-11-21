@@ -339,7 +339,8 @@ describe('experimentalSplitTranslations', () => {
     it('adds its hooks and its second plugin only when it is on', () => {
       const off = createPlugins({ gtConfig: GT_CONFIG }).plugins;
       expect(off).toHaveLength(1);
-      expect(off[0].vite).toBeUndefined();
+      // Off, it only reads whether Vite writes source maps
+      expect(Object.keys(off[0].vite ?? {})).toEqual(['configResolved']);
       expect(off[0].rollup).toBeUndefined();
 
       const on = createPlugins({

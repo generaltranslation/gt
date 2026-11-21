@@ -75,6 +75,10 @@ import {
 } from './transform/chunk-translations/unsplitTranslations';
 import { getPageBase } from './transform/chunk-translations/startupScript';
 import { Logger } from './state/Logger';
+import {
+  getSourceMapRequest,
+  type ViteSourceMapConfig,
+} from './utils/sourceMapRequest';
 import { jsxInsertionPass } from './passes/jsxInsertionPass';
 import {
   createPrecomputedMessageSupport,
@@ -330,9 +334,14 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     const gtFiles = resolvedOptions.gtConfig?.files?.gt;
     // Vite's build() sets NODE_ENV after plugins are created, so read it when each hook runs, as transforms do
     const isProduction = () => process.env.NODE_ENV === 'production';
+    let viteConfig: ViteSourceMapConfig | undefined;
+    const keepViteConfig = (config: ViteSourceMapConfig) => {
+      viteConfig = config;
+    };
 
     const plugin: UnpluginOptions = {
       name: '@generaltranslation/GT_PLUGIN',
+      vite: { configResolved: keepViteConfig },
       buildStart() {
         if (
           isProduction() &&
@@ -435,10 +444,27 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             return null;
           }
 
-          return generate(ast, {
-            retainLines: true,
-            compact: false,
-          });
+          const sourceMap = getSourceMapRequest(
+            meta.framework,
+            this,
+            viteConfig,
+            code,
+            id
+          );
+          const output = generate(
+            ast,
+            {
+              retainLines: true,
+              compact: false,
+              ...(sourceMap && {
+                sourceMaps: true,
+                sourceFileName: id,
+                inputSourceMap: sourceMap.inputSourceMap,
+              }),
+            },
+            code
+          );
+          return { code: output.code, map: output.map };
         } catch (error) {
           // If the error is an instance of InvalidLibraryUsageError, throw it
           if (error instanceof InvalidLibraryUsageError) {
@@ -675,10 +701,13 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         ...plugin,
         vite: {
           ...plugin.vite,
-          configResolved(config: {
-            base: string;
-            build: { assetsDir: string };
-          }) {
+          configResolved(
+            config: ViteSourceMapConfig & {
+              base: string;
+              build: { assetsDir: string };
+            }
+          ) {
+            keepViteConfig(config);
             base = config.base;
             assetsDir = config.build.assetsDir;
           },
