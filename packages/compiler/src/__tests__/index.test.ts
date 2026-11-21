@@ -304,3 +304,98 @@ describe('bundler adapters', () => {
     expect(typeof plugin.transform).toBe('function');
   });
 });
+
+describe('modules without an import the transform reads', () => {
+  // Only a module that is parsed can fail to parse
+  it.each([
+    [
+      'skips a module that imports nothing it reads',
+      `{ clamp } from './math'`,
+      0,
+    ],
+    ['parses a module that imports a GT entry', `{ T } from 'gt-react'`, 1],
+    [
+      'parses a module whose source an escape spells',
+      `{ T } from 'gt-re\\u0061ct'`,
+      1,
+    ],
+    [
+      'parses a module whose JSX function another runtime exports',
+      `{ jsx } from '@emotion/react/jsx-runtime'`,
+      1,
+    ],
+  ])('%s', async (_name, imported, parseErrors) => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const { outputs } = await runPlugin(
+        undefined,
+        `import ${imported};\nexport const = 0;`
+      );
+      expect(outputs).toEqual([null]);
+      expect(errorSpy).toHaveBeenCalledTimes(parseErrors);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  it('injects the hash of a <T> imported from a source an escape spells', async () => {
+    const { outputs } = await runPlugin(
+      undefined,
+      T_COMPONENT_CODE.replace(`'gt-react'`, `'gt-re\\u0061ct'`)
+    );
+    expect(outputs[0]).toContain('_hash: "');
+  });
+
+  // The transform skips a module unless mayImportReadSource() reads its
+  // text, so each of its effects is checked through the real hook: here, and
+  // for the entry of a build with split translations in chunkTranslations.test.ts
+  it.each<
+    [
+      effect: string,
+      options: GTUnpluginOptions | undefined,
+      code: string,
+      expected: { has: string } | { throws: string },
+    ]
+  >([
+    [
+      'inserts <T> into JSX that has no GT import',
+      parsingFlags({ enableAutoJsxInjection: true }),
+      AUTO_JSX_CODE,
+      { has: 'GtInternalTranslateJsx' },
+    ],
+    [
+      'injects the hash of a <T>',
+      undefined,
+      T_COMPONENT_CODE,
+      { has: '_hash: "' },
+    ],
+    [
+      'reports a <T> it cannot read',
+      undefined,
+      T_COMPONENT_CODE.replace('"Hello world"', 'name'),
+      { throws: 'invalid library usage' },
+    ],
+    [
+      'injects the hash of a tagged template',
+      undefined,
+      USEGT_CODE,
+      { has: 't({ $_hash: "' },
+    ],
+    [
+      'injects the dev hot reload calls',
+      { devHotReload: { jsx: true } },
+      T_COMPONENT_CODE,
+      { has: 'GtInternalRuntimeTranslateJsx' },
+    ],
+  ])('%s', async (_effect, options, code, expected) => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const run = runPlugin(options, code);
+      if ('throws' in expected)
+        await expect(run).rejects.toThrow(expected.throws);
+      else expect((await run).outputs[0]).toContain(expected.has);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+});

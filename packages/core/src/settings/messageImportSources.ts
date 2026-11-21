@@ -2,7 +2,7 @@
  * Entry points that export the message helpers. Build tools (the CLI extractor
  * and the compiler) read a helper imported from one as a message tree.
  */
-const GT_MESSAGE_IMPORT_SOURCES = [
+export const GT_MESSAGE_IMPORT_SOURCES = [
   'gt-i18n',
   'gt-react',
   'gt-react-native',
