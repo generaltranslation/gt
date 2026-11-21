@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/compiler",
-  "version": "2.0.0-samsara.10",
+  "version": "2.0.0-samsara.11",
   "description": "Universal plugin for compile-time optimization of GT translation components",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

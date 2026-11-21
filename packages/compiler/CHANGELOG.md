@@ -1,5 +1,88 @@
 # @generaltranslation/compiler
 
+## 2.0.0-samsara.11
+
+### Major Changes
+
+- 5b1c74c: **Breaking:** the `selectordinal()` helper is now `ordinal()`, the name of the `<Ordinal>` component. It takes the same arguments and builds the same message, so hashes and translations do not change.
+
+  ```ts
+  // Before
+  import { selectordinal } from 'gt-react';
+  t`You finished ${selectordinal(
+    { place },
+    {
+      one: part`${n}st`,
+      two: part`${n}nd`,
+      few: part`${n}rd`,
+      other: part`${n}th`,
+    }
+  )}!`;
+
+  // After
+  import { ordinal } from 'gt-react';
+  t`You finished ${ordinal(
+    { place },
+    {
+      one: part`${n}st`,
+      two: part`${n}nd`,
+      few: part`${n}rd`,
+      other: part`${n}th`,
+    }
+  )}!`;
+  ```
+
+  `gt-i18n`, `gt-react`, `gt-react-native`, `gt-next`, `gt-tanstack-start` and `gt-node` export it under the new name, and `selectordinal` is no longer exported. `gt`, the compiler and the `static-branch` lint rule recognize `ordinal`, and `GTMessageHelperName` from `generaltranslation/internal` lists it in place of `selectordinal`. The ICU keyword in a message string and the `selectordinal` node of a message tree keep their name. The error for a plural count outside a branch now says "a cardinal or ordinal plural branch", which names no helper.
+
+### Minor Changes
+
+- 5b1c74c: `<Ordinal>` is `<Plural>` for ordinals such as 1st, 2nd and 3rd: it picks among the locale's ordinal categories, where `<Plural>` picks among its plural categories.
+
+  ```jsx
+  <Ordinal
+    n={place}
+    one={
+      <>
+        <Num>{place}</Num>st
+      </>
+    }
+    two={
+      <>
+        <Num>{place}</Num>nd
+      </>
+    }
+    few={
+      <>
+        <Num>{place}</Num>rd
+      </>
+    }
+  >
+    <Num>{place}</Num>th
+  </Ordinal>
+  ```
+
+  In English this renders 1st, 2nd, 3rd, 4th, 11th, 21st and so on. Everything else is as in `<Plural>`: the category branches `zero`, `one`, `two`, `few` and `many`, exact branches such as `_1`, the children as the fallback, `<N />` for its count in React, and the same errors and warnings. A translation picks among its own branches with the target locale's ordinal rules: French has `one` and the fallback, and Welsh has all six categories.
+
+  `gt-react`, `gt-react-native`, `gt-next` and `gt-tanstack-start` export it wherever they export `<Plural>`. `gt-vue` and `gt-svelte` have the same component: `<Ordinal :n="place" one="1st" two="2nd">nth</Ordinal>` in Vue, and `<Ordinal {n} one="first" two="second">later</Ordinal>` in Svelte, with slots and snippets for the branches as in `<Plural>`.
+
+  `gt`, the compiler, the gt-next SWC plugin and the Vue and Svelte extractors read `<Ordinal>` as they read `<Plural>`: an `other` prop, slot or snippet and a spread attribute in translated content are errors. The `static-jsx` lint rule checks its branches as it checks those of `<Plural>`.
+
+  Stored content marks an ordinal plural with `t: 'o'` in an element's GT data, beside `'p'` for a plural and `'b'` for a branch, so `GTProp['t']` from `@generaltranslation/format` is now `'p' | 'o' | 'b'`. An `<Ordinal>` hashes differently from a `<Plural>` with the same branches.
+
+### Patch Changes
+
+- 70e3b41: A build with the experimental `experimentalSplitTranslations` option keeps its source maps accurate. The build rewrites chunks after the bundler has rendered them (the call that starts the app, each dynamic import, and with `minifyHashes` every call site), and returned no source map for those rewrites: a position in such a chunk mapped to another line of its file, and Rolldown warned of a broken source map once per chunk. Each rewrite now carries its map, in builds with `sourcemap` set to `true`, `'hidden'` or `'inline'`. What the build emits is unchanged.
+- d289fc7: The compiler's transform returns a source map. It returned none, so the bundler kept the map of the code the compiler received: a stack trace or a debugger showed the right file and line with the wrong column, in every file the compiler changed. On webpack and Rspack the map is traced through the one the earlier loaders passed on, which needs `unplugin` 2.3.11 (the compiler now requires it), and without such a map nothing changes there. In an esbuild build it is traced through the map a file names in its `sourceMappingURL` comment. A Vite or esbuild build without source maps writes no map, so it takes no longer than before.
+- Updated dependencies [8f82244]
+- Updated dependencies [fcf06f1]
+- Updated dependencies [5b1c74c]
+- Updated dependencies [5b1c74c]
+- Updated dependencies [5b1c74c]
+  - generaltranslation@10.0.0-samsara.12
+  - @generaltranslation/format@1.0.0-samsara.12
+  - gt-i18n@2.0.0-samsara.12
+  - @generaltranslation/icu@1.0.0-samsara.10
+
 ## 2.0.0-samsara.10
 
 ### Major Changes
