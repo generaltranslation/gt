@@ -13,6 +13,7 @@ import type {
   ResolvedGTParsingFlags,
 } from '../../types/parsing.js';
 import { getPathsAndAliases } from '../jsx/utils/getPathsAndAliases.js';
+import { getSourceParserPlugins } from '../jsx/utils/sourceParserPlugins.js';
 import { extractMessageTrees } from '../jsx/utils/stringParsing/extractMessageTrees/index.js';
 import { createHelperFollower } from '../jsx/utils/stringParsing/extractMessageTrees/followHelpers.js';
 import type { ParsingConfig } from '../jsx/utils/stringParsing/types.js';
@@ -62,7 +63,7 @@ export async function createInlineUpdates(
     try {
       ast = parse(code, {
         sourceType: 'module',
-        plugins: ['jsx', 'typescript'],
+        plugins: getSourceParserPlugins(file),
       });
     } catch (error) {
       logger.error(`Error parsing file ${file}: ${error}`);

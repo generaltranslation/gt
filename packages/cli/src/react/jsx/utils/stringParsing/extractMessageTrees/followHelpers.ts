@@ -8,6 +8,7 @@ import { isGTMessageImportSource } from 'generaltranslation/internal';
 import type { MessageTreeHashMetadata } from 'generaltranslation/id';
 import type { ParsingConfigOptions } from '../../../../../types/parsing.js';
 import { resolveImportPath } from '../../resolveImportPath.js';
+import { getSourceParserPlugins } from '../../sourceParserPlugins.js';
 import { getImportedName } from './imports.js';
 import type { TagOptions } from './types.js';
 
@@ -443,7 +444,7 @@ function parseFile(file: string): t.File | undefined {
   try {
     return parse(fs.readFileSync(file, 'utf8'), {
       sourceType: 'module',
-      plugins: ['jsx', 'typescript'],
+      plugins: getSourceParserPlugins(file),
     });
   } catch {
     // A file that cannot be read or parsed has no function to follow.

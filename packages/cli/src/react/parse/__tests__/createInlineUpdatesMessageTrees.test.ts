@@ -2192,6 +2192,23 @@ ${
     ).toEqual(['A', 'B']);
   });
 
+  it('reads <GT> assertions in .ts files, in the caller and the helper', async () => {
+    const { result } = await extractProject(
+      Libraries.GT_NEXT,
+      () => ({
+        'page.ts': `import { useGT, type GT } from 'gt-next';\nimport { label } from './nav';\nexport function useLabel() {\n  const t = <GT>useGT();\n  return label(t);\n}\n`,
+        'nav.ts': nav(
+          nextHost,
+          'export function label(t: GT) {\n  const tr = <GT>t;\n  return tr`Save`;\n}'
+        ),
+      }),
+      ['page.ts']
+    );
+
+    expect(result.warnings).toEqual([]);
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Save']);
+  });
+
   it('does not extract a function that never receives a tag', async () => {
     const { result } = await extractProject(Libraries.GT_NEXT, () => ({
       'page.tsx': withTag(
