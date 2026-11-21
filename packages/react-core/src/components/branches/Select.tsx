@@ -11,8 +11,10 @@ type IsOpen<K extends string> = K extends unknown
     : false
   : never;
 
-// A value named `other` has no prop of its own: it renders the children.
-type Named<V extends SelectValue> = Exclude<`${V}`, 'other'>;
+// Neither has a prop of its own, so each renders the children: `other` is
+// the fallback, and `value` is the selector.
+type Unnamed = 'other' | 'value';
+type Named<V extends SelectValue> = Exclude<`${V}`, Unnamed>;
 
 /**
  * Like `select()`: a branch for every value of a finite union, or children as
@@ -25,9 +27,9 @@ type SelectProps<V extends SelectValue = SelectValue> = {
   ? { children: ReactNode; [branch: string]: ReactNode }
   : Partial<Record<Named<V>, ReactNode>> &
       (
-        | ('other' extends `${V}`
-            ? never
-            : Record<Named<V>, ReactNode> & { children?: ReactNode })
+        | ([Extract<`${V}`, Unnamed>] extends [never]
+            ? Record<Named<V>, ReactNode> & { children?: ReactNode }
+            : never)
         | { children: ReactNode }
       ));
 
