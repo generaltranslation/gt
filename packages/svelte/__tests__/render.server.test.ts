@@ -144,10 +144,10 @@ describe('<T> server rendering', () => {
           },
         },
         [branchHash]: {
-          t: 'Branch',
+          t: 'Select',
           i: 1,
           d: {
-            t: 'b',
+            t: 's',
             b: {
               away: 'Absent',
               online: {

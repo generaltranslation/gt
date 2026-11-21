@@ -3,15 +3,15 @@ import addGTIdentifierToSyntaxTree from '../addGTIdentifierToSyntaxTree.js';
 import type { MultipliedTreeNode } from '../types.js';
 
 describe('addGTIdentifierToSyntaxTree', () => {
-  describe('Branch data-* attribute filtering', () => {
-    it('should filter out data-* attributes from Branch props', () => {
+  describe('Select data-* attribute filtering', () => {
+    it('should filter out data-* attributes from Select props', () => {
       const tree: MultipliedTreeNode = {
         nodeType: 'element',
-        type: 'Branch',
-        branching: 'Branch',
+        type: 'Select',
+        branching: 'Select',
         props: {
           children: 'fallback',
-          branch: 'status',
+          value: 'status',
           active: 'Active content',
           inactive: 'Inactive content',
           'data-testid': 'branch-test',
@@ -24,10 +24,10 @@ describe('addGTIdentifierToSyntaxTree', () => {
       expect(result).toBeDefined();
       const element = result as unknown;
       expect(element.d).toBeDefined();
-      expect(element.d.t).toBe('b');
+      expect(element.d.t).toBe('s');
       expect(element.d.b).toBeDefined();
 
-      // Branch props should include 'active' and 'inactive'
+      // Select props should include 'active' and 'inactive'
       expect(element.d.b).toHaveProperty('active');
       expect(element.d.b).toHaveProperty('inactive');
 
@@ -35,14 +35,14 @@ describe('addGTIdentifierToSyntaxTree', () => {
       expect(element.d.b).not.toHaveProperty('data-testid');
     });
 
-    it('should preserve Branch props when no data-* attributes are present', () => {
+    it('should preserve Select props when no data-* attributes are present', () => {
       const tree: MultipliedTreeNode = {
         nodeType: 'element',
-        type: 'Branch',
-        branching: 'Branch',
+        type: 'Select',
+        branching: 'Select',
         props: {
           children: 'fallback',
-          branch: 'status',
+          value: 'status',
           active: 'Active content',
           inactive: 'Inactive content',
         },
@@ -52,20 +52,20 @@ describe('addGTIdentifierToSyntaxTree', () => {
 
       const element = result as unknown;
       expect(element.d).toBeDefined();
-      expect(element.d.t).toBe('b');
+      expect(element.d.t).toBe('s');
       expect(element.d.b).toHaveProperty('active');
       expect(element.d.b).toHaveProperty('inactive');
     });
   });
 
-  it('does not store an other prop of a Branch with no children', () => {
+  it('does not store an other prop of a Select with no children', () => {
     const tree: MultipliedTreeNode = {
       nodeType: 'element',
-      type: 'Branch',
-      branching: 'Branch',
-      props: { branch: 'status', other: 'Prop' },
+      type: 'Select',
+      branching: 'Select',
+      props: { value: 'status', other: 'Prop' },
     } as unknown;
 
-    expect(addGTIdentifierToSyntaxTree(tree)).toEqual({ t: 'Branch', i: 1 });
+    expect(addGTIdentifierToSyntaxTree(tree)).toEqual({ t: 'Select', i: 1 });
   });
 });

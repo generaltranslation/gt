@@ -20,7 +20,7 @@ describe('local module identity resolution', () => {
       'runtime.ts',
       `export {
         T as Translate,
-        Branch as Choice,
+        Select as Choice,
         Currency as Money,
         DateTime as DateValue,
         Num as NumberValue,
@@ -34,7 +34,7 @@ describe('local module identity resolution', () => {
       'barrels/index.ts',
       `export {
         Translate as T,
-        Choice as Branch,
+        Choice as Select,
         Money as Currency,
         DateValue as DateTime,
         NumberValue as Num,
@@ -63,13 +63,13 @@ describe('local module identity resolution', () => {
   it('resolves namespace, default, and immutable local aliases', async () => {
     write(
       'aliases.ts',
-      `import { T, Branch, msg, useGT } from 'gt-vue';
+      `import { T, Select, msg, useGT } from 'gt-vue';
        const LocalT = T;
-       const LocalBranch = Branch;
+       const LocalBranch = Select;
        const defineMessage = msg;
        const createTranslator = useGT;
        export default LocalT;
-       export { LocalBranch as Branch, defineMessage as msg, createTranslator as useGT };`
+       export { LocalBranch as Select, defineMessage as msg, createTranslator as useGT };`
     );
     write(
       'index.ts',
@@ -78,7 +78,7 @@ describe('local module identity resolution', () => {
     const output = await extract(
       'Aliases.vue',
       `<script setup lang="ts">
-        import DefaultT, { Branch, msg, useGT } from './index';
+        import DefaultT, { Select, msg, useGT } from './index';
         import * as Local from './index';
         const t = useGT();
         t('Default alias function');
@@ -86,7 +86,7 @@ describe('local module identity resolution', () => {
         Local.msg('Namespace alias message');
       </script>
       <template>
-        <DefaultT context="default"><Branch branch="one"><template #one>Default rich</template></Branch></DefaultT>
+        <DefaultT context="default"><Select value="one"><template #one>Default rich</template></Select></DefaultT>
         <Local.default context="namespace">Namespace rich</Local.default>
       </template>`
     );
@@ -315,7 +315,7 @@ describe('local module identity resolution', () => {
     expect(cycle.results.map(({ source }) => source)).toEqual(['Cycle rich']);
 
     write('ambiguous-a.ts', `export { T as Shared } from 'gt-vue';`);
-    write('ambiguous-b.ts', `export { Branch as Shared } from 'gt-vue';`);
+    write('ambiguous-b.ts', `export { Select as Shared } from 'gt-vue';`);
     write(
       'ambiguous.ts',
       `export * from './ambiguous-a'; export * from './ambiguous-b';`
@@ -1416,7 +1416,7 @@ describe('module-level t() extraction', () => {
 
 function componentSource(moduleClause: string): string {
   return `<script setup lang="ts">
-    import { Branch, Currency, DateTime, Num, T, Var, msg, useGT, useMessages } ${moduleClause};
+    import { Select, Currency, DateTime, Num, T, Var, msg, useGT, useMessages } ${moduleClause};
     const t = useGT();
     const m = useMessages();
     t('Function text', { $context: 'function' });
@@ -1425,7 +1425,7 @@ function componentSource(moduleClause: string): string {
   <template>
     <T context="rich">
       <p>Welcome <Var>Ernest</Var></p>
-      <Branch branch="docs"><template #docs>Documentation</template>Other</Branch>
+      <Select value="docs"><template #docs>Documentation</template>Other</Select>
       <Num :value="2" />
       <Currency :value="12" currency="USD" />
       <DateTime :value="0" />

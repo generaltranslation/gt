@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import type { JsxChildren } from '@generaltranslation/format';
 import { hashSource } from 'generaltranslation/id';
 import { describe, expect, it } from 'vitest';
-import { Branch } from '../../../components/branches/Branch';
+import { Select } from '../../../components/branches/Select';
 import { Plural } from '../../../components/branches/Plural';
 import { Num } from '../../../components/variables/Num';
 import { Var } from '../../../components/variables/Var';
@@ -33,9 +33,9 @@ const sources = {
     ' messages.',
   ],
   'independent-branch-numbering': [
-    <Branch
+    <Select
       key='branch'
-      branch={'formal' as string}
+      value={'formal' as string}
       formal={[
         <strong key='strong'>Hello</strong>,
         ' ',
@@ -44,7 +44,7 @@ const sources = {
       casual={[<em key='em'>Hi</em>, ' ', <Var key='name'>Ada</Var>]}
     >
       Fallback
-    </Branch>,
+    </Select>,
     <span key='after'>After</span>,
   ],
   'independent-plural-numbering': [

@@ -22,7 +22,7 @@ describe('GT component helpers', () => {
       'Derive',
       'T',
       'Tx',
-      'Branch',
+      'Select',
       'Plural',
     ]) {
       expect(isGTComponent(name), name).toBe(true);
@@ -36,7 +36,7 @@ describe('GT component helpers', () => {
     for (const name of VARIABLE_COMPONENTS) {
       expect(isVariableComponent(name), name).toBe(true);
     }
-    for (const name of ['T', 'Branch', 'Plural']) {
+    for (const name of ['T', 'Select', 'Plural']) {
       expect(isVariableComponent(name), name).toBe(false);
     }
   });

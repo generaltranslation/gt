@@ -1,4 +1,4 @@
-import { T, Branch, Plural, Var, Num, Currency, DateTime } from "gt-next";
+import { T, Select, Plural, Var, Num, Currency, DateTime } from "gt-next";
 
 // Extreme edge cases designed to break the SWC plugin hash calculation
 export default function ExtremeEdgeCases() {
@@ -12,8 +12,8 @@ export default function ExtremeEdgeCases() {
 
       {/* Empty JSX expressions {} mixed with content */}
       
-        <Branch
-          branch="test"
+        <Select
+          value="test"
           option1={
             <>
               Start {} middle {} end
@@ -69,8 +69,8 @@ export default function ExtremeEdgeCases() {
 
       {/* All boolean permutations in expressions */}
       
-        <Branch
-          branch="bool"
+        <Select
+          value="bool"
           true_val={<>{true}</>}
           false_val={<>{false}</>}
           mixed_true={<>Before {true} after</>}
@@ -111,8 +111,8 @@ export default function ExtremeEdgeCases() {
 
       {/* Floating point precision boundaries */}
       
-        <Branch
-          branch="precision"
+        <Select
+          value="precision"
           tiny={1e-324} // Smallest possible positive number
           almost_zero={4.9e-324} // Just above smallest subnormal
           epsilon={2.220446049250313e-16} // Machine epsilon
@@ -138,8 +138,8 @@ export default function ExtremeEdgeCases() {
 
       {/* Zero-width characters and unusual spaces */}
       
-        <Branch
-          branch="space"
+        <Select
+          value="space"
           zero_width={<>word1​word2</> /* Zero-width space */}
           thin_space={<>word1 word2</> /* Thin space */}
           hair_space={<>word1 word2</> /* Hair space */}
@@ -162,8 +162,8 @@ export default function ExtremeEdgeCases() {
 
       {/* Maximum fragment nesting with mixed empty/content */}
       
-        <Branch
-          branch="nested"
+        <Select
+          value="nested"
           option1={
             <>
               <>
@@ -223,8 +223,8 @@ export default function ExtremeEdgeCases() {
 
       {/* Variables with extreme naming edge cases */}
       
-        <Branch
-          branch="names"
+        <Select
+          value="names"
           option1={
             <>
               <Var name=""></Var>
@@ -294,8 +294,8 @@ export default function ExtremeEdgeCases() {
 
       {/* Surrogate pairs and emoji variations */}
       
-        <Branch
-          branch="emoji"
+        <Select
+          value="emoji"
           basic="👍"
           skin_tone="👍🏽"
           zwj_sequence="👨‍👩‍👧‍👦"
@@ -321,8 +321,8 @@ export default function ExtremeEdgeCases() {
 
       {/* Maximum attribute count */}
       
-        <Branch
-          branch="many"
+        <Select
+          value="many"
           a1="1"
           a2="2"
           a3="3"
@@ -380,17 +380,17 @@ export default function ExtremeEdgeCases() {
 
       {/* Nested branches with identical variable patterns */}
       
-        <Branch
-          branch="outer"
+        <Select
+          value="outer"
           path1={
-            <Branch
-              branch="inner"
+            <Select
+              value="inner"
               option1={
                 <>
                   <Var>shared1</Var>
                   <Num>shared2</Num>
-                  <Branch
-                    branch="deepest"
+                  <Select
+                    value="deepest"
                     a={<Var>deep1</Var>}
                     b={<Var>deep2</Var>}
                   />
@@ -400,8 +400,8 @@ export default function ExtremeEdgeCases() {
                 <>
                   <Var>shared1</Var>
                   <Num>shared2</Num>
-                  <Branch
-                    branch="deepest"
+                  <Select
+                    value="deepest"
                     a={<Var>deep1</Var>}
                     b={<Var>deep2</Var>}
                   />
@@ -410,14 +410,14 @@ export default function ExtremeEdgeCases() {
             />
           }
           path2={
-            <Branch
-              branch="inner"
+            <Select
+              value="inner"
               option1={
                 <>
                   <Var>shared1</Var>
                   <Num>shared2</Num>
-                  <Branch
-                    branch="deepest"
+                  <Select
+                    value="deepest"
                     a={<Var>deep1</Var>}
                     b={<Var>deep2</Var>}
                   />
@@ -427,8 +427,8 @@ export default function ExtremeEdgeCases() {
                 <>
                   <Var>shared1</Var>
                   <Num>shared2</Num>
-                  <Branch
-                    branch="deepest"
+                  <Select
+                    value="deepest"
                     a={<Var>deep1</Var>}
                     b={<Var>deep2</Var>}
                   />
@@ -454,8 +454,8 @@ export default function ExtremeEdgeCases() {
 
       {/* String values that look like JSON */}
       
-        <Branch
-          branch="json"
+        <Select
+          value="json"
           object='{"key": "value"}'
           array="[1, 2, 3]"
           nested='{"a": {"b": [1, {"c": true}]}}'
@@ -507,8 +507,8 @@ export default function ExtremeEdgeCases() {
 
       {/* Maximum complexity single component */}
       
-        <Branch
-          branch="complex"
+        <Select
+          value="complex"
           option1={
             <>
               Start {true} {false} {null} {undefined} {} <></>
@@ -539,8 +539,8 @@ export default function ExtremeEdgeCases() {
                   </>
                 }
                 many={
-                  <Branch
-                    branch="nested"
+                  <Select
+                    value="nested"
                     c={
                       <>
                         {0xff} and {0o755} and {0b1111}

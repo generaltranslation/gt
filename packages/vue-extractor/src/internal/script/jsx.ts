@@ -112,7 +112,6 @@ const FORMAT_COMPONENTS = new Set<GTComponentName>([
   'Num',
 ]);
 const NON_BRANCH_PROP_NAMES = new Set([
-  'branch',
   'class',
   'key',
   'n',
@@ -124,6 +123,7 @@ const NON_BRANCH_PROP_NAMES = new Set([
   'style',
   'v-slots',
   'vSlots',
+  'value',
 ]);
 
 /**
@@ -205,7 +205,7 @@ export function isNestedInVueJSXTranslation(
           identity?.type === 'component' &&
           isBranchComponent(identity.name)
         ) {
-          // Every stable Branch and Plural slot belongs to the outer source.
+          // Every stable Select and Plural slot belongs to the outer source.
           current = current.parentPath;
           continue;
         }
@@ -257,7 +257,7 @@ export function isNestedInVueJSXTranslation(
         if (identity.name === 'Var' || FORMAT_COMPONENTS.has(identity.name)) {
           return false;
         }
-        // Branch and Plural own stable slots, so an outer T reaches them.
+        // Select and Plural own stable slots, so an outer T reaches them.
       } else if (
         identity?.type === 'vue-builtin' &&
         (identity.name !== 'Fragment' ||
@@ -628,7 +628,7 @@ function serializeExpression(
       context,
       babelLocation(expression.loc),
       'Found conditional JSX content inside a gt-vue <T> component',
-      'Move conditional content outside <T>, or use a static Branch or Plural component'
+      'Move conditional content outside <T>, or use a static Select or Plural component'
     );
     return [];
   }
@@ -1251,7 +1251,7 @@ function addSuspenseRootError(
   );
 }
 
-/** Serializes GT-owned Branch and Plural slots with independent ID scopes. */
+/** Serializes GT-owned Select and Plural slots with independent ID scopes. */
 function serializeBranchElement(
   element: babel.JSXElement,
   id: number,
@@ -1263,7 +1263,7 @@ function serializeBranchElement(
 ): JsxChild {
   const slots = readJSXSlotLayout(element, scope, context, analysis);
   if (
-    component !== 'Branch' &&
+    component !== 'Select' &&
     !hasExplicitAttribute(element.openingElement, 'n')
   ) {
     addVueError(
@@ -1293,7 +1293,7 @@ function serializeBranchElement(
       continue;
     }
     // Vue's own slot flags start with `_`; an exact plural form is `_0`.
-    if (component !== 'Branch' ? !isAcceptedPluralForm(name) : name[0] === '_')
+    if (component !== 'Select' ? !isAcceptedPluralForm(name) : name[0] === '_')
       continue;
     const result = serializeSlotFunction(
       slot,
@@ -1334,7 +1334,7 @@ function serializeBranchElement(
   if (Object.keys(branches).length > 0) {
     // Plural branches are stored under ICU keys: `_0` is `=0`.
     data.b =
-      component !== 'Branch'
+      component !== 'Select'
         ? Object.fromEntries(
             Object.entries(branches).map(([name, branch]) => [
               getPluralBranchKey(name),
@@ -1684,7 +1684,7 @@ function readBranchAttributeSources(
     }
     if (
       !isBranchPropName(name) ||
-      (component !== 'Branch' && !isAcceptedPluralForm(name))
+      (component !== 'Select' && !isAcceptedPluralForm(name))
     ) {
       continue;
     }

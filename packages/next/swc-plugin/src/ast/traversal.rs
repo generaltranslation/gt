@@ -210,7 +210,7 @@ impl<'a> JsxTraversal<'a> {
         if let Some(variable) = self.build_sanitized_variable(element) {
           Some(SanitizedChild::Variable(variable))
         } else {
-          // Build as element (includes Branch/Plural components with branches)
+          // Build as element (includes Select/Plural components with branches)
           self
             .build_sanitized_element(element)
             .map(|el| SanitizedChild::Element(Box::new(el)))
@@ -250,17 +250,17 @@ impl<'a> JsxTraversal<'a> {
     true
   }
 
-  /// Check if a Branch component is valid
+  /// Check if a Select component is valid
   fn is_valid_branch_component(
     &self,
     element: &JSXElement,
     component_info: &ComponentInfo,
   ) -> bool {
-    // Check if component has required 'branch' attribute
+    // Check if component has required 'value' attribute
     let has_branch_attr = element.opening.attrs.iter().any(|attr| {
       if let JSXAttrOrSpread::JSXAttr(jsx_attr) = attr {
         if let JSXAttrName::Ident(name_ident) = &jsx_attr.name {
-          return name_ident.sym.as_ref() == "branch";
+          return name_ident.sym.as_ref() == "value";
         }
       }
       false
@@ -286,10 +286,10 @@ impl<'a> JsxTraversal<'a> {
       return None; // This will be handled by build_sanitized_variable
     }
 
-    // Branch and Plural components are handled as SanitizedElements with branches
+    // Select and Plural components are handled as SanitizedElements with branches
 
     let mut sanitized_element = SanitizedElement {
-      b: None, // Will be set for Branch/Plural components
+      b: None, // Will be set for Select/Plural components
       c: None,
       t: None, // Will be set based on component type
       d: None,
@@ -298,7 +298,7 @@ impl<'a> JsxTraversal<'a> {
     let is_branching = component_info.is_gt_component
       && (self.is_plural_component(&tag_name) || self.is_branch_component(&tag_name));
 
-    // Build children directly as sanitized. The children of a Branch or a
+    // Build children directly as sanitized. The children of a Select or a
     // Plural are its `other` branch, counted from the element's id like one.
     let mut fallback = None;
     if !element.children.is_empty() {
@@ -389,7 +389,7 @@ impl<'a> JsxTraversal<'a> {
     None
   }
 
-  /// Check if this is a Branch component
+  /// Check if this is a Select component
   pub fn is_branch_component(&self, tag_name: &str) -> bool {
     // Named import
     if let Some(translation_variable) = self
@@ -398,13 +398,13 @@ impl<'a> JsxTraversal<'a> {
       .scope_tracker
       .get_translation_variable(&Atom::from(tag_name))
     {
-      if translation_variable.original_name.as_str() == "Branch" {
+      if translation_variable.original_name.as_str() == "Select" {
         return true;
       }
     }
 
     // Namespace import
-    if tag_name.ends_with(".Branch") {
+    if tag_name.ends_with(".Select") {
       let namespace = tag_name.split('.').next().unwrap_or("");
       if self
         .visitor
@@ -468,12 +468,12 @@ impl<'a> JsxTraversal<'a> {
       .visitor
       .should_track_component_as_branch(&Atom::from(tag_name))
     {
-      // Branch and Plural components
+      // Select and Plural components
       info.is_gt_component = true;
 
       // Determine transformation type
       if self.is_branch_component(tag_name) {
-        info.transformation = Some(String::from("b"));
+        info.transformation = Some(String::from("s"));
         info.branches = self.extract_branch_props(attrs);
       } else if let Some(transformation) = self.plural_transformation(tag_name) {
         info.transformation = Some(String::from(transformation));
@@ -506,8 +506,8 @@ impl<'a> JsxTraversal<'a> {
         } else if is_branch {
           info.is_gt_component = true;
           match component {
-            "Branch" => {
-              info.transformation = Some("b".to_string());
+            "Select" => {
+              info.transformation = Some("s".to_string());
               info.branches = self.extract_branch_props(attrs);
             }
             "Plural" | "Ordinal" => {
@@ -529,7 +529,7 @@ impl<'a> JsxTraversal<'a> {
     info
   }
 
-  /// Extract branch props from Branch component attributes
+  /// Extract branch props from Select component attributes
   fn extract_branch_props(
     &mut self,
     attrs: &[JSXAttrOrSpread],
@@ -542,7 +542,7 @@ impl<'a> JsxTraversal<'a> {
           let prop_name = name_ident.sym.as_ref();
 
           // Skip special props. `other` is not a prop: it is the children.
-          if matches!(prop_name, "branch" | FALLBACK_BRANCH_KEY) || prop_name.starts_with("data-") {
+          if matches!(prop_name, "value" | FALLBACK_BRANCH_KEY) || prop_name.starts_with("data-") {
             continue;
           }
 
@@ -968,7 +968,7 @@ mod tests {
       let traversal = JsxTraversal::new(&visitor);
 
       // Without any imports, should return false
-      assert!(!traversal.is_branch_component("Branch"));
+      assert!(!traversal.is_branch_component("Select"));
       assert!(!traversal.is_branch_component("CustomBranch"));
     }
 
@@ -988,7 +988,7 @@ mod tests {
       let traversal = JsxTraversal::new(&visitor);
 
       // Namespace components without imports should return false
-      assert!(!traversal.is_branch_component("GT.Branch"));
+      assert!(!traversal.is_branch_component("GT.Select"));
       assert!(!traversal.is_plural_component("GT.Plural"));
     }
   }
@@ -1326,7 +1326,7 @@ mod tests {
           Lit::Str(Str { span: DUMMY_SP, value: Atom::new("").into(), raw: None }),
         ]
       };
-      for (component, selector) in [("Branch", "branch"), ("Plural", "n"), ("Ordinal", "n")] {
+      for (component, selector) in [("Select", "value"), ("Plural", "n"), ("Ordinal", "n")] {
         for empty in empties() {
           let mut visitor = create_test_visitor();
           visitor.import_tracker.scope_tracker.track_variable(
@@ -1557,7 +1557,7 @@ mod tests {
       let mut traversal = JsxTraversal::new(&visitor);
 
       let attrs = vec![
-        create_jsx_attr("branch", "val"),
+        create_jsx_attr("value", "val"),
         create_jsx_attr("data-testid", "test"),
         create_jsx_attr("data-track", "track"),
         create_jsx_attr("morning", "Good morning"),
@@ -1572,7 +1572,7 @@ mod tests {
       assert_eq!(branches.len(), 2);
       assert!(branches.contains_key("morning"));
       assert!(branches.contains_key("evening"));
-      assert!(!branches.contains_key("branch"));
+      assert!(!branches.contains_key("value"));
       assert!(!branches.contains_key("data-testid"));
       assert!(!branches.contains_key("data-track"));
     }
@@ -1583,7 +1583,7 @@ mod tests {
       let mut traversal = JsxTraversal::new(&visitor);
 
       let attrs = vec![
-        create_jsx_attr("branch", "val"),
+        create_jsx_attr("value", "val"),
         create_jsx_attr("data-testid", "test"),
       ];
 

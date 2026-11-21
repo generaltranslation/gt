@@ -46,11 +46,11 @@ describe('removeNullChildrenFields', () => {
       'keeps branches and the branch type',
       {
         t: 'div',
-        d: { b: { case1: 'First case', case2: 'Second case' }, t: 'b' },
+        d: { b: { case1: 'First case', case2: 'Second case' }, t: 's' },
       },
       {
         t: 'div',
-        d: { b: { case1: 'First case', case2: 'Second case' }, t: 'b' },
+        d: { b: { case1: 'First case', case2: 'Second case' }, t: 's' },
       },
     ],
     [

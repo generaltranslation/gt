@@ -73,7 +73,7 @@ describe('createInlineUpdates on tests/seeds', () => {
       expect(result.warnings.length || result.errors.length).toBeGreaterThan(0);
       return;
     }
-    // Some seeds keep <Branch>/<Plural> children to cover their extraction.
+    // Some seeds keep <Select>/<Plural> children to cover their extraction.
     expect(
       result.warnings.filter(
         (warning) => !warning.includes('does not render its children')

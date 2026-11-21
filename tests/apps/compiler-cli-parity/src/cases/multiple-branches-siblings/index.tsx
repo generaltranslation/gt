@@ -1,11 +1,11 @@
-import { Branch } from 'gt-react';
+import { Select } from 'gt-react';
 
 export default function MultipleBranchesSiblings() {
   return (
     <div>
-      Greeting: <Branch branch={'time' as string} morning="Good morning" evening="Good evening">Hello</Branch>
+      Greeting: <Select value={'time' as string} morning="Good morning" evening="Good evening">Hello</Select>
       {', '}
-      Status: <Branch branch={'mood' as string} happy="feeling great" sad="feeling down">okay</Branch>
+      Status: <Select value={'mood' as string} happy="feeling great" sad="feeling down">okay</Select>
     </div>
   );
 }

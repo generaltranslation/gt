@@ -1,9 +1,9 @@
-import { T, Branch, Var } from "gt-next";
+import { T, Select, Var } from "gt-next";
 export default function Home() {
   return (
 <T >
-<Branch
-  branch="format"
+<Select
+  value="format"
   compact={
     <>
       No spaces<Var>here</Var>at all

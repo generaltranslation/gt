@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { Branch, T } from 'gt-vue';
+import { Select, T } from 'gt-vue';
 </script>
 
 <template>
   <T>
-    <Branch
-      branch="type"
+    <Select
+      value="type"
       :number="42"
       :bigNumber="9007199254740991"
       :scientific="1e-20"

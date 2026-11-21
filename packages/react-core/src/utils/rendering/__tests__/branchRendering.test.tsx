@@ -6,7 +6,7 @@ import {
   renderTranslatedChildren,
 } from '../renderPipeline.rsc';
 import { renderPlural } from '../../../components/branches/Plural.shared';
-import { Branch } from '../../../components/branches/Branch';
+import { Select } from '../../../components/branches/Select';
 import { Plural } from '../../../components/branches/Plural';
 import type {
   TaggedElement,
@@ -27,18 +27,18 @@ function resetGTGlobals() {
   Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
 }
 
-function createBranchElement(
-  branch: string | number | boolean,
+function createSelectElement(
+  value: string | number | boolean,
   branches: Record<string, string>
 ): TaggedElement {
   const props = {
     'data-_gt': {
       id: 1,
       injectionType: 'manual',
-      transformation: 'branch',
+      transformation: 'select',
       branches,
     },
-    branch,
+    value,
   } as unknown as TaggedElementProps;
   return React.createElement('span', props) as TaggedElement;
 }
@@ -72,7 +72,7 @@ describe('branch rendering', () => {
   it('selects numeric branch keys when rendering default children', () => {
     const result = renderDefaultChildren({
       ...renderArgs,
-      children: createBranchElement(0, { '0': 'Zero' }),
+      children: createSelectElement(0, { '0': 'Zero' }),
     });
 
     expect(result).toBe('Zero');
@@ -80,7 +80,7 @@ describe('branch rendering', () => {
 
   it('selects boolean branch keys when rendering translated children', () => {
     const result = renderTranslatedChildren({
-      source: createBranchElement(false, { false: 'Off' }),
+      source: createSelectElement(false, { false: 'Off' }),
       target: {
         d: { b: { false: 'Apagado' } },
       },
@@ -92,7 +92,7 @@ describe('branch rendering', () => {
   });
 
   it('renders the other branch for a value with no branch', () => {
-    const source = createBranchElement('guest', {
+    const source = createSelectElement('guest', {
       admin: 'Admin',
       other: 'Someone',
     });
@@ -220,7 +220,7 @@ describe('plural rendering', () => {
       ).toMatchObject([shows(21), shows(100)]);
     });
 
-    it('reaches into elements and a <Branch>, and stops at a nested <Plural>', () => {
+    it('reaches into elements and a <Select>, and stops at a nested <Plural>', () => {
       const bold = React.createElement('b', tagged(2, {}), 'One file');
       expect(render(21, { one: bold }, { i: 2, c: [count] })).toMatchObject({
         type: 'b',
@@ -231,9 +231,9 @@ describe('plural rendering', () => {
         'span',
         tagged(
           2,
-          { transformation: 'branch', branches: { a: 'file' } },
+          { transformation: 'select', branches: { a: 'file' } },
           {
-            branch: 'a',
+            value: 'a',
           }
         )
       );
@@ -323,7 +323,7 @@ describe('plural rendering', () => {
 
   it('lets the source pick when the translation has no branch for the value', () => {
     const result = renderTranslatedChildren({
-      source: createBranchElement('a', { a: 'A', b: 'B' }),
+      source: createSelectElement('a', { a: 'A', b: 'B' }),
       target: { d: { b: { b: 'B traduit' } } } as unknown as TranslatedChildren,
       locales: ['fr'],
       enableI18n: true,
@@ -367,17 +367,19 @@ describe('branch component prop types', () => {
     const name = 'admin' as string;
     const isAdmin = true as boolean;
     const gender = 'other' as 'female' | 'other';
+    const mode = 'admin' as 'admin' | 'value';
+    const side = 'branch' as 'branch' | 'trunk';
     const elements = [
-      <Branch key={0} branch={status} admin='A' guest='G' />,
-      <Branch key={1} branch={status} admin='A' children='O' />,
-      <Branch key={2} branch={isAdmin} true='A' false='G' />,
-      <Branch key={3} branch={name} admin='A' children='O' />,
+      <Select key={0} value={status} admin='A' guest='G' />,
+      <Select key={1} value={status} admin='A' children='O' />,
+      <Select key={2} value={isAdmin} true='A' false='G' />,
+      <Select key={3} value={name} admin='A' children='O' />,
       // @ts-expect-error a finite union needs a branch for every value, or children
-      <Branch key={4} branch={status} admin='A' />,
+      <Select key={4} value={status} admin='A' />,
       // @ts-expect-error any string needs children
-      <Branch key={5} branch={name} admin='A' />,
+      <Select key={5} value={name} admin='A' />,
       // @ts-expect-error not a value of the union
-      <Branch key={6} branch={status} owner='O' children='O' />,
+      <Select key={6} value={status} owner='O' children='O' />,
       <Plural key={8} n={1} _0='None' one='One' children='Many' />,
       <Plural key={9} n={1n} children='Many' />,
       // @ts-expect-error children are required
@@ -392,10 +394,14 @@ describe('branch component prop types', () => {
       <Plural key={14} n='1' children='Many' />,
       // @ts-expect-error other is not a prop: the fallback is the children
       <Plural key={15} n={1} other='Many' children='Fallback' />,
-      <Branch key={16} branch={gender} female='F' children='O' />,
+      <Select key={16} value={gender} female='F' children='O' />,
       // @ts-expect-error the value other has no prop, so children are required
-      <Branch key={17} branch={gender} female='F' />,
+      <Select key={17} value={gender} female='F' />,
+      <Select key={18} value={mode} admin='A' children='O' />,
+      // @ts-expect-error the value named value has no prop, so children are required
+      <Select key={19} value={mode} admin='A' />,
+      <Select key={20} value={side} branch='B' trunk='T' />,
     ];
-    expect(elements).toHaveLength(17);
+    expect(elements).toHaveLength(20);
   });
 });

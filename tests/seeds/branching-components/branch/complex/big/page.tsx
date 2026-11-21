@@ -1,10 +1,10 @@
-import { T, Plural, Branch, Var, Currency, DateTime } from "gt-next";
+import { T, Plural, Select, Var, Currency, DateTime } from "gt-next";
 export default function Home() {
   const variable = "test";
   return (
     <T>
         <Plural n={1} _1="File" _2={"Files"} />
-        <Branch branch="file" file={"file.svg"} directory={"public"} />
+        <Select value="file" file={"file.svg"} directory={"public"} />
         <Plural n={1} _1="File" _2={42} />
         <Plural n={1} _1={true} _2={false} />
         <Plural n={1} _1={null} _2="Files" />
@@ -47,8 +47,8 @@ export default function Home() {
         <Plural
           n={1}
           _1={
-            <Branch
-              branch="type"
+            <Select
+              value="type"
               file={
                 <Plural
                   n={1}
@@ -77,30 +77,30 @@ export default function Home() {
           _1="File with emoji 📁"
           _2={"Files with emoji 📁📂"}
         />
-        <Branch
-          branch="file"
+        <Select
+          value="file"
           file="special-chars!@#$%^&*().svg"
           directory={"unicode-path-ñáéíóú"}
         />
         <div>hello</div>
-        <Branch
-          branch="level1"
+        <Select
+          value="level1"
           option1={
-            <Branch
-              branch="level2"
+            <Select
+              value="level2"
               option1={
                 <Plural
                   n={1}
                   _1={
-                    <Branch
-                      branch="level3"
+                    <Select
+                      value="level3"
                       option1={<>Deep option 1</>}
                       option2={<Var>{variable}</Var>}
                     />
                   }
                   _2={
-                    <Branch
-                      branch="level3"
+                    <Select
+                      value="level3"
                       option1={<Currency currency="USD">100</Currency>}
                       option2={<DateTime>{new Date()}</DateTime>}
                     />

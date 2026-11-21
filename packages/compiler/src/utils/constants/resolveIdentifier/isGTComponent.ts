@@ -52,12 +52,12 @@ export function isUserVariableComponent(
   ].includes((name ?? '') as GT_COMPONENT_TYPES);
 }
 
-/** Check if first arg is Branch, Plural or Ordinal */
+/** Check if first arg is Select, Plural or Ordinal */
 export function isGTBranchComponent(
   firstArgPath: NodePath<t.Expression>
 ): boolean {
   const name = resolveFirstArgGTName(firstArgPath);
-  return name === GT_COMPONENT_TYPES.Branch || isPluralComponent(name);
+  return name === GT_COMPONENT_TYPES.Select || isPluralComponent(name);
 }
 
 /** Check if first arg is Derive */

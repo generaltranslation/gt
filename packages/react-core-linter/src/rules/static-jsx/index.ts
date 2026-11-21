@@ -3,7 +3,7 @@ import type { RuleFixer } from '@typescript-eslint/utils/ts-eslint';
 import {
   ALLOWED_BRANCH_ATTRIBUTE_JSX_EXPRESSIONS,
   ALLOWED_JSX_EXPRESSIONS,
-  BRANCH_COMPONENT_NAME,
+  SELECT_COMPONENT_NAME,
   GT_LIBRARIES,
   RULE_URL,
   VAR_COMPONENT_NAME,
@@ -73,6 +73,18 @@ export const staticJsx = createRule({
       const fixes: ReturnType<RuleFixer['replaceText']>[] = [];
       const gtImportDecls = getGTImportDecls(context.sourceCode, libs);
       const expr = node.expression as TSESTree.Expression;
+      // A name the file binds where the fix is written, to a UI component for one.
+      const isBound = (name: string) => {
+        for (
+          let scope: ReturnType<typeof context.sourceCode.getScope> | null =
+            context.sourceCode.getScope(node);
+          scope;
+          scope = scope.upper
+        ) {
+          if (scope.set.has(name)) return true;
+        }
+        return false;
+      };
       // JSX as an attribute value keeps its braces: gt reads only a string or
       // an expression there.
       const replace = (jsx: string) =>
@@ -85,12 +97,13 @@ export const staticJsx = createRule({
 
       if (isBranchableConditional(expr)) {
         // { cond ? "yes" : "no" }
-        // Import Branch Component
+        // Import Select Component
         const branchTag = addComponentImport(
           gtImportDecls,
-          BRANCH_COMPONENT_NAME,
+          SELECT_COMPONENT_NAME,
           fixes,
-          fixer
+          fixer,
+          isBound
         );
         fixes.push(
           replace(generateBranch(expr, branchTag, context.sourceCode))
@@ -100,12 +113,13 @@ export const staticJsx = createRule({
 
       if (isBranchableLogicalAnd(expr)) {
         // { x && "Active" }
-        // Import Branch Component
+        // Import Select Component
         const branchTag = addComponentImport(
           gtImportDecls,
-          BRANCH_COMPONENT_NAME,
+          SELECT_COMPONENT_NAME,
           fixes,
-          fixer
+          fixer,
+          isBound
         );
         fixes.push(
           replace(generateLogicalAnd(expr, branchTag, context.sourceCode))
@@ -119,7 +133,8 @@ export const staticJsx = createRule({
         gtImportDecls,
         VAR_COMPONENT_NAME,
         fixes,
-        fixer
+        fixer,
+        isBound
       );
       const sourceCode = context.sourceCode.getText(node);
       fixes.push(replace(`<${varTag}>${sourceCode}</${varTag}>`));
@@ -131,7 +146,7 @@ export const staticJsx = createRule({
     return {
       /**
        * Flag dynamic content
-       * When we are inside of a branching attribute, mark it as Branch-T
+       * When we are inside of a branching attribute, mark it as Select-T
        */
       JSXExpressionContainer(node: TSESTree.JSXExpressionContainer) {
         if (!node.expression) return;
@@ -203,7 +218,7 @@ export const staticJsx = createRule({
           isBranchingComponent({ context, node, libs })
         ) {
           if (isBranchComponent({ context, node, libs })) {
-            scopeStack.push('Branch');
+            scopeStack.push('Select');
           } else {
             scopeStack.push('Plural');
           }
@@ -216,7 +231,7 @@ export const staticJsx = createRule({
       },
       /**
        * JSXAttribute for branch/plural children
-       * TODO: disallow spreads, (unless we know that they somehow only contain "branch" or "n" properties)
+       * TODO: disallow spreads, (unless we know that they somehow only contain "value" or "n" properties)
        */
       JSXAttribute(node: TSESTree.JSXAttribute) {
         // Filter out non-branching attributes, or non-expression containers

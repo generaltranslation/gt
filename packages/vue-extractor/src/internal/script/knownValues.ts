@@ -10,7 +10,7 @@ export const COMPONENT_IMPORTS = new Set<GTComponentName>([
   'Currency',
   'Plural',
   'Ordinal',
-  'Branch',
+  'Select',
 ]);
 
 /** Vue exports whose exact runtime identity changes rich traversal. */

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Branch, Plural, T } from 'gt-vue';
+import { Select, Plural, T } from 'gt-vue';
 </script>
 
 <template>
@@ -8,8 +8,8 @@ import { Branch, Plural, T } from 'gt-vue';
       :n="1"
       _1="Line1\nLine2\tTabbed"
       _2="Special: !@#$%^&amp;*()_+-=[]{}|;:,.&lt;&gt;?">{{ 'Template with $\x7bvariable\x7d and `backticks`' }}</Plural>
-    <Branch
-      branch="language"
+    <Select
+      value="language"
       english="Hello World"
       spanish="Hola Mundo ñáéíóú"
       chinese="你好世界"
@@ -18,8 +18,8 @@ import { Branch, Plural, T } from 'gt-vue';
       russian="Привет мир"
     />
     <Plural :n="1" _1="simple template" _2="another simple template" />
-    <Branch
-      branch="format"
+    <Select
+      value="format"
       single="single line"
       :multi="'\n            line 1\n            line 2\n            line 3\n          '"
     />{{ '   ' }}

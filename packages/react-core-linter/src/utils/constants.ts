@@ -48,7 +48,7 @@ export const NUM_COMPONENT_NAME = 'Num';
 export const CURRENCY_COMPONENT_NAME = 'Currency';
 export const DATE_TIME_COMPONENT_NAME = 'DateTime';
 export const DERIVE_COMPONENT_NAME = 'Derive';
-export const BRANCH_COMPONENT_NAME = 'Branch';
+export const SELECT_COMPONENT_NAME = 'Select';
 export const PLURAL_COMPONENT_NAME = 'Plural';
 export const ORDINAL_COMPONENT_NAME = 'Ordinal';
 
@@ -74,7 +74,7 @@ export const VARIABLE_COMPONENT_NAMES = [
 ];
 
 export const BRANCH_COMPONENT_NAMES = [
-  BRANCH_COMPONENT_NAME,
+  SELECT_COMPONENT_NAME,
   PLURAL_COMPONENT_NAME,
   ORDINAL_COMPONENT_NAME,
 ];

@@ -1,7 +1,7 @@
 // Traditional React component entrypoint. These components may use hooks or
 // context internally, so this entrypoint is intentionally not RSC-safe.
 
-export { Branch, GtInternalBranch } from './components/branches/Branch';
+export { Select, GtInternalSelect } from './components/branches/Select';
 export { GtInternalOrdinal, Ordinal } from './components/branches/Ordinal';
 export { GtInternalPlural, Plural } from './components/branches/Plural';
 export { Derive, GtInternalDerive } from './components/derivation/Derive';

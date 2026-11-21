@@ -19,9 +19,9 @@ type PluralProps = {
   n: number | bigint;
 };
 
-type BranchProps = {
-  /** Named branch to render after conversion to a string. */
-  branch?: string | number | boolean;
+type SelectProps = {
+  /** Names the branch to render, after conversion to a string. */
+  value?: string | number | boolean;
 };
 
 function definePlural(name: string, type: Intl.PluralRuleType) {
@@ -86,23 +86,23 @@ export const Ordinal = /* @__PURE__ */ withGTMetadata<PluralProps>(
 );
 
 /**
- * Selects an arbitrary named slot or attribute from `branch`. A value with no
+ * Selects an arbitrary named slot or attribute from `value`. A value with no
  * branch renders the default slot.
  *
  * When used inside {@link T}, every named branch is extracted for translation
  * while only the active branch is rendered.
  */
-export const Branch = /* @__PURE__ */ withGTMetadata<BranchProps>(
+export const Select = /* @__PURE__ */ withGTMetadata<SelectProps>(
   /* @__PURE__ */ defineComponent({
     inheritAttrs: false,
-    name: 'Branch',
+    name: 'Select',
     props: {
-      /** Named branch to render after conversion to a string. */
-      branch: [String, Number, Boolean] as PropType<string | number | boolean>,
+      /** Names the branch to render, after conversion to a string. */
+      value: [String, Number, Boolean] as PropType<string | number | boolean>,
     },
     setup(props, { attrs, slots }) {
       return () => {
-        const branch = props.branch == null ? '' : String(props.branch);
+        const branch = props.value == null ? '' : String(props.value);
         // `other` is not a branch name: it is the default slot.
         const hasBranch =
           (branch !== 'other' && Object.hasOwn(slots, branch)) ||
@@ -115,5 +115,5 @@ export const Branch = /* @__PURE__ */ withGTMetadata<BranchProps>(
       };
     },
   }),
-  'branch'
+  'select'
 );

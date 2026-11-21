@@ -28,17 +28,17 @@
                       "sunny": "sunny skies",
                       "rainy": "rainy weather"
                     },
-                    "t": "b"
+                    "t": "s"
                   }
                 }
               ]
             }
           },
-          "t": "b"
+          "t": "s"
         }
       },
       "work": "At the office"
     },
-    "t": "b"
+    "t": "s"
   }
 }

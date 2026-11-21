@@ -1,7 +1,7 @@
-import { Branch } from 'gt-react';
+import { Select } from 'gt-react';
 
 export default function RootLevelBranch() {
   return (
-    <Branch branch={'x' as string} a={<span>Option A</span>}>Default</Branch>
+    <Select value={'x' as string} a={<span>Option A</span>}>Default</Select>
   );
 }

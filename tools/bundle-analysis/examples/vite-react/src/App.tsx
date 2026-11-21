@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Branch,
+  Select,
   Currency,
   DateTime,
   LocaleSelector,
@@ -182,8 +182,8 @@ export default function App() {
               </div>
               <T>
                 <p className='note'>
-                  <Branch
-                    branch={finish}
+                  <Select
+                    value={finish}
                     graphite={
                       <>Anodized graphite aluminum with a bead-blasted top.</>
                     }
@@ -192,7 +192,7 @@ export default function App() {
                     }
                   >
                     Anodized aluminum.
-                  </Branch>
+                  </Select>
                 </p>
               </T>
             </fieldset>

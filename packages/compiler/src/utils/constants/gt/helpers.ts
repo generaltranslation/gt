@@ -32,7 +32,7 @@ export function isGTFunction(name: string): name is GT_ALL_FUNCTIONS {
     'RelativeTime',
     'Num',
     'N',
-    'Branch',
+    'Select',
     'Plural',
     'Ordinal',
     'GtInternalTranslateJsx',
@@ -91,7 +91,7 @@ export function isPluralComponent(name: string | null): boolean {
  * Check if a name is a GT branch component
  */
 export function isBranchComponent(name: string): name is BranchElementName {
-  return name === GT_COMPONENT_TYPES.Branch || isPluralComponent(name);
+  return name === GT_COMPONENT_TYPES.Select || isPluralComponent(name);
 }
 
 /**

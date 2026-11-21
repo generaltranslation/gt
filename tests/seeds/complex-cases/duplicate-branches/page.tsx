@@ -1,10 +1,10 @@
-import { T, Branch, Var, Num } from "gt-next";
+import { T, Select, Var, Num } from "gt-next";
 export default function Home() {
   const count = 5;
   return (
     <T>
-      <Branch
-        branch="copy"
+      <Select
+        value="copy"
         version1={
           <>
             Identical content with <Var>same variable</Var> and{" "}

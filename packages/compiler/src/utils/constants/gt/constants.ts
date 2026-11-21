@@ -13,7 +13,7 @@ export enum GT_COMPONENT_TYPES {
   Num = 'Num',
   N = 'N',
   Derive = 'Derive',
-  Branch = 'Branch',
+  Select = 'Select',
   Plural = 'Plural',
   Ordinal = 'Ordinal',
   LocaleSelector = 'LocaleSelector',
@@ -49,11 +49,11 @@ export enum GT_IMPORT_SOURCES {
 }
 
 /**
- * Branch control props — not translatable content.
- * `branch` is the selector key; `data-*` props are HTML attributes ignored at runtime.
+ * Select control props — not translatable content.
+ * `value` is the selector key; `data-*` props are HTML attributes ignored at runtime.
  * `data-*` is handled as a prefix check, not listed here.
  */
-export const BRANCH_CONTROL_PROPS = new Set(['branch']);
+export const SELECT_CONTROL_PROPS = new Set(['value']);
 
 /**
  * Plural control props — not translatable content.

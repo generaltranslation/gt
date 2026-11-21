@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Branch, Num, Plural } from 'gt-svelte';
+  import { Select, Num, Plural } from 'gt-svelte';
   import Passthrough from './Passthrough.svelte';
   let { count = 1, status = 'active' }: { count?: number; status?: string } =
     $props();
@@ -14,8 +14,8 @@
 <div><Passthrough>x<b> </b>y</Passthrough></div>
 <div><Passthrough>Run <code>  npm  i  </code> now</Passthrough></div>
 <div><Passthrough><Num value={count} /><Plural n={count}>{#snippet one()} item{/snippet}{' items'}</Plural></Passthrough></div>
-<div><Passthrough>Status:<Branch branch={status}>{#snippet active()} <i>active</i>{/snippet}unknown</Branch></Passthrough></div>
-<div><Passthrough><Branch branch={status}>Hello </Branch>world</Passthrough></div>
+<div><Passthrough>Status:<Select value={status}>{#snippet active()} <i>active</i>{/snippet}unknown</Select></Passthrough></div>
+<div><Passthrough><Select value={status}>Hello </Select>world</Passthrough></div>
 <div><Passthrough>&#32;Hello&#32;</Passthrough></div>
 <div><Passthrough>a&#13;<b>b</b></Passthrough></div>
 <div><Passthrough>foo&#9;bar&#32;

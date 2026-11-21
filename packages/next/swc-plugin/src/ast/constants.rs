@@ -2,7 +2,7 @@
 /// one: it is the children.
 const PLURAL_FORMS: [&str; 5] = ["zero", "one", "two", "few", "many"];
 
-/// The key the children of a Plural or a Branch component are stored under
+/// The key the children of a Plural or a Select component are stored under
 pub const FALLBACK_BRANCH_KEY: &str = "other";
 
 /// The key a Plural branch prop is stored under: a plural category as is, and

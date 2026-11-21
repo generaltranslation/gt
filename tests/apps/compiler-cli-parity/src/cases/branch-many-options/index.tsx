@@ -1,9 +1,9 @@
-import { Branch } from 'gt-react';
+import { Select } from 'gt-react';
 
 export default function BranchManyOptions() {
   return (
     <div>
-      <Branch branch={'size' as string} xs="Extra Small" sm="Small" md="Medium" lg="Large" xl="Extra Large">Default</Branch>
+      <Select value={'size' as string} xs="Extra Small" sm="Small" md="Medium" lg="Large" xl="Extra Large">Default</Select>
     </div>
   );
 }

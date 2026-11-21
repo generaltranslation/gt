@@ -43,7 +43,7 @@ pub struct HtmlContentProps {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SanitizedElement {
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub b: Option<BTreeMap<String, Box<SanitizedChild>>>, // branches (for Branch/Plural components)
+  pub b: Option<BTreeMap<String, Box<SanitizedChild>>>, // branches (for Select/Plural components)
   #[serde(skip_serializing_if = "Option::is_none")]
   pub c: Option<Box<SanitizedChildren>>, // children
   #[serde(skip_serializing_if = "Option::is_none")]
@@ -58,7 +58,7 @@ pub struct SanitizedGtProp {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub b: Option<BTreeMap<String, Box<SanitizedChild>>>, // Branches
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub t: Option<String>, // Branch Transformation ('p' for plural, 'o' for ordinal plural, 'b' for branch)
+  pub t: Option<String>, // Branch transformation ('p' for plural, 'o' for ordinal plural, 's' for select)
   #[serde(flatten)]
   pub html_props: HtmlContentProps, // HTML content properties
 }
@@ -71,7 +71,7 @@ pub struct SanitizedVariable {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub v: Option<VariableType>, // variable type (for regular variables)
   #[serde(skip_serializing_if = "Option::is_none")]
-  pub t: Option<String>, // transformation type ('b' for branches, 'p' for plurals, 'v' for variables)
+  pub t: Option<String>, // transformation type ('s' for a select, 'p' for plurals, 'v' for variables)
 }
 
 /// Sanitized JSX Child can be text, element, variable, boolean, or null
@@ -161,7 +161,7 @@ impl JsxHasher {
 
   /// Handle element - check if it contains static variables in children or branches
   fn handle_element(element: &SanitizedElement) -> bool {
-    // Check branches first (for Branch/Plural components)
+    // Check branches first (for Select/Plural components)
     if let Some(branches) = &element.b {
       if branches.values().any(|branch| Self::handle_child(branch.as_ref())) {
         return true;
@@ -457,7 +457,7 @@ mod tests {
 
   #[test]
   fn test_branch_component_empty_hash() {
-    // Test that empty Branch component produces the expected hash to match runtime
+    // Test that empty Select component produces the expected hash to match runtime
     let empty_children = SanitizedChildren::Multiple(vec![]);
     let data = SanitizedData {
       source: Some(Box::new(empty_children)),
@@ -469,10 +469,10 @@ mod tests {
     let json_string = JsxHasher::stable_stringify(&data).unwrap();
     let hash = JsxHasher::hash_string(&json_string);
 
-    println!("Empty Branch hash: {hash}");
-    println!("Empty Branch JSON: {json_string}");
+    println!("Empty Select hash: {hash}");
+    println!("Empty Select JSON: {json_string}");
 
-    // This should match the runtime hash for empty Branch components
+    // This should match the runtime hash for empty Select components
     assert_eq!(hash.len(), 16, "Hash should be 16 characters");
 
     // The expected hash for empty JSX structure should be consistent
@@ -607,7 +607,7 @@ mod tests {
       let element = SanitizedElement {
         b: Some(branches),
         c: None,
-        t: Some("b".to_string()),
+        t: Some("s".to_string()),
         d: None,
       };
       let children = SanitizedChildren::Single(Box::new(SanitizedChild::Element(Box::new(element))));
@@ -687,7 +687,7 @@ mod tests {
       let element = SanitizedElement {
         b: Some(branches),
         c: None,
-        t: Some("b".to_string()),
+        t: Some("s".to_string()),
         d: None,
       };
       let children = SanitizedChildren::Single(Box::new(SanitizedChild::Element(Box::new(element))));

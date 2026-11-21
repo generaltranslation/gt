@@ -4,13 +4,13 @@ import { isBranchComponent } from '../../utils/isGTFunction.js';
 
 const createRule = ESLintUtils.RuleCreator((name) => `${RULE_URL}${name}`);
 
-export const noDataAttrsOnBranch = createRule({
-  name: 'no-data-attrs-on-branch',
+export const noDataAttrsOnSelect = createRule({
+  name: 'no-data-attrs-on-select',
   meta: {
     type: 'problem',
     docs: {
       description:
-        'The Branch component ignores any attributes prefixed with "data-".',
+        'The Select component ignores any attributes prefixed with "data-".',
     },
     schema: [
       {
@@ -30,8 +30,8 @@ export const noDataAttrsOnBranch = createRule({
     ],
     hasSuggestions: false,
     messages: {
-      noDataAttrsOnBranch:
-        "The Branch component ignores any attributes prefixed with 'data-'. Remove data-* attributes from Branch.",
+      noDataAttrsOnSelect:
+        "The Select component ignores any attributes prefixed with 'data-'. Remove data-* attributes from Select.",
     },
   },
   defaultOptions: [{ libs: GT_LIBRARIES }],
@@ -57,11 +57,11 @@ export const noDataAttrsOnBranch = createRule({
           return;
         }
 
-        // Check if the parent is a Branch component
+        // Check if the parent is a Select component
         if (isBranchComponent({ context, node: parent, libs })) {
           context.report({
             node,
-            messageId: 'noDataAttrsOnBranch',
+            messageId: 'noDataAttrsOnSelect',
           });
         }
       },

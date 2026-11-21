@@ -3,7 +3,7 @@ import { TransformState } from '../../state/types';
 import * as t from '@babel/types';
 import {
   GT_COMPONENT_TYPES,
-  BRANCH_CONTROL_PROPS,
+  SELECT_CONTROL_PROPS,
   PLURAL_CONTROL_PROPS,
 } from '../../utils/constants/gt/constants';
 import { isPluralComponent } from '../../utils/constants/gt/helpers';
@@ -130,7 +130,7 @@ function processJsxNode({
     return;
   }
 
-  // Branch/Plural/Derive → opaque for static JSX, dynamic props get _Var
+  // Select/Plural/Derive → opaque for static JSX, dynamic props get _Var
   if (isGTBranchComponent(firstArgPath) || isGTDeriveComponent(firstArgPath)) {
     // Process props BEFORE wrapping — path still points to the opaque component
     processOpaqueComponentProps({
@@ -474,12 +474,12 @@ function processOpaqueComponentProps({
     const valuePath = propPath.get('value');
     if (!valuePath.isExpression()) continue;
 
-    // children is fallback content for Branch/Plural — process element-by-element
+    // children is fallback content for Select/Plural — process element-by-element
     // For Derive, children is opaque — skip entirely
     if (propName === 'children') {
       if (
         insideAutoT &&
-        (gtName === GT_COMPONENT_TYPES.Branch || isPluralComponent(gtName))
+        (gtName === GT_COMPONENT_TYPES.Select || isPluralComponent(gtName))
       ) {
         processChildren({ childrenPath: valuePath, insideAutoT: true, state });
       }
@@ -517,8 +517,8 @@ function isControlProp(
   propName: string | null
 ): boolean {
   if (!propName) return false;
-  if (gtName === GT_COMPONENT_TYPES.Branch) {
-    return BRANCH_CONTROL_PROPS.has(propName) || propName.startsWith('data-');
+  if (gtName === GT_COMPONENT_TYPES.Select) {
+    return SELECT_CONTROL_PROPS.has(propName) || propName.startsWith('data-');
   }
   if (isPluralComponent(gtName)) {
     return PLURAL_CONTROL_PROPS.has(propName);

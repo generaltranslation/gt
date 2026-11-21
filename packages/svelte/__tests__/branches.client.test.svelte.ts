@@ -27,10 +27,10 @@ describe('elements with the same id in sibling branches', () => {
   // `<i>`/`<b>` share id 3 and `<s>`/`<u>` share id 4, in the `on` and
   // `off` branch scopes.
   const branches = (on: JsxChild[], off: JsxChild[]): Content => ({
-    t: 'Branch',
+    t: 'Select',
     i: 1,
     d: {
-      t: 'b',
+      t: 's',
       b: {
         on: { t: 'C2', i: 2, c: on },
         off: { t: 'C2', i: 2, c: off },

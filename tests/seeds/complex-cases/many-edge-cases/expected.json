@@ -122,7 +122,7 @@
         },
         "option2": "simple"
       },
-      "t": "b"
+      "t": "s"
     }
   },
   {
@@ -165,7 +165,7 @@
         "scientific": "1.23e-10",
         "big_scientific": "12300000000"
       },
-      "t": "b"
+      "t": "s"
     }
   },
   {
@@ -178,7 +178,7 @@
         "large": "3735928559",
         "mixed": "1194684"
       },
-      "t": "b"
+      "t": "s"
     }
   },
   {
@@ -235,7 +235,7 @@
           ]
         }
       },
-      "t": "b"
+      "t": "s"
     }
   },
   {
@@ -259,7 +259,7 @@
         "regex": "/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$/",
         "path": "C:\\Program Files\\App\\file.exe"
       },
-      "t": "b"
+      "t": "s"
     }
   },
   {
@@ -271,7 +271,7 @@
         "email": "user.name+tag@subdomain.example-site.co.uk",
         "css": "body { margin: 0; padding: 10px; font-family: Arial, sans-serif; }"
       },
-      "t": "b"
+      "t": "s"
     }
   },
   {
@@ -302,7 +302,7 @@
         "string_true": "true",
         "string_false": "false"
       },
-      "t": "b"
+      "t": "s"
     }
   },
   {
@@ -326,7 +326,7 @@
         "markdown": "# Title\n\n**Bold** and *italic* text.\n\n```js\nconst x = 42;\n```",
         "xml": "<root><child attr=\"value\">content</child></root>"
       },
-      "t": "b"
+      "t": "s"
     }
   },
   {
@@ -370,7 +370,7 @@
         "i": true,
         "j": null
       },
-      "t": "b"
+      "t": "s"
     }
   },
   {
@@ -535,7 +535,7 @@
                                                                     },
                                                                     "option2": "l6 end"
                                                                   },
-                                                                  "t": "b"
+                                                                  "t": "s"
                                                                 }
                                                               },
                                                               "=2": "l5 plural"
@@ -545,7 +545,7 @@
                                                         },
                                                         "option2": "l5 end"
                                                       },
-                                                      "t": "b"
+                                                      "t": "s"
                                                     }
                                                   },
                                                   "=2": "l4 plural"
@@ -555,7 +555,7 @@
                                             },
                                             "option2": "l4 end"
                                           },
-                                          "t": "b"
+                                          "t": "s"
                                         }
                                       },
                                       "=2": "l3 plural"
@@ -565,7 +565,7 @@
                                 },
                                 "option2": "l3 end"
                               },
-                              "t": "b"
+                              "t": "s"
                             }
                           },
                           "=2": "l2 plural"
@@ -575,7 +575,7 @@
                     },
                     "option2": "l2 end"
                   },
-                  "t": "b"
+                  "t": "s"
                 }
               },
               "=2": "l1 plural"
@@ -585,7 +585,7 @@
         },
         "option2": "l1 end"
       },
-      "t": "b"
+      "t": "s"
     }
   },
   {
@@ -654,7 +654,7 @@
                               },
                               "work": "office"
                             },
-                            "t": "b"
+                            "t": "s"
                           }
                         }
                       ]
@@ -702,7 +702,7 @@
           },
           "option2": "simple option"
         },
-        "t": "b"
+        "t": "s"
       }
     }
   },
@@ -719,7 +719,7 @@
         "invalid": "ignored",
         "also_invalid": "also ignored"
       },
-      "t": "b"
+      "t": "s"
     }
   },
   {
@@ -739,7 +739,7 @@
         "symbols": "©®™€£¥¢¤§¶†‡•…‰‱′″‴‵‶‷‸‹›«»¿¡",
         "math": "∀∂∃∅∇∈∉∋∌∏∑−∕∗∘∙√∝∞∟∠∡∢∣∤∥∦∧∨∩∪∫∬∭∮"
       },
-      "t": "b"
+      "t": "s"
     }
   },
   {
@@ -815,7 +815,7 @@
         "boolean": true,
         "null_value": null
       },
-      "t": "b"
+      "t": "s"
     }
   },
   {
@@ -894,7 +894,7 @@
           ]
         }
       },
-      "t": "b"
+      "t": "s"
     }
   }
 ]

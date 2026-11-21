@@ -5,7 +5,7 @@ import {
   T_COMPONENT_NAME,
   VARIABLE_COMPONENT_NAMES,
   PLURAL_COMPONENT_NAME,
-  BRANCH_COMPONENT_NAME,
+  SELECT_COMPONENT_NAME,
   BRANCH_COMPONENT_NAMES,
   DERIVE_COMPONENT_NAME,
   MSG_FUNCTION_NAME,
@@ -163,7 +163,7 @@ export function isBranchComponent({
     context,
     node,
     libs,
-    targetName: BRANCH_COMPONENT_NAME,
+    targetName: SELECT_COMPONENT_NAME,
   });
 }
 

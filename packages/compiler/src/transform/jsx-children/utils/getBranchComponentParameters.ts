@@ -6,7 +6,7 @@ import {
 } from 'generaltranslation/internal';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import {
-  BRANCH_CONTROL_PROPS,
+  SELECT_CONTROL_PROPS,
   GT_COMPONENT_TYPES,
 } from '../../../utils/constants/gt/constants';
 import { isPluralComponent } from '../../../utils/constants/gt/helpers';
@@ -70,9 +70,9 @@ export function getBranchComponentParameters(
         return null;
       }
 
-      // Filter out data-* attributes for Branch components
+      // Filter out data-* attributes for Select components
       if (
-        canonicalName === GT_COMPONENT_TYPES.Branch &&
+        canonicalName === GT_COMPONENT_TYPES.Select &&
         propertyName.startsWith('data-')
       ) {
         return null;
@@ -80,8 +80,8 @@ export function getBranchComponentParameters(
 
       // Filter by branch component type
       if (
-        canonicalName === GT_COMPONENT_TYPES.Branch &&
-        BRANCH_CONTROL_PROPS.has(propertyName)
+        canonicalName === GT_COMPONENT_TYPES.Select &&
+        SELECT_CONTROL_PROPS.has(propertyName)
       ) {
         return null;
       } else if (
