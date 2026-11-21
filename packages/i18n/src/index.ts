@@ -3,7 +3,7 @@ export {
   date,
   derive,
   n,
-  number,
+  num,
   part,
   plural,
   select,

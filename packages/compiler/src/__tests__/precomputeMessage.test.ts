@@ -29,7 +29,7 @@ import { findPrecomputedMessageSupport } from '../transform/injection/precompute
 import { transformWithPlugin } from './transformWithPlugin';
 
 const HELPERS =
-  't, m, msg, useGT, plural, ordinal, select, number, date, time, part, derive, n';
+  't, m, msg, useGT, plural, ordinal, select, num, date, time, part, derive, n';
 
 const module = (body: string) =>
   `import { ${HELPERS} } from 'gt-react';\n${body}\n`;
@@ -122,7 +122,7 @@ describe('emitted messages', () => {
     ],
     [
       'number with a literal formatting context',
-      "t`Total ${number({ price }, { style: 'currency', maximumFractionDigits: 0, currency: 'USD' })}`;",
+      "t`Total ${num({ price }, { style: 'currency', maximumFractionDigits: 0, currency: 'USD' })}`;",
       '{ $_hash: "#", $_tree: ["Total ", ["price", "number", "currency"]], $_formats: { price: { currency: \'USD\', maximumFractionDigits: 0 } } }',
       't(@, { price });',
       ['Total ', ['price', 'number', 'currency']],
@@ -138,7 +138,7 @@ describe('emitted messages', () => {
     ],
     [
       'a formatting context with a side effect, which keeps its place',
-      "t`${{ name: user.name }}: ${number({ price }, { style: 'currency', currency: next() })}`;",
+      "t`${{ name: user.name }}: ${num({ price }, { style: 'currency', currency: next() })}`;",
       '{ $_hash: "#", $_tree: [["name"], ": ", ["price", "number", "currency"]] }',
       't(@, { name: user.name, price }, { price: { currency: next() } });',
       [['name'], ': ', ['price', 'number', 'currency']],
@@ -296,18 +296,18 @@ export { other };`,
     ],
     [
       'a variable formatted twice',
-      "t`${number({ price })} or ${number({ price }, { currency: 'USD' })}`;",
-      't({ $_hash: "#" })`${number({ price })}',
+      "t`${num({ price })} or ${num({ price }, { currency: 'USD' })}`;",
+      't({ $_hash: "#" })`${num({ price })}',
     ],
     [
       'a formatting context that a value with a side effect could change',
-      "t`${number({ price }, { style: 'currency', currency })} for ${{ name: next() }}`;",
-      't({ $_hash: "#" })`${number({ price }',
+      "t`${num({ price }, { style: 'currency', currency })} for ${{ name: next() }}`;",
+      't({ $_hash: "#" })`${num({ price }',
     ],
     [
       'a formatting context that is read before a value that is not a variable',
-      "t`${number({ price }, { style: 'currency', currency })} for ${{ name: user.name }}`;",
-      't({ $_hash: "#" })`${number({ price }',
+      "t`${num({ price }, { style: 'currency', currency })} for ${{ name: user.name }}`;",
+      't({ $_hash: "#" })`${num({ price }',
     ],
     [
       'a repeated value that is not a variable',
@@ -801,7 +801,7 @@ const CASES: Case[] = [
   },
   {
     name: 'a number with a literal formatting context',
-    body: "t`Total: ${number({ price: props.price }, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })} (${number({ share: props.share }, { style: 'percent' })})`",
+    body: "t`Total: ${num({ price: props.price }, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })} (${num({ share: props.share }, { style: 'percent' })})`",
     translation: [
       'Total : ',
       ['price', 'number', 'currency'],
@@ -813,7 +813,7 @@ const CASES: Case[] = [
   },
   {
     name: 'a number with a formatting context read at runtime',
-    body: "t`For ${{ name: props.name }}: ${number({ price: props.price }, { style: 'currency', currency: props.currency, currencyDisplay: 'code' })}`",
+    body: "t`For ${{ name: props.name }}: ${num({ price: props.price }, { style: 'currency', currency: props.currency, currencyDisplay: 'code' })}`",
     translation: [['price', 'number', 'currency'], ' : ', ['name']],
     renders: [
       { price: 1234.56, currency: 'USD', name: 'Ada' },
@@ -822,7 +822,7 @@ const CASES: Case[] = [
   },
   {
     name: 'a formatting context read before a value that is not a variable',
-    body: "t`Total: ${number({ price: props.price }, { style: 'currency', currency: props.currency, currencyDisplay: 'code' })} for ${{ name: props.name }}`",
+    body: "t`Total: ${num({ price: props.price }, { style: 'currency', currency: props.currency, currencyDisplay: 'code' })} for ${{ name: props.name }}`",
     translation: [['name'], ' : ', ['price', 'number', 'currency']],
     renders: [{ price: 1234.56, currency: 'USD', name: 'Ada' }],
     expected: 'kept',
@@ -831,14 +831,14 @@ const CASES: Case[] = [
     name: 'a getter that changes a formatting context read before it',
     setup:
       "let currency = 'USD';\nconst data = { get label() { currency = 'EUR'; return 'total'; } };",
-    body: "t`${number({ price: 10 }, { style: 'currency', currency })} ${{ label: data.label }}`",
+    body: "t`${num({ price: 10 }, { style: 'currency', currency })} ${{ label: data.label }}`",
     expected: 'kept',
   },
   {
     name: 'a conversion that changes a formatting context read before it',
     setup:
       "let currency = 'USD';\nconst data = { toString() { currency = 'EUR'; return 'total'; } };",
-    body: "t`${number({ price: 10 }, { style: 'currency', currency })} ${{ label: `${data}` }}`",
+    body: "t`${num({ price: 10 }, { style: 'currency', currency })} ${{ label: `${data}` }}`",
     expected: 'kept',
   },
   {
@@ -883,7 +883,7 @@ const CASES: Case[] = [
   {
     name: 'a formatting context with a side effect, which keeps its place',
     setup: "const codes = ['USD', 'EUR', 'JPY', 'GBP'];",
-    body: "t`${number({ price: props.price }, { style: 'currency', currency: codes.shift() })}`",
+    body: "t`${num({ price: props.price }, { style: 'currency', currency: codes.shift() })}`",
     renders: [{ price: 5 }],
   },
   {

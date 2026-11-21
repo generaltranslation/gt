@@ -188,7 +188,7 @@ describe('gt-react package exports', () => {
           for (const [entryName, entry] of Object.entries({ client, server, rsc })) {
             for (const name of [
               'msg', 'mFallback', 'derive', 'plural', 'ordinal', 'select',
-              'number', 'date', 'time', 'part', 'n',
+              'num', 'date', 'time', 'part', 'n',
             ]) {
               assert.equal(entry[name], i18n[name], entryName + ' ' + name);
             }

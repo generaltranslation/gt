@@ -13,7 +13,7 @@ export type Binding = {
   /** Set once the tree is built, for a value the builder numbers `_gt_N`. */
   name?: string;
   value: t.Expression;
-  /** Formatting context of number(), date() and time(): not part of the tree. */
+  /** Formatting context of num(), date() and time(): not part of the tree. */
   context?: { key: string; value: t.Expression }[];
 };
 
