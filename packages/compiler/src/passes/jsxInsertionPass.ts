@@ -21,6 +21,7 @@ export function jsxInsertionPass(state: TransformState): TraverseOptions {
   const calleeInfo: JsxCalleeInfo = {
     singleCallee: null,
     multiCallee: null,
+    multiCalleeSource: null,
   };
 
   const onImportFound = () => {
@@ -31,7 +32,7 @@ export function jsxInsertionPass(state: TransformState): TraverseOptions {
     ImportDeclaration: processImportDeclaration(
       onImportFound,
       calleeInfo,
-      state.settings.autoJsxImportSource
+      state.settings
     ),
     CallExpression: processCallExpression(state, calleeInfo),
     Program: processProgram({

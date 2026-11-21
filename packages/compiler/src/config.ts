@@ -123,8 +123,26 @@ export interface PluginConfig
     Pick<GTParsingFlags, 'autoderive' | 'devHotReload'> {
   /** GT Configuration object — pass the parsed gt.config.json to sync settings */
   gtConfig?: GTConfig;
-  /** Package source for components inserted by Auto JSX Injection */
+  /**
+   * Package that the components inserted by `enableAutoJsxInjection` are
+   * imported from. It is not a JSX runtime: see `jsxImportSources`.
+   */
   autoJsxImportSource?: string;
+  /**
+   * The JSX import sources, other than React's, that the app's JSX is
+   * compiled against: what its JSX transform is given as `jsxImportSource`
+   * (TypeScript, esbuild, Oxc, `@vitejs/plugin-react`) or `importSource`
+   * (Babel, SWC), such as `['@emotion/react']`. The compiler reads compiled
+   * JSX, and only the calls imported from `react/jsx-runtime`,
+   * `react/jsx-dev-runtime` and the `/jsx-runtime` and `/jsx-dev-runtime` of
+   * each source listed here. In a file compiled against any other source it
+   * inserts no `<T>`, computes no hash and checks no usage, and it warns of
+   * each such source once per build. List only a source whose `jsx`, `jsxs`
+   * and `jsxDEV` take the arguments of React's, as those of a styling library
+   * or of a wrapper of React's runtime do. What the compiler inserts into a
+   * file is created by the runtime the file's own JSX uses. Defaults to none.
+   */
+  jsxImportSources?: string[];
   /** Debug: write a hash → jsxChildren manifest file on build */
   _debugHashManifest?: boolean;
   /**
@@ -191,6 +209,8 @@ export interface PluginSettings {
   enableAutoJsxInjection: boolean;
   /** Package source for components inserted by Auto JSX Injection */
   autoJsxImportSource: string;
+  /** JSX import sources whose runtimes are read as React's are */
+  jsxImportSources: string[];
   /** Automatically treat interpolated values in <T> as derive() calls */
   autoderive: { jsx: boolean };
   /** Debug: write a hash → jsxChildren manifest file on build */

@@ -1,7 +1,7 @@
 import * as t from '@babel/types';
 import { isGTImportSource } from '../../utils/constants/gt/helpers';
 import { GT_ALL_FUNCTIONS } from '../../utils/constants/gt/constants';
-import { isReactImportSource } from '../../utils/constants/react/helpers';
+import { isJsxImportSource } from '../../utils/constants/react/jsxImportSources';
 import { TransformState } from '../../state/types';
 
 /**
@@ -42,7 +42,7 @@ function handleImportSpecifier(
       alias,
       originalName as GT_ALL_FUNCTIONS
     );
-  } else if (isReactImportSource(importSource)) {
+  } else if (isJsxImportSource(importSource, state.settings.jsxImportSources)) {
     state.scopeTracker.trackReactVariable(alias, originalName);
   }
 }
@@ -59,7 +59,7 @@ function handleImportDefaultSpecifier(
   const namespace = importNamespaceSpecifier.local.name;
   if (isGTImportSource(importSource)) {
     state.scopeTracker.addNamespaceImport(namespace);
-  } else if (isReactImportSource(importSource)) {
+  } else if (isJsxImportSource(importSource, state.settings.jsxImportSources)) {
     // TODO: track React import default
     // scopeTracker.addNamespaceImport(namespace);
   }
@@ -77,7 +77,7 @@ function handleImportNamespaceSpecifier(
   const namespace = importNamespaceSpecifier.local.name;
   if (isGTImportSource(importSource)) {
     state.scopeTracker.addNamespaceImport(namespace);
-  } else if (isReactImportSource(importSource)) {
+  } else if (isJsxImportSource(importSource, state.settings.jsxImportSources)) {
     // TODO: track React import namespace
     // scopeTracker.addNamespaceImport(namespace);
   }
