@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { initializeI18nConfig } from 'gt-i18n/internal';
-import { setReadonlyConditionStore } from '../../condition-store/singleton-operations';
-import { getFormatLocales } from '../utils/getFormatLocales';
-import { getShouldTranslate } from '../utils/getShouldTranslate';
+import { setReadonlyConditionStore } from '../../../condition-store/singleton-operations';
+import { getFormatLocales } from '../getFormatLocales';
+import { getShouldTranslate } from '../getShouldTranslate';
 
 type TestGlobal = typeof globalThis & {
   __generaltranslation?: unknown;
