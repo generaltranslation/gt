@@ -28,6 +28,7 @@ All types of contributions are encouraged and valued. See the [Table of Contents
       - [How Do I Submit a Good Enhancement Suggestion?](#how-do-i-submit-a-good-enhancement-suggestion)
     - [Your First Code Contribution](#your-first-code-contribution)
     - [Improving The Documentation](#improving-the-documentation)
+    - [Prerelease Branches](#prerelease-branches)
   - [Styleguides](#styleguides)
     - [Commit Messages](#commit-messages)
   - [Join The Project Team](#join-the-project-team)
@@ -158,6 +159,17 @@ pnpm install
 Updating, improving and correcting the documentation
 
 -->
+
+### Prerelease Branches
+
+A prerelease branch is a long-lived branch that publishes prerelease versions under its own npm dist-tag. For example, `samsara` publishes `@samsara`. A branch is a prerelease branch while it has a `.changeset/pre.json` (changesets pre mode).
+
+Label everything that belongs to a prerelease branch with the label of the same name, such as `samsara`:
+
+- **Pull requests** that target the branch. This includes every pull request in a stack that eventually lands there, where a pull request's base is another pull request's head branch.
+- **Issues** about the branch, such as a bug that only shows up in a `@samsara` release.
+
+CI enforces the label on pull requests: the **Prerelease label** check follows the base chain through open pull requests in this repository (up to 10 hops), and fails if the branch it lands on is a prerelease branch and the label is missing. Adding the label re-runs the check. Issues are not checked, so add the label when you open one.
 
 ## Styleguides
 
