@@ -55,6 +55,9 @@ describe('stripExtension', () => {
     ['wasm.d.ts', 'wasm'],
     ['index.min.cjs', 'index'],
     ['utils/helper.ts', 'utils/helper'],
+    ['data.json', 'data.json'],
+    ['parser.wasm', 'parser.wasm'],
+    ['foo', 'foo'],
   ])('%s -> %s', (fileName, stem) => {
     expect(stripExtension(fileName)).toBe(stem);
   });
@@ -75,8 +78,10 @@ describe('entrySourceStems', () => {
       ['internal/initializeGT.server'],
     ],
     ['./dist/index.min.js', ['index']],
-    ['./dist/openapi.json', []],
-    ['./dist/parser.wasm', []],
+    ['./dist/openapi.json', ['openapi.json']],
+    ['./dist/parser.wasm', ['parser.wasm']],
+    ['./dist/foo', ['foo']],
+    ['./dist/*', ['*']],
     ['./dist/*.js', ['*']],
     ['./dist/utils/*.js', ['utils/*']],
     ['./package.json', []],
@@ -237,6 +242,38 @@ describe('findUnexportedSourceRootFiles', () => {
         sourceFiles: ['index.ts', rootFile],
       })
     ).toEqual([rootFile]);
+  });
+
+  test.each([
+    [
+      'an extensionless wildcard export covers a built module',
+      { exports: { './*': './dist/*' } },
+      [],
+      ['foo.ts'],
+      [],
+    ],
+    [
+      'an extensionless bin shim require covers a built module',
+      {},
+      ['dist/foo'],
+      ['foo.ts'],
+      [],
+    ],
+    [
+      'an exported copied asset covers only the same-named source',
+      { exports: { './data.json': './dist/data.json' } },
+      [],
+      ['data.json', 'data.ts'],
+      ['data.ts'],
+    ],
+  ])('%s', (_name, packageFields, extraEntryPaths, rootFiles, violations) => {
+    expect(
+      findUnexportedSourceRootFiles({
+        packageJson: { main: 'dist/index.js', ...packageFields },
+        sourceFiles: ['index.ts', ...rootFiles],
+        extraEntryPaths,
+      })
+    ).toEqual(violations);
   });
 
   test('declaration files must also back an entry', () => {

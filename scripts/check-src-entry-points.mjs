@@ -23,8 +23,6 @@ const ENTRY_FIELDS = [
 // react-native's `dist/module/` and `dist/commonjs/` and paraglide-js's `dist/src/`.
 const OUTPUT_FORMAT_DIRECTORIES = new Set(['commonjs', 'module', 'src']);
 
-const CODE_OUTPUT_EXTENSION = /(?:\.min)?\.(?:[cm]?js|jsx)$|\.d\.[cm]?ts$/;
-
 function collectPaths(value, paths = []) {
   if (typeof value === 'string') {
     paths.push(value);
@@ -91,10 +89,10 @@ export function collectBinShimEntryPaths(packageJson, readPackageFile) {
   return entryPaths;
 }
 
+// Strips only JavaScript, TypeScript, and declaration extensions, so an asset such
+// as `data.json` keeps its full name and can only match a source file of that name.
 export function stripExtension(fileName) {
-  const declaration = fileName.match(/^(.*)\.d\.[cm]?ts$/);
-  if (declaration) return declaration[1];
-  return fileName.replace(/\.(min\.)?[^./]+$/, '');
+  return fileName.replace(/(?:\.d\.[cm]?ts|(?:\.min)?\.[cm]?[jt]sx?)$/, '');
 }
 
 // Lists the source stems an entry may be built from, most specific first, so
@@ -103,9 +101,7 @@ export function entrySourceStems(entryPath) {
   const segments = entryPath.replace(/^\.\//, '').split('/');
   const root = segments.shift();
   if (segments.length === 0) return [];
-  const fileName = segments.pop();
-  if (root === 'dist' && !CODE_OUTPUT_EXTENSION.test(fileName)) return [];
-  segments.push(stripExtension(fileName));
+  segments.push(stripExtension(segments.pop()));
   if (root === 'src') return [segments.join('/')];
   if (root !== 'dist') return [];
   const stems = [segments.join('/')];
