@@ -550,7 +550,9 @@ function resolveObjectNodesInFile(
     const code = fs.readFileSync(filePath, 'utf8');
     const ast = parse(code, {
       sourceType: 'module',
-      plugins: ['jsx', 'typescript'],
+      // 'decorators-legacy' so cross-file objects in files with decorated
+      // classes still parse during extraction.
+      plugins: ['jsx', 'typescript', 'decorators-legacy'],
     });
 
     const results: ResolvedObject[] = [];
@@ -1319,7 +1321,9 @@ function resolveFunctionInFile(
     const code = fs.readFileSync(filePath, 'utf8');
     const ast = parse(code, {
       sourceType: 'module',
-      plugins: ['jsx', 'typescript'],
+      // 'decorators-legacy' so cross-file helpers in files with decorated
+      // classes still parse during extraction.
+      plugins: ['jsx', 'typescript', 'decorators-legacy'],
     });
 
     traverse(ast, {
