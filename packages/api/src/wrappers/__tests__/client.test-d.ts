@@ -1,6 +1,6 @@
 import { describe, expectTypeOf, it } from 'vitest';
 
-import type { ApiClientConfig } from '../wrappers/client';
+import type { ApiClientConfig } from '../client';
 
 describe('ApiClientConfig', () => {
   it('has no apiVersion or projectId', () => {

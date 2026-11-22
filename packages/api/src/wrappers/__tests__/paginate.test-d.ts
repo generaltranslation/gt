@@ -1,12 +1,12 @@
 import { describe, expectTypeOf, it } from 'vitest';
 
-import type { Client } from '../generated/client';
-import { getProject, listOrgs, listProjects } from '../generated/sdk.gen';
+import type { Client } from '../../generated/client';
+import { getProject, listOrgs, listProjects } from '../../generated/sdk.gen';
 import type {
   ListOrgsResponse,
   ListProjectsResponse,
-} from '../generated/types.gen';
-import { paginate } from '../wrappers/paginate';
+} from '../../generated/types.gen';
+import { paginate } from '../paginate';
 
 declare const client: Client;
 
