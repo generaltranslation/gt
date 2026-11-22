@@ -11,6 +11,7 @@ const preJson = (mode, tag = 'samsara') => JSON.stringify({ mode, tag });
 
 function fakeRepo(preJsonByRef, headToBase) {
   return {
+    defaultBranch: 'main',
     readPreJson: vi.fn(async (branch) => preJsonByRef[branch] ?? null),
     findParentBase: vi.fn(async (branch) => headToBase[branch] ?? null),
   };
@@ -51,12 +52,12 @@ describe('findPrereleaseBranch', () => {
       parentLookups: 2,
     },
     {
-      name: 'finds no prerelease branch on main',
+      name: 'stops at the default branch without following a main -> samsara sync pull request',
       baseRef: 'main',
-      preJsonByRef: {},
-      headToBase: {},
+      preJsonByRef: { samsara: preJson('pre') },
+      headToBase: { main: 'samsara' },
       expected: { chain: ['main'], label: null, stoppedEarly: false },
-      parentLookups: 1,
+      parentLookups: 0,
     },
     {
       name: 'stops on a cycle',
@@ -239,10 +240,13 @@ describe('run', () => {
       ),
     },
     {
-      name: 'passes a main pull request with no label',
+      name: 'passes a main pull request with no label while promotion and sync pull requests are open',
       base: 'main',
       labels: [],
-      openPulls: [promotionPull],
+      openPulls: [
+        promotionPull,
+        { head: { ref: 'main' }, base: { ref: 'samsara' } },
+      ],
       preJsonByRef: { samsara: preJson('pre') },
       code: 0,
       error: null,
@@ -257,7 +261,11 @@ describe('run', () => {
           repository: 'org/repo',
           pullNumber: 3,
           fetchImpl: githubFetch({
-            pull: { number: 3, base: { ref: base }, labels },
+            pull: {
+              number: 3,
+              base: { ref: base, repo: { default_branch: 'main' } },
+              labels,
+            },
             openPulls,
             preJsonByRef,
           }),

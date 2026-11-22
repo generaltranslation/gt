@@ -171,7 +171,7 @@ Label everything that belongs to a prerelease branch with that label:
 
 If you can't add labels, name the prerelease branch in the issue or pull request description and ask a maintainer to add the label.
 
-CI enforces the label on pull requests. The **Prerelease label** check starts at the pull request's base and stops at the first branch whose `pre.json` is in pre mode, then requires that file's `tag`. Until then, while the branch is the head of an open pull request in this repository, it moves to that pull request's base (up to 10 hops). Adding the label re-runs the check. Issues are not checked, so add the label when you open one.
+CI enforces the label on pull requests. The **Prerelease label** check starts at the pull request's base and stops at the first branch whose `pre.json` is in pre mode and requires that file's `tag`. It also stops at the default branch, where no label is required. Until then, while the branch is the head of an open pull request in this repository, it moves to that pull request's base (up to 10 hops). Adding the label re-runs the check. Issues are not checked, so add the label when you open one.
 
 ## Styleguides
 

@@ -9,14 +9,15 @@ const PRE_JSON_PATH = '.changeset/pre.json';
 
 export async function findPrereleaseBranch(
   baseRef,
-  { readPreJson, findParentBase },
+  { defaultBranch, readPreJson, findParentBase },
   maxHops = MAX_BASE_HOPS
 ) {
   const chain = [baseRef];
   for (;;) {
     const branch = chain[chain.length - 1];
     const label = preModeLabel(await readPreJson(branch), branch);
-    if (label !== null) return { chain, label, stoppedEarly: false };
+    if (label !== null || branch === defaultBranch)
+      return { chain, label, stoppedEarly: false };
     if (chain.length > maxHops) return { chain, label, stoppedEarly: true };
     const parentBase = await findParentBase(branch);
     if (parentBase === null) return { chain, label, stoppedEarly: false };
@@ -112,7 +113,11 @@ export async function run({
   };
   const { chain, label, stoppedEarly } = await findPrereleaseBranch(
     pull.base.ref,
-    { readPreJson, findParentBase }
+    {
+      defaultBranch: pull.base.repo.default_branch,
+      readPreJson,
+      findParentBase,
+    }
   );
   if (stoppedEarly) {
     log(
