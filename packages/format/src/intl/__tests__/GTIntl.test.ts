@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
-import { intlCache } from '../cache/IntlCache';
-import { GTIntl } from '../intl/GTIntl';
-import { determineLocale } from '../core';
-import type { CustomMapping } from '../locales/customLocaleMapping';
-import type { LocaleConfig } from '../intl/localeConfig';
+import { intlCache } from '../../cache/IntlCache';
+import { GTIntl } from '../GTIntl';
+import { determineLocale } from '../../core';
+import type { CustomMapping } from '../../locales/customLocaleMapping';
+import type { LocaleConfig } from '../localeConfig';
 
 // GTIntl takes every setting; these tests name the two required ones once.
 const createIntl = (
