@@ -5,7 +5,7 @@ import {
   ADAPTER_TARGETS,
   analyzeProject,
   elementLabel,
-} from '../helpers/project.js';
+} from '../../__tests__/helpers/project.js';
 
 /** e.g. `void_child 5 <Link>` */
 async function usages(file: string, code: string): Promise<string[]> {

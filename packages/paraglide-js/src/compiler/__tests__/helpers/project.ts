@@ -1,32 +1,32 @@
 import path from 'node:path/posix';
 import { parseSync } from 'oxc-parser';
-import { analyzeModule } from '../../src/compiler/analysis/analyze.js';
+import { analyzeModule } from '../../analysis/analyze.js';
 import {
   ModuleGraph,
   type GlobalBinding,
   type ParsedModule,
-} from '../../src/compiler/analysis/module-graph.js';
-import type { ParaglideUsage } from '../../src/compiler/analysis/types.js';
-import { defaultLanguages } from '../../src/compiler/languages/index.js';
+} from '../../analysis/module-graph.js';
+import type { ParaglideUsage } from '../../analysis/types.js';
+import { defaultLanguages } from '../../languages/index.js';
 import {
   isSourceFile,
   parseSource,
   type LanguageContext,
   type ParseFunction,
   type SourceLanguage,
-} from '../../src/compiler/languages/language.js';
+} from '../../languages/language.js';
 import {
   defaultTargets,
   packageTarget,
   type ParaglideTarget,
-} from '../../src/compiler/paraglide/targets.js';
-import { projectPackages } from '../../src/compiler/project/packages.js';
-import { isDependency } from '../../src/compiler/utils/paths.js';
+} from '../../paraglide/targets.js';
+import { projectPackages } from '../../project/packages.js';
+import { isDependency } from '../../utils/paths.js';
 
 export const ROOT = '/app';
 /** The language tools installed in this repo (its devDependencies), as an app would have them. */
 export const REPO_PACKAGES: LanguageContext = projectPackages(
-  path.resolve(import.meta.dirname, '../..')
+  path.resolve(import.meta.dirname, '../../../..')
 );
 export const OUTDIR = '/app/src/paraglide';
 export const ENTRY = '/app/src/App.tsx';

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { parseAutoImportDeclarations } from '../../src/compiler/project/auto-imports.js';
+import { parseAutoImportDeclarations } from '../auto-imports.js';
 
 test('declarations of unimport, unplugin-auto-import and Nuxt', () => {
   const code = [

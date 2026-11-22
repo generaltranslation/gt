@@ -4,7 +4,7 @@ import {
   analyzeEntry,
   analyzeProject,
   summarize,
-} from '../helpers/project.js';
+} from '../../__tests__/helpers/project.js';
 
 const imports = `import { m } from "./paraglide/messages.js";\n`;
 const call = 'message:greeting:call';

@@ -1,8 +1,11 @@
 // Props passed to Svelte, Vue and Astro components, imported or auto-imported,
 // are followed into the component.
 import { describe, expect, test } from 'vitest';
-import type { GlobalBinding } from '../../src/compiler/analysis/module-graph.js';
-import { analyzeProject, describeUsages } from '../helpers/project.js';
+import type { GlobalBinding } from '../../analysis/module-graph.js';
+import {
+  analyzeProject,
+  describeUsages,
+} from '../../__tests__/helpers/project.js';
 
 const imports = `import { m } from "./paraglide/messages.js";`;
 

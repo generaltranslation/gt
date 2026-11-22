@@ -3,15 +3,15 @@
 // is reported, and the rest of the project is still analyzed.
 import path from 'node:path';
 import { describe, expect, test, vi } from 'vitest';
-import type { BundlerConfig } from '../../src/compiler/bundler-configs/bundler-config.js';
-import { main } from '../../src/compiler/cli/index.js';
+import type { BundlerConfig } from '../../bundler-configs/bundler-config.js';
+import { main } from '../../cli/index.js';
 import {
   collect,
   greetingIn,
   readSnippets,
   useGreeting,
   writeProject,
-} from '../helpers/fixture.js';
+} from '../../__tests__/helpers/fixture.js';
 
 /** A re-export whose path does not name Paraglide. */
 const I18N = {

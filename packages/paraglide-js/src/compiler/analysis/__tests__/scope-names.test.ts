@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { analyzeProject } from '../helpers/project.js';
+import { analyzeProject } from '../../__tests__/helpers/project.js';
 
 const IMPORT = `import { m } from "./paraglide/messages.js";\n`;
 

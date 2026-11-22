@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import type { ParaglideUsage } from '../../src/compiler/analysis/types.js';
-import { ENTRY, analyzeProject } from '../helpers/project.js';
+import type { ParaglideUsage } from '../types.js';
+import { ENTRY, analyzeProject } from '../../__tests__/helpers/project.js';
 
 const imports = [
   `import { m } from "./paraglide/messages.js";`,

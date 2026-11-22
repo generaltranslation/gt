@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'vitest';
-import { ENTRY, analyzeProject, summarize } from '../helpers/project.js';
+import {
+  ENTRY,
+  analyzeProject,
+  summarize,
+} from '../../__tests__/helpers/project.js';
 
 const call = 'message:greeting:call';
 const cjs = '/app/src/i18n.cjs';

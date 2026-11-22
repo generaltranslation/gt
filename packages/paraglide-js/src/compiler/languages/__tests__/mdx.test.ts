@@ -1,18 +1,14 @@
 import { parseSync } from 'oxc-parser';
 import { describe, expect, test } from 'vitest';
-import { defaultLanguages } from '../../src/compiler/languages/index.js';
-import {
-  NO_PACKAGES,
-  parseSource,
-  type ParseFunction,
-} from '../../src/compiler/languages/language.js';
-import { mdxLanguage } from '../../src/compiler/languages/mdx.js';
+import { defaultLanguages } from '../index.js';
+import { NO_PACKAGES, parseSource, type ParseFunction } from '../language.js';
+import { mdxLanguage } from '../mdx.js';
 import {
   ADAPTER_FILES,
   ADAPTER_TARGETS,
   analyzeProject,
   describeUsages,
-} from '../helpers/project.js';
+} from '../../__tests__/helpers/project.js';
 
 const file = '/app/src/pages/guide.mdx';
 

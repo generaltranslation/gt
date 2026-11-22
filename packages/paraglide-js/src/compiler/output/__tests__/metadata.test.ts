@@ -1,14 +1,8 @@
 import { describe, expect, test } from 'vitest';
-import { renderMetadataFile } from '../../src/compiler/output/metadata.js';
-import {
-  sourceCodeByMessage,
-  sourceSnippet,
-} from '../../src/compiler/output/source-code.js';
-import type {
-  FileUsages,
-  ParaglideUsage,
-} from '../../src/compiler/analysis/types.js';
-import { analyzeProject } from '../helpers/project.js';
+import { renderMetadataFile } from '../metadata.js';
+import { sourceCodeByMessage, sourceSnippet } from '../source-code.js';
+import type { FileUsages, ParaglideUsage } from '../../analysis/types.js';
+import { analyzeProject } from '../../__tests__/helpers/project.js';
 
 const PROJECT = 'project.inlang';
 const CODE = ['one', 'two', 'three', 'four'].join('\n');

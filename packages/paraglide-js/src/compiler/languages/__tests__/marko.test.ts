@@ -1,17 +1,14 @@
 import { expect, test } from 'vitest';
 import { parseSync } from 'oxc-parser';
-import {
-  NO_PACKAGES,
-  parseSource,
-} from '../../src/compiler/languages/language.js';
-import { markoLanguage } from '../../src/compiler/languages/marko.js';
+import { NO_PACKAGES, parseSource } from '../language.js';
+import { markoLanguage } from '../marko.js';
 import {
   ADAPTER_FILES,
   ADAPTER_TARGETS,
   analyzeProject,
   elementLabel,
   summarize,
-} from '../helpers/project.js';
+} from '../../__tests__/helpers/project.js';
 
 const file = '/app/src/components/cart.marko';
 

@@ -1,17 +1,14 @@
 import { expect, test } from 'vitest';
 import { parseSync } from 'oxc-parser';
-import { emberLanguage } from '../../src/compiler/languages/ember.js';
-import {
-  NO_PACKAGES,
-  parseSource,
-} from '../../src/compiler/languages/language.js';
+import { emberLanguage } from '../ember.js';
+import { NO_PACKAGES, parseSource } from '../language.js';
 import {
   ADAPTER_FILES,
   ADAPTER_TARGETS,
   analyzeProject,
   elementLabel,
   summarize,
-} from '../helpers/project.js';
+} from '../../__tests__/helpers/project.js';
 
 async function analyze(file: string, lines: string[]) {
   const usages = await analyzeProject(

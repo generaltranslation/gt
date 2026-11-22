@@ -3,18 +3,15 @@ import {
   analogLanguage,
   angularComponentLanguage,
   angularTemplateLanguage,
-} from '../../src/compiler/languages/angular.js';
+} from '../angular.js';
 import { parseSync } from 'oxc-parser';
-import { defaultLanguages } from '../../src/compiler/languages/index.js';
-import {
-  NO_PACKAGES,
-  parseSource,
-} from '../../src/compiler/languages/language.js';
+import { defaultLanguages } from '../index.js';
+import { NO_PACKAGES, parseSource } from '../language.js';
 import {
   analyzeProject,
   describeUsages,
   REPO_PACKAGES,
-} from '../helpers/project.js';
+} from '../../__tests__/helpers/project.js';
 
 const languages = [
   ...defaultLanguages,

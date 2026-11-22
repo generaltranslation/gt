@@ -1,10 +1,10 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { afterAll, expect, test } from 'vitest';
-import { findInlangProjects } from '../../src/compiler/inlang/find.js';
-import { matchInlangProject } from '../../src/compiler/inlang/match.js';
-import { readInlangProject } from '../../src/compiler/inlang/project.js';
-import { writeFiles } from '../helpers/files.js';
+import { findInlangProjects } from '../find.js';
+import { matchInlangProject } from '../match.js';
+import { readInlangProject } from '../project.js';
+import { writeFiles } from '../../__tests__/helpers/files.js';
 
 const TMP = path.join(import.meta.dirname, '.tmp');
 afterAll(() => fs.rm(TMP, { recursive: true, force: true }));

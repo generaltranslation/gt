@@ -5,8 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterAll, describe, expect, test } from 'vitest';
 import { compileCatalog } from '@inlang/paraglide-js';
-import { OutdirDetector } from '../../src/compiler/paraglide/outdir.js';
-import { writeFiles } from '../helpers/files.js';
+import { OutdirDetector } from '../outdir.js';
+import { writeFiles } from '../../__tests__/helpers/files.js';
 
 // Inside the package, so `@inlang/paraglide-js` resolves from the outdirs.
 const TMP = path.join(import.meta.dirname, '.tmp', 'outdir');
@@ -172,7 +172,7 @@ describe('other installs of @inlang/paraglide-js', () => {
   ): Promise<{ root: string; module: Paraglide2; sdk: InlangSdk }> {
     const root = fresh();
     const installed = await fs.realpath(
-      path.join(import.meta.dirname, '../../node_modules', alias)
+      path.join(import.meta.dirname, '../../../../node_modules', alias)
     );
     await fs.mkdir(path.join(root, 'node_modules/@inlang'), {
       recursive: true,

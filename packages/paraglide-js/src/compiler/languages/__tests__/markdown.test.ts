@@ -1,18 +1,14 @@
 import { describe, expect, test } from 'vitest';
-import { defaultLanguages } from '../../src/compiler/languages/index.js';
-import {
-  NO_PACKAGES,
-  parseSource,
-  type ParseFunction,
-} from '../../src/compiler/languages/language.js';
+import { defaultLanguages } from '../index.js';
+import { NO_PACKAGES, parseSource, type ParseFunction } from '../language.js';
 import { parseSync } from 'oxc-parser';
-import { markdownLanguage } from '../../src/compiler/languages/markdown.js';
+import { markdownLanguage } from '../markdown.js';
 import {
   ADAPTER_FILES,
   ADAPTER_TARGETS,
   analyzeProject,
   describeUsages,
-} from '../helpers/project.js';
+} from '../../__tests__/helpers/project.js';
 
 const file = '/app/src/docs/guide.md';
 const parse: ParseFunction = (file, code, lang) =>

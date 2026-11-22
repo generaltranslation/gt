@@ -5,10 +5,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterAll, afterEach, describe, expect, test, vi } from 'vitest';
 import { build } from 'vite';
-import { main } from '../src/compiler/cli/index.js';
-import { createCollector } from '../src/compiler/collector/create.js';
-import { runCommand } from '../src/compiler/project/package-manager.js';
-import { nodeResolver } from '../src/compiler/resolver/node-resolver.js';
+import { main } from '../cli/index.js';
+import { createCollector } from '../collector/create.js';
+import { runCommand } from '../project/package-manager.js';
+import { nodeResolver } from '../resolver/node-resolver.js';
 import {
   collect,
   compileMessages,
@@ -23,7 +23,7 @@ import {
 } from './helpers/fixture.js';
 import { writeFiles } from './helpers/files.js';
 
-vi.mock('../src/compiler/project/package-manager.js', async (original) => ({
+vi.mock('../project/package-manager.js', async (original) => ({
   ...(await original<object>()),
   runCommand: vi.fn(async () => 0),
 }));
@@ -54,7 +54,7 @@ async function writeOutsideProject(
   for (const name of packages) {
     const installed = path.resolve(
       import.meta.dirname,
-      '../node_modules',
+      '../../../node_modules',
       name
     );
     const link = path.join(root, 'node_modules', name);

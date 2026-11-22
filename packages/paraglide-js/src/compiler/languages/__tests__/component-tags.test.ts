@@ -1,15 +1,15 @@
 // A component that is a target: each of its tags is one usage, from the tag's
 // name to the end of its opening tag.
 import { describe, expect, test } from 'vitest';
-import { astroLanguage } from '../../src/compiler/languages/astro.js';
-import { svelteLanguage } from '../../src/compiler/languages/svelte.js';
-import { vueLanguage } from '../../src/compiler/languages/vue.js';
-import type { SourceLanguage } from '../../src/compiler/languages/language.js';
+import { astroLanguage } from '../astro.js';
+import { svelteLanguage } from '../svelte.js';
+import { vueLanguage } from '../vue.js';
+import type { SourceLanguage } from '../language.js';
+import { defaultTargets, defineTarget } from '../../paraglide/targets.js';
 import {
-  defaultTargets,
-  defineTarget,
-} from '../../src/compiler/paraglide/targets.js';
-import { analyzeProject, REPO_PACKAGES } from '../helpers/project.js';
+  analyzeProject,
+  REPO_PACKAGES,
+} from '../../__tests__/helpers/project.js';
 
 const card = defineTarget({
   name: 'ui',

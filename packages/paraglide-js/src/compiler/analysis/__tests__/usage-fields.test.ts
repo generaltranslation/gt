@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { ENTRY, analyzeProject } from '../helpers/project.js';
+import { ENTRY, analyzeProject } from '../../__tests__/helpers/project.js';
 
 describe('usage context', () => {
   test('position, scope, JSX context and resolution', async () => {

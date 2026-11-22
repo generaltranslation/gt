@@ -1,10 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { compileCatalog } from '@inlang/paraglide-js';
-import {
-  collectContext,
-  type CollectContextOptions,
-} from '../../src/compiler/context.js';
+import { collectContext, type CollectContextOptions } from '../../context.js';
 import { writeFiles } from './files.js';
 
 /** A message with one English text, as Paraglide's compiler takes it. */
@@ -71,7 +68,7 @@ export const inlangProject: Record<string, string> = {
 };
 
 /**
- * Writes a project under `__tests__/helpers/.tmp/<name>` (inside the package, so
+ * Writes a project under `src/compiler/__tests__/helpers/.tmp/<name>` (inside the package, so
  * `@inlang/paraglide-js` resolves from the outdir) with a compiled outdir at
  * `src/paraglide` and its inlang project. Returns its root.
  */

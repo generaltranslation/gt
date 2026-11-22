@@ -3,11 +3,8 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { afterAll, describe, expect, test } from 'vitest';
 import { compileCatalog } from '@inlang/paraglide-js';
-import {
-  matchesPattern,
-  readCatalog,
-} from '../../src/compiler/paraglide/catalog.js';
-import { writeFiles } from '../helpers/files.js';
+import { matchesPattern, readCatalog } from '../catalog.js';
+import { writeFiles } from '../../__tests__/helpers/files.js';
 
 const TMP = path.join(import.meta.dirname, '.tmp', 'catalog');
 
@@ -73,7 +70,7 @@ describe('Paraglide 3', () => {
     const directory = path.join(TMP, `outdir-${count++}`);
     const plugins = path.join(
       import.meta.dirname,
-      '../../node_modules/@inlang/paraglide-js/dist/bundler-plugins/virtual-messages.js'
+      '../../../../node_modules/@inlang/paraglide-js/dist/bundler-plugins/virtual-messages.js'
     );
     const { virtualMessageOutput } = await import(plugins);
     const { disk } = virtualMessageOutput(output, directory, undefined);
@@ -86,7 +83,7 @@ describe('Paraglide 3', () => {
 
 test('Paraglide 2', async () => {
   const installed = await fs.realpath(
-    path.join(import.meta.dirname, '../../node_modules/paraglide-js-2')
+    path.join(import.meta.dirname, '../../../../node_modules/paraglide-js-2')
   );
   const paraglide = await import('paraglide-js-2');
   const sdk = await import(

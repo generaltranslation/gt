@@ -1,6 +1,6 @@
 import { parseSync } from 'oxc-parser';
 import { expect, test } from 'vitest';
-import { ModuleGraph } from '../../src/compiler/analysis/module-graph.js';
+import { ModuleGraph } from '../module-graph.js';
 
 test('loading many entries walks a module they share once', async () => {
   // a0 → a1 → … → a59: every module reaches all the ones after it.

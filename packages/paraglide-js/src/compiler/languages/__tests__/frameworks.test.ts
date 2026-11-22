@@ -1,22 +1,22 @@
 import { parseSync } from 'oxc-parser';
 import { describe, expect, test } from 'vitest';
-import { astroLanguage } from '../../src/compiler/languages/astro.js';
+import { astroLanguage } from '../astro.js';
 import {
   NO_PACKAGES,
   parseSource,
   type LanguageContext,
   type ParseFunction,
-} from '../../src/compiler/languages/language.js';
-import { sourceSnippet } from '../../src/compiler/output/source-code.js';
-import { svelteLanguage } from '../../src/compiler/languages/svelte.js';
-import { vueLanguage } from '../../src/compiler/languages/vue.js';
+} from '../language.js';
+import { sourceSnippet } from '../../output/source-code.js';
+import { svelteLanguage } from '../svelte.js';
+import { vueLanguage } from '../vue.js';
 import {
   ADAPTER_FILES,
   ADAPTER_TARGETS,
   analyzeProject,
   describeUsages,
   REPO_PACKAGES,
-} from '../helpers/project.js';
+} from '../../__tests__/helpers/project.js';
 
 async function analyze(file: string, code: string) {
   return analyzeProject(

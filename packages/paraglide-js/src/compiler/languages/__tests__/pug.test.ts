@@ -5,7 +5,7 @@ import {
   analyzeProject,
   elementLabel,
   summarize,
-} from '../helpers/project.js';
+} from '../../__tests__/helpers/project.js';
 
 const file = '/app/src/components/Cart.vue';
 

@@ -5,14 +5,14 @@ import {
   messagesTarget,
   packageTarget,
   runtimeTarget,
-} from '../../src/compiler/paraglide/targets.js';
+} from '../../paraglide/targets.js';
 import {
   ENTRY,
   OUTDIR,
   analyzeEntry,
   analyzeProject,
   summarize,
-} from '../helpers/project.js';
+} from '../../__tests__/helpers/project.js';
 
 const call = 'message:greeting:call';
 

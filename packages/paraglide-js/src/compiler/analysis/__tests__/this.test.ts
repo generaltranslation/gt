@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { analyzeEntry } from '../helpers/project.js';
+import { analyzeEntry } from '../../__tests__/helpers/project.js';
 
 test('`this` in a class: fields, private fields and getters', async () => {
   expect(

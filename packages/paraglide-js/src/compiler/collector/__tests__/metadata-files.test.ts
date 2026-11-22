@@ -1,11 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { afterEach, expect, test, vi } from 'vitest';
-import { createCollector } from '../../src/compiler/collector/create.js';
-import { OutdirProjects } from '../../src/compiler/collector/outdir-projects.js';
-import { MetadataFiles } from '../../src/compiler/collector/metadata-files.js';
-import type { CollectContextOptions } from '../../src/compiler/context.js';
-import { nodeResolver } from '../../src/compiler/resolver/node-resolver.js';
+import { createCollector } from '../create.js';
+import { OutdirProjects } from '../outdir-projects.js';
+import { MetadataFiles } from '../metadata-files.js';
+import type { CollectContextOptions } from '../../context.js';
+import { nodeResolver } from '../../resolver/node-resolver.js';
 import {
   collect as collectProject,
   compileMessages,
@@ -13,7 +13,7 @@ import {
   readMetadata,
   readSnippets,
   writeProject,
-} from '../helpers/fixture.js';
+} from '../../__tests__/helpers/fixture.js';
 
 const settings = (pathPattern: string | string[], baseLocale = 'en') =>
   JSON.stringify({

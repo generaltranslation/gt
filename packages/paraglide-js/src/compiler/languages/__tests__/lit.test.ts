@@ -1,5 +1,8 @@
 import { expect, test } from 'vitest';
-import { analyzeProject, describeUsages } from '../helpers/project.js';
+import {
+  analyzeProject,
+  describeUsages,
+} from '../../__tests__/helpers/project.js';
 
 const file = '/app/src/element.ts';
 

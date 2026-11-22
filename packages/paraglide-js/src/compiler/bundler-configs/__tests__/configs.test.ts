@@ -1,21 +1,15 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { afterAll, describe, expect, test } from 'vitest';
-import {
-  applyAliases,
-  type ImportAlias,
-} from '../../src/compiler/bundler-configs/alias.js';
-import type { BundlerConfig } from '../../src/compiler/bundler-configs/bundler-config.js';
-import { defaultBundlerConfigs } from '../../src/compiler/bundler-configs/index.js';
-import { probeBundlerConfig } from '../../src/compiler/bundler-configs/probe.js';
-import { viteConfig } from '../../src/compiler/bundler-configs/vite.js';
-import {
-  rspackConfig,
-  webpackConfig,
-} from '../../src/compiler/bundler-configs/webpack.js';
-import { projectPackages } from '../../src/compiler/project/packages.js';
-import { NO_PACKAGES } from '../../src/compiler/languages/language.js';
-import { writeFiles } from '../helpers/files.js';
+import { applyAliases, type ImportAlias } from '../alias.js';
+import type { BundlerConfig } from '../bundler-config.js';
+import { defaultBundlerConfigs } from '../index.js';
+import { probeBundlerConfig } from '../probe.js';
+import { viteConfig } from '../vite.js';
+import { rspackConfig, webpackConfig } from '../webpack.js';
+import { projectPackages } from '../../project/packages.js';
+import { NO_PACKAGES } from '../../languages/language.js';
+import { writeFiles } from '../../__tests__/helpers/files.js';
 
 // Inside the package, so that its `vite` is the project's.
 const TMP = path.join(import.meta.dirname, '.tmp');
