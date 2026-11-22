@@ -8,7 +8,10 @@ import type {
   VueCompilerOptions,
   VueExtractionResult,
 } from '../../types/types.js';
-import { createTestProject, linkInstalledVue } from './projectTestUtils.js';
+import {
+  createTestProject,
+  linkInstalledVue,
+} from '../../__tests__/projectTestUtils.js';
 import { extractFromVueSource } from './testVueCompiler.js';
 
 describe('extractFromVueSource', () => {
