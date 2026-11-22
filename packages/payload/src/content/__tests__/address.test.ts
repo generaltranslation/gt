@@ -1,6 +1,6 @@
 // Plain text values that point somewhere stay untranslated.
 import { describe, expect, it } from 'vitest';
-import { isAddress } from '../content/address';
+import { isAddress } from '../address';
 
 describe('isAddress', () => {
   it('treats paths, emails and URLs as addresses', () => {
