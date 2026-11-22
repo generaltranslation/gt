@@ -22,7 +22,11 @@
   import { onMount, untrack } from 'svelte';
   import { resolveLocale } from '../runtime/config';
   import { requiresTranslation } from '../runtime/lookup';
-  import { GTState, setGTState } from '../runtime/state.svelte';
+  import {
+    getParentGTState,
+    GTState,
+    setGTState,
+  } from '../runtime/state.svelte';
   import {
     warnLocaleLoadFailed,
     warnMissingProviderTranslations,
@@ -45,17 +49,18 @@
   // it, a locale that needs translating starts in the default locale (not
   // whatever the shared cache holds) and loads after mount in the browser.
   const requestedLocale = untrack(() => resolveLocale(locale));
+  const parent = getParentGTState();
   const state = untrack(() => {
     if (translations) {
-      const initialState = new GTState(requestedLocale);
+      const initialState = new GTState(requestedLocale, false, parent);
       initialState.hydrate(requestedLocale, translations);
       return initialState;
     }
     if (!requiresTranslation(requestedLocale)) {
-      return new GTState(requestedLocale);
+      return new GTState(requestedLocale, false, parent);
     }
     warnMissingProviderTranslations(requestedLocale);
-    return new GTState(getI18nConfig().getDefaultLocale());
+    return new GTState(getI18nConfig().getDefaultLocale(), false, parent);
   });
   setGTState(state);
 
