@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import ts from 'typescript';
 
 const ENTRY_FIELDS = [
   'main',
@@ -17,6 +18,12 @@ const ENTRY_FIELDS = [
   'exports',
   'typesVersions',
 ];
+
+// Build output directories that hold a whole copy of the source tree, such as
+// react-native's `dist/module/` and `dist/commonjs/` and paraglide-js's `dist/src/`.
+const OUTPUT_FORMAT_DIRECTORIES = new Set(['commonjs', 'module', 'src']);
+
+const CODE_OUTPUT_EXTENSION = /(?:\.min)?\.(?:[cm]?js|jsx)$|\.d\.[cm]?ts$/;
 
 function collectPaths(value, paths = []) {
   if (typeof value === 'string') {
@@ -33,6 +40,38 @@ export function collectEntryPaths(packageJson) {
   return ENTRY_FIELDS.flatMap((field) => collectPaths(packageJson[field]));
 }
 
+function collectModuleSpecifiers(fileName, sourceText) {
+  const sourceFile = ts.createSourceFile(
+    fileName,
+    sourceText,
+    ts.ScriptTarget.Latest,
+    false,
+    ts.ScriptKind.JS
+  );
+  const specifiers = [];
+  const visit = (node) => {
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      specifiers.push(node.moduleSpecifier.text);
+    } else if (
+      ts.isCallExpression(node) &&
+      (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
+        (ts.isIdentifier(node.expression) &&
+          node.expression.text === 'require')) &&
+      node.arguments.length > 0 &&
+      ts.isStringLiteralLike(node.arguments[0])
+    ) {
+      specifiers.push(node.arguments[0].text);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return specifiers;
+}
+
 // A `bin` that points at a checked-in shim (such as `bin/main.js`) exposes the
 // built files the shim imports, so those count as entries too.
 export function collectBinShimEntryPaths(packageJson, readPackageFile) {
@@ -42,9 +81,8 @@ export function collectBinShimEntryPaths(packageJson, readPackageFile) {
     if (/^(dist|src)\//.test(normalized)) continue;
     const contents = readPackageFile(normalized);
     if (contents === undefined) continue;
-    for (const [, specifier] of contents.matchAll(
-      /(?:from|import|require\()\s*['"](\.{1,2}\/[^'"]+)['"]/g
-    )) {
+    for (const specifier of collectModuleSpecifiers(normalized, contents)) {
+      if (!/^\.{1,2}\//.test(specifier)) continue;
       entryPaths.push(
         path.posix.join(path.posix.dirname(normalized), specifier)
       );
@@ -65,11 +103,17 @@ export function entrySourceStems(entryPath) {
   const segments = entryPath.replace(/^\.\//, '').split('/');
   const root = segments.shift();
   if (segments.length === 0) return [];
-  segments.push(stripExtension(segments.pop()));
+  const fileName = segments.pop();
+  if (root === 'dist' && !CODE_OUTPUT_EXTENSION.test(fileName)) return [];
+  segments.push(stripExtension(fileName));
   if (root === 'src') return [segments.join('/')];
   if (root !== 'dist') return [];
   const stems = [segments.join('/')];
-  if (segments.length > 1 && !entryPath.includes('*')) {
+  if (
+    segments.length > 1 &&
+    OUTPUT_FORMAT_DIRECTORIES.has(segments[0]) &&
+    !entryPath.includes('*')
+  ) {
     stems.push(segments.slice(1).join('/'));
   }
   return stems;
@@ -126,7 +170,9 @@ export function listRepositoryFiles(repositoryRoot = process.cwd()) {
     ],
     { cwd: repositoryRoot, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }
   );
-  return output.split('\0').filter(Boolean);
+  return output
+    .split('\0')
+    .filter((file) => file && existsSync(path.join(repositoryRoot, file)));
 }
 
 export function findViolations(repositoryRoot = process.cwd()) {

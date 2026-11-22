@@ -67,7 +67,16 @@ describe('entrySourceStems', () => {
     ['dist/cli.js', ['cli']],
     ['./src/index.tsx', ['index']],
     ['./dist/module/index.js', ['module/index', 'index']],
-    ['./dist/client/index.js', ['client/index', 'index']],
+    ['./dist/commonjs/index.js', ['commonjs/index', 'index']],
+    ['./dist/src/index.d.ts', ['src/index', 'index']],
+    ['./dist/client/index.js', ['client/index']],
+    [
+      './dist/internal/initializeGT.server.mjs',
+      ['internal/initializeGT.server'],
+    ],
+    ['./dist/index.min.js', ['index']],
+    ['./dist/openapi.json', []],
+    ['./dist/parser.wasm', []],
     ['./dist/*.js', ['*']],
     ['./dist/utils/*.js', ['utils/*']],
     ['./package.json', []],
@@ -123,6 +132,22 @@ describe('collectBinShimEntryPaths', () => {
         (file) => files[file]
       )
     ).toEqual(['dist/main.js', 'dist/other.cjs']);
+  });
+
+  test.each([
+    ["await import('../dist/main.js');\n", ['dist/main.js']],
+    ["export * from '../dist/main.js';\n", ['dist/main.js']],
+    [
+      "// import '../dist/old.js';\nimport '../dist/main.js';\n",
+      ['dist/main.js'],
+    ],
+    ["/* require('../dist/old.cjs'); */\n", []],
+    ["const name = 'import \\'../dist/old.js\\'';\n", []],
+    ["import 'some-package';\n", []],
+  ])('reads module references from the shim syntax: %j', (shim, entries) => {
+    expect(
+      collectBinShimEntryPaths({ bin: 'bin/main.js' }, () => shim)
+    ).toEqual(entries);
   });
 });
 
@@ -191,6 +216,29 @@ describe('findUnexportedSourceRootFiles', () => {
     ).toEqual(['helper.ts']);
   });
 
+  test.each([
+    [
+      'an asset output',
+      { './openapi.json': './dist/openapi.json' },
+      'openapi.ts',
+    ],
+    [
+      'a nested entry outside an output-format directory',
+      {
+        './internal/initializeGT.server':
+          './dist/internal/initializeGT.server.mjs',
+      },
+      'initializeGT.server.ts',
+    ],
+  ])('%s does not cover a root namesake', (_name, exports, rootFile) => {
+    expect(
+      findUnexportedSourceRootFiles({
+        packageJson: { main: 'dist/index.js', exports },
+        sourceFiles: ['index.ts', rootFile],
+      })
+    ).toEqual([rootFile]);
+  });
+
   test('declaration files must also back an entry', () => {
     expect(
       findUnexportedSourceRootFiles({
@@ -240,6 +288,21 @@ describe('run', () => {
     });
 
     expect(findViolations(repositoryRoot)).toEqual([]);
+  });
+
+  test('skips tracked files deleted from the working tree and keeps untracked ones', async () => {
+    const repositoryRoot = await createRepository({
+      'packages/a/package.json': { main: 'dist/index.js' },
+      'packages/a/src/index.ts': '',
+      'packages/a/src/moved.ts': '',
+    });
+    execFileSync('git', ['add', '-A'], { cwd: repositoryRoot });
+    await rm(path.join(repositoryRoot, 'packages/a/src/moved.ts'));
+    await writeFile(path.join(repositoryRoot, 'packages/a/src/helper.ts'), '');
+
+    expect(findViolations(repositoryRoot)).toEqual([
+      'packages/a/src/helper.ts',
+    ]);
   });
 
   test('ignores gitignored files', async () => {
