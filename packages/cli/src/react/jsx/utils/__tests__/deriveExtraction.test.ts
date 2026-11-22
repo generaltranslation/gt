@@ -1,11 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { parse } from '@babel/parser';
 import traverseModule from '@babel/traverse';
-import {
-  parseStringExpression,
-  nodeToStrings,
-} from '../../jsx/utils/parseString.js';
-import type { ParsingConfigOptions } from '../../../types/parsing.js';
+import { parseStringExpression, nodeToStrings } from '../parseString.js';
+import type { ParsingConfigOptions } from '../../../../types/parsing.js';
 
 const traverse = (traverseModule as unknown).default || traverseModule;
 

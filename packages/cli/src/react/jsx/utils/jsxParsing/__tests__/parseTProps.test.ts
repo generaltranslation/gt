@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import * as t from '@babel/types';
 import { parse } from '@babel/parser';
 import traverse from '@babel/traverse';
-import type { Metadata } from '../../../../types/index.js';
-import { parseTProps } from '../jsxParsing/parseTProps.js';
+import type { Metadata } from '../../../../../types/index.js';
+import { parseTProps } from '../parseTProps.js';
 
 describe('parseTProps requiresReview', () => {
   const FILE_PATH = 'test.tsx';

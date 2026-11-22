@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { parse } from '@babel/parser';
 import traverseModule, { NodePath } from '@babel/traverse';
 import * as t from '@babel/types';
-import { handleDerivation } from '../derivation/handleDerivation.js';
-import { nodeToStrings } from '../../parseString.js';
+import { handleDerivation } from '../handleDerivation.js';
+import { nodeToStrings } from '../../../parseString.js';
 
 const traverse = traverseModule.default || traverseModule;
 

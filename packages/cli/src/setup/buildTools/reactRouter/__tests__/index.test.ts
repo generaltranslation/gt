@@ -2,16 +2,16 @@ import fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { reactRouterSetup } from '../buildTools/reactRouter/index.js';
-import { configureRoot, getRootFix } from '../buildTools/reactRouter/root.js';
-import { DOCS_URL } from '../buildTools/reactRouter/source.js';
-import { parseModule, type ViteLoaderExport } from '../setupViteSPA.js';
+import { reactRouterSetup } from '../index.js';
+import { configureRoot, getRootFix } from '../root.js';
+import { DOCS_URL } from '../source.js';
+import { parseModule, type ViteLoaderExport } from '../../../setupViteSPA.js';
 import {
   CONFIGURED_CREATE_REACT_ROUTER_ROOT,
   CONFIGURED_HYDROGEN_ROOT,
   CREATE_REACT_ROUTER_ROOT as ROOT,
   HYDROGEN_ROOT,
-} from './reactRouterRoots.js';
+} from '../../../__tests__/reactRouterRoots.js';
 
 const CONFIG = 'react-router.config.ts';
 const UNREADABLE = 'setup cannot read the options react-router.config exports';

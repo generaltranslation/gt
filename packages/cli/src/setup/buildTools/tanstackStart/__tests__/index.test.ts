@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { tanstackStartSetup } from '../buildTools/tanstackStart/index.js';
-import { parseModule } from '../setupViteSPA.js';
+import { tanstackStartSetup } from '../index.js';
+import { parseModule } from '../../../setupViteSPA.js';
 
 // The create-start template, as generated.
 const templateRouter = `import { createRouter as createTanStackRouter } from '@tanstack/react-router'

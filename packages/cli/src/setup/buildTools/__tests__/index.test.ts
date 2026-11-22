@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { BUILD_TOOL_SETUPS, getSetupDocsUrl } from '../buildTools/index.js';
+import { BUILD_TOOL_SETUPS, getSetupDocsUrl } from '../index.js';
 
 const docs = 'https://generaltranslation.com/docs/react';
 
@@ -35,7 +35,9 @@ describe('setup docs URLs', () => {
   it('keeps the retired tutorials quickstart out of package sources', () => {
     // The old tutorials quickstart pages redirect to the React overview.
     const retired = ['tutorials', 'quickstart'].join('/');
-    const packagesDir = fileURLToPath(new URL('../../../../', import.meta.url));
+    const packagesDir = fileURLToPath(
+      new URL('../../../../../', import.meta.url)
+    );
     const offenders: string[] = [];
     const scan = (dir: string) => {
       for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

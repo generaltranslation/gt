@@ -3,9 +3,9 @@ import {
   resolveLocaleFiles,
   resolveFiles,
   expandGlobPatterns,
-} from '../config/parseFilesConfig';
-import { SUPPORTED_FILE_EXTENSIONS } from '../../formats/files/supportedFiles.js';
-import { ResolvedFiles } from '../../types/index.js';
+} from '../parseFilesConfig';
+import { SUPPORTED_FILE_EXTENSIONS } from '../../../formats/files/supportedFiles.js';
+import { ResolvedFiles } from '../../../types/index.js';
 
 // Mock fast-glob
 vi.mock('fast-glob', () => ({
@@ -15,10 +15,10 @@ vi.mock('fast-glob', () => ({
 }));
 
 // Mock logging module
-vi.mock('../../console/logger.js');
+vi.mock('../../../console/logger.js');
 
 // Surface logErrorAndExit as a throw so tests can assert on it
-vi.mock('../../console/logging.js', () => ({
+vi.mock('../../../console/logging.js', () => ({
   logErrorAndExit: vi.fn((message: string) => {
     throw new Error(message);
   }),
@@ -32,7 +32,7 @@ vi.mock('chalk', () => ({
 }));
 
 import fg from 'fast-glob';
-import { logger } from '../../console/logger.js';
+import { logger } from '../../../console/logger.js';
 
 describe('parseFilesConfig', () => {
   beforeEach(() => {
