@@ -124,32 +124,51 @@ function stemMatches(stem, sourceStem) {
   return new RegExp(`^${pattern}$`).test(sourceStem);
 }
 
+// Node resolves `exports` targets exactly, so a code source backs a target only
+// when the target names a built code file, is a wildcard, or is resolved with
+// extension probing (`main` and CommonJS `require` in bin shims); any other
+// target must name the source file itself, as a copied asset does.
+function entryCoversSource(entryPath, stem, file, probesExtensions) {
+  const targetName = entryPath.split('/').pop();
+  const sourceStem = stripExtension(file);
+  const isCodeSource = sourceStem !== file;
+  if (stripExtension(targetName) !== targetName) {
+    return isCodeSource && stemMatches(stem, sourceStem);
+  }
+  if (stem.includes('*')) return stemMatches(stem, sourceStem);
+  return (
+    file === stem || (probesExtensions && isCodeSource && sourceStem === stem)
+  );
+}
+
 export function findUnexportedSourceRootFiles({
   packageJson,
   sourceFiles,
   extraEntryPaths = [],
 }) {
-  const sourceStems = sourceFiles.map((file) => ({
-    file,
-    stem: stripExtension(file),
-  }));
-  const exportedStems = [];
-  for (const entryPath of [
-    ...collectEntryPaths(packageJson),
-    ...extraEntryPaths,
-  ]) {
-    const resolved = entrySourceStems(entryPath).find((stem) =>
-      sourceStems.some((source) => stemMatches(stem, source.stem))
+  const entries = [
+    ...collectEntryPaths(packageJson).map((entryPath) => ({
+      entryPath,
+      probesExtensions: false,
+    })),
+    ...[...collectPaths(packageJson.main), ...extraEntryPaths].map(
+      (entryPath) => ({ entryPath, probesExtensions: true })
+    ),
+  ];
+  const covered = new Set();
+  for (const { entryPath, probesExtensions } of entries) {
+    const covers = (stem, file) =>
+      entryCoversSource(entryPath, stem, file, probesExtensions);
+    const stem = entrySourceStems(entryPath).find((candidate) =>
+      sourceFiles.some((file) => covers(candidate, file))
     );
-    if (resolved) exportedStems.push(resolved);
+    if (stem === undefined) continue;
+    for (const file of sourceFiles) {
+      if (covers(stem, file)) covered.add(file);
+    }
   }
-  return sourceStems
-    .filter(({ stem }) => !stem.includes('/'))
-    .filter(
-      ({ stem }) =>
-        !exportedStems.some((exported) => stemMatches(exported, stem))
-    )
-    .map(({ file }) => file)
+  return sourceFiles
+    .filter((file) => !file.includes('/') && !covered.has(file))
     .sort();
 }
 

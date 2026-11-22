@@ -260,6 +260,27 @@ describe('findUnexportedSourceRootFiles', () => {
       [],
     ],
     [
+      'an exact extensionless export does not cover a built module',
+      { exports: { './foo': './dist/foo' } },
+      [],
+      ['foo.ts'],
+      ['foo.ts'],
+    ],
+    [
+      'an extensionless main covers a built module',
+      { main: 'dist/foo' },
+      [],
+      ['foo.ts'],
+      ['index.ts'],
+    ],
+    [
+      'an exported asset does not cover a code module of the same name',
+      { exports: { './openapi.json': './dist/openapi.json' } },
+      [],
+      ['openapi.json.ts'],
+      ['openapi.json.ts'],
+    ],
+    [
       'an exported copied asset covers only the same-named source',
       { exports: { './data.json': './dist/data.json' } },
       [],
