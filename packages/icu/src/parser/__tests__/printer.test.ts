@@ -5,9 +5,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { parse, printAST } from '../parser';
-import { TYPE, type MessageFormatElement } from '../types-dir/ast';
-import { expectEachCase } from './expectEachCase';
+import { parse, printAST } from '..';
+import { TYPE, type MessageFormatElement } from '../../types-dir/ast';
+import { expectEachCase } from '../../__tests__/expectEachCase';
 
 const GENERATED_ROUND_TRIP_MESSAGES = [
   ...Array.from(

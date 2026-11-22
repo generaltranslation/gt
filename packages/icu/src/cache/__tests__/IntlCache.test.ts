@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { IntlCache, intlCache } from '../cache/IntlCache';
+import { IntlCache, intlCache } from '../IntlCache';
 
 describe('IntlCache', () => {
   it('returns one instance for the same locales and options', () => {
