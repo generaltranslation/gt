@@ -25,7 +25,7 @@ vi.mock('gt-tanstack-start/internal/_config', () => ({
 }));
 vi.mock('gt-tanstack-start/internal/_compat-config', () => compatPluginModule);
 vi.mock('gt-tanstack-start/internal/localeRouting', () => ({}));
-vi.mock('../../setup/initializeGT.client', () => ({}));
+vi.mock('../setup/initializeGT.client', () => ({}));
 vi.mock('gt-react', () => ({}));
 
 vi.mock('@generaltranslation/react-core/pure', () => ({
@@ -48,7 +48,7 @@ vi.mock('gt-react/compat', () => ({
   useTranslations: vi.fn(),
 }));
 
-import { getTranslations } from '../../compat.client';
+import { getTranslations } from '../compat.client';
 
 describe.sequential('gt-tanstack-start/compat (browser)', () => {
   beforeEach(() => {

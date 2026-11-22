@@ -25,12 +25,12 @@ vi.mock('@tanstack/react-start/server', () => ({
 import { getRequest } from '@tanstack/react-start/server';
 import { internalInitializeGTSRA } from '@generaltranslation/react-core/pure';
 import { getDictionaryManager } from 'gt-i18n/internal/compat';
-import { AsyncLocalConditionStore } from '../../condition-store/AsyncLocalConditionStore';
-import { setConditionStore } from '../../condition-store/singleton';
+import { AsyncLocalConditionStore } from '../condition-store/AsyncLocalConditionStore';
+import { setConditionStore } from '../condition-store/singleton';
 
 // The entry remembers that it set the dictionary manager up, so each test
 // evaluates it again.
-const load = () => import('../../compat.server');
+const load = () => import('../compat.server');
 
 const config = {
   defaultLocale: 'en',
