@@ -95,6 +95,39 @@ describe('what the server sends with a page', () => {
     }
   );
 
+  it('adds the chunks of the client components that a server component of a matched route renders', () => {
+    const router = createRouter();
+    expect(
+      findPageChunks(
+        {
+          ...router,
+          state: {
+            matches: [
+              { routeId: '__root__' },
+              {
+                routeId: '/reports',
+                // As TanStack Start keeps a server component in loader data
+                loaderData: {
+                  Panel: {
+                    [Symbol.for('tanstack.rsc.jsPreloads')]: new Set([
+                      '/assets/settings-d4.js',
+                      '/assets/index-a1.js',
+                    ]),
+                  },
+                },
+              },
+            ],
+          },
+        },
+        TABLE
+      ).chunks
+    ).toEqual([
+      'assets/index-a1.js',
+      'assets/reports-b2.js',
+      'assets/settings-d4.js',
+    ]);
+  });
+
   it('takes every chunk whose import needs translations when the router has no manifest', () => {
     expect(findPageChunks({}, TABLE)).toEqual({
       chunks: ['assets/reports-b2.js', 'assets/settings-d4.js'],

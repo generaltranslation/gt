@@ -5,7 +5,9 @@ import type { ChunkTranslationsSeed } from 'gt-react/chunk-translations';
 
 /** What the server reads of a router to find the client chunks of the matched routes. */
 export type SplitRouter = {
-  state?: { matches?: readonly { routeId: string }[] };
+  state?: {
+    matches?: readonly { routeId: string; loaderData?: unknown }[];
+  };
   ssr?: {
     manifest?: {
       routes?: Record<

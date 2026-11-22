@@ -8,15 +8,21 @@ import {
 } from 'gt-react/chunk-translations/server';
 import type { SplitTranslationsOutput } from 'generaltranslation/internal';
 import { table } from 'gt-tanstack-start/internal/_split-table';
+import { findClientReferenceChunks } from '../rsc/clientReferenceChunks';
 import type * as Disabled from './splitTranslations';
 
 /**
- * The client chunks a router's manifest names for the matched routes, by
- * their path from the build's base, and the URL they are served from when the
- * manifest says: the build's base, or what the app rewrote it to (TanStack
- * Start's `transformAssets`, as for a CDN). A chunk is recognized by the end
- * of its URL. Every chunk whose import needs translations when the router
- * does not say, so the page then gets all of them.
+ * The client chunks a response loads, by their path from the build's base:
+ * those the router's manifest names for the matched routes, and those of the
+ * client components that a server component in their loader data renders.
+ * With them, the URL they are served from when the router says: the build's
+ * base, or what the app rewrote it to (TanStack Start's `transformAssets`,
+ * as for a CDN). A chunk is recognized by the end of its URL.
+ *
+ * What the router does not say still works. Without a manifest the page gets
+ * the translations of every chunk. A chunk the page loads that is not found
+ * here, as that of a server component that is still loading when the page is
+ * sent, has its files requested by the browser before its import runs.
  */
 export function findPageChunks(
   router: Disabled.SplitRouter,
@@ -31,8 +37,11 @@ export function findPageChunks(
     chunk in output.entries || chunk in output.imports;
   const chunks = new Set<string>();
   let base: string | undefined;
-  for (const { routeId } of matches) {
-    for (const link of routes[routeId]?.preloads ?? []) {
+  for (const { routeId, loaderData } of matches) {
+    for (const link of [
+      ...(routes[routeId]?.preloads ?? []),
+      ...findClientReferenceChunks(loaderData),
+    ]) {
       const [href] = (typeof link === 'string' ? link : link.href).split(
         /[?#]/
       );

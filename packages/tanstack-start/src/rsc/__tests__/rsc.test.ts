@@ -64,6 +64,22 @@ const components = await import('../components');
 const hooks = await import('../hooks');
 const { setupRouterGTIntegration } =
   await import('../setupRouterGTIntegration');
+const { findClientReferenceChunks } = await import('../clientReferenceChunks');
+
+const CLIENT_CHUNKS = Symbol.for('tanstack.rsc.jsPreloads');
+
+/** A server component as TanStack Start keeps it in loader data. */
+const createServerComponent = (chunks: unknown) =>
+  new Proxy(
+    {},
+    {
+      // It answers any property, as the framework's does
+      has: () => true,
+      get: (_target, property) =>
+        property === CLIENT_CHUNKS ? chunks : createServerComponent(chunks),
+    }
+  );
+
 describe('the react-server entry', () => {
   beforeEach(() => {
     ensureInitialized.mockClear();
@@ -134,5 +150,72 @@ describe('the react-server entry', () => {
     expect(() => setupRouterGTIntegration()).toThrow(
       'gt-tanstack-start Error: setupRouterGTIntegration() cannot be called where server components render because server components render apart from the router that it sets up. Call it where the app creates its router, in getRouter() of src/router.tsx.'
     );
+  });
+});
+
+describe('the client chunks that server components name', () => {
+  it('are read from every server component in the loader data, each once', () => {
+    const board = createServerComponent(
+      new Set(['/assets/counter-a1.js', '/assets/shared-b2.js'])
+    );
+    const card = createServerComponent(
+      new Set(['/assets/stamp-c3.js', '/assets/shared-b2.js'])
+    );
+
+    expect(
+      findClientReferenceChunks({
+        Board: board,
+        cards: [{ src: card }, { src: card }],
+        title: 'Notices',
+      })
+    ).toEqual([
+      '/assets/counter-a1.js',
+      '/assets/shared-b2.js',
+      '/assets/stamp-c3.js',
+    ]);
+  });
+
+  it.each([
+    ['no loader data', undefined],
+    ['no server component', { title: 'Notices', rows: [1, 2] }],
+    [
+      'a server component that names no client chunk',
+      { Board: createServerComponent(undefined) },
+    ],
+    [
+      'a server component whose chunks are no list',
+      { Board: createServerComponent(7) },
+    ],
+    [
+      // Rendered later: its chunks are not known when the page is sent
+      'a server component that is still loading',
+      { Board: Promise.resolve(createServerComponent(new Set(['/a.js']))) },
+    ],
+  ])('are none with %s', (_case, loaderData) => {
+    expect(findClientReferenceChunks(loaderData)).toEqual([]);
+  });
+
+  it('are found in loader data that refers to itself', () => {
+    const loaderData: Record<string, unknown> = {
+      Board: createServerComponent(['/assets/counter-a1.js']),
+    };
+    loaderData.self = loaderData;
+
+    expect(findClientReferenceChunks(loaderData)).toEqual([
+      '/assets/counter-a1.js',
+    ]);
+  });
+
+  it('are not looked for in values that are no plain data', () => {
+    class Report {
+      Board = createServerComponent(['/assets/counter-a1.js']);
+    }
+
+    expect(
+      findClientReferenceChunks({
+        report: new Report(),
+        byName: new Map([['Board', createServerComponent(['/assets/b.js'])]]),
+      })
+    ).toEqual([]);
   });
 });
