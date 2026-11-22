@@ -1,5 +1,6 @@
 import { use } from '../utils/use';
 import { getAsyncConditionStore } from '../condition-store/AsyncConditionStore';
+import { memoizeForRequest } from '../utils/requestMemo';
 
 /**
  * Gets the user's current region code.
@@ -11,7 +12,9 @@ import { getAsyncConditionStore } from '../condition-store/AsyncConditionStore';
  * console.log(region); // 'US' or undefined
  */
 export function getRegion(): Promise<string | undefined> {
-  return getAsyncConditionStore().getRegion();
+  return memoizeForRequest('region', () =>
+    getAsyncConditionStore().getRegion()
+  );
 }
 
 export function useRegion() {
