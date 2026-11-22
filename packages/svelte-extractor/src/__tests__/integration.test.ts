@@ -8,7 +8,7 @@ import {
   extractFromSvelteModule,
   extractFromSvelteProject,
   planSvelteExtraction,
-} from '../../integration.js';
+} from '../integration.js';
 
 let root: string | undefined;
 afterEach(() => {

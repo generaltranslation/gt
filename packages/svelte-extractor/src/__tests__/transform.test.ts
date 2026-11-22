@@ -2,7 +2,7 @@ import { hashSource } from 'generaltranslation/id';
 import { compile, parse } from 'svelte/compiler';
 import { describe, expect, it } from 'vitest';
 import type { JsxElement } from '@generaltranslation/format';
-import { analyzeSvelteSource, transformSvelteSource } from '../../index.js';
+import { analyzeSvelteSource, transformSvelteSource } from '../index.js';
 
 function transform(source: string) {
   return transformSvelteSource(source, { parse, filename: 'Fixture.svelte' });

@@ -1,6 +1,6 @@
 import { parse } from 'svelte/compiler';
 import { describe, expect, it } from 'vitest';
-import { analyzeSvelteSource } from '../../index.js';
+import { analyzeSvelteSource } from '../index.js';
 import { serializeReactT } from './reactParity.js';
 
 const IMPORTS = `<script>
