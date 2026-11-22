@@ -309,6 +309,20 @@ describe('findUnexportedSourceRootFiles', () => {
       field === 'main' ? ['index.ts'] : [],
     ]),
     [
+      'an extensionless target does not cover a dotless file that only shares a prefix',
+      { main: './src/tool' },
+      [],
+      ['tool.js', 'tools'],
+      ['index.ts', 'tools'],
+    ],
+    [
+      'a target that names an existing file covers only that file',
+      { main: './src/data.json' },
+      [],
+      ['data.json', 'data.json.bak', 'data.json.ts'],
+      ['data.json.bak', 'data.json.ts', 'index.ts'],
+    ],
+    [
       'an extensionless dist types target covers the source and its declaration',
       { types: './dist/public' },
       [],

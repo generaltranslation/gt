@@ -149,9 +149,15 @@ function stemMatches(stem, sourceStem) {
 
 // A code source backs a target that names a built code file or is a wildcard; an
 // extensionless target resolved by trying extensions deliberately backs every root
-// file with that base name, because resolvers disagree on the order; any other
-// target must name the source file itself, as a copied asset does.
-function entryCoversSource(entryPath, stem, file, probesExtensions) {
+// file with that base name (resolvers disagree on the order) unless a file matches
+// it exactly; any other target must name the source file itself, as an asset does.
+function entryCoversSource(
+  entryPath,
+  stem,
+  file,
+  probesExtensions,
+  exactSourceExists
+) {
   const targetName = entryPath.split('/').pop();
   const sourceStem = stripExtension(file);
   const isCodeSource = sourceStem !== file;
@@ -160,9 +166,10 @@ function entryCoversSource(entryPath, stem, file, probesExtensions) {
   }
   if (stem.includes('*')) return stemMatches(stem, sourceStem);
   if (file === stem) return true;
+  if (!probesExtensions || exactSourceExists) return false;
+  const lastDot = file.lastIndexOf('.');
   return (
-    probesExtensions &&
-    (sourceStem === stem || file.slice(0, file.lastIndexOf('.')) === stem)
+    sourceStem === stem || (lastDot > 0 && file.slice(0, lastDot) === stem)
   );
 }
 
@@ -183,7 +190,13 @@ export function findUnexportedSourceRootFiles({
   const covered = new Set();
   for (const { entryPath, probesExtensions } of entries) {
     const covers = (stem, file) =>
-      entryCoversSource(entryPath, stem, file, probesExtensions);
+      entryCoversSource(
+        entryPath,
+        stem,
+        file,
+        probesExtensions,
+        sourceFiles.includes(stem)
+      );
     const stem = entrySourceStems(entryPath).find((candidate) =>
       sourceFiles.some((file) => covers(candidate, file))
     );
