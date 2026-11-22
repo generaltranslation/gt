@@ -1,5 +1,9 @@
 import { defineConfig } from 'tsdown';
-import { createTsdownConfig, withPackageChecks } from '../../tsdown.preset.mts';
+import {
+  createTsdownConfig,
+  createUseClientBoundaryPlugin,
+  withPackageChecks,
+} from '../../tsdown.preset.mts';
 
 const deps = {
   neverBundle: [
@@ -29,8 +33,11 @@ const deps = {
 const entries: Record<string, string> = {
   'index.client': 'src/index.client.ts',
   'index.server': 'src/index.server.ts',
+  'index.rsc': 'src/index.rsc.ts',
+  'rsc/clientBoundary': 'src/rsc/clientBoundary.tsx',
   'compat.client': 'src/compat.client.ts',
   'compat.server': 'src/compat.server.ts',
+  'compat.rsc': 'src/compat.rsc.ts',
   'plugin/vite': 'src/plugin/vite.ts',
   'internal/initializeGT.server': 'src/setup/initializeGT.server.ts',
   'internal/_config': 'src/internal/_config.ts',
@@ -49,6 +56,7 @@ export default defineConfig(
         entry: { [name]: entry },
         clean: index === 0,
         dts: true,
+        plugins: [createUseClientBoundaryPlugin({ outputExtension: '.mjs' })],
         deps: {
           onlyBundle: false,
           ...deps,

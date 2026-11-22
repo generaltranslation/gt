@@ -58,6 +58,13 @@
   },
   "exports": {
     ".": {
+      "react-server": {
+        "import": {
+          "types": "./dist/index.server.d.mts",
+          "default": "./dist/index.rsc.mjs"
+        },
+        "default": "./dist/index.rsc.mjs"
+      },
       "workerd": {
         "import": {
           "types": "./dist/index.server.d.mts",
@@ -86,6 +93,13 @@
       "default": "./dist/index.server.mjs"
     },
     "./compat": {
+      "react-server": {
+        "import": {
+          "types": "./dist/compat.server.d.mts",
+          "default": "./dist/compat.rsc.mjs"
+        },
+        "default": "./dist/compat.rsc.mjs"
+      },
       "workerd": {
         "import": {
           "types": "./dist/compat.server.d.mts",
