@@ -50,7 +50,7 @@ Key concepts:
 
 ## Configuration
 
-Key flags in `PluginConfig` (`src/config.ts`):
+Key flags in `PluginConfig` (`src/config/pluginConfig.ts`):
 
 - `enableAutoJsxInjection` — enables JSX insertion pass
 - `compileTimeHash` — enables hash generation

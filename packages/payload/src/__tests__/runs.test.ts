@@ -11,15 +11,15 @@ import {
   it,
   vi,
 } from 'vitest';
-import { acquireLock, releaseLock, renewLock } from '../locks';
-import { gtPlugin } from '../plugin';
+import { acquireLock, releaseLock, renewLock } from '../plugin/locks';
+import { gtPlugin } from '../plugin/plugin';
 import {
   RUNS_SLUG,
   staleRuns,
   startRun,
   stepRun,
   type RunProgress,
-} from '../runs';
+} from '../plugin/runs';
 import { createTestPayload } from './support/createTestPayload';
 import { FakeGt } from './support/fakeGt';
 import { createPage } from './support/fixtures';

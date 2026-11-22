@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, ErrorCode } from '@generaltranslation/api';
-import type { Secrets } from '../../types';
+import type { Secrets } from '../../types/types';
 
 const queryFiles = vi.fn();
 

@@ -1,4 +1,4 @@
-import { GTFile, TranslationFunctionContext } from '../types';
+import { GTFile, TranslationFunctionContext } from '../types/types';
 import { pluginConfig } from '../adapter/core';
 import { importDocument } from '../translation/importDocument';
 import { getPublishedId } from './documentIds';

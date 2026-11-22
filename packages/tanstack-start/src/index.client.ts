@@ -1,4 +1,4 @@
-export * from './index.shared';
+export * from './shared/exports';
 export {
   getLocale,
   getEnableI18n,

@@ -1,4 +1,4 @@
-import type { GTFile, TranslationFunctionContext } from '../types';
+import type { GTFile, TranslationFunctionContext } from '../types/types';
 import { deserializeDocument } from '../utils/serialize';
 import { getTranslationStrategyForType } from './strategy';
 

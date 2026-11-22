@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
-import { GtReactNative } from '../NativeGtReactNative';
+import { GtReactNative } from '../specs/NativeGtReactNative';
 import { ssrUnsupportedWarning } from '../errors-dir/warnings';
 
 /**

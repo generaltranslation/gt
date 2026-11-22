@@ -6,7 +6,7 @@ import * as testVueCompiler from '#vue-compiler-sfc';
 import { hashSource } from 'generaltranslation/id';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { resolveVueCompilerOptions } from '../../config.js';
-import type { VueCompiler, VueCompilerOptions } from '../../types.js';
+import type { VueCompiler, VueCompilerOptions } from '../../types/types.js';
 import {
   ElementTypes,
   NodeTypes,

@@ -11,11 +11,11 @@ import type {
   User,
   Where,
 } from 'payload';
-import { hasTranslatableFields, type FieldContext } from './content/fields';
-import { createGtPayloadDiagnostic } from './diagnostics';
-import { labelText } from './labels';
+import { hasTranslatableFields, type FieldContext } from '../content/fields';
+import { createGtPayloadDiagnostic } from '../utils/diagnostics';
+import { labelText } from '../utils/labels';
 import { targetKey } from './targets';
-import type { Data, TranslateTarget } from './types';
+import type { Data, TranslateTarget } from '../types/types';
 
 // A signed-in user whose access rules the reads and writes follow. Without
 // one, access rules are skipped, as for server code. Payload's Local API

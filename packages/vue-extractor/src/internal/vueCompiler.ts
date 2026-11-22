@@ -5,7 +5,7 @@ import type { parse as parseVueTemplate } from '@vue/compiler-dom';
 import type * as VueCompilerModule from '@vue/compiler-sfc';
 import type { TemplateCompiler } from '@vue/compiler-sfc';
 import { DecodingMode, decodeHTML } from 'entities/decode';
-import type { VueCompiler } from '../types.js';
+import type { VueCompiler } from '../types/types.js';
 
 /** Whitespace test used by Vue when it constructs an implicit default slot. */
 export type ImplicitSlotWhitespace = 'ecmascript' | 'html';

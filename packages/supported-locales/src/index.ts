@@ -1,4 +1,4 @@
-import supportedLocales from './supportedLocales';
+import supportedLocales from './locales/supportedLocales';
 import {
   getLocaleProperties,
   isValidLocale,

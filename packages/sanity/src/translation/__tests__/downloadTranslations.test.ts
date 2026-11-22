@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '@generaltranslation/api';
-import type { Secrets } from '../../types';
+import type { Secrets } from '../../types/types';
 import { downloadTranslations } from '../downloadTranslations';
 
 const secrets = { secret: 'gtx-api-test', project: 'project-1' } as Secrets;

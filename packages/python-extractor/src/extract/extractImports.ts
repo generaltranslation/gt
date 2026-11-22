@@ -2,7 +2,7 @@ import type { Node as SyntaxNode } from 'web-tree-sitter';
 import {
   PYTHON_GT_PACKAGES,
   PYTHON_TRANSLATION_FUNCTIONS,
-} from './constants.js';
+} from '../constants.js';
 
 export type ImportAlias = {
   /** The local name used in the source file (e.g. "translate" for `import t as translate`) */

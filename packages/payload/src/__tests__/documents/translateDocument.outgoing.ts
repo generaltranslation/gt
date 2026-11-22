@@ -1,7 +1,7 @@
 // What a document sends to GT: only text people read, one file per document.
 import type { Payload } from 'payload';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { translateDocument } from '../../translation';
+import { translateDocument } from '../../translation/translation';
 import { sharedTestPayload } from '../support/createTestPayload';
 import { FakeGt, readKeyedHtml } from '../support/fakeGt';
 import { createPage, setHeader } from '../support/fixtures';

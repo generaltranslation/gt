@@ -1,7 +1,7 @@
 import type { UploadSourceFilesResponse } from '@generaltranslation/api';
 import type { BatchWriteResponse } from 'generaltranslation';
 import { pluginConfig, projectFor } from '../adapter/core';
-import type { Secrets } from '../types';
+import type { Secrets } from '../types/types';
 import { succeededResults } from '../utils/batchResults';
 
 export async function initProject(

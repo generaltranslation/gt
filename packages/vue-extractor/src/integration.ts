@@ -3,7 +3,7 @@ import path from 'node:path';
 import type {
   VueCompilerOptions,
   VueProjectExtractionOutput,
-} from './types.js';
+} from './types/types.js';
 import type { InlineExtractionOutput } from './internal/project/mergeVueProjectExtraction.js';
 
 const GT_VUE_PACKAGE = 'gt-vue';
@@ -276,9 +276,9 @@ async function loadVueExtractionContext(options: CapturedPlannerOptions) {
 
 function createProjectExtractionOptions(
   options: CapturedPlannerOptions,
-  inspection: import('./types.js').VueProjectInspection,
+  inspection: import('./types/types.js').VueProjectInspection,
   filePatterns: string[] | undefined
-): import('./types.js').VueProjectExtractionOptions {
+): import('./types/types.js').VueProjectExtractionOptions {
   return {
     cwd: options.projectRoot,
     inspection,

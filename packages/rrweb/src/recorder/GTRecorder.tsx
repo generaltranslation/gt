@@ -10,8 +10,12 @@ import {
   start as coreStart,
   stop as coreStop,
 } from './recorderCore';
-import { aspectOf } from '../types';
-import type { FrameOption, HarvestOptions, RecorderBundle } from '../types';
+import { aspectOf } from '../types/types';
+import type {
+  FrameOption,
+  HarvestOptions,
+  RecorderBundle,
+} from '../types/types';
 
 export type GTRecorderProps = {
   /** Gate: when false, nothing is wired and nothing renders. */

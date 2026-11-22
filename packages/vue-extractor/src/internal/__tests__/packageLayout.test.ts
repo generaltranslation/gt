@@ -13,7 +13,7 @@ const INSPECTED_BUILD_OUTPUTS = [
   'integration.js',
   'index.d.ts',
   'project.d.ts',
-  'types.d.ts',
+  'types/types.d.ts',
   'internal/extractFromVueSource.d.ts',
 ];
 
@@ -71,7 +71,7 @@ describe('@generaltranslation/vue-extractor package layout', () => {
   });
 
   it('declares scalar boolean and null rich-wire values recursively', () => {
-    const declarations = readBuildOutput('types.d.ts');
+    const declarations = readBuildOutput('types/types.d.ts');
 
     expect(declarations).toContain(
       'type VueJsxChildren = VueJsxChild | boolean | null | VueJsxChild[];'
@@ -81,7 +81,7 @@ describe('@generaltranslation/vue-extractor package layout', () => {
   });
 
   it('publishes every supported T metadata field', () => {
-    const metadataDeclaration = readBuildOutput('types.d.ts').match(
+    const metadataDeclaration = readBuildOutput('types/types.d.ts').match(
       /type VueExtractionMetadata = \{[\s\S]*?\n\};/
     )?.[0];
 

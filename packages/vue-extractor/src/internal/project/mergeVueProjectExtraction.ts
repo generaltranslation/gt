@@ -2,7 +2,7 @@ import type { Updates } from 'generaltranslation';
 import type {
   VueProjectExtractionOutput,
   VueProjectExtractionResult,
-} from '../../types.js';
+} from '../../types/types.js';
 
 /** Framework-neutral extraction output accepted by the CLI adapter. */
 export type InlineExtractionOutput = {

@@ -1,7 +1,7 @@
 // Things users easily do that the main suites don't cover.
 import type { Payload } from 'payload';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { translateDocument } from '../../translation';
+import { translateDocument } from '../../translation/translation';
 import { sharedTestPayload } from '../support/createTestPayload';
 import { FakeGt } from '../support/fakeGt';
 import { createPage } from '../support/fixtures';

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, ErrorCode } from '@generaltranslation/api';
 import type { ProjectHandle } from 'generaltranslation';
-import type { GTFile } from '../../types';
+import type { GTFile } from '../../types/types';
 import { uploadFiles } from '../uploadFiles';
 
 const flags = vi.hoisted(() => ({ allowNonDefaultSourceLocales: true }));

@@ -4,7 +4,7 @@ import {
   targetLocaleOptions,
   type AdminSettings,
   type LocaleOption,
-} from '../locales';
+} from '../utils/locales';
 
 // The languages to offer, from Payload's locales and the plugin's settings.
 export function useLocaleOptions(): LocaleOption[] {

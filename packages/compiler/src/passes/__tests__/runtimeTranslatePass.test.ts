@@ -9,7 +9,7 @@ import {
   type PassName,
 } from './testHelpers';
 import { initializeState } from '../../state/utils/initializeState';
-import { resolveDevHotReload } from '../../config';
+import { resolveDevHotReload } from '../../config/pluginConfig';
 import hashSource from '../../utils/calculateHash';
 
 const JSX_FN = 'GtInternalRuntimeTranslateJsx';

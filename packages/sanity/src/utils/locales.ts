@@ -1,4 +1,4 @@
-import type { TranslationLocale } from '../types';
+import type { TranslationLocale } from '../types/types';
 
 /**
  * `locales` is the list of translation *targets*, but configs often repeat the

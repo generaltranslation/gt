@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ASPECT_16_9, aspectOf } from '../types';
+import { ASPECT_16_9, aspectOf } from '../types/types';
 
 describe('aspectOf', () => {
   it("resolves '16:9' to the shared ratio constant", () => {

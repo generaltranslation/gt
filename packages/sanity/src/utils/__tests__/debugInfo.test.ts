@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { pluginConfig } from '../../adapter/core';
 import type { TranslationPreferences } from '../../adapter/types';
-import type { Secrets } from '../../types';
+import type { Secrets } from '../../types/types';
 import { buildDebugInfo, formatDebugInfo } from '../debugInfo';
 import { EMPTY_TRANSLATION_SUMMARY } from '../translationSummary';
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 
-vi.mock('../parser.js', () => ({
+vi.mock('../parser/parser.js', () => ({
   getParser: vi.fn(async () => {
     throw new Error('Unknown WASM specifier for Bun: extra.wasm');
   }),

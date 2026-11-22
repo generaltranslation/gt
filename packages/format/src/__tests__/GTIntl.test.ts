@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { intlCache } from '../cache/IntlCache';
 import { GTIntl } from '../intl/GTIntl';
-import { determineLocale } from '../core';
+import { determineLocale } from '../formatting/core';
 import type { CustomMapping } from '../locales/customLocaleMapping';
 import type { LocaleConfig } from '../intl/localeConfig';
 

@@ -1,4 +1,4 @@
-import { Secrets, TranslationFunctionContext } from '../types';
+import { Secrets, TranslationFunctionContext } from '../types/types';
 import { downloadTranslations } from '../translation/downloadTranslations';
 import { updateTranslationPreviewUrls } from '../translation/updatePreviewUrls';
 import { processImportBatch, ImportBatchItem } from './batchProcessor';

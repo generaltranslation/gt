@@ -11,7 +11,7 @@ import {
 } from './helpers/createI18nDocAndPatchMetadata';
 import { getOrCreateTranslationMetadata } from './helpers/getOrCreateTranslationMetadata';
 import { patchI18nDoc } from './helpers/patchI18nDoc';
-import type { GTFile } from '../../types';
+import type { GTFile } from '../../types/types';
 import { getPublishedId } from '../../utils/documentIds';
 import { pluginConfig } from '../../adapter/core';
 import {

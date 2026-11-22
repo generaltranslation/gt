@@ -2,7 +2,7 @@
 import { useAuth, useConfig } from '@payloadcms/ui';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import React, { useEffect } from 'react';
-import { createGtPayloadDiagnostic } from '../diagnostics';
+import { createGtPayloadDiagnostic } from '../utils/diagnostics';
 import { apiRoute, followRun, staleRuns } from './api';
 
 // How often an open admin page looks for runs nobody is stepping.

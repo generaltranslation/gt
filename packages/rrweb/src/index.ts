@@ -17,4 +17,4 @@ export {
   type HarvestOptions,
   type LocaleTextOverlay,
   type TranslationsLoader,
-} from './types';
+} from './types/types';

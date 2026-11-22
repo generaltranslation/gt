@@ -7,7 +7,7 @@ import {
   succeededResults,
 } from '../utils/batchResults';
 
-import type { Secrets, TranslationFunctionContext } from '../types';
+import type { Secrets, TranslationFunctionContext } from '../types/types';
 
 export type CaptureExistingTranslationsInput = {
   documents: SanityDocument[];

@@ -1,10 +1,10 @@
-import type { ExtractionResult } from './types.js';
-import { getParser } from './parser.js';
-import { extractImports } from './extractImports.js';
-import { extractCalls } from './extractCalls.js';
+import type { ExtractionResult } from './types/types.js';
+import { getParser } from './parser/parser.js';
+import { extractImports } from './extract/extractImports.js';
+import { extractCalls } from './extract/extractCalls.js';
 
-export type { ExtractionResult, ExtractionMetadata } from './types.js';
-export type { ImportAlias } from './extractImports.js';
+export type { ExtractionResult, ExtractionMetadata } from './types/types.js';
+export type { ImportAlias } from './extract/extractImports.js';
 
 export async function extractFromPythonSource(
   sourceCode: string,

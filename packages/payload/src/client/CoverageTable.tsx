@@ -2,9 +2,9 @@
 import { Pagination, Pill, useConfig } from '@payloadcms/ui';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
-import type { CoveragePage, LocaleCoverage } from '../coverage';
-import { targetKey } from '../targets';
-import type { TranslateTarget } from '../types';
+import type { CoveragePage, LocaleCoverage } from '../plugin/coverage';
+import { targetKey } from '../translation/targets';
+import type { TranslateTarget } from '../types/types';
 import { apiRoute, coverage } from './api';
 import { useLocaleOptions } from './locales';
 

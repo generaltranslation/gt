@@ -5,7 +5,7 @@ import type {
   HarvestOptions,
   LocaleTextOverlay,
   TranslationsLoader,
-} from './types';
+} from './types/types';
 
 // Per-locale HARVEST (the "Process" step, run in-browser right after a recording stops).
 // We do NOT translate — we read the app's OWN published translations per locale from the

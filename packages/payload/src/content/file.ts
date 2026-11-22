@@ -10,7 +10,7 @@ import {
   isElement,
   type HtmlParent,
 } from './html';
-import type { Data } from '../types';
+import type { Data } from '../types/types';
 import { encodeElement, hasInlineText } from './inline';
 
 export type Unit = {

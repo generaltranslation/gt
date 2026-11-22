@@ -1,7 +1,7 @@
 import type { SanityClient, SanityDocument } from 'sanity';
 import { pluginConfig } from '../adapter/core';
 import { hasLocaleContent } from '../serialization/internationalizedArray/detect';
-import type { TranslationFunctionContext } from '../types';
+import type { TranslationFunctionContext } from '../types/types';
 import {
   dedupeDocumentsPreferDraft,
   getDocumentPublishedId,

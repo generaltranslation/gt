@@ -1,7 +1,7 @@
 // The languages offered: Payload's locales except the default, named as the
 // project names them, with codes GT does not recognise marked.
 import { describe, expect, it } from 'vitest';
-import { targetLocaleOptions } from '../locales';
+import { targetLocaleOptions } from '../utils/locales';
 
 describe('targetLocaleOptions', () => {
   it('lists every locale but the default, in order', () => {
