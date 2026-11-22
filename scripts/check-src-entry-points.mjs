@@ -33,6 +33,18 @@ const EXTENSION_PROBING_FIELDS = new Set([
   'typesVersions',
 ]);
 
+// The order TypeScript and bundlers try extensions on an extensionless target; a
+// `src/` target resolves to the first existing file, so later namesakes back nothing.
+const SOURCE_PROBE_EXTENSIONS = [
+  '.ts',
+  '.tsx',
+  '.d.ts',
+  '.js',
+  '.jsx',
+  '.mjs',
+  '.cjs',
+];
+
 // Build output directories that hold a whole copy of the source tree, such as
 // react-native's `dist/module/` and `dist/commonjs/` and paraglide-js's `dist/src/`.
 const OUTPUT_FORMAT_DIRECTORIES = new Set(['commonjs', 'module', 'src']);
@@ -186,6 +198,19 @@ export function findUnexportedSourceRootFiles({
       sourceFiles.some((file) => covers(candidate, file))
     );
     if (stem === undefined) continue;
+    const resolvesToOneSource =
+      probesExtensions &&
+      /^(\.\/)?src\//.test(entryPath) &&
+      !stem.includes('*') &&
+      stripExtension(entryPath) === entryPath;
+    if (resolvesToOneSource) {
+      const resolved = [
+        stem,
+        ...SOURCE_PROBE_EXTENSIONS.map((extension) => stem + extension),
+      ].find((file) => sourceFiles.includes(file));
+      if (resolved !== undefined) covered.add(resolved);
+      continue;
+    }
     for (const file of sourceFiles) {
       if (covers(stem, file)) covered.add(file);
     }

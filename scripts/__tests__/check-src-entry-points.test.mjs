@@ -288,6 +288,20 @@ describe('findUnexportedSourceRootFiles', () => {
       field === 'main' ? ['index.ts'] : [],
     ]),
     [
+      'an extensionless src types target backs only the declaration TypeScript resolves',
+      { types: './src/public' },
+      [],
+      ['public.d.ts', 'public.d.mts', 'public.d.cts'],
+      ['public.d.cts', 'public.d.mts'],
+    ],
+    [
+      'an extensionless dist types target covers the source and its declaration',
+      { types: './dist/public' },
+      [],
+      ['public.ts', 'public.d.ts'],
+      [],
+    ],
+    [
       'an exported asset does not cover a code module of the same name',
       { exports: { './openapi.json': './dist/openapi.json' } },
       [],
