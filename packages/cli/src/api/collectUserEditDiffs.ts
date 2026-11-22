@@ -173,6 +173,19 @@ const contentBytes = (content: string, fileFormat: FileFormat): Buffer =>
     ? Buffer.from(content, 'base64')
     : Buffer.from(content, 'utf8');
 
+/**
+ * The branch these files were uploaded under. `readLockfile` needs it to pick
+ * the matching entries out of a v1 lockfile, which keeps every branch it has
+ * seen; without it the file's entries are read from whichever branch is listed
+ * first. The files carry the branch resolved for this invocation, while
+ * `settings._branchId` can still hold the value persisted by an earlier run.
+ */
+const lockfileBranchId = (
+  files: FileReference[],
+  settings: Settings
+): string | undefined =>
+  files.find((file) => file.branchId)?.branchId ?? settings._branchId;
+
 const findLatestDownloadedVersion = (
   entryMap: EntryMap,
   fileId: string,
@@ -212,7 +225,12 @@ export async function collectAndSendUserEditDiffs(
     settings.defaultLocale
   );
 
-  const { entryMap } = readLockfile(settings);
+  // readLockfile uses _branchId to select branch-specific entries. Keep it on a
+  // scoped copy so the caller's settings object is not mutated.
+  const branchId = lockfileBranchId(files, settings);
+  const { entryMap } = readLockfile(
+    branchId ? { ...settings, _branchId: branchId } : settings
+  );
 
   const tempDir = path.join(os.tmpdir(), randomUUID());
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
@@ -226,6 +244,8 @@ export async function collectAndSendUserEditDiffs(
     locale: string; // resolved
     outputPath: string;
     fileFormat: FileFormat;
+    /** The recorded hash did not match, so this locale is known to be edited. */
+    knownEdited: boolean;
   };
   const candidates: DiffCandidate[] = [];
 
@@ -245,6 +265,7 @@ export async function collectAndSendUserEditDiffs(
       const downloadedVersion = latestDownloaded.entry;
 
       // Skip if the locale's local content matches the last recorded hash
+      let knownEdited = false;
       if (downloadedVersion.postProcessHash) {
         try {
           // Hashed from the locale's share of the pipeline content, which is
@@ -261,6 +282,7 @@ export async function collectAndSendUserEditDiffs(
           if (localHash === downloadedVersion.postProcessHash) {
             continue;
           }
+          knownEdited = true;
         } catch {
           // If hash check fails, fall through to diff
         }
@@ -274,6 +296,7 @@ export async function collectAndSendUserEditDiffs(
         locale: locale,
         outputPath,
         fileFormat: uploadedFile.fileFormat,
+        knownEdited,
       });
     }
   }
@@ -324,8 +347,19 @@ export async function collectAndSendUserEditDiffs(
       const payload = serverPayloadByKey.get(key);
       // Absent means the batch did not return this file, so there is no
       // baseline. An empty payload is a baseline of nothing, which the user
-      // may well have written against.
-      if (!payload) continue;
+      // may well have written against. When the recorded hash already showed
+      // an edit, say so rather than leaving the run looking clean. An empty
+      // map cannot tell a version the server does not have from a batch that
+      // failed to return it, so the message covers both.
+      if (!payload) {
+        if (c.knownEdited) {
+          const relativePath = getRelative(c.outputPath);
+          const reason = `the ${c.locale} baseline recorded in the lockfile could not be retrieved, so the edit could not be compared`;
+          logger.warn(unsavedJsonEditsWarning(relativePath, c.locale, reason));
+          recordWarning('skipped_file', relativePath, reason);
+        }
+        continue;
+      }
 
       // The locale's share of the payload, read on its own so a payload the
       // server sent malformed costs only its own locale. A catalog payload
