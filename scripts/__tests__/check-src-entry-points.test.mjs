@@ -295,6 +295,20 @@ describe('findUnexportedSourceRootFiles', () => {
       ['public.d.cts', 'public.d.mts'],
     ],
     [
+      'extensionless src main and types each back the file their tool loads',
+      { main: './src/public', types: './src/public' },
+      [],
+      ['public.js', 'public.d.ts'],
+      ['index.ts'],
+    ],
+    [
+      'an extensionless src module backs the file a bundler picks first',
+      { module: './src/public' },
+      [],
+      ['public.ts', 'public.js'],
+      ['public.js'],
+    ],
+    [
       'an extensionless dist types target covers the source and its declaration',
       { types: './dist/public' },
       [],
