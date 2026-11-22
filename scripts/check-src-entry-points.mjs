@@ -32,8 +32,8 @@ const EXTENSION_PROBING_FIELDS = new Set([
   'typesVersions',
 ]);
 
-// TypeScript loads an exact match for these fields only when it has an extension
-// (such as `schema.json`), never a dotless file, so a dotless match does not win.
+// TypeScript may load a declaration beside an exact match for these fields, so an
+// exact match never hides same-named files; the check accepts extras over rejecting.
 const TYPES_FIELDS = new Set(['types', 'typings', 'typesVersions']);
 
 // Build output directories that hold a whole copy of the source tree, such as
@@ -202,8 +202,7 @@ export function findUnexportedSourceRootFiles({
         stem,
         file,
         probesExtensions,
-        sourceFileSet.has(stem) &&
-          (exactMatchFirst || stem.lastIndexOf('.') > 0)
+        exactMatchFirst && sourceFileSet.has(stem)
       );
     const stem = entrySourceStems(entryPath).find((candidate) =>
       sourceFiles.some((file) => covers(candidate, file))

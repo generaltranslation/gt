@@ -330,11 +330,11 @@ describe('findUnexportedSourceRootFiles', () => {
       ['index.ts'],
     ],
     [
-      'a typesVersions mapping to an existing JSON file covers only that file',
-      { typesVersions: { '*': { schema: ['src/schema.json'] } } },
+      'a types field never lets an exact match hide a declaration beside it',
+      { main: './src/schema.json', types: './src/schema.json' },
       [],
-      ['schema.json', 'schema.json.ts', 'schema.json.d.ts'],
-      ['schema.json.d.ts', 'schema.json.ts'],
+      ['schema.json', 'schema.json.d.ts'],
+      ['index.ts'],
     ],
     [
       'an extensionless dist types target covers the source and its declaration',
