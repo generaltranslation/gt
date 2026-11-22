@@ -44,7 +44,7 @@ fs.writeFileSync(
     compilerOptions: {
       strict: true,
       jsx: 'preserve',
-      paths: { 'gt-*': ['./gt.d.ts'] },
+      paths: { 'gt-*': ['./gt.d.ts'], '@helpers/*': ['./*'] },
     },
   })
 );
@@ -67,7 +67,9 @@ fs.writeFileSync(
 const tempFiles: string[] = [];
 
 afterEach(() => {
-  for (const file of tempFiles) fs.rmSync(file, { force: true });
+  for (const file of tempFiles) {
+    fs.rmSync(file, { force: true, recursive: true });
+  }
   tempFiles.length = 0;
 });
 
@@ -1129,5 +1131,1374 @@ describe('createInlineUpdates: tagged templates', () => {
         })
       );
     });
+  });
+});
+
+describe('createInlineUpdates: a useGT() or getGT() tag passed to a function', () => {
+  type Host = {
+    library: GTLibrary;
+    source: string;
+    hook: 'useGT' | 'getGT';
+  };
+  const hosts: [string, Host][] = [
+    [
+      'useGT from gt-react',
+      { library: Libraries.GT_REACT, source: 'gt-react', hook: 'useGT' },
+    ],
+    [
+      'useGT from gt-next',
+      { library: Libraries.GT_NEXT, source: 'gt-next', hook: 'useGT' },
+    ],
+    [
+      'getGT from gt-next/server',
+      { library: Libraries.GT_NEXT, source: 'gt-next/server', hook: 'getGT' },
+    ],
+    [
+      'getGT from gt-node',
+      { library: Libraries.GT_NODE, source: 'gt-node', hook: 'getGT' },
+    ],
+    [
+      'useGT from gt-tanstack-start',
+      {
+        library: Libraries.GT_TANSTACK_START,
+        source: 'gt-tanstack-start',
+        hook: 'useGT',
+      },
+    ],
+  ];
+  const [, nextHost] = hosts[1];
+  const helperImports = 'plural, part, n, derive';
+
+  /** A file whose component creates `t` with the host's hook, then runs `body`. */
+  const withTag = (host: Host, body: string, declarations = '') =>
+    `import { ${host.hook}, ${helperImports}, type GT } from '${host.source}';
+${declarations}
+${
+  host.hook === 'useGT'
+    ? 'export function Component() {\n  const t = useGT();'
+    : 'export async function load() {\n  const t = await getGT();'
+}
+  ${body}
+}
+`;
+
+  /** Extracts the `entries` of a project written with writeProject(). */
+  async function extractProject(
+    library: GTLibrary,
+    files: (dir: string) => Record<string, string>,
+    entries = ['page.tsx'],
+    parsingFlags = {}
+  ) {
+    // The CLI scans from process.cwd(), which is a physical path.
+    const dir = fs.realpathSync(fs.mkdtempSync(path.join(projectDir, 'p-')));
+    tempFiles.push(dir);
+    for (const [name, code] of Object.entries(files(path.basename(dir)))) {
+      fs.mkdirSync(path.dirname(path.join(dir, name)), { recursive: true });
+      fs.writeFileSync(path.join(dir, name), code, 'utf8');
+    }
+    vi.mocked(matchFiles).mockReturnValue(
+      entries.map((entry) => path.join(dir, entry))
+    );
+    return {
+      dir,
+      result: await createInlineUpdates(
+        library,
+        false,
+        undefined,
+        parsingFlags as never,
+        {
+          conditionNames: [],
+        }
+      ),
+    };
+  }
+
+  /** What makes an entry the one the runtime looks up, in a stable order. */
+  const entryKeys = (result: Awaited<ReturnType<typeof extract>>) =>
+    treeUpdates(result)
+      .map(({ source, metadata }) => ({
+        source,
+        hash: metadata.hash,
+        context: metadata.context,
+        maxChars: metadata.maxChars,
+        requiresReview: metadata.requiresReview,
+      }))
+      .sort((a, b) => String(a.hash).localeCompare(String(b.hash)));
+
+  type Case = {
+    /** The project, with the component in page.tsx. */
+    files: (host: Host, dir: string) => Record<string, string>;
+    /** The same messages written inline, with the declarations they need. */
+    inline: string[];
+    declarations?: string;
+  };
+
+  const nav = (host: Host, body: string) =>
+    `import { ${helperImports}, type GT } from '${host.source}';\n${body}\n`;
+
+  const cases: Record<string, Case> = {
+    'a function declaration': {
+      files: (host) => ({
+        'page.tsx': withTag(
+          host,
+          'return getInfo(t);',
+          'function getInfo(t: GT) {\n  return { home: t`Home`, about: t`About` };\n}'
+        ),
+      }),
+      inline: ['t`Home`', 't`About`'],
+    },
+    'an arrow function, at a later parameter with a default': {
+      files: (host) => ({
+        'page.tsx': withTag(
+          host,
+          "return label('home', t);",
+          "declare const fallback: GT;\nconst label = (id: string, tr: GT = fallback) => tr({ context: 'nav' })`Home`;"
+        ),
+      }),
+      inline: ["t({ context: 'nav' })`Home`"],
+    },
+    'a function expression that aliases its parameter': {
+      files: (host) => ({
+        'page.tsx': withTag(
+          host,
+          'return getInfo(t);',
+          'const getInfo = function (this: unknown, translate: GT) {\n  const tr = translate;\n  const short = tr({ maxChars: 8 });\n  return short`Open`;\n};'
+        ),
+      }),
+      inline: ['t({ maxChars: 8 })`Open`'],
+    },
+    'message helpers and derive()': {
+      files: (host) => ({
+        'page.tsx': withTag(
+          host,
+          "return count(t, 2, 'admin');",
+          "function count(t: GT, items: number, role: 'admin' | 'member') {\n  return [\n    t`${plural({ items }, { one: 'One item', other: part`${n} items` })}`,\n    t`Signed in as ${derive(role)}`,\n  ];\n}"
+        ),
+      }),
+      declarations:
+        "declare const items: number;\ndeclare const role: 'admin' | 'member';",
+      inline: [
+        "t`${plural({ items }, { one: 'One item', other: part`${n} items` })}`",
+        't`Signed in as ${derive(role)}`',
+      ],
+    },
+    'a chain of functions': {
+      files: (host) => ({
+        'page.tsx': withTag(
+          host,
+          'return outer(t);',
+          'function inner(t: GT) {\n  return t`Inner`;\n}\nfunction outer(t: GT) {\n  return [t`Outer`, inner(t)];\n}'
+        ),
+      }),
+      inline: ['t`Outer`', 't`Inner`'],
+    },
+    'a configured tag': {
+      files: (host) => ({
+        'page.tsx': withTag(
+          host,
+          "const navTag = t({ context: 'nav' });\n  return [getInfo(navTag), getInfo(t({ context: 'menu' }))];",
+          'function getInfo(t: GT) {\n  return t`Home`;\n}'
+        ),
+      }),
+      inline: ["t({ context: 'nav' })`Home`", "t({ context: 'menu' })`Home`"],
+    },
+    'recursive functions': {
+      files: (host) => ({
+        'page.tsx': withTag(
+          host,
+          'return [walk(t, 3), even(t, 4)];',
+          'function walk(t: GT, depth: number): string[] {\n  return depth ? [t`Node`, ...walk(t, depth - 1)] : [t`Leaf`];\n}\nfunction even(t: GT, k: number): string {\n  return k ? odd(t, k - 1) : t`Even`;\n}\nconst odd = (t: GT, k: number): string => (k ? even(t, k - 1) : t`Odd`);'
+        ),
+      }),
+      inline: ['t`Node`', 't`Leaf`', 't`Even`', 't`Odd`'],
+    },
+    'a named import': {
+      files: (host) => ({
+        'page.tsx': withTag(
+          host,
+          'return getNavLabels(t);',
+          "import { getNavLabels } from './nav';"
+        ),
+        'nav.ts': nav(
+          host,
+          'export function getNavLabels(t: GT) {\n  return { settings: t`Settings` };\n}'
+        ),
+      }),
+      inline: ['t`Settings`'],
+    },
+    'a renamed import of an exported arrow function': {
+      files: (host) => ({
+        'page.tsx': withTag(
+          host,
+          'return labels(t);',
+          "import { navLabels as labels } from './nav';"
+        ),
+        'nav.ts': nav(
+          host,
+          "export const navLabels = (t: GT) => t({ context: 'nav' })`Settings`;"
+        ),
+      }),
+      inline: ["t({ context: 'nav' })`Settings`"],
+    },
+    'default imports': {
+      files: (host) => ({
+        'page.tsx': withTag(
+          host,
+          'return [first(t), second(t)];',
+          "import first from './first';\nimport second from './second';"
+        ),
+        'first.ts': nav(
+          host,
+          'export default function (t: GT) {\n  return t`First`;\n}'
+        ),
+        'second.ts': nav(
+          host,
+          'function second(t: GT) {\n  return t`Second`;\n}\nexport default second;'
+        ),
+      }),
+      inline: ['t`First`', 't`Second`'],
+    },
+    're-exports': {
+      files: (host) => ({
+        'page.tsx': withTag(
+          host,
+          'return [labels(t), more(t), local(t)];',
+          "import { labels, more, local } from './lib';"
+        ),
+        'lib/index.ts':
+          "export { navLabels as labels } from './nav';\nexport * from './more';\nimport { localLabels } from './local';\nexport { localLabels as local };\n",
+        'lib/nav.ts': nav(
+          host,
+          'export function navLabels(t: GT) {\n  return t`Renamed`;\n}'
+        ),
+        'lib/more.ts': nav(
+          host,
+          'export function more(t: GT) {\n  return t`Star`;\n}'
+        ),
+        'lib/local.ts': nav(
+          host,
+          'export function localLabels(t: GT) {\n  return t`Local`;\n}'
+        ),
+      }),
+      inline: ['t`Renamed`', 't`Star`', 't`Local`'],
+    },
+    'a tsconfig path': {
+      files: (host, dir) => ({
+        'page.tsx': withTag(
+          host,
+          'return getNavLabels(t);',
+          `import { getNavLabels } from '@helpers/${dir}/lib/nav';`
+        ),
+        'lib/nav.ts': nav(
+          host,
+          'export function getNavLabels(t: GT) {\n  return t`Aliased`;\n}'
+        ),
+      }),
+      inline: ['t`Aliased`'],
+    },
+    "a chain of files, resolving each import from the importing file's directory":
+      {
+        files: (host) => ({
+          'page.tsx': withTag(
+            host,
+            'return outer(t);',
+            "import { outer } from './lib/outer';"
+          ),
+          'lib/outer.ts': nav(
+            host,
+            "import { inner } from './inner';\nexport function outer(t: GT) {\n  return [t`Outer`, inner(t)];\n}"
+          ),
+          'lib/inner.ts': nav(
+            host,
+            'export function inner(t: GT) {\n  return t`Inner`;\n}'
+          ),
+        }),
+        inline: ['t`Outer`', 't`Inner`'],
+      },
+    'an import cycle': {
+      files: (host) => ({
+        'page.tsx': withTag(
+          host,
+          'return ping(t, 3);',
+          "import { ping } from './ping';"
+        ),
+        'ping.ts': nav(
+          host,
+          "import { pong } from './pong';\nexport function ping(t: GT, k: number): string {\n  return k ? pong(t, k - 1) : t`Ping`;\n}"
+        ),
+        'pong.ts': nav(
+          host,
+          "import { ping } from './ping';\nexport function pong(t: GT, k: number): string {\n  return k ? ping(t, k - 1) : t`Pong`;\n}"
+        ),
+      }),
+      inline: ['t`Ping`', 't`Pong`'],
+    },
+    'message helpers and derive() in another file': {
+      files: (host) => ({
+        'page.tsx': withTag(
+          host,
+          "return count(t, 2, 'admin');",
+          "import { count } from './count';"
+        ),
+        'count.ts': nav(
+          host,
+          "export function count(t: GT, items: number, role: 'admin' | 'member') {\n  return [\n    t`${plural({ items }, { one: 'One item', other: part`${n} items` })}`,\n    t`Signed in as ${derive(role)}`,\n  ];\n}"
+        ),
+      }),
+      declarations:
+        "declare const items: number;\ndeclare const role: 'admin' | 'member';",
+      inline: [
+        "t`${plural({ items }, { one: 'One item', other: part`${n} items` })}`",
+        't`Signed in as ${derive(role)}`',
+      ],
+    },
+  };
+
+  async function expectInlineEntries(host: Host, testCase: Case) {
+    const followed = await extractProject(host.library, (dir) =>
+      testCase.files(host, dir)
+    );
+    const inline = await extractProject(host.library, () => ({
+      'page.tsx': withTag(
+        host,
+        `return [${testCase.inline.join(', ')}];`,
+        testCase.declarations
+      ),
+    }));
+
+    expect(followed.result.errors).toEqual([]);
+    expect(followed.result.warnings).toEqual([]);
+    expect(inline.result.warnings).toEqual([]);
+    expect(entryKeys(followed.result)).toEqual(entryKeys(inline.result));
+    expect(entryKeys(followed.result).length).toBeGreaterThanOrEqual(
+      testCase.inline.length
+    );
+  }
+
+  it.each(Object.keys(cases))(
+    'extracts %s like the same messages written inline',
+    (name) => expectInlineEntries(nextHost, cases[name])
+  );
+
+  describe.each(hosts)('with %s', (_name, host) => {
+    it.each([
+      'a function declaration',
+      'a named import',
+      'message helpers and derive() in another file',
+    ])('extracts %s like inline messages', (name) =>
+      expectInlineEntries(host, cases[name])
+    );
+  });
+
+  it("records the helper's file as the file of its messages", async () => {
+    const { dir, result } = await extractProject(Libraries.GT_NEXT, () =>
+      cases[
+        "a chain of files, resolving each import from the importing file's directory"
+      ].files(nextHost, '')
+    );
+
+    // Imports resolve to real paths, and the temporary directory may be a link.
+    const relative = (file: string) =>
+      path.relative(process.cwd(), path.join(fs.realpathSync(dir), file));
+    expect(
+      treeUpdates(result).map((u) => [u.source, u.metadata.filePaths])
+    ).toEqual([
+      ['Outer', [relative('lib/outer.ts')]],
+      ['Inner', [relative('lib/inner.ts')]],
+    ]);
+  });
+
+  it('extracts a function called from two components once', async () => {
+    const component = (name: string) =>
+      withTag(
+        nextHost,
+        'return [getNavLabels(t), getNavLabels(t), local(t), local(t)];',
+        `import { getNavLabels } from './nav';\nfunction local(t: GT) {\n  return t\`Local ${name}\`;\n}`
+      );
+    const { result } = await extractProject(
+      Libraries.GT_NEXT,
+      () => ({
+        'a.tsx': component('A'),
+        'b.tsx': component('B'),
+        'nav.ts': nav(
+          nextHost,
+          'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+        ),
+      }),
+      ['a.tsx', 'b.tsx']
+    );
+
+    expect(result.warnings).toEqual([]);
+    expect(treeUpdates(result).map((u) => u.source)).toEqual([
+      'Settings',
+      'Local A',
+      'Local B',
+    ]);
+  });
+
+  it('extracts a function called with the same options from two components once', async () => {
+    const component = withTag(
+      nextHost,
+      "return [getNavLabels(t({ context: 'menu' })), getNavLabels(t({ context: 'menu' }))];",
+      "import { getNavLabels } from './nav';"
+    );
+    const { result } = await extractProject(
+      Libraries.GT_NEXT,
+      () => ({
+        'a.tsx': component,
+        'b.tsx': component,
+        'nav.ts': nav(
+          nextHost,
+          'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+        ),
+      }),
+      ['a.tsx', 'b.tsx'],
+      { includeSourceCodeContext: true }
+    );
+
+    expect(result.warnings).toEqual([]);
+    const updates = treeUpdates(result);
+    expect(updates.map((u) => [u.source, u.metadata.context])).toEqual([
+      ['Settings', 'menu'],
+    ]);
+    expect(
+      Object.values(updates[0].metadata.sourceCode ?? {}).flat()
+    ).toHaveLength(1);
+  });
+
+  it.each([
+    ['useGT', 'return getNavLabels(useGT());'],
+    ['getGT', 'return getNavLabels(await getGT());'],
+  ])('follows the result of %s() passed directly', async (hook, body) => {
+    const host = hosts.find(([, h]) => h.hook === hook)![1];
+    const { result } = await extractProject(host.library, () => ({
+      'page.tsx': withTag(host, body, "import { getNavLabels } from './nav';"),
+      'nav.ts': nav(
+        host,
+        'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+      ),
+    }));
+
+    expect(result.warnings).toEqual([]);
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Settings']);
+  });
+
+  it('follows a .js import to its .tsx source', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        'return getNavLabels(t);',
+        "import { getNavLabels } from './nav.js';"
+      ),
+      'nav.tsx': nav(
+        nextHost,
+        'export function getNavLabels(t: GT) {\n  return <b>{t`Settings`}</b>;\n}'
+      ),
+    }));
+
+    expect(result.warnings).toEqual([]);
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Settings']);
+  });
+
+  it("reports a bad option in the caller's file", async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        'return getNavLabels(t({ context: ctx }));',
+        "import { getNavLabels } from './nav';\ndeclare const ctx: string;"
+      ),
+      'nav.ts': nav(
+        nextHost,
+        'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+      ),
+    }));
+
+    expect(treeUpdates(result)).toEqual([]);
+    const skipped = [...result.warnings, ...result.errors];
+    expect(skipped).toHaveLength(1);
+    expect(skipped[0]).toMatch(/page\.tsx \(\d+:\d+\)/);
+    expect(skipped[0]).not.toMatch(/nav\.ts/);
+  });
+
+  it('follows type assertions, a self-calling function expression, an overloaded default export and .mjs imports', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        [
+          'asserted(t as GT);',
+          'asserted(t!);',
+          'asserted(t satisfies GT);',
+          'self(t, 1);',
+          'overloaded(t);',
+          'return fromMts(t);',
+        ].join('\n  '),
+        [
+          "import overloaded from './overloaded';",
+          "import { fromMts } from './labels.mjs';",
+          'function asserted(t: GT) {\n  return t`Asserted`;\n}',
+          'const self = function inner(t: GT, depth: number): string {\n  return depth ? inner(t, depth - 1) : t`Self`;\n};',
+        ].join('\n')
+      ),
+      'overloaded.ts': nav(
+        nextHost,
+        'export default function label(t: GT): string;\nexport default function label(t: GT, id?: string) {\n  return t`Overloaded`;\n}'
+      ),
+      'labels.mts': nav(
+        nextHost,
+        'export function fromMts(t: GT) {\n  return t`From mts`;\n}'
+      ),
+    }));
+
+    expect(result.warnings).toEqual([]);
+    expect(
+      treeUpdates(result)
+        .map((u) => u.source)
+        .sort()
+    ).toEqual(['Asserted', 'From mts', 'Overloaded', 'Self']);
+  });
+
+  it('extracts a helper once when its own file and another file pass it t', async () => {
+    const { result } = await extractProject(
+      Libraries.GT_NEXT,
+      () => ({
+        'a.tsx': withTag(
+          nextHost,
+          'return getNavLabels(t);',
+          "import { getNavLabels } from './nav';"
+        ),
+        'nav.tsx': withTag(
+          nextHost,
+          'return getNavLabels(t);',
+          'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+        ),
+      }),
+      ['a.tsx', 'nav.tsx'],
+      { includeSourceCodeContext: true }
+    );
+
+    expect(result.warnings).toEqual([]);
+    const updates = treeUpdates(result);
+    expect(updates.map((u) => u.source)).toEqual(['Settings']);
+    expect(
+      Object.values(updates[0].metadata.sourceCode ?? {}).flat()
+    ).toHaveLength(1);
+  });
+
+  it('follows an export through a large barrel', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => {
+      const files: Record<string, string> = {
+        'page.tsx': withTag(
+          nextHost,
+          'return getNavLabels(t);',
+          "import { getNavLabels } from './lib';"
+        ),
+        'lib/nav.ts': nav(
+          nextHost,
+          'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+        ),
+      };
+      const modules = Array.from({ length: 40 }, (_, i) => `m${i}`);
+      for (const name of modules) {
+        files[`lib/${name}.ts`] =
+          `export function ${name}() {\n  return '${name}';\n}\n`;
+      }
+      files['lib/index.ts'] = [...modules, 'nav']
+        .map((name) => `export * from './${name}';`)
+        .join('\n');
+      return files;
+    });
+
+    expect(result.warnings).toEqual([]);
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Settings']);
+  });
+
+  it('warns about an import it cannot resolve because tsconfig.json is malformed', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'tsconfig.json': '{ "compilerOptions": { "strict": true, }} oops',
+      'page.tsx': withTag(
+        nextHost,
+        'return getNavLabels(t);',
+        "import { getNavLabels } from './nav';"
+      ),
+      'nav.ts': nav(
+        nextHost,
+        'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+      ),
+    }));
+
+    expect(treeUpdates(result)).toEqual([]);
+    expect(
+      result.warnings.filter((w) => w.includes('Could not follow this use'))
+    ).toHaveLength(1);
+  });
+
+  it('extracts and warns about a reassigned default export, and warns about arguments read beside a parameter', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        [
+          'reassigned(t);',
+          'inDefault(undefined, t);',
+          'return besideParameter(t);',
+        ].join('\n  '),
+        [
+          "import reassigned from './reassigned';",
+          'function inDefault(tr: GT = arguments[1]) {\n  return tr`In default`;\n}',
+          'function besideParameter(tr: GT) {\n  return (arguments[0] as GT)`Beside`;\n}',
+        ].join('\n')
+      ),
+      'reassigned.ts': nav(
+        nextHost,
+        'export default function label(t: GT) {\n  return t`Old`;\n}\nlabel = (t: GT) => t`New`;'
+      ),
+    }));
+
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Old']);
+    const untracked = result.warnings.filter((w) =>
+      w.includes('Could not follow this use')
+    );
+    expect(untracked).toHaveLength(3);
+  });
+
+  it('extracts a function once for the same options written in another order', async () => {
+    const { result } = await extractProject(
+      Libraries.GT_NEXT,
+      () => ({
+        'page.tsx': withTag(
+          nextHost,
+          "return [getNavLabels(t({ context: 'menu', maxChars: 9 })), getNavLabels(t({ maxChars: 9, context: 'menu' }))];",
+          "import { getNavLabels } from './nav';"
+        ),
+        'nav.ts': nav(
+          nextHost,
+          'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+        ),
+      }),
+      ['page.tsx'],
+      { includeSourceCodeContext: true }
+    );
+
+    expect(result.warnings).toEqual([]);
+    const updates = treeUpdates(result);
+    expect(updates.map((u) => u.source)).toEqual(['Settings']);
+    expect(
+      Object.values(updates[0].metadata.sourceCode ?? {}).flat()
+    ).toHaveLength(1);
+  });
+
+  it('reports invalid options at every call site, including t()', async () => {
+    const caller = (body: string) =>
+      withTag(
+        nextHost,
+        body,
+        "import { getNavLabels } from './nav';\ndeclare const ctx: string;"
+      );
+    const { result } = await extractProject(
+      Libraries.GT_NEXT,
+      () => ({
+        'a.tsx': caller('return getNavLabels(t({ context: ctx }));'),
+        'b.tsx': caller('return getNavLabels(t({ context: ctx }));'),
+        'c.tsx': caller('return getNavLabels(t());'),
+        'nav.ts': nav(
+          nextHost,
+          'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+        ),
+      }),
+      ['a.tsx', 'b.tsx', 'c.tsx']
+    );
+
+    expect(treeUpdates(result)).toEqual([]);
+    const skipped = [...result.warnings, ...result.errors];
+    expect(skipped).toHaveLength(3);
+    expect(
+      skipped.map((w) => w.match(/\b([abc])\.tsx \(/)?.[1]).sort()
+    ).toEqual(['a', 'b', 'c']);
+    expect(skipped.join('\n')).not.toMatch(/nav\.ts/);
+  });
+
+  it('follows let and var aliases, array literal spreads, and hook dependency arrays without warning', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        [
+          'let tr = t;',
+          'var label = useCallback(() => tr`Callback`, [tr]);',
+          'useMemo(() => viaLet(t), [t]);',
+          'return [label, spread(...[1, 2], t)];',
+        ].join('\n  '),
+        [
+          "import { useCallback, useMemo } from 'react';",
+          'function viaLet(t: GT) {\n  let inner = t;\n  return inner`Let alias`;\n}',
+          'function spread(a: number, b: number, t: GT) {\n  return t`Spread`;\n}',
+        ].join('\n')
+      ),
+    }));
+
+    expect(result.warnings).toEqual([]);
+    expect(
+      treeUpdates(result)
+        .map((u) => u.source)
+        .sort()
+    ).toEqual(['Callback', 'Let alias', 'Spread']);
+  });
+
+  it('follows type assertions around the hook result and a configured tag', async () => {
+    const getHost = hosts.find(([, h]) => h.hook === 'getGT')![1];
+    const files = (host: Host, body: string) => () => ({
+      'page.tsx': withTag(host, body, "import { label } from './nav';"),
+      'nav.ts': nav(
+        host,
+        'export function label(t: GT) {\n  return t`Save`;\n}'
+      ),
+    });
+    for (const [host, body, context] of [
+      [nextHost, 'return label(useGT() as GT);', undefined],
+      [getHost, 'return label((await getGT()) as GT);', undefined],
+      [nextHost, "return label(t({ context: 'nav' })!);", 'nav'],
+    ] as const) {
+      const { result } = await extractProject(host.library, files(host, body));
+      expect(result.warnings).toEqual([]);
+      expect(
+        treeUpdates(result).map((u) => [u.source, u.metadata.context])
+      ).toEqual([['Save', context]]);
+    }
+  });
+
+  it('keeps inline messages when an imported file cannot be traversed', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        'return [t`Inline`, label(t)];',
+        "import { label } from './nav';"
+      ),
+      'types.ts': 'export interface State {\n  ready: boolean;\n}\n',
+      'nav.ts':
+        "import type { State } from './types';\nlet State: State = { ready: true };\nexport function label(t: any) {\n  return t`Save`;\n}\n",
+    }));
+
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Inline']);
+    expect(
+      result.warnings.filter((w) => w.includes('Could not follow this use'))
+    ).toHaveLength(1);
+  });
+
+  it('reads a followed helper file at most twice across many callers', async () => {
+    const helpers = Array.from({ length: 12 }, (_, i) => `h${i}`);
+    const pages = Array.from({ length: 6 }, (_, i) => `page${i}.tsx`);
+    const reads = vi.spyOn(fs, 'readFileSync');
+    try {
+      const { result } = await extractProject(
+        Libraries.GT_NEXT,
+        () => {
+          const files: Record<string, string> = {};
+          for (const page of pages) {
+            files[page] = withTag(
+              nextHost,
+              `return [${helpers.map((h) => `${h}(t)`).join(', ')}];`,
+              helpers.map((h) => `import { ${h} } from './${h}';`).join('\n')
+            );
+          }
+          for (const h of helpers) {
+            files[`${h}.ts`] = nav(
+              nextHost,
+              `export function ${h}(t: GT) {\n  return t\`${h}\`;\n}`
+            );
+          }
+          return files;
+        },
+        pages
+      );
+
+      expect(result.warnings).toEqual([]);
+      expect(treeUpdates(result)).toHaveLength(helpers.length);
+      const helperReads = reads.mock.calls
+        .map(([file]) => path.basename(String(file)))
+        .filter((file) => /^h\d+\.ts$/.test(file));
+      for (const h of helpers) {
+        expect(
+          helperReads.filter((file) => file === `${h}.ts`).length
+        ).toBeLessThanOrEqual(2);
+      }
+    } finally {
+      reads.mockRestore();
+    }
+  });
+
+  it('reports invalid options of a configured alias at the t() call', async () => {
+    const { dir, result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        'const tag = t();\n\n  return getNavLabels(tag);',
+        "import { getNavLabels } from './nav';"
+      ),
+      'nav.ts': nav(
+        nextHost,
+        'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+      ),
+    }));
+
+    const lines = fs
+      .readFileSync(path.join(dir, 'page.tsx'), 'utf8')
+      .split('\n');
+    const configuredLine =
+      lines.findIndex((line) => line.includes('const tag = t()')) + 1;
+    const skipped = [...result.warnings, ...result.errors];
+    expect(skipped).toHaveLength(1);
+    expect(skipped[0]).toContain(`page.tsx (${configuredLine}:`);
+  });
+
+  it('stops at an alias cycle that var redeclarations create', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        'return label(t);',
+        'function label(t: GT) {\n  var alias = t;\n  // @ts-ignore\n  var t = alias;\n  return t`Save`;\n}'
+      ),
+    }));
+
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Save']);
+
+    const { result: chain } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        '// @ts-ignore\n  var tr = t;\n  // @ts-ignore\n  var copy = tr;\n  // @ts-ignore\n  var tr = copy;\n  return tr`Chain`;'
+      ),
+    }));
+
+    expect(treeUpdates(chain).map((u) => u.source)).toEqual(['Chain']);
+  });
+
+  it('follows the same barrel through two symlinked paths to different helpers', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, (dir) => {
+      const root = path.join(projectDir, dir);
+      fs.mkdirSync(path.join(root, 'shared'), { recursive: true });
+      fs.writeFileSync(
+        path.join(root, 'shared/barrel.ts'),
+        "export { label } from './impl';\n"
+      );
+      for (const name of ['a', 'b']) {
+        fs.mkdirSync(path.join(root, name), { recursive: true });
+        fs.symlinkSync(
+          path.join(root, 'shared/barrel.ts'),
+          path.join(root, name, 'barrel.ts')
+        );
+      }
+      return {
+        'tsconfig.json': JSON.stringify({
+          compilerOptions: {
+            baseUrl: '.',
+            preserveSymlinks: true,
+            paths: { '@a': ['a/barrel.ts'], '@b': ['b/barrel.ts'] },
+          },
+        }),
+        'a/impl.ts': nav(
+          nextHost,
+          'export function label(t: GT) {\n  return t`A`;\n}'
+        ),
+        'b/impl.ts': nav(
+          nextHost,
+          'export function label(t: GT) {\n  return t`B`;\n}'
+        ),
+        'page.tsx': withTag(
+          nextHost,
+          'b(t);\n  return a(t);',
+          "import { label as a } from '@a';\nimport { label as b } from '@b';"
+        ),
+      };
+    });
+
+    expect(result.warnings).toEqual([]);
+    expect(
+      treeUpdates(result)
+        .map((u) => u.source)
+        .sort()
+    ).toEqual(['A', 'B']);
+  });
+
+  it("warns about a tag in a custom hook's array argument", async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        "return useLabels('menu', [t]);",
+        'declare function useLabels(id: string, tags: GT[]): string;'
+      ),
+    }));
+
+    expect(
+      result.warnings.filter((w) => w.includes('Could not follow this use'))
+    ).toHaveLength(1);
+  });
+
+  it.each([
+    ['configured first', 'label(t({}), false);\n  return label(t, true);'],
+    ['unconfigured first', 'label(t, true);\n  return label(t({}), false);'],
+  ])(
+    'follows an unconfigured and a configured tag separately, %s',
+    async (_, body) => {
+      const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+        'page.tsx': withTag(
+          nextHost,
+          body,
+          "function label(tr: GT, withContext: boolean) {\n  return withContext ? tr({ context: 'nav' })`Settings` : tr`Home`;\n}"
+        ),
+      }));
+
+      expect(
+        treeUpdates(result)
+          .map((u) => [u.source, u.metadata.context])
+          .sort()
+      ).toEqual([
+        ['Home', undefined],
+        ['Settings', 'nav'],
+      ]);
+    }
+  );
+
+  it.each([
+    ['useGT', 'const t = useGT() as GT;\n  return label(t);', undefined],
+    [
+      'useGT',
+      'const t = useGT();\n  const tr = t as GT;\n  return label(tr);',
+      undefined,
+    ],
+    [
+      'useGT',
+      "const t = useGT();\n  const tag = t({ context: 'nav' })!;\n  return label(tag);",
+      'nav',
+    ],
+    ['getGT', 'const t = (await getGT())!;\n  return label(t);', undefined],
+    ['getGT', 'return label(await getGT()!);', undefined],
+    ['getGT', 'return label((await getGT())!);', undefined],
+  ])(
+    'extracts the same entry when a %s tag is bound through an assertion: %s',
+    async (hook, body, context) => {
+      const host = hosts.find(([, h]) => h.hook === hook)![1];
+      const component =
+        hook === 'useGT'
+          ? `export function Component() {\n  ${body}\n}`
+          : `export async function load() {\n  ${body}\n}`;
+      const { result } = await extractProject(host.library, () => ({
+        'page.tsx': `import { ${hook}, type GT } from '${host.source}';\nimport { label } from './nav';\n${component}\n`,
+        'nav.ts': nav(
+          host,
+          'export function label(t: GT) {\n  return t`Save`;\n}'
+        ),
+      }));
+
+      expect(result.warnings).toEqual([]);
+      expect(
+        treeUpdates(result).map((u) => [u.source, u.metadata.context])
+      ).toEqual([['Save', context]]);
+    }
+  );
+
+  it('stops at a var alias initialized from itself', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        '// @ts-ignore\n  var tr = t;\n  // @ts-ignore\n  var tr = tr;\n  return tr`Self`;'
+      ),
+    }));
+
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Self']);
+  });
+
+  it('extracts the configured message of a var that redeclares the parameter', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        'return label(t);',
+        "function label(t: GT) {\n  // @ts-ignore\n  var t = t({ context: 'nav' });\n  return t`Save`;\n}"
+      ),
+    }));
+
+    expect(
+      treeUpdates(result).map((u) => [u.source, u.metadata.context])
+    ).toContainEqual(['Save', 'nav']);
+  });
+
+  it('recognizes React hooks by their import, not their local name', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        [
+          'const a = useCached(() => t`Cached`, [t]);',
+          'const b = React.useCallback(() => t`Namespaced`, [t]);',
+          "return [a, b, helpers.useMemo('nav', [t])];",
+        ].join('\n  '),
+        [
+          "import { useMemo as useCached } from 'react';",
+          "import * as React from 'react';",
+          'declare const helpers: { useMemo(id: string, tags: GT[]): string };',
+        ].join('\n')
+      ),
+    }));
+
+    expect(
+      treeUpdates(result)
+        .map((u) => u.source)
+        .sort()
+    ).toEqual(['Cached', 'Namespaced']);
+    const untracked = result.warnings.filter((w) =>
+      w.includes('Could not follow this use')
+    );
+    // Only the [t] passed to helpers.useMemo, on the component's third line.
+    expect(untracked.map((w) => w.match(/\((\d+):\d+\)/)?.[1])).toEqual(['9']);
+  });
+
+  it('follows a symlinked helper that forwards t to a relative import, from each path', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, (dir) => {
+      const root = path.join(projectDir, dir);
+      fs.mkdirSync(path.join(root, 'shared'), { recursive: true });
+      fs.writeFileSync(
+        path.join(root, 'shared/relay.ts'),
+        "import { label } from './impl';\nexport function relay(t: any) {\n  return label(t);\n}\n"
+      );
+      for (const name of ['a', 'b']) {
+        fs.mkdirSync(path.join(root, name), { recursive: true });
+        fs.symlinkSync(
+          path.join(root, 'shared/relay.ts'),
+          path.join(root, name, 'relay.ts')
+        );
+      }
+      return {
+        'tsconfig.json': JSON.stringify({
+          compilerOptions: {
+            baseUrl: '.',
+            preserveSymlinks: true,
+            paths: { '@a': ['a/relay.ts'], '@b': ['b/relay.ts'] },
+          },
+        }),
+        'a/impl.ts': nav(
+          nextHost,
+          'export function label(t: GT) {\n  return t`A`;\n}'
+        ),
+        'b/impl.ts': nav(
+          nextHost,
+          'export function label(t: GT) {\n  return t`B`;\n}'
+        ),
+        'page.tsx': withTag(
+          nextHost,
+          'b(t);\n  return a(t);',
+          "import { relay as a } from '@a';\nimport { relay as b } from '@b';"
+        ),
+      };
+    });
+
+    expect(result.warnings).toEqual([]);
+    expect(
+      treeUpdates(result)
+        .map((u) => u.source)
+        .sort()
+    ).toEqual(['A', 'B']);
+  });
+
+  it('reads <GT> assertions in .ts files, in the caller and the helper', async () => {
+    const { result } = await extractProject(
+      Libraries.GT_NEXT,
+      () => ({
+        'page.ts': `import { useGT, type GT } from 'gt-next';\nimport { label } from './nav';\nexport function useLabel() {\n  const t = <GT>useGT();\n  return label(t);\n}\n`,
+        'nav.ts': nav(
+          nextHost,
+          'export function label(t: GT) {\n  const tr = <GT>t;\n  return tr`Save`;\n}'
+        ),
+      }),
+      ['page.ts']
+    );
+
+    expect(result.warnings).toEqual([]);
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Save']);
+  });
+
+  it('follows a symlinked directory to the files beside each link', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, (dir) => {
+      const root = path.join(projectDir, dir);
+      fs.mkdirSync(path.join(root, 'real/shared'), { recursive: true });
+      fs.writeFileSync(
+        path.join(root, 'real/shared/index.ts'),
+        "export { label } from '../impl';\n"
+      );
+      for (const name of ['a', 'b']) {
+        fs.mkdirSync(path.join(root, name), { recursive: true });
+        fs.symlinkSync(
+          path.join(root, 'real/shared'),
+          path.join(root, name, 'shared'),
+          'dir'
+        );
+      }
+      return {
+        'tsconfig.json': JSON.stringify({
+          compilerOptions: {
+            baseUrl: '.',
+            preserveSymlinks: true,
+            paths: { '@a': ['a/shared/index.ts'], '@b': ['b/shared/index.ts'] },
+          },
+        }),
+        'a/impl.ts': nav(
+          nextHost,
+          'export function label(t: GT) {\n  return t`A`;\n}'
+        ),
+        'b/impl.ts': nav(
+          nextHost,
+          'export function label(t: GT) {\n  return t`B`;\n}'
+        ),
+        'page.tsx': withTag(
+          nextHost,
+          'b(t);\n  return a(t);',
+          "import { label as a } from '@a';\nimport { label as b } from '@b';"
+        ),
+      };
+    });
+
+    expect(result.warnings).toEqual([]);
+    expect(
+      treeUpdates(result)
+        .map((u) => u.source)
+        .sort()
+    ).toEqual(['A', 'B']);
+  });
+
+  it("recognizes React's default export imported by name", async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        'return R.useMemo(() => t`Save`, [t]);',
+        "import { default as R } from 'react';"
+      ),
+    }));
+
+    expect(result.warnings).toEqual([]);
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Save']);
+  });
+
+  it('extracts a gt-svelte module in a .ts file with a <T> assertion', async () => {
+    const { result } = await extractProject(
+      Libraries.GT_SVELTE,
+      () => ({
+        'labels.ts':
+          "import { msg } from 'gt-svelte';\nconst count = <number>1;\nexport const save = msg('Save');\n",
+      }),
+      ['labels.ts']
+    );
+
+    expect(result.errors).toEqual([]);
+    expect(result.updates.map((u) => u.source)).toContain('Save');
+  });
+
+  it('skips a scanned file whose scopes Babel cannot build, and extracts the rest', async () => {
+    const logged = vi.spyOn(logger, 'error').mockImplementation(() => {});
+    const { result } = await extractProject(
+      Libraries.GT_REACT,
+      () => ({
+        'types.ts': 'export interface State {\n  ready: boolean;\n}\n',
+        'state.ts':
+          "import type { State } from './types';\nlet State = <State>{ ready: true };\nexport { State };\n",
+        'label.ts':
+          "import { t } from 'gt-react';\nexport const label = t`Save`;\n",
+      }),
+      ['state.ts', 'label.ts']
+    );
+
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Save']);
+    expect(logged).toHaveBeenCalledWith(expect.stringContaining('state.ts'));
+    logged.mockRestore();
+  });
+
+  // Windows normalizes `link/..` before opening the file.
+  it.skipIf(process.platform === 'win32')(
+    'keeps a path through a symlink and .. apart from the plain path',
+    async () => {
+      const { result } = await extractProject(Libraries.GT_NEXT, (dir) => {
+        const root = path.join(projectDir, dir);
+        fs.mkdirSync(path.join(root, 'other/deep'), { recursive: true });
+        fs.symlinkSync(
+          path.join(root, 'other/deep'),
+          path.join(root, 'link'),
+          'dir'
+        );
+        return {
+          'tsconfig.json': JSON.stringify({
+            compilerOptions: {
+              baseUrl: '.',
+              paths: { '@src/*': ['*'] },
+            },
+          }),
+          'nav.ts': nav(
+            nextHost,
+            'export function label(t: GT) {\n  return t`Near`;\n}'
+          ),
+          'other/nav.ts': nav(
+            nextHost,
+            'export function label(t: GT) {\n  return t`Far`;\n}'
+          ),
+          'page.tsx': withTag(
+            nextHost,
+            'near(t);\n  return far(t);',
+            "import { label as far } from '@src/link/../nav';\nimport { label as near } from '@src/nav';"
+          ),
+        };
+      });
+
+      expect(
+        treeUpdates(result)
+          .map((u) => u.source)
+          .sort()
+      ).toEqual(['Far', 'Near']);
+    }
+  );
+
+  it('extracts a helper once when imports spell its path with ./', async () => {
+    const { result } = await extractProject(
+      Libraries.GT_NEXT,
+      () => ({
+        'tsconfig.json': JSON.stringify({
+          compilerOptions: { baseUrl: '.', paths: { '@src/*': ['*'] } },
+        }),
+        'nav.ts': nav(
+          nextHost,
+          'export function label(t: GT) {\n  return t`Save`;\n}'
+        ),
+        'page.tsx': withTag(
+          nextHost,
+          'a(t);\n  return b(t);',
+          "import { label as a } from '@src/nav';\nimport { label as b } from '@src/./nav';"
+        ),
+      }),
+      ['page.tsx'],
+      { includeSourceCodeContext: true }
+    );
+
+    expect(result.warnings).toEqual([]);
+    const updates = treeUpdates(result);
+    expect(updates.map((u) => u.source)).toEqual(['Save']);
+    expect(
+      Object.values(updates[0].metadata.sourceCode ?? {}).flat()
+    ).toHaveLength(1);
+  });
+
+  it('does not extract a function that never receives a tag', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        'return [getInfo(other), unused];',
+        "declare const other: GT;\nfunction getInfo(t: GT) {\n  return t`Passed another t`;\n}\nfunction unused(t: GT) {\n  return t`Never called`;\n}\nimport { getNavLabels } from './nav';\ngetNavLabels(other);"
+      ),
+      'nav.ts': nav(
+        nextHost,
+        'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+      ),
+    }));
+
+    expect(result.warnings).toEqual([]);
+    expect(treeUpdates(result)).toEqual([]);
+  });
+
+  it('warns about the t imported from gt-react passed to a function', async () => {
+    const { result } = await extractProject(Libraries.GT_REACT, () => ({
+      'page.tsx':
+        "import { t, type GT } from 'gt-react';\nimport { getNavLabels } from './nav';\nfunction local(tr: GT) {\n  return tr`Local`;\n}\ngetNavLabels(t);\nlocal(t);\n",
+      'nav.ts': nav(
+        nextHost,
+        'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}'
+      ),
+    }));
+
+    expect(treeUpdates(result)).toEqual([]);
+    const untracked = result.warnings.filter((w) =>
+      w.includes('Could not follow this use')
+    );
+    expect(untracked.map((w) => w.match(/\((\d+):\d+\)/)?.[1])).toEqual([
+      '6',
+      '7',
+    ]);
+  });
+
+  it('extracts and warns about a reassigned function, and warns about one that reads arguments', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        [
+          'reassigned(t);',
+          'viaArguments(t);',
+          'arrowReads(t);',
+          'return nestedReads(t);',
+        ].join('\n  '),
+        [
+          'function reassigned(t: GT) {\n  return t`Old`;\n}',
+          'reassigned = (t: GT) => t`New`;',
+          'function viaArguments() {\n  const tr: GT = arguments[0];\n  return tr`Via arguments`;\n}',
+          'function arrowReads() {\n  const read = () => arguments[0];\n  return read()`Arrow`;\n}',
+          'function nestedReads() {\n  return function () {\n    return arguments[0];\n  };\n}',
+        ].join('\n')
+      ),
+    }));
+
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Old']);
+    const untracked = result.warnings.filter((w) =>
+      w.includes('Could not follow this use')
+    );
+    expect(untracked.map((w) => w.match(/\((\d+):\d+\)/)?.[1])).toEqual([
+      '21',
+      '22',
+      '23',
+    ]);
+  });
+
+  it('warns about a function it cannot find, and extracts the rest', async () => {
+    const { result } = await extractProject(Libraries.GT_NEXT, () => ({
+      'page.tsx': withTag(
+        nextHost,
+        [
+          'missing(t);',
+          'fromPackage(t);',
+          'helpers.label(t);',
+          "helpers['label'](t);",
+          '(Math.random() ? helpers.label : helpers.label)(t);',
+          'getNavLabels(...args, t);',
+          'rest(t);',
+          'destructured({ t });',
+          'notAFunction(t);',
+          'Translate(t);',
+          'return getNavLabels(t);',
+        ].join('\n  '),
+        [
+          "import { missing } from './missing';",
+          "import { label as fromPackage } from 'fake-helpers';",
+          "import { T as Translate } from 'gt-react';",
+          "import { getNavLabels, notAFunction } from './nav';",
+          'declare const helpers: { label(t: GT): string };',
+          'declare const args: GT[];',
+          'function rest(...all: GT[]) {\n  return all[0]`Rest`;\n}',
+          'function destructured({ t }: { t: GT }) {\n  return t`Destructured`;\n}',
+        ].join('\n')
+      ),
+      'nav.ts': nav(
+        nextHost,
+        'export function getNavLabels(t: GT) {\n  return t`Settings`;\n}\nexport const notAFunction = getNavLabels.bind(null);'
+      ),
+      'node_modules/fake-helpers/package.json': JSON.stringify({
+        name: 'fake-helpers',
+        main: 'index.js',
+      }),
+      'node_modules/fake-helpers/index.js':
+        'export function label(t) {\n  return t`From a package`;\n}\n',
+    }));
+
+    expect(treeUpdates(result).map((u) => u.source)).toEqual(['Settings']);
+    const untracked = result.warnings.filter((w) =>
+      w.includes('Could not follow this use')
+    );
+    expect(untracked.map((w) => w.match(/\((\d+):\d+\)/)?.[1])).toEqual([
+      '16',
+      '17',
+      '18',
+      '19',
+      '20',
+      '21',
+      '22',
+      '23',
+      '24',
+      '25',
+    ]);
   });
 });

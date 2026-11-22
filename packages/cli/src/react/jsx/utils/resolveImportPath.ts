@@ -146,9 +146,24 @@ export function resolveImportPath(
   } catch {
     // If resolution fails, try to manually replace .js/.jsx with .ts/.tsx for source files
     if (importPath.endsWith('.js')) {
-      const tsPath = importPath.replace(/\.js$/, '.ts');
+      for (const sourceExtension of ['.ts', '.tsx']) {
+        try {
+          result = resolve.sync(importPath.replace(/\.js$/, sourceExtension), {
+            basedir,
+            extensions,
+          });
+          resolveImportPathCache.set(cacheKey, result);
+          return result;
+        } catch {
+          // Try the next source extension
+        }
+      }
+    } else if (/\.[cm]js$/.test(importPath)) {
       try {
-        result = resolve.sync(tsPath, { basedir, extensions });
+        result = resolve.sync(importPath.replace(/js$/, 'ts'), {
+          basedir,
+          extensions,
+        });
         resolveImportPathCache.set(cacheKey, result);
         return result;
       } catch {

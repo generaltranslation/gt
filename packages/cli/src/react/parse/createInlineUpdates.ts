@@ -13,7 +13,9 @@ import type {
   ResolvedGTParsingFlags,
 } from '../../types/parsing.js';
 import { getPathsAndAliases } from '../jsx/utils/getPathsAndAliases.js';
+import { getSourceParserPlugins } from '../jsx/utils/sourceParserPlugins.js';
 import { extractMessageTrees } from '../jsx/utils/stringParsing/extractMessageTrees/index.js';
+import { createHelperFollower } from '../jsx/utils/stringParsing/extractMessageTrees/followHelpers.js';
 import type { ParsingConfig } from '../jsx/utils/stringParsing/types.js';
 import {
   GTLibrary,
@@ -50,6 +52,7 @@ export async function createInlineUpdates(
   const warnings: Set<string> = new Set();
 
   const pkgs = getUpstreamPackages(pkg);
+  const helperFollower = createHelperFollower(parsingOptions);
 
   // Use the provided app directory or default to the current directory
   const files = matchFiles(process.cwd(), filePatterns || DEFAULT_SRC_PATTERNS);
@@ -57,21 +60,20 @@ export async function createInlineUpdates(
   for (const file of files) {
     const code = await fs.promises.readFile(file, 'utf8');
     let ast;
+    let pathsAndAliases;
     try {
       ast = parse(code, {
         sourceType: 'module',
-        plugins: ['jsx', 'typescript'],
+        plugins: getSourceParserPlugins(file),
       });
+      // First pass: collect imports and process translation functions. Babel
+      // can parse some files whose scopes it cannot build.
+      pathsAndAliases = getPathsAndAliases(ast, pkgs);
     } catch (error) {
       logger.error(`Error parsing file ${file}: ${error}`);
       continue;
     }
-
-    // First pass: collect imports and process translation functions
-    const { importAliases, translationComponentPaths } = getPathsAndAliases(
-      ast,
-      pkgs
-    );
+    const { importAliases, translationComponentPaths } = pathsAndAliases;
 
     const stringParsingConfig: ParsingConfig = {
       file,
@@ -80,11 +82,13 @@ export async function createInlineUpdates(
     };
 
     // Tagged-template messages, extracted as message trees
-    await extractMessageTrees(ast, pkgs, stringParsingConfig, {
-      updates,
-      errors,
-      warnings,
-    });
+    await extractMessageTrees(
+      ast,
+      pkgs,
+      stringParsingConfig,
+      { updates, errors, warnings },
+      helperFollower
+    );
 
     // gt-svelte's string API. Its extractor reads ESTree, as in a .svelte file's scripts
     if (pkg === Libraries.GT_SVELTE) {
@@ -93,7 +97,7 @@ export async function createInlineUpdates(
         parse: (source) =>
           parse(source, {
             sourceType: 'module',
-            plugins: ['estree', 'jsx', 'typescript'],
+            plugins: ['estree', ...getSourceParserPlugins(file)],
           }).program,
         includeSourceCodeContext: parsingFlags.includeSourceCodeContext,
       });

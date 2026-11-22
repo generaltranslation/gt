@@ -18,7 +18,12 @@ import {
 import { loadTypeScript } from '../../typeChecker.js';
 import type { ParsingConfig, ParsingOutput } from '../types.js';
 import { formatLocation } from './diagnostics.js';
-import { processHookReference, processTagBinding } from './followTags.js';
+import type { HelperFollower } from './followHelpers.js';
+import {
+  processFollowedParameters,
+  processHookReference,
+  processTagBinding,
+} from './followTags.js';
 import { getImportedName } from './imports.js';
 
 // Handle CommonJS/ESM interop
@@ -33,6 +38,8 @@ const traverse = traverseModule.default || traverseModule;
  * msg('literal'), and the same forms on a
  * `const t = useGT()` / `const t = await getGT()` result, including const
  * aliases (`const tr = t`) and configured tags (`const save = t({ ... })`).
+ * A useGT() or getGT() tag is also followed into the functions it is passed
+ * to, in this file or an imported one.
  * Messages that are not statically analyzable are skipped with a warning, and
  * so are uses of a tag that cannot be followed.
  */
@@ -40,7 +47,8 @@ export async function extractMessageTrees(
   ast: t.File,
   pkgs: readonly GTLibrary[],
   config: ParsingConfig,
-  output: ParsingOutput
+  output: ParsingOutput,
+  follower: HelperFollower
 ): Promise<void> {
   const isExtractedSource = (source: string) =>
     isGTMessageImportSource(source) && isGTImportSource(source, pkgs);
@@ -126,22 +134,21 @@ export async function extractMessageTrees(
           importedName === T_REGISTRATION_FUNCTION ||
           importedName === MSG_REGISTRATION_FUNCTION
         ) {
-          processTagBinding(
-            binding,
-            undefined,
+          processTagBinding(binding, undefined, {
             config,
             output,
-            importedName === MSG_REGISTRATION_FUNCTION
-          );
+            isMsg: importedName === MSG_REGISTRATION_FUNCTION,
+          });
         } else if (
           importedName === INLINE_TRANSLATION_HOOK ||
           importedName === INLINE_TRANSLATION_HOOK_ASYNC
         ) {
           for (const ref of binding.referencePaths) {
-            processHookReference(ref, config, output);
+            processHookReference(ref, config, output, follower);
           }
         }
       }
     },
   });
+  await processFollowedParameters(config, output, follower);
 }
