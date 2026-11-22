@@ -19,6 +19,20 @@ const ENTRY_FIELDS = [
   'typesVersions',
 ];
 
+// Fields whose extensionless targets are resolved by trying extensions (bundlers
+// for `main`/`module`/`browser`/`react-native`/`source`, TypeScript for types),
+// unlike `exports` and `bin`, which Node resolves exactly.
+const EXTENSION_PROBING_FIELDS = new Set([
+  'main',
+  'module',
+  'types',
+  'typings',
+  'browser',
+  'react-native',
+  'source',
+  'typesVersions',
+]);
+
 // Build output directories that hold a whole copy of the source tree, such as
 // react-native's `dist/module/` and `dist/commonjs/` and paraglide-js's `dist/src/`.
 const OUTPUT_FORMAT_DIRECTORIES = new Set(['commonjs', 'module', 'src']);
@@ -53,7 +67,10 @@ function collectModuleSpecifiers(fileName, sourceText) {
       node.moduleSpecifier &&
       ts.isStringLiteral(node.moduleSpecifier)
     ) {
-      specifiers.push(node.moduleSpecifier.text);
+      specifiers.push({
+        specifier: node.moduleSpecifier.text,
+        probesExtensions: false,
+      });
     } else if (
       ts.isCallExpression(node) &&
       (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
@@ -62,7 +79,10 @@ function collectModuleSpecifiers(fileName, sourceText) {
       node.arguments.length > 0 &&
       ts.isStringLiteralLike(node.arguments[0])
     ) {
-      specifiers.push(node.arguments[0].text);
+      specifiers.push({
+        specifier: node.arguments[0].text,
+        probesExtensions: ts.isIdentifier(node.expression),
+      });
     }
     ts.forEachChild(node, visit);
   };
@@ -72,21 +92,25 @@ function collectModuleSpecifiers(fileName, sourceText) {
 
 // A `bin` that points at a checked-in shim (such as `bin/main.js`) exposes the
 // built files the shim imports, so those count as entries too.
-export function collectBinShimEntryPaths(packageJson, readPackageFile) {
-  const entryPaths = [];
+export function collectBinShimEntries(packageJson, readPackageFile) {
+  const entries = [];
   for (const binPath of collectPaths(packageJson.bin)) {
     const normalized = path.posix.normalize(binPath);
     if (/^(dist|src)\//.test(normalized)) continue;
     const contents = readPackageFile(normalized);
     if (contents === undefined) continue;
-    for (const specifier of collectModuleSpecifiers(normalized, contents)) {
+    for (const { specifier, probesExtensions } of collectModuleSpecifiers(
+      normalized,
+      contents
+    )) {
       if (!/^\.{1,2}\//.test(specifier)) continue;
-      entryPaths.push(
-        path.posix.join(path.posix.dirname(normalized), specifier)
-      );
+      entries.push({
+        entryPath: path.posix.join(path.posix.dirname(normalized), specifier),
+        probesExtensions,
+      });
     }
   }
-  return entryPaths;
+  return entries;
 }
 
 // Strips only JavaScript, TypeScript, and declaration extensions, so an asset such
@@ -124,10 +148,9 @@ function stemMatches(stem, sourceStem) {
   return new RegExp(`^${pattern}$`).test(sourceStem);
 }
 
-// Node resolves `exports` targets exactly, so a code source backs a target only
-// when the target names a built code file, is a wildcard, or is resolved with
-// extension probing (`main` and CommonJS `require` in bin shims); any other
-// target must name the source file itself, as a copied asset does.
+// A code source backs a target only when the target names a built code file, is a
+// wildcard, or is resolved by trying extensions; any other target must name the
+// source file itself, as a copied asset does.
 function entryCoversSource(entryPath, stem, file, probesExtensions) {
   const targetName = entryPath.split('/').pop();
   const sourceStem = stripExtension(file);
@@ -144,16 +167,16 @@ function entryCoversSource(entryPath, stem, file, probesExtensions) {
 export function findUnexportedSourceRootFiles({
   packageJson,
   sourceFiles,
-  extraEntryPaths = [],
+  extraEntries = [],
 }) {
   const entries = [
-    ...collectEntryPaths(packageJson).map((entryPath) => ({
-      entryPath,
-      probesExtensions: false,
-    })),
-    ...[...collectPaths(packageJson.main), ...extraEntryPaths].map(
-      (entryPath) => ({ entryPath, probesExtensions: true })
+    ...ENTRY_FIELDS.flatMap((field) =>
+      collectPaths(packageJson[field]).map((entryPath) => ({
+        entryPath,
+        probesExtensions: EXTENSION_PROBING_FIELDS.has(field),
+      }))
     ),
+    ...extraEntries,
   ];
   const covered = new Set();
   for (const { entryPath, probesExtensions } of entries) {
@@ -218,7 +241,7 @@ export function findViolations(repositoryRoot = process.cwd()) {
       continue;
     }
     const packageRoot = path.dirname(packageJsonPath);
-    const extraEntryPaths = collectBinShimEntryPaths(packageJson, (file) => {
+    const extraEntries = collectBinShimEntries(packageJson, (file) => {
       try {
         return readFileSync(path.join(packageRoot, file), 'utf8');
       } catch {
@@ -228,7 +251,7 @@ export function findViolations(repositoryRoot = process.cwd()) {
     for (const file of findUnexportedSourceRootFiles({
       packageJson,
       sourceFiles,
-      extraEntryPaths,
+      extraEntries,
     })) {
       violations.push(`packages/${packageName}/src/${file}`);
     }

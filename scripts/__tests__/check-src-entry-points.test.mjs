@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import {
-  collectBinShimEntryPaths,
+  collectBinShimEntries,
   collectEntryPaths,
   entrySourceStems,
   findUnexportedSourceRootFiles,
@@ -118,14 +118,14 @@ describe('collectEntryPaths', () => {
   });
 });
 
-describe('collectBinShimEntryPaths', () => {
+describe('collectBinShimEntries', () => {
   test('returns the built files a bin shim imports', () => {
     const files = {
       'bin/main.js': "#!/usr/bin/env node\nimport '../dist/main.js';\n",
       'bin/other.cjs': "require('../dist/other.cjs');\n",
     };
     expect(
-      collectBinShimEntryPaths(
+      collectBinShimEntries(
         {
           bin: {
             a: 'bin/main.js',
@@ -136,7 +136,10 @@ describe('collectBinShimEntryPaths', () => {
         },
         (file) => files[file]
       )
-    ).toEqual(['dist/main.js', 'dist/other.cjs']);
+    ).toEqual([
+      { entryPath: 'dist/main.js', probesExtensions: false },
+      { entryPath: 'dist/other.cjs', probesExtensions: true },
+    ]);
   });
 
   test.each([
@@ -151,8 +154,21 @@ describe('collectBinShimEntryPaths', () => {
     ["import 'some-package';\n", []],
   ])('reads module references from the shim syntax: %j', (shim, entries) => {
     expect(
-      collectBinShimEntryPaths({ bin: 'bin/main.js' }, () => shim)
+      collectBinShimEntries({ bin: 'bin/main.js' }, () => shim).map(
+        ({ entryPath }) => entryPath
+      )
     ).toEqual(entries);
+  });
+
+  test('only a CommonJS require in a shim covers an extensionless target', () => {
+    const shim = "import '../dist/esm';\nrequire('../dist/cjs');\n";
+    expect(
+      findUnexportedSourceRootFiles({
+        packageJson: { main: 'dist/index.js', bin: 'bin/main.js' },
+        sourceFiles: ['index.ts', 'esm.ts', 'cjs.ts'],
+        extraEntries: collectBinShimEntries({ bin: 'bin/main.js' }, () => shim),
+      })
+    ).toEqual(['esm.ts']);
   });
 });
 
@@ -216,7 +232,7 @@ describe('findUnexportedSourceRootFiles', () => {
       findUnexportedSourceRootFiles({
         packageJson: { main: 'dist/index.js', bin: 'bin/main.js' },
         sourceFiles: ['index.ts', 'main.ts', 'helper.ts'],
-        extraEntryPaths: ['dist/main.js'],
+        extraEntries: [{ entryPath: 'dist/main.js', probesExtensions: false }],
       })
     ).toEqual(['helper.ts']);
   });
@@ -253,26 +269,24 @@ describe('findUnexportedSourceRootFiles', () => {
       [],
     ],
     [
-      'an extensionless bin shim require covers a built module',
-      {},
-      ['dist/foo'],
-      ['foo.ts'],
-      [],
-    ],
-    [
       'an exact extensionless export does not cover a built module',
       { exports: { './foo': './dist/foo' } },
       [],
       ['foo.ts'],
       ['foo.ts'],
     ],
-    [
-      'an extensionless main covers a built module',
-      { main: 'dist/foo' },
+    ...[
+      ['main', { main: 'dist/public' }],
+      ['module', { module: './dist/public' }],
+      ['types', { types: './dist/public' }],
+      ['typesVersions', { typesVersions: { '*': { x: ['./dist/public'] } } }],
+    ].map(([field, packageFields]) => [
+      `an extensionless ${field} covers a built module`,
+      { main: 'dist/index.js', ...packageFields },
       [],
-      ['foo.ts'],
-      ['index.ts'],
-    ],
+      ['public.ts'],
+      field === 'main' ? ['index.ts'] : [],
+    ]),
     [
       'an exported asset does not cover a code module of the same name',
       { exports: { './openapi.json': './dist/openapi.json' } },
@@ -287,12 +301,12 @@ describe('findUnexportedSourceRootFiles', () => {
       ['data.json', 'data.ts'],
       ['data.ts'],
     ],
-  ])('%s', (_name, packageFields, extraEntryPaths, rootFiles, violations) => {
+  ])('%s', (_name, packageFields, extraEntries, rootFiles, violations) => {
     expect(
       findUnexportedSourceRootFiles({
         packageJson: { main: 'dist/index.js', ...packageFields },
         sourceFiles: ['index.ts', ...rootFiles],
-        extraEntryPaths,
+        extraEntries,
       })
     ).toEqual(violations);
   });
