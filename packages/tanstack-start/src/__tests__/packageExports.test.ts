@@ -163,6 +163,7 @@ describe.sequential('gt-tanstack-start package exports', () => {
         .filter((file) => /\.(cjs|mjs)$/.test(file))
         .sort()
     ).toEqual([
+      'chunk-translations.mjs',
       'compat.client.mjs',
       'compat.rsc.mjs',
       'compat.server.mjs',

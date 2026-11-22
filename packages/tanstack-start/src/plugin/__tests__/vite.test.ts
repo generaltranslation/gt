@@ -4,6 +4,10 @@ import path from 'node:path';
 import { createServer } from 'vite';
 import type { Plugin, ResolvedConfig } from 'vite';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  createSplitPlugin,
+  resolveSplitTranslationsOptions,
+} from '../splitTranslations';
 import { gtTanstackStart } from '../vite';
 import type { GTTanstackStartPluginOptions } from '../vite';
 
@@ -164,8 +168,8 @@ describe('gtTanstackStart', () => {
     expect(output).toContain('_hash: "');
   });
 
-  it.each(['tsr-split=component', 'tsr-shared=1'])(
-    'injects _hash into TanStack Router code-split route modules (?%s)',
+  it.each(['tsr-split=component', 'tsr-shared=1', 'tss-serverfn-split'])(
+    'injects _hash into the modules TanStack Router and Start split from a route (?%s)',
     async (query) => {
       const { plugins, root } = createPlugins(BABEL);
       const compiler = findPlugin(plugins, COMPILER_PLUGIN_NAME)!;
@@ -918,5 +922,169 @@ describe.sequential('gtTanstackStart config module', () => {
     const loading = loadConfigModuleCode(configPlugin, root);
     await expect(loading).rejects.toThrow(/^gt-tanstack-start Error: /);
     await expect(loading).rejects.toThrow(config);
+  });
+});
+
+describe('experimentalSplitTranslations', () => {
+  const SPLIT_PLUGIN_NAME = 'gt-tanstack-start:split-translations';
+  const SPLIT: Omit<GTTanstackStartPluginOptions, 'config'> = {
+    experimentalCompilerOptions: { experimentalSplitTranslations: {} },
+  };
+  const OUTPUT = { files: { gt: { output: 'translations/[locale].json' } } };
+  const names = (plugins: Plugin[]) => plugins.map((plugin) => plugin.name);
+  const WITHOUT_COMPILER = ['gt-tanstack-start', 'gt-react'];
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    for (const tempDir of tempDirs.splice(0)) {
+      fs.rmSync(tempDir, { force: true, recursive: true });
+    }
+  });
+
+  it('turns the compiler on without a type, and adds the plugin that gives the server build what the client build wrote', () => {
+    expect(names(createPlugins(SPLIT, OUTPUT).plugins)).toEqual([
+      ...WITHOUT_COMPILER,
+      SPLIT_PLUGIN_NAME,
+      COMPILER_PLUGIN_NAME,
+      `${COMPILER_PLUGIN_NAME}:chunk-translations`,
+    ]);
+  });
+
+  it.each([
+    ['the option is off', { enabled: false }, undefined],
+    ['GT_SPLIT_TRANSLATIONS turns it off', {}, 'false'],
+  ])('leaves the compiler off when %s', (_name, option, env) => {
+    if (env) vi.stubEnv('GT_SPLIT_TRANSLATIONS', env);
+    expect(
+      names(
+        createPlugins(
+          {
+            experimentalCompilerOptions: {
+              experimentalSplitTranslations: option,
+            },
+          },
+          OUTPUT
+        ).plugins
+      )
+    ).toEqual(WITHOUT_COMPILER);
+  });
+
+  it('is turned on by GT_SPLIT_TRANSLATIONS alone', () => {
+    vi.stubEnv('GT_SPLIT_TRANSLATIONS', 'true');
+    expect(names(createPlugins({}, OUTPUT).plugins)).toContain(
+      SPLIT_PLUGIN_NAME
+    );
+  });
+
+  it("fails with type 'none', which the split cannot work with", () => {
+    expect(() =>
+      createPlugins(
+        {
+          experimentalCompilerOptions: {
+            type: 'none',
+            experimentalSplitTranslations: {},
+          },
+        },
+        OUTPUT
+      )
+    ).toThrow(
+      "gt-tanstack-start Error: experimentalSplitTranslations is on and experimentalCompilerOptions.type is 'none' because the GT compiler is what splits translations."
+    );
+  });
+
+  it('gives the compiler a request cost of 2048 unless the app sets one', () => {
+    expect(resolveSplitTranslationsOptions(undefined)).toEqual({
+      requestCost: 2048,
+    });
+    expect(
+      resolveSplitTranslationsOptions({ by: 'module', requestCost: 0 })
+    ).toEqual({ by: 'module', requestCost: 0 });
+  });
+
+  /** The hooks of the split's plugin in a Vite environment of a run. */
+  function createSplit(command: ResolvedConfig['command'], nodeEnv: string) {
+    vi.stubEnv('NODE_ENV', nodeEnv);
+    const split = createSplitPlugin();
+    resolveConfig(split.plugin, '/', [], command);
+    const hooks = split.plugin as unknown as {
+      resolveId: (this: object, id: string, importer: string) => unknown;
+      load: (this: object, id: string) => unknown;
+      writeBundle: (this: object) => void;
+    };
+    const context = (name: string) => ({
+      environment: { name },
+      resolve: (id: string) => id,
+      error: (message: string) => {
+        throw new Error(message);
+      },
+    });
+    return {
+      ...split,
+      resolve: (id: string, environment: string) =>
+        hooks.resolveId.call(context(environment), id, '/src/router.tsx'),
+      loadTable: (environment: string) =>
+        hooks.load.call(
+          context(environment),
+          '\0gt-tanstack-start:split-table'
+        ),
+      write: (environment: string) =>
+        hooks.writeBundle.call(context(environment)),
+    };
+  }
+  const SPLIT_MODULE = 'gt-tanstack-start/internal/splitTranslations';
+  const TABLE_MODULE = 'gt-tanstack-start/internal/_split-table';
+
+  it('points the runtime at its split-aware modules in a production build, by environment', () => {
+    const split = createSplit('build', 'production');
+    expect(split.isActive()).toBe(true);
+    expect(split.resolve(SPLIT_MODULE, 'client')).toBe(
+      `${SPLIT_MODULE}.client`
+    );
+    expect(split.resolve(SPLIT_MODULE, 'ssr')).toBe(`${SPLIT_MODULE}.server`);
+    expect(split.resolve(SPLIT_MODULE, 'rsc')).toBe(`${SPLIT_MODULE}.server`);
+    expect(split.resolve(TABLE_MODULE, 'ssr')).toBe(
+      '\0gt-tanstack-start:split-table'
+    );
+    // The browser never holds the table
+    expect(split.resolve(TABLE_MODULE, 'client')).toBeUndefined();
+  });
+
+  it.each([
+    ['the dev server', 'serve', 'development'],
+    ['a build that is not for production', 'build', 'development'],
+  ] as const)('leaves the split off in %s', (_name, command, nodeEnv) => {
+    const split = createSplit(command, nodeEnv);
+    expect(split.isActive()).toBe(false);
+    expect(split.resolve(SPLIT_MODULE, 'client')).toBeUndefined();
+    expect(split.resolve(TABLE_MODULE, 'ssr')).toBeUndefined();
+  });
+
+  it('gives the server build what the compiler hands it of the client build, and fails a build that renders pages before it has', () => {
+    const split = createSplit('build', 'production');
+    expect(split.host).toMatchObject({
+      loader: 'gt-tanstack-start/chunk-translations',
+      clientEnvironments: ['client'],
+    });
+    // With server components, both server environments are analyzed before
+    // the client is built, and write nothing
+    expect(split.loadTable('rsc')).toBe('export const table = undefined;');
+    expect(split.loadTable('ssr')).toBe('export const table = undefined;');
+    expect(() => split.write('rsc')).not.toThrow();
+    expect(() => split.write('ssr')).toThrow(
+      'gt-tanstack-start Error: experimentalSplitTranslations cannot give the server the translation files of the client build because the server was built before the client'
+    );
+    const output = {
+      entries: {},
+      imports: { 'assets/reports-b2.js': ['assets/reports-b2'] },
+      files: { 'assets/reports-b2': ["it's"] },
+      unsplit: [],
+    };
+    split.host.onSplit(output);
+    const code = split.loadTable('ssr') as string;
+    expect(code.startsWith('export const table = JSON.parse(')).toBe(true);
+    expect(
+      new Function(`${code.replace('export const table =', 'return')}`)()
+    ).toEqual(output);
+    expect(() => split.write('ssr')).not.toThrow();
   });
 });

@@ -21,6 +21,28 @@ export function createCompilerUnresolvedWarning(error: unknown): string {
   });
 }
 
+export const splitRequiresCompilerError = createDiagnosticMessage({
+  source: 'gt-tanstack-start',
+  severity: 'Error',
+  whatHappened:
+    "experimentalSplitTranslations is on and experimentalCompilerOptions.type is 'none'",
+  why: 'the GT compiler is what splits translations',
+  fix: "Remove type from experimentalCompilerOptions in gtTanstackStart(), or set it to 'babel'",
+  wayOut: 'turn experimentalSplitTranslations off',
+});
+
+export function createSplitOrderError(): string {
+  return createDiagnosticMessage({
+    source: 'gt-tanstack-start',
+    severity: 'Error',
+    whatHappened:
+      'experimentalSplitTranslations cannot give the server the translation files of the client build',
+    why: 'the server was built before the client, and gt-tanstack-start reads what the client build wrote while it builds the server',
+    fix: 'Build the client environment before the ssr environment, as TanStack Start does',
+    wayOut: 'turn experimentalSplitTranslations off',
+  });
+}
+
 export const duplicateCompilerWarning = createDiagnosticMessage({
   source: 'gt-tanstack-start',
   severity: 'Warning',

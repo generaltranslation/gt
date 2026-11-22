@@ -134,6 +134,13 @@
       },
       "default": "./dist/plugin/vite.mjs"
     },
+    "./chunk-translations": {
+      "import": {
+        "types": "./dist/chunk-translations.d.mts",
+        "default": "./dist/chunk-translations.mjs"
+      },
+      "default": "./dist/chunk-translations.mjs"
+    },
     "./internal/initializeGT.server": {
       "import": {
         "types": "./dist/internal/initializeGT.server.d.mts",
@@ -175,6 +182,34 @@
         "default": "./dist/internal/localeRouting.disabled.mjs"
       },
       "default": "./dist/internal/localeRouting.disabled.mjs"
+    },
+    "./internal/splitTranslations": {
+      "import": {
+        "types": "./dist/internal/splitTranslations.d.mts",
+        "default": "./dist/internal/splitTranslations.mjs"
+      },
+      "default": "./dist/internal/splitTranslations.mjs"
+    },
+    "./internal/splitTranslations.server": {
+      "import": {
+        "types": "./dist/internal/splitTranslations.server.d.mts",
+        "default": "./dist/internal/splitTranslations.server.mjs"
+      },
+      "default": "./dist/internal/splitTranslations.server.mjs"
+    },
+    "./internal/splitTranslations.client": {
+      "import": {
+        "types": "./dist/internal/splitTranslations.client.d.mts",
+        "default": "./dist/internal/splitTranslations.client.mjs"
+      },
+      "default": "./dist/internal/splitTranslations.client.mjs"
+    },
+    "./internal/_split-table": {
+      "import": {
+        "types": "./dist/internal/_split-table.d.mts",
+        "default": "./dist/internal/_split-table.mjs"
+      },
+      "default": "./dist/internal/_split-table.mjs"
     }
   },
   "keywords": [

@@ -1,13 +1,24 @@
+import type { SplitTranslationsOptions } from '@generaltranslation/compiler';
 import type { GTCompilerOptions } from 'generaltranslation';
 import type { InitializeGTParams } from '../types/InitializeGTParams';
 
 /** Mirrors gt-next's withGTConfig experimentalCompilerOptions. */
 export type GTTanstackStartCompilerOptions = GTCompilerOptions & {
   /**
-   * Which compiler plugin to use: babel or none.
-   * @default 'none'
+   * Which compiler plugin to use: babel or none. Defaults to `'babel'` when
+   * `experimentalSplitTranslations` is on, which needs the compiler, and to
+   * `'none'` otherwise.
    */
   type?: 'babel' | 'none';
+  /**
+   * Experimental. Writes the translations of a production build into small
+   * files next to its client chunks, so a page gets only the translations of
+   * the code it loads: those of a first visit with the page the server
+   * renders, those of a navigation with the chunks of its route. The server
+   * still renders from each locale's whole translations file. The keys are
+   * the compiler's, with one other default: `requestCost` is 2048.
+   */
+  experimentalSplitTranslations?: SplitTranslationsOptions;
 };
 
 /**

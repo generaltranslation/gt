@@ -1,5 +1,7 @@
 import type { ComponentType, ReactNode } from 'react';
 import type { SharedGTProviderProps } from 'gt-react';
+import type { ChunkTranslationsSeed } from 'gt-react/chunk-translations';
+import type { SplitRouter } from '../internal/splitTranslations';
 
 /** GT state shuttled from the server render to client hydration. */
 export type GTRouterState = Pick<
@@ -15,6 +17,8 @@ export type GTDehydratedRouterData<
       gt?: State & {
         /** Rendered into a prerendered SPA shell served to every visitor. */
         shell?: boolean;
+        /** What the page's loader starts with, in a build that splits translations. */
+        split?: ChunkTranslationsSeed;
       };
     }
   | undefined;
@@ -42,7 +46,7 @@ export type GTRouterOptions = {
   rewrite?: GTLocationRewrite;
 };
 
-export type GTIntegrableRouter = {
+export type GTIntegrableRouter = SplitRouter & {
   options: GTRouterOptions;
   // Method syntax keeps the parameter bivariant, so the app's fully typed
   // router.update() is accepted.
