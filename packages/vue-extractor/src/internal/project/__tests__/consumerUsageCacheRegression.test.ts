@@ -1,17 +1,21 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { detectVueProject } from '../../detect.js';
-import { inspectVueProject } from '../../inspect.js';
+import { detectVueProject } from '../../../detect.js';
+import { inspectVueProject } from '../../../inspect.js';
 import {
   createConsumerUsageCache,
   packageConsumesPublicGT,
-} from '../project/consumerUsage.js';
-import { parseScriptAst } from '../script/parser.js';
-import { createTestProject, writeProjectFiles } from './projectTestUtils.js';
+} from '../consumerUsage.js';
+import { parseScriptAst } from '../../script/parser.js';
+import {
+  createTestProject,
+  writeProjectFiles,
+} from '../../../__tests__/projectTestUtils.js';
 
-vi.mock('../script/parser.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../script/parser.js')>();
+vi.mock('../../script/parser.js', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../../script/parser.js')>();
   return {
     ...actual,
     parseScriptAst: vi.fn(actual.parseScriptAst),

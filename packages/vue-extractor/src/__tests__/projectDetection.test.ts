@@ -1,24 +1,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { detectVueProject } from '../../detect.js';
+import { detectVueProject } from '../detect.js';
 import {
   inspectVueProject,
   inspectVueProjectAsync,
   readVueSfcExclusionPatterns,
-} from '../../inspect.js';
-import { extractFromVueProject } from '../../project.js';
-import { isVueSfcSource } from '../project/vueSourceClassification.js';
+} from '../inspect.js';
+import { extractFromVueProject } from '../project.js';
+import { isVueSfcSource } from '../internal/project/vueSourceClassification.js';
 import {
   parseLocalDependencyPath,
   readJavaScriptPackageManifest,
   resolveInstalledJavaScriptPackage,
-} from '../project/manifest.js';
+} from '../internal/project/manifest.js';
 import {
   createWorkspaceDiscoveryCache,
   readDeclaredWorkspacePackages,
   readDeclaredWorkspacePackagesAsync,
-} from '../project/workspaces.js';
+} from '../internal/project/workspaces.js';
 import {
   createTestProject,
   linkInstalledVue,
@@ -1308,10 +1308,10 @@ import { WrapperT } from '${bindingName}';
   });
 
   it('does not load the Vue compiler or project extraction graph from /detect', () => {
-    const detectEntry = path.resolve(__dirname, '../../detect.ts');
+    const detectEntry = path.resolve(__dirname, '../detect.ts');
     const localGraph = collectLocalModuleGraph(detectEntry);
     const relativeGraph = [...localGraph].map((file) =>
-      path.relative(path.resolve(__dirname, '../..'), file)
+      path.relative(path.resolve(__dirname, '..'), file)
     );
     const graphSource = [...localGraph]
       .map((file) => fs.readFileSync(file, 'utf8'))

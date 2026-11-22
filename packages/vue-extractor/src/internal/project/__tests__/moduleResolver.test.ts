@@ -2,15 +2,18 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createServer, type ViteDevServer } from 'vite';
 import { describe, expect, it } from 'vitest';
-import { extractFromVueSource } from '../../index.js';
-import { readJavaScriptPackageManifest } from '../project/manifest.js';
-import { createProjectModuleResolver } from '../project/moduleResolver.js';
+import { extractFromVueSource } from '../../../index.js';
+import { readJavaScriptPackageManifest } from '../manifest.js';
+import { createProjectModuleResolver } from '../moduleResolver.js';
 import {
   resolveVueProjectAliasConfiguration,
   resolveVueProjectAliases,
-} from '../project/viteAliases.js';
-import { packagePubliclyExposesGT } from '../project/wrapperProvenance.js';
-import { createTestProject, writeProjectFiles } from './projectTestUtils.js';
+} from '../viteAliases.js';
+import { packagePubliclyExposesGT } from '../wrapperProvenance.js';
+import {
+  createTestProject,
+  writeProjectFiles,
+} from '../../../__tests__/projectTestUtils.js';
 
 describe('project module resolution', () => {
   it('matches Vite default extension precedence', () => {

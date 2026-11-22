@@ -7,16 +7,16 @@ import {
   version as vueCompilerVersion,
 } from '@vue/compiler-sfc';
 import { afterAll, describe, expect, it } from 'vitest';
-import { detectVueProject } from '../../detect.js';
-import { inspectVueProject } from '../../inspect.js';
-import { extractFromVueProject } from '../../project.js';
+import { detectVueProject } from '../../../detect.js';
+import { inspectVueProject } from '../../../inspect.js';
+import { extractFromVueProject } from '../../../project.js';
 import {
   createProjectFixture,
   createTestProject,
   linkInstalledVue,
   removeProjectFixture,
   writeProjectFiles,
-} from './projectTestUtils.js';
+} from '../../../__tests__/projectTestUtils.js';
 
 let sharedApp: string | undefined;
 

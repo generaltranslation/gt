@@ -5,8 +5,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   manifestDirectlyDeclaresGTVue,
   planVueExtraction,
-} from '../../integration.js';
-import type { InlineExtractionOutput } from '../project/mergeVueProjectExtraction.js';
+} from '../integration.js';
+import type { InlineExtractionOutput } from '../internal/project/mergeVueProjectExtraction.js';
 import {
   createTestProject,
   linkInstalledVue,

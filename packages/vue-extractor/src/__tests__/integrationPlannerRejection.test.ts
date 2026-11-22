@@ -6,16 +6,16 @@ const mocks = vi.hoisted(() => ({
   mergeVueProjectExtraction: vi.fn(),
 }));
 
-vi.mock('../project/inspectVueProject.js', () => ({
+vi.mock('../internal/project/inspectVueProject.js', () => ({
   inspectVueProjectForRuntime: mocks.inspectVueProjectForRuntime,
 }));
 
-vi.mock('../../project.js', () => ({
+vi.mock('../project.js', () => ({
   extractFromVueProject: mocks.extractFromVueProject,
   mergeVueProjectExtraction: mocks.mergeVueProjectExtraction,
 }));
 
-import { planVueExtraction } from '../../integration.js';
+import { planVueExtraction } from '../integration.js';
 
 const projectRoot = '/virtual/gt-vue-project';
 const inspection = {

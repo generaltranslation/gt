@@ -2,12 +2,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { hashSource } from 'generaltranslation/id';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { inspectVueProject } from '../../inspect.js';
+import { inspectVueProject } from '../inspect.js';
 import {
   extractFromVueProject,
   mergeVueProjectExtraction,
-} from '../../project.js';
-import type { VueProjectExtractionResult } from '../../types.js';
+} from '../project.js';
+import type { VueProjectExtractionResult } from '../types.js';
 import {
   createTestProject,
   linkInstalledVue,
