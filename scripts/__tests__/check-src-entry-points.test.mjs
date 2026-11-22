@@ -287,27 +287,27 @@ describe('findUnexportedSourceRootFiles', () => {
       ['public.ts'],
       field === 'main' ? ['index.ts'] : [],
     ]),
-    [
-      'an extensionless src types target backs only the declaration TypeScript resolves',
-      { types: './src/public' },
+    ...[
+      ['main', { main: './src/public' }, ['public.json']],
+      ['main', { main: './src/public' }, ['public.js', 'public.ts']],
+      ['module', { module: './src/public' }, ['public.ts', 'public.js']],
+      [
+        'typesVersions',
+        { typesVersions: { '*': { x: ['src/public'] } } },
+        ['public.js'],
+      ],
+      [
+        'types',
+        { types: './src/public' },
+        ['public.d.ts', 'public.d.mts', 'public.d.cts'],
+      ],
+    ].map(([field, packageFields, rootFiles]) => [
+      `an extensionless src ${field} backs every root file named ${rootFiles.join(', ')}`,
+      { main: 'dist/index.js', ...packageFields },
       [],
-      ['public.d.ts', 'public.d.mts', 'public.d.cts'],
-      ['public.d.cts', 'public.d.mts'],
-    ],
-    [
-      'extensionless src main and types each back the file their tool loads',
-      { main: './src/public', types: './src/public' },
-      [],
-      ['public.js', 'public.d.ts'],
-      ['index.ts'],
-    ],
-    [
-      'an extensionless src module backs the file a bundler picks first',
-      { module: './src/public' },
-      [],
-      ['public.ts', 'public.js'],
-      ['public.js'],
-    ],
+      rootFiles,
+      field === 'main' ? ['index.ts'] : [],
+    ]),
     [
       'an extensionless dist types target covers the source and its declaration',
       { types: './dist/public' },

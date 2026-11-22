@@ -19,29 +19,18 @@ const ENTRY_FIELDS = [
   'typesVersions',
 ];
 
-// How each tool tries extensions on an extensionless target, in order: Node for
-// `main` and `require()`, TypeScript for types fields, esbuild's defaults for the
-// bundler fields; `exports`, `bin`, and ESM imports resolve exactly.
-const NODE_PROBE_EXTENSIONS = ['.js', '.json', '.node'];
-const TYPESCRIPT_PROBE_EXTENSIONS = ['.ts', '.tsx', '.d.ts'];
-const BUNDLER_PROBE_EXTENSIONS = [
-  '.tsx',
-  '.ts',
-  '.jsx',
-  '.js',
-  '.css',
-  '.json',
-];
-const FIELD_PROBE_EXTENSIONS = {
-  main: NODE_PROBE_EXTENSIONS,
-  module: BUNDLER_PROBE_EXTENSIONS,
-  browser: BUNDLER_PROBE_EXTENSIONS,
-  'react-native': BUNDLER_PROBE_EXTENSIONS,
-  source: BUNDLER_PROBE_EXTENSIONS,
-  types: TYPESCRIPT_PROBE_EXTENSIONS,
-  typings: TYPESCRIPT_PROBE_EXTENSIONS,
-  typesVersions: TYPESCRIPT_PROBE_EXTENSIONS,
-};
+// Fields whose extensionless targets tools resolve by trying extensions, unlike
+// `exports`, `bin`, and ESM imports, which resolve exactly.
+const EXTENSION_PROBING_FIELDS = new Set([
+  'main',
+  'module',
+  'types',
+  'typings',
+  'browser',
+  'react-native',
+  'source',
+  'typesVersions',
+]);
 
 // Build output directories that hold a whole copy of the source tree, such as
 // react-native's `dist/module/` and `dist/commonjs/` and paraglide-js's `dist/src/`.
@@ -158,10 +147,11 @@ function stemMatches(stem, sourceStem) {
   return new RegExp(`^${pattern}$`).test(sourceStem);
 }
 
-// A code source backs a target only when the target names a built code file, is a
-// wildcard, or is resolved by trying extensions; any other target must name the
-// source file itself, as a copied asset does.
-function entryCoversSource(entryPath, stem, file, probeExtensions) {
+// A code source backs a target that names a built code file or is a wildcard; an
+// extensionless target resolved by trying extensions deliberately backs every root
+// file with that base name, because resolvers disagree on the order; any other
+// target must name the source file itself, as a copied asset does.
+function entryCoversSource(entryPath, stem, file, probesExtensions) {
   const targetName = entryPath.split('/').pop();
   const sourceStem = stripExtension(file);
   const isCodeSource = sourceStem !== file;
@@ -169,9 +159,10 @@ function entryCoversSource(entryPath, stem, file, probeExtensions) {
     return isCodeSource && stemMatches(stem, sourceStem);
   }
   if (stem.includes('*')) return stemMatches(stem, sourceStem);
+  if (file === stem) return true;
   return (
-    file === stem ||
-    (probeExtensions !== null && isCodeSource && sourceStem === stem)
+    probesExtensions &&
+    (sourceStem === stem || file.slice(0, file.lastIndexOf('.')) === stem)
   );
 }
 
@@ -184,35 +175,19 @@ export function findUnexportedSourceRootFiles({
     ...ENTRY_FIELDS.flatMap((field) =>
       collectPaths(packageJson[field]).map((entryPath) => ({
         entryPath,
-        probeExtensions: FIELD_PROBE_EXTENSIONS[field] ?? null,
+        probesExtensions: EXTENSION_PROBING_FIELDS.has(field),
       }))
     ),
-    ...extraEntries.map(({ entryPath, probesExtensions }) => ({
-      entryPath,
-      probeExtensions: probesExtensions ? NODE_PROBE_EXTENSIONS : null,
-    })),
+    ...extraEntries,
   ];
   const covered = new Set();
-  for (const { entryPath, probeExtensions } of entries) {
+  for (const { entryPath, probesExtensions } of entries) {
     const covers = (stem, file) =>
-      entryCoversSource(entryPath, stem, file, probeExtensions);
+      entryCoversSource(entryPath, stem, file, probesExtensions);
     const stem = entrySourceStems(entryPath).find((candidate) =>
       sourceFiles.some((file) => covers(candidate, file))
     );
     if (stem === undefined) continue;
-    const resolvesToOneSource =
-      probeExtensions !== null &&
-      /^(\.\/)?src\//.test(entryPath) &&
-      !stem.includes('*') &&
-      stripExtension(entryPath) === entryPath;
-    if (resolvesToOneSource) {
-      const resolved = [
-        stem,
-        ...probeExtensions.map((extension) => stem + extension),
-      ].find((file) => sourceFiles.includes(file));
-      if (resolved !== undefined) covered.add(resolved);
-      continue;
-    }
     for (const file of sourceFiles) {
       if (covers(stem, file)) covered.add(file);
     }
