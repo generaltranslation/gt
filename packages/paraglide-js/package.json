@@ -29,7 +29,7 @@
     "build:watch": "tsc -p tsconfig.build.json --watch",
     "build:clean": "sh ../../scripts/clean.sh && pnpm run build",
     "build:release": "pnpm run build:clean",
-    "format": "oxfmt src __tests__",
+    "format": "oxfmt src",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
