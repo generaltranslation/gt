@@ -323,6 +323,13 @@ describe('findUnexportedSourceRootFiles', () => {
       ['data.json.bak', 'data.json.ts', 'index.ts'],
     ],
     [
+      'an exact runtime file does not hide the declaration a types field resolves',
+      { main: './src/public', types: './src/public' },
+      [],
+      ['public', 'public.d.ts'],
+      ['index.ts'],
+    ],
+    [
       'an extensionless dist types target covers the source and its declaration',
       { types: './dist/public' },
       [],

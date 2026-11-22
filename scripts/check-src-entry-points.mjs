@@ -32,6 +32,10 @@ const EXTENSION_PROBING_FIELDS = new Set([
   'typesVersions',
 ]);
 
+// TypeScript never loads an extensionless file for these fields, so an exact
+// filename match does not take precedence over the declarations it tries.
+const TYPES_FIELDS = new Set(['types', 'typings', 'typesVersions']);
+
 // Build output directories that hold a whole copy of the source tree, such as
 // react-native's `dist/module/` and `dist/commonjs/` and paraglide-js's `dist/src/`.
 const OUTPUT_FORMAT_DIRECTORIES = new Set(['commonjs', 'module', 'src']);
@@ -150,13 +154,14 @@ function stemMatches(stem, sourceStem) {
 // A code source backs a target that names a built code file or is a wildcard; an
 // extensionless target resolved by trying extensions deliberately backs every root
 // file with that base name (resolvers disagree on the order) unless a file matches
-// it exactly; any other target must name the source file itself, as an asset does.
+// it exactly and the tool loads exact matches first; any other target must name
+// the source file itself, as an asset does.
 function entryCoversSource(
   entryPath,
   stem,
   file,
   probesExtensions,
-  exactSourceExists
+  exactMatchWins
 ) {
   const targetName = entryPath.split('/').pop();
   const sourceStem = stripExtension(file);
@@ -166,7 +171,7 @@ function entryCoversSource(
   }
   if (stem.includes('*')) return stemMatches(stem, sourceStem);
   if (file === stem) return true;
-  if (!probesExtensions || exactSourceExists) return false;
+  if (!probesExtensions || exactMatchWins) return false;
   const lastDot = file.lastIndexOf('.');
   return (
     sourceStem === stem || (lastDot > 0 && file.slice(0, lastDot) === stem)
@@ -183,19 +188,21 @@ export function findUnexportedSourceRootFiles({
       collectPaths(packageJson[field]).map((entryPath) => ({
         entryPath,
         probesExtensions: EXTENSION_PROBING_FIELDS.has(field),
+        exactMatchFirst: !TYPES_FIELDS.has(field),
       }))
     ),
-    ...extraEntries,
+    ...extraEntries.map((entry) => ({ ...entry, exactMatchFirst: true })),
   ];
+  const sourceFileSet = new Set(sourceFiles);
   const covered = new Set();
-  for (const { entryPath, probesExtensions } of entries) {
+  for (const { entryPath, probesExtensions, exactMatchFirst } of entries) {
     const covers = (stem, file) =>
       entryCoversSource(
         entryPath,
         stem,
         file,
         probesExtensions,
-        sourceFiles.includes(stem)
+        exactMatchFirst && sourceFileSet.has(stem)
       );
     const stem = entrySourceStems(entryPath).find((candidate) =>
       sourceFiles.some((file) => covers(candidate, file))
