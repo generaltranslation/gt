@@ -176,7 +176,7 @@ describe('run', () => {
 
   const promotionPull = { head: { ref: 'samsara' }, base: { ref: 'main' } };
   const missingLabel = (label, detail) =>
-    `::error title=Missing ${label} label::This pull request lands on ${detail}, but is missing the ${label} label. Maintainers can add it with: gh pr edit 3 --add-label ${label}. Without triage access, ask a maintainer in this pull request to add it.`;
+    `::error title=Missing ${label} label::This pull request lands on ${detail}, but is missing the ${label} label. Without triage access, ask a maintainer in this pull request to add it. Maintainers can run: gh pr edit 3 --add-label ${label}`;
 
   test.each([
     {

@@ -132,7 +132,7 @@ export async function run({
     return 0;
   }
   logError(
-    `::error title=Missing ${decision.requiredLabel} label::${decision.message} Maintainers can add it with: gh pr edit ${pullNumber} --add-label ${decision.requiredLabel}. Without triage access, ask a maintainer in this pull request to add it.`
+    `::error title=Missing ${decision.requiredLabel} label::${decision.message} Without triage access, ask a maintainer in this pull request to add it. Maintainers can run: gh pr edit ${pullNumber} --add-label ${decision.requiredLabel}`
   );
   return 1;
 }
