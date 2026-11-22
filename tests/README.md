@@ -24,6 +24,7 @@ dependencies, so no manual linking or per-app install is required.
 | `vite-react`                               | Vite + React                       | `gt-react`          |
 | `vite-chunk-translations`                  | Vite + React, files per chunk      | `gt-react`          |
 | `tanstack-start-split-translations`        | TanStack Start, split translations | `gt-tanstack-start` |
+| `tanstack-start-server-components`         | TanStack Start, server components  | `gt-tanstack-start` |
 | `webpack-react`                            | webpack + React                    | `gt-react`          |
 | `rollup-react`                             | Rollup + React                     | `gt-react`          |
 | `rolldown-react`                           | Rolldown + React                   | `gt-react`          |
@@ -86,7 +87,17 @@ pnpm --filter gt-test-tanstack-start-split-translations check
 pnpm --filter gt-test-tanstack-start-split-translations check "deploy" "shell"
 ```
 
-The check does not run in CI, like those of `vite-chunk-translations`: run it
+`tanstack-start-server-components` does the same for an app whose routes render
+server components (`tanstackStart({ rsc: { enabled: true } })`): a server
+component and the client components it renders, on a first visit, after a
+navigation and when a server component is the first GT code a server process
+runs, with the split off and on:
+
+```bash
+pnpm --filter gt-test-tanstack-start-server-components check
+```
+
+Neither check runs in CI, like those of `vite-chunk-translations`: run them
 after a change to the split, the compiler or `gt-tanstack-start`.
 
 Run the browser automation for every browser-capable development app, or select

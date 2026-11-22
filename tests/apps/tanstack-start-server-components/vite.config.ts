@@ -1,0 +1,36 @@
+import { tanstackStart } from '@tanstack/react-start/plugin/vite';
+import react from '@vitejs/plugin-react';
+import rsc from '@vitejs/plugin-rsc';
+import { gtTanstackStart } from 'gt-tanstack-start/plugin/vite';
+import { defineConfig } from 'vite';
+import { collectMessages } from '../vite-chunk-translations/scripts/collectMessages.mjs';
+
+// GT_SPLIT_TRANSLATIONS, GT_SPLIT_TRANSLATIONS_BY and GT_MINIFY_HASHES switch
+// the split; scripts/check.mjs builds the app each way. CHECK_MESSAGES is set
+// by scripts/pseudo-translate.mjs, which reads the app's messages from a
+// build.
+const messagesFile = process.env.CHECK_MESSAGES;
+
+export default defineConfig({
+  build: { outDir: process.env.CHECK_OUT_DIR ?? 'dist' },
+  plugins: [
+    tanstackStart({ rsc: { enabled: true } }),
+    rsc(),
+    react(),
+    gtTanstackStart({
+      experimentalCompilerOptions: {
+        type: 'babel',
+        ...(messagesFile !== undefined && { _debugHashManifest: true }),
+        // CHECK_REQUEST_COST: requestCost of the split by module, which has
+        // no environment variable. At its default an app this small is one
+        // file.
+        ...(process.env.CHECK_REQUEST_COST && {
+          experimentalSplitTranslations: {
+            requestCost: Number(process.env.CHECK_REQUEST_COST),
+          },
+        }),
+      },
+    }),
+    messagesFile !== undefined && collectMessages(messagesFile),
+  ],
+});
