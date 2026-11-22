@@ -2,25 +2,21 @@ import { setFlagsFromString } from 'node:v8';
 import { runInNewContext } from 'node:vm';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { awaitJobs } from '../wrappers/awaitJobs';
-import {
-  createBatches,
-  DEFAULT_BATCH_SIZE,
-  processBatches,
-} from '../wrappers/batch';
-import { API_VERSION, createApiClient } from '../wrappers/client';
-import type { ApiClientConfig } from '../wrappers/client';
-import { ApiError, isTransientApiError } from '../wrappers/errors';
-import { fetchFileDownload } from '../wrappers/fileDownloads';
-import { putFileUpload } from '../wrappers/fileUploads';
-import { paginate } from '../wrappers/paginate';
-import { listProjects, pluginInfo, queryJobs } from '../generated/sdk.gen';
+import { awaitJobs } from '../awaitJobs';
+import { createBatches, DEFAULT_BATCH_SIZE, processBatches } from '../batch';
+import { API_VERSION, createApiClient } from '../client';
+import type { ApiClientConfig } from '../client';
+import { ApiError, isTransientApiError } from '../errors';
+import { fetchFileDownload } from '../fileDownloads';
+import { putFileUpload } from '../fileUploads';
+import { paginate } from '../paginate';
+import { listProjects, pluginInfo, queryJobs } from '../../generated/sdk.gen';
 import {
   createRetryingFetch,
   createTimeoutFetch,
   DEFAULT_TIMEOUT_MS,
   resolveTransportOptions,
-} from '../wrappers/transport';
+} from '../transport';
 
 afterEach(() => {
   vi.useRealTimers();
