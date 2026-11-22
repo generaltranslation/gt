@@ -11,7 +11,7 @@ import {
   CONFIGURED_HYDROGEN_ROOT,
   CREATE_REACT_ROUTER_ROOT as ROOT,
   HYDROGEN_ROOT,
-} from '../../../__tests__/reactRouterRoots.js';
+} from './reactRouterRoots.js';
 
 const CONFIG = 'react-router.config.ts';
 const UNREADABLE = 'setup cannot read the options react-router.config exports';
