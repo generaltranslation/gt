@@ -10,8 +10,15 @@ import {
   loadMappedChunkTranslations,
   loadRegionChunk,
   loadRegionChunkTranslations,
+  loadSeededTranslations,
+  seedChunkTranslations,
   type ChunkTranslationsState,
 } from '..';
+import {
+  createChunkTranslationsSeed,
+  createChunkTranslationsShellSeed,
+} from '../../chunk-translations.server';
+import type { SplitTranslationsOutput } from 'generaltranslation/internal';
 import { resolveChunkUrl } from '../gate';
 import { getReactI18nCache, t } from '@generaltranslation/react-core/pure';
 import { initializeGTSPA } from '../../setup/initializeGTSPA';
@@ -1200,6 +1207,38 @@ describe('gt-react/chunk-translations', () => {
       expect(warn).not.toHaveBeenCalled();
     });
 
+    it('requests the map with the first import a seed did not name, and not the file of the entry, which the seed holds', async () => {
+      const fetched = serve(MAPPED);
+      await initializeGTSPA({
+        ...CONFIG,
+        loadTranslations: loadSeededTranslations,
+      });
+      vi.useFakeTimers();
+      await seedChunkTranslations({
+        s: {
+          b: '/',
+          f: 'assets/gt',
+          h: { fr: '11111111' },
+          v: { fr: '22222222' },
+          k: 'assets/gt-map',
+        },
+        t: { [SAVE]: 'Enregistrer' },
+        c: [],
+        k: [],
+      });
+      await vi.runAllTimersAsync();
+      expect(fetched).not.toHaveBeenCalled();
+      expect(save()).toBe('Enregistrer');
+      vi.useRealTimers();
+
+      expect(await preloadedImport([])(loadMappedChunk)).toEqual({
+        evaluated: 'Commandes',
+      });
+
+      expect(fetched.mock.calls).toEqual([[MAP], [MAPPED_ORDERS_FILE]]);
+      expect(warn).not.toHaveBeenCalled();
+    });
+
     it('requests a file that two chunks have once', async () => {
       const fetched = serve({
         ...MAPPED,
@@ -1917,6 +1956,237 @@ describe('gt-react/chunk-translations', () => {
         expect(urls(fetched)).toEqual([ROUTE]);
         expect(warn).toHaveBeenCalledTimes(1);
       });
+    });
+  });
+
+  /**
+   * A page a server rendered: its server makes a seed from what the compiler
+   * handed the framework's plugin and from the catalog it renders with, and
+   * the page's loader starts with it.
+   */
+  describe('a page that a server seeds', () => {
+    const NOTE = '7000000000000007';
+    // What a build that splits by chunk hands a framework's plugin
+    const OUTPUT: SplitTranslationsOutput = {
+      entries: {
+        'assets/index-a1.js': {
+          state: {
+            b: '/',
+            f: 'assets/index-a1',
+            h: { fr: '11111111', de: '33333333' },
+            v: { fr: '22222222', de: '44444444' },
+            n: 'assets/gt-current',
+            u: 'assets/gt-unsplit',
+            o: { fr: '55555555' },
+          },
+          messages: [SAVE],
+          files: [],
+        },
+      },
+      imports: {
+        [ORDERS_CHUNK]: ['assets/Orders-b2'],
+        'assets/Reports-d4.js': ['assets/Orders-b2', 'assets/Reports-d4'],
+      },
+      files: {
+        'assets/Orders-b2': [ORDERS],
+        'assets/Reports-d4': ['reports'],
+      },
+      unsplit: [NOTE],
+    };
+    // The catalog the server renders with, which holds every message
+    const CATALOG = {
+      [SAVE]: 'Enregistrer',
+      [ORDERS]: 'Commandes',
+      [NOTE]: 'Remarque',
+      reports: 'Rapports',
+      unused: 'Inutilisé',
+    };
+    const PAGE = {
+      locale: 'fr',
+      translations: CATALOG,
+      chunks: ['assets/index-a1.js', ORDERS_CHUNK, 'assets/vendor-e5.js'],
+      base: undefined,
+    };
+    const note = () => t({ $_hash: NOTE } as never)`Note`;
+    /** A server-rendered app keeps no catalog in the browser. */
+    const startSeeded = () =>
+      initializeGTSPA({ ...CONFIG, loadTranslations: loadSeededTranslations });
+
+    it('gives a page the translations of its entry, of the chunks it loads and of the unsplit messages, from the catalog of its locale alone', () => {
+      expect(createChunkTranslationsSeed(OUTPUT, PAGE)).toEqual({
+        s: {
+          b: '/',
+          f: 'assets/index-a1',
+          h: { fr: '11111111' },
+          v: { fr: '22222222' },
+          n: 'assets/gt-current',
+          u: 'assets/gt-unsplit',
+          o: { fr: '55555555' },
+        },
+        t: { [SAVE]: 'Enregistrer', [ORDERS]: 'Commandes', [NOTE]: 'Remarque' },
+        c: [ORDERS_CHUNK],
+        k: ['assets/Orders-b2'],
+      });
+    });
+
+    it('reads the catalog by the hash of each id in a build with hash minification, serves the files from the base it is given, and holds the files of the entry in a build that splits by module', () => {
+      const [entry] = Object.values(OUTPUT.entries);
+      expect(
+        createChunkTranslationsSeed(
+          {
+            entries: {
+              'assets/index-a1.js': {
+                state: {
+                  ...entry.state,
+                  f: 'assets/gt-map',
+                  e: { fr: { 'assets/gt-aa': '66666666' }, de: {} },
+                },
+                messages: [],
+                files: ['assets/gt-aa'],
+              },
+            },
+            imports: { [ORDERS_CHUNK]: ['assets/gt-bb'] },
+            files: {
+              'assets/gt-aa': ['kR3_x0Qa.0'],
+              'assets/gt-bb': ['kR3_x0Qa.1', 'Zc_R6KKp.0'],
+            },
+            // An id for each chunk that reads a message
+            hashes: {
+              'kR3_x0Qa.0': SAVE,
+              'kR3_x0Qa.1': ORDERS,
+              'Zc_R6KKp.0': ORDERS,
+            },
+            unsplit: [],
+          },
+          { ...PAGE, base: 'https://cdn.example.com/app/' }
+        )
+      ).toEqual({
+        s: {
+          b: 'https://cdn.example.com/app/',
+          f: 'assets/gt-map',
+          h: { fr: '11111111' },
+          v: { fr: '22222222' },
+          e: { fr: { 'assets/gt-aa': '66666666' } },
+          n: 'assets/gt-current',
+          u: 'assets/gt-unsplit',
+          o: { fr: '55555555' },
+        },
+        t: {
+          'kR3_x0Qa.0': 'Enregistrer',
+          'kR3_x0Qa.1': 'Commandes',
+          'Zc_R6KKp.0': 'Commandes',
+        },
+        c: [ORDERS_CHUNK],
+        k: ['assets/gt-aa', 'assets/gt-bb'],
+      });
+    });
+
+    it('makes no seed for a locale the build has no files for, and one without translations for a page of every locale', () => {
+      expect(
+        createChunkTranslationsSeed(OUTPUT, { ...PAGE, locale: 'en' })
+      ).toBeUndefined();
+      expect(
+        createChunkTranslationsShellSeed(OUTPUT, { chunks: [], base: '/app/' })
+      ).toEqual({
+        s: { ...OUTPUT.entries['assets/index-a1.js'].state, b: '/app/' },
+      });
+      expect(
+        createChunkTranslationsShellSeed(
+          { ...OUTPUT, entries: {} },
+          { chunks: [], base: undefined }
+        )
+      ).toBeUndefined();
+    });
+
+    it('hydrates with what the seed holds, runs the imports of its chunks at once, and requests no file before the browser is idle', async () => {
+      const fetched = serve({
+        ...FILES,
+        '/assets/Reports-d4.fr.22222222.json': { reports: 'Rapports' },
+      });
+      await startSeeded();
+      vi.useFakeTimers();
+
+      await seedChunkTranslations(createChunkTranslationsSeed(OUTPUT, PAGE)!);
+
+      expect(save()).toBe('Enregistrer');
+      expect(note()).toBe('Remarque');
+      const steps: string[] = [];
+      expect(await preloadedImport(steps)()).toEqual({
+        evaluated: 'Commandes',
+      });
+      expect(steps).toEqual([PRELOAD, 'import']);
+      expect(fetched).not.toHaveBeenCalled();
+
+      // Which files an import needs, for the first navigation
+      await vi.runAllTimersAsync();
+      expect(fetched.mock.calls).toEqual([
+        ['/assets/index-a1.fr.11111111.json'],
+      ]);
+      fetched.mockClear();
+      // Not the file the seed holds
+      await loadChunkTranslations(['assets/Orders-b2', 'assets/Reports-d4']);
+      expect(fetched.mock.calls).toEqual([
+        ['/assets/Reports-d4.fr.22222222.json'],
+      ]);
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      [
+        'the file of the entry',
+        {},
+        [
+          '/assets/gt-unsplit.fr.55555555.json',
+          '/assets/index-a1.fr.11111111.json',
+        ],
+      ],
+      [
+        'the files the entry holds in a build that splits by module',
+        { f: 'assets/gt-map', e: { fr: { 'assets/gt-aa': '66666666' } } },
+        [
+          '/assets/gt-aa.fr.66666666.json',
+          '/assets/gt-map.fr.11111111.json',
+          '/assets/gt-unsplit.fr.55555555.json',
+        ],
+      ],
+    ])(
+      'loads %s and the unsplit file itself when the seed holds no translations',
+      async (_name, state, requested) => {
+        const fetched = serve({
+          ...FILES,
+          '/assets/gt-unsplit.fr.55555555.json': { [NOTE]: 'Remarque' },
+          '/assets/gt-map.fr.11111111.json': { i: IMPORTED },
+          '/assets/gt-aa.fr.66666666.json': { [SAVE]: 'Enregistrer' },
+        });
+        await startSeeded();
+        const seed = createChunkTranslationsShellSeed(OUTPUT, {
+          chunks: [],
+          base: undefined,
+        })!;
+
+        await seedChunkTranslations({ s: { ...seed.s, ...state } });
+
+        expect(fetched.mock.calls.flat().sort()).toEqual(requested);
+        expect(save()).toBe('Enregistrer');
+        expect(note()).toBe('Remarque');
+        expect(warn).not.toHaveBeenCalled();
+      }
+    );
+
+    it('requests nothing in a locale that renders the source', async () => {
+      const fetched = serve();
+      setLocale('en');
+      await startSeeded();
+      vi.useFakeTimers();
+      await seedChunkTranslations(
+        createChunkTranslationsShellSeed(OUTPUT, {
+          chunks: [],
+          base: undefined,
+        })!
+      );
+      await vi.runAllTimersAsync();
+      expect(fetched).not.toHaveBeenCalled();
+      expect(warn).not.toHaveBeenCalled();
     });
   });
 });
