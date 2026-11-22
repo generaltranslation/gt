@@ -7,53 +7,61 @@ import { pathToFileURL } from 'node:url';
 export const MAX_BASE_HOPS = 10;
 const PRE_JSON_PATH = '.changeset/pre.json';
 
-export async function resolveBaseChain(
+export async function findPrereleaseBranch(
   baseRef,
-  findParentBase,
+  { readPreJson, findParentBase },
   maxHops = MAX_BASE_HOPS
 ) {
   const chain = [baseRef];
-  while (chain.length <= maxHops) {
-    const parentBase = await findParentBase(chain[chain.length - 1]);
-    if (parentBase === null) return { chain, stoppedEarly: false };
-    if (chain.includes(parentBase)) return { chain, stoppedEarly: true };
+  for (;;) {
+    const branch = chain[chain.length - 1];
+    const label = preModeLabel(await readPreJson(branch), branch);
+    if (label !== null) return { chain, label, stoppedEarly: false };
+    if (chain.length > maxHops) return { chain, label, stoppedEarly: true };
+    const parentBase = await findParentBase(branch);
+    if (parentBase === null) return { chain, label, stoppedEarly: false };
+    if (chain.includes(parentBase)) return { chain, label, stoppedEarly: true };
     chain.push(parentBase);
   }
-  return { chain, stoppedEarly: true };
 }
 
-export function isPrereleasePreJson(preJsonText) {
-  if (preJsonText === null) return false;
+export function preModeLabel(preJsonText, branch) {
+  if (preJsonText === null) return null;
+  let preJson;
   try {
-    const { mode } = JSON.parse(preJsonText);
-    // `changeset pre exit` keeps pre.json with mode "exit" until the final release deletes it.
-    return mode === 'pre' || mode === 'exit';
+    preJson = JSON.parse(preJsonText);
   } catch {
-    return false;
+    return null;
   }
+  // `changeset pre exit` keeps pre.json with mode "exit" until the final release deletes it.
+  if (preJson?.mode !== 'pre' && preJson?.mode !== 'exit') return null;
+  return typeof preJson.tag === 'string' && preJson.tag !== ''
+    ? preJson.tag
+    : branch;
 }
 
-export function decidePrereleaseLabel({ chain, isPrerelease, labels }) {
+export function decidePrereleaseLabel({ chain, label, labels }) {
   const landingBranch = chain[chain.length - 1];
   const route = chain.join(' -> ');
-  if (!isPrerelease) {
+  if (label === null) {
     return {
       ok: true,
       requiredLabel: null,
-      message: `This pull request lands on ${landingBranch} (${route}), which is not a prerelease branch, so no label is required.`,
+      message: `This pull request does not land on a prerelease branch (${route}), so no label is required.`,
     };
   }
-  if (labels.includes(landingBranch)) {
+  const where = `This pull request lands on ${landingBranch} (${route}), which is in ${label} pre mode`;
+  if (labels.includes(label)) {
     return {
       ok: true,
-      requiredLabel: landingBranch,
-      message: `This pull request lands on the ${landingBranch} prerelease branch (${route}) and has the ${landingBranch} label.`,
+      requiredLabel: label,
+      message: `${where}, and has the ${label} label.`,
     };
   }
   return {
     ok: false,
-    requiredLabel: landingBranch,
-    message: `This pull request lands on the ${landingBranch} prerelease branch (${route}) but is missing the ${landingBranch} label.`,
+    requiredLabel: label,
+    message: `${where}, but is missing the ${label} label.`,
   };
 }
 
@@ -91,39 +99,35 @@ export async function run({
   const pull = await request(`/pulls/${pullNumber}`);
   const labels = pull.labels.map((label) => label.name);
 
+  const readPreJson = (branch) =>
+    request(
+      `/contents/${PRE_JSON_PATH}?ref=${encodeURIComponent(branch)}`,
+      'application/vnd.github.raw+json'
+    );
   const findParentBase = async (branch) => {
     const parents = await request(
       `/pulls?state=open&sort=created&direction=asc&head=${encodeURIComponent(`${owner}:${branch}`)}`
     );
     return parents?.[0]?.base.ref ?? null;
   };
-  const { chain, stoppedEarly } = await resolveBaseChain(
+  const { chain, label, stoppedEarly } = await findPrereleaseBranch(
     pull.base.ref,
-    findParentBase
+    { readPreJson, findParentBase }
   );
   if (stoppedEarly) {
     log(
-      `::warning title=Base chain cut short::Stopped following stacked pull requests after ${chain.join(' -> ')} (cycle or more than ${MAX_BASE_HOPS} hops); checking ${chain[chain.length - 1]}.`
+      `::warning title=Base chain cut short::Stopped following stacked pull requests after ${chain.join(' -> ')} (cycle or more than ${MAX_BASE_HOPS} hops) without reaching a prerelease branch.`
     );
   }
 
-  const landingBranch = chain[chain.length - 1];
-  const preJsonText = await request(
-    `/contents/${PRE_JSON_PATH}?ref=${encodeURIComponent(landingBranch)}`,
-    'application/vnd.github.raw+json'
-  );
-  const decision = decidePrereleaseLabel({
-    chain,
-    isPrerelease: isPrereleasePreJson(preJsonText),
-    labels,
-  });
+  const decision = decidePrereleaseLabel({ chain, label, labels });
 
   if (decision.ok) {
     log(decision.message);
     return 0;
   }
   logError(
-    `::error title=Missing ${decision.requiredLabel} label::${decision.message} Add it with: gh pr edit ${pullNumber} --add-label ${decision.requiredLabel}`
+    `::error title=Missing ${decision.requiredLabel} label::${decision.message} Maintainers can add it with: gh pr edit ${pullNumber} --add-label ${decision.requiredLabel}. Without triage access, ask a maintainer in this pull request to add it.`
   );
   return 1;
 }

@@ -162,14 +162,16 @@ Updating, improving and correcting the documentation
 
 ### Prerelease Branches
 
-A prerelease branch is a long-lived branch that publishes prerelease versions under its own npm dist-tag. For example, `samsara` publishes `@samsara`. A branch is a prerelease branch while it has a `.changeset/pre.json` (changesets pre mode).
+A prerelease branch is a long-lived branch that publishes prerelease versions under its own npm dist-tag. For example, `samsara` publishes `@samsara`. A branch is a prerelease branch while its `.changeset/pre.json` is in pre mode, and its label is the `tag` in that file (the branch name if there is no `tag`). For `samsara`, both are `samsara`.
 
-Label everything that belongs to a prerelease branch with the label of the same name, such as `samsara`:
+Label everything that belongs to a prerelease branch with that label:
 
-- **Pull requests** that target the branch. This includes every pull request in a stack that eventually lands there, where a pull request's base is another pull request's head branch.
+- **Pull requests** that target the branch. This includes every pull request in a stack that eventually lands there, where a pull request's base is another pull request's head branch, and pull requests into integration branches cut from it.
 - **Issues** about the branch, such as a bug that only shows up in a `@samsara` release.
 
-CI enforces the label on pull requests: the **Prerelease label** check follows the base chain through open pull requests in this repository (up to 10 hops), and fails if the branch it lands on is a prerelease branch and the label is missing. Adding the label re-runs the check. Issues are not checked, so add the label when you open one.
+If you can't add labels, name the prerelease branch in the issue or pull request description and ask a maintainer to add the label.
+
+CI enforces the label on pull requests. The **Prerelease label** check starts at the pull request's base and stops at the first branch whose `pre.json` is in pre mode, then requires that file's `tag`. Until then, while the branch is the head of an open pull request in this repository, it moves to that pull request's base (up to 10 hops). Adding the label re-runs the check. Issues are not checked, so add the label when you open one.
 
 ## Styleguides
 

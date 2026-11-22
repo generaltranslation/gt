@@ -1,8 +1,8 @@
 name: Prerelease Label
 
 # A pull request that lands on a prerelease branch, directly or through a
-# stack of pull requests, must carry a label named after that branch. A branch
-# is a prerelease branch while it has .changeset/pre.json. See CONTRIBUTING.md.
+# stack of pull requests, must carry the label named by the pre-mode tag in that
+# branch's .changeset/pre.json. See CONTRIBUTING.md.
 
 on:
   pull_request:

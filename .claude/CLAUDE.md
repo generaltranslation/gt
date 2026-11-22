@@ -144,7 +144,7 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 
 - Commit messages should follow Conventional Commits style (for example, `feat: add locale fallback` or `fix: preserve formatter options`).
 - PR titles should also follow Conventional Commits style.
-- A PR or issue for a prerelease branch (one with `.changeset/pre.json`, such as `samsara`) carries the label named after the branch, including every PR in a stack that lands there; the Prerelease label check enforces it on PRs (CONTRIBUTING.md, "Prerelease Branches").
+- A PR or issue for a prerelease branch (one whose `.changeset/pre.json` is in pre mode, such as `samsara`) carries the label named by that file's `tag`, including every PR in a stack or integration branch that lands there; the Prerelease label check enforces it on PRs (CONTRIBUTING.md, "Prerelease Branches").
 
 ## Breaking Changes and Changesets
 
