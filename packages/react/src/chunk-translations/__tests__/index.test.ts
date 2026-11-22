@@ -11,10 +11,10 @@ import {
   loadRegionChunk,
   loadRegionChunkTranslations,
   type ChunkTranslationsState,
-} from '../chunk-translations';
-import { resolveChunkUrl } from '../chunk-translations/gate';
+} from '..';
+import { resolveChunkUrl } from '../gate';
 import { getReactI18nCache, t } from '@generaltranslation/react-core/pure';
-import { initializeGTSPA } from '../setup/initializeGTSPA';
+import { initializeGTSPA } from '../../setup/initializeGTSPA';
 
 // What the compiler writes is tested where it is written:
 // packages/compiler/src/__tests__/chunkTranslations.test.ts.
