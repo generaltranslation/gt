@@ -5,7 +5,10 @@ import { hashSource } from 'generaltranslation/id';
 import { describe, expect, it } from 'vitest';
 import { extractFromVueProject } from '../../project.js';
 import type { VueCompilerOptions, VueExtractionResult } from '../../types.js';
-import { createTestProject, linkInstalledVue } from './projectTestUtils.js';
+import {
+  createTestProject,
+  linkInstalledVue,
+} from '../../__tests__/projectTestUtils.js';
 import { extractFromVueSource } from './testVueCompiler.js';
 
 describe('extractFromVueSource', () => {

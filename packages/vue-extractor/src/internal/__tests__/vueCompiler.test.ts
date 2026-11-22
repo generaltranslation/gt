@@ -15,7 +15,7 @@ import {
 import { extractFromVueSource as extractWithExplicitCompiler } from '../extractFromVueSource.js';
 import { readStaticPrimitive } from '../utils.js';
 import { inspectVueCompiler, resolveVueCompiler } from '../vueCompiler.js';
-import { createTestProject } from './projectTestUtils.js';
+import { createTestProject } from '../../__tests__/projectTestUtils.js';
 import { extractFromVueSource } from './testVueCompiler.js';
 
 describe('consumer Vue compiler resolution', () => {

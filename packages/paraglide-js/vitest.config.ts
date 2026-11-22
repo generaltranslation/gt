@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['__tests__/**/*.test.ts'],
+    include: ['src/**/__tests__/**/*.test.ts'],
     // Projects the tests write.
     exclude: ['**/node_modules/**', '**/.tmp/**'],
     // The first test of a file loads its framework's tooling (TypeScript, Vue,
