@@ -5,17 +5,14 @@ import { PortableTextHtmlComponents } from '@portabletext/to-html';
 import merge from 'lodash.merge';
 import { PortableTextBlock, SanityDocument } from 'sanity';
 import { describe, expect, test, vi } from 'vitest';
-import { attachGTData, detachGTData } from '../data';
-import { BaseDocumentDeserializer } from '../deserialize/BaseDocumentDeserializer';
-import { BaseDocumentSerializer } from '../serialize/index';
-import {
-  fieldFilter,
-  isFieldExcludedByOptions,
-} from '../serialize/fieldFilters';
+import { attachGTData, detachGTData } from '../../data';
+import { BaseDocumentDeserializer } from '../../deserialize/BaseDocumentDeserializer';
+import { BaseDocumentSerializer } from '../index';
+import { fieldFilter, isFieldExcludedByOptions } from '../fieldFilters';
 import {
   customSerializers,
   defaultStopTypes,
-} from '../BaseSerializationConfig';
+} from '../../BaseSerializationConfig';
 import {
   addedCustomSerializers,
   annotationAndInlineBlocks,
@@ -31,7 +28,7 @@ import {
   schema,
   toPlainText,
   type ArticleFields,
-} from './helpers';
+} from '../../__tests__/helpers';
 
 const classNames = (element: Element) =>
   Array.from(element.children)

@@ -6,12 +6,12 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   BaseDocumentDeserializer,
   deserializeArray,
-} from '../deserialize/BaseDocumentDeserializer';
-import { BaseDocumentSerializer } from '../serialize/index';
+} from '../BaseDocumentDeserializer';
+import { BaseDocumentSerializer } from '../../serialize/index';
 import {
   customBlockDeserializers,
   defaultStopTypes,
-} from '../BaseSerializationConfig';
+} from '../../BaseSerializationConfig';
 import {
   addedBlockDeserializers,
   addedCustomDeserializers,
@@ -24,8 +24,8 @@ import {
   schema,
   toPlainText,
   type ArticleFields,
-} from './helpers';
-import customStyles from './__fixtures__/customStyles.json';
+} from '../../__tests__/helpers';
+import customStyles from '../../__tests__/__fixtures__/customStyles.json';
 
 const blockKeys = (blocks: Array<{ _key?: string }>) =>
   blocks.map((block) => block._key).sort();
