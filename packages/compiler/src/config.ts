@@ -12,6 +12,7 @@ import type {
   GTConfig as SharedGTConfig,
   GTParsingFlags,
 } from 'generaltranslation';
+import type { SplitTranslationsOutput } from 'generaltranslation/internal';
 
 export type LogLevel = NonNullable<GTCompilerOptions['logLevel']>;
 
@@ -114,6 +115,35 @@ export type SplitTranslationsOptions = {
 };
 
 /**
+ * What the plugin of a framework that renders an app on a server tells a
+ * build that splits translations, and is told by it. Such an app has no
+ * `initializeGTSPA`: the framework's runtime starts the loader in each page
+ * with what its server sent. So the build looks for no `initializeGTSPA`, and
+ * fails on a dynamic import that loads translated chunks and that it could
+ * not wrap, where a client-rendered app is warned.
+ */
+export type SplitTranslationsHost = {
+  /**
+   * The module that compiled code imports the loader of translation files
+   * from: an entry of the framework's package that exports what
+   * `gt-react/chunk-translations` does. An app resolves its framework's
+   * package, and not always gt-react.
+   */
+  loader: string;
+  /**
+   * The names of the Vite environments whose chunks a browser loads. Only
+   * those are split. Every other, as one built for a server, keeps the hash
+   * at each call site and reads whole catalogs.
+   */
+  clientEnvironments: readonly string[];
+  /**
+   * Called once a client environment has written its translation files, with
+   * what the server needs to send a page the translations of its chunks.
+   */
+  onSplit: (output: SplitTranslationsOutput) => void;
+};
+
+/**
  * Plugin configuration options (from babel config). The parsing flags override
  * the same flags in gt.config.json.
  */
@@ -168,6 +198,12 @@ export interface PluginConfig
    * While the split is off, the other keys and their variables are not read.
    */
   experimentalSplitTranslations?: SplitTranslationsOptions;
+  /**
+   * Set by the plugin of a framework that renders the app on a server, not by
+   * an app: how a build that splits translations fits that framework. See
+   * `SplitTranslationsHost`.
+   */
+  splitTranslationsHost?: SplitTranslationsHost;
   /**
    * Replaces each static `t` template with a call
    * that passes its message, built at compile time and written at the call,

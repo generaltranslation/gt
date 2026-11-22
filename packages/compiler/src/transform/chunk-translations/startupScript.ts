@@ -5,6 +5,7 @@ import {
   defaultEnableI18nCookieName,
   defaultLocaleCookieName,
 } from 'gt-i18n/internal/cookies';
+import type { SplitTranslationsState } from 'generaltranslation/internal';
 import { CHUNK_TRANSLATIONS_GLOBAL } from './resolveChunkTranslations';
 
 /** What the startup script is given; `ChunkTranslationsState` in gt-react. */
@@ -408,6 +409,54 @@ function startUnsplitTranslations(
     request.catch(() => {});
     state.q = { [locale]: request };
   }
+}
+
+/**
+ * What the loader of a page starts with, as data: every field the startup
+ * script below gives it. A framework that renders on a server sends it with
+ * each page in place of that script.
+ *
+ * @param entry The key of the entry's file, or of the file that stands in for it.
+ * @param hashes The hash in the name of that file, by locale.
+ * @param tokens The token in the name of every other file, by locale.
+ * @param maps The key of the maps, in a build that names each file by its own hash.
+ * @param regions The hash in the name of each file the entry holds, by locale and key, in a build that splits by module.
+ * @param unsplit The key of the unsplit files and the hash in the name of each locale's, when the build has any.
+ * @param current The key of the file that names the build's current files, when the build writes one.
+ * @param assignment What that file says of how the build assigned messages to files.
+ */
+export function createLoaderState({
+  base,
+  entry,
+  hashes,
+  tokens,
+  maps,
+  regions,
+  unsplit,
+  current,
+  assignment,
+}: {
+  base: string;
+  entry: string;
+  hashes: Record<string, string>;
+  tokens: Record<string, string>;
+  maps: { key: string } | undefined;
+  regions: Record<string, Record<string, string>> | undefined;
+  unsplit: { key: string; hashes: Record<string, string> } | undefined;
+  current: string | undefined;
+  assignment: string | undefined;
+}): SplitTranslationsState {
+  return {
+    b: base,
+    f: entry,
+    h: hashes,
+    v: tokens,
+    ...(maps && { k: maps.key }),
+    ...(regions && { e: regions }),
+    ...(current !== undefined && { n: current }),
+    ...(current !== undefined && assignment !== undefined && { c: assignment }),
+    ...(unsplit && { u: unsplit.key, o: unsplit.hashes }),
+  };
 }
 
 /**

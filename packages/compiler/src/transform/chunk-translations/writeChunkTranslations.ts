@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import type { GTOutputFileConfig } from 'generaltranslation';
+import type {
+  SplitTranslationsOutput,
+  SplitTranslationsState,
+} from 'generaltranslation/internal';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import {
   loadTranslationFiles,
@@ -28,11 +32,12 @@ import {
 } from './resolveChunkTranslations';
 import {
   findChunkIds,
+  type MinifiedIds,
   isEmptyTranslations,
   pickMinifiedTranslations,
   readMinifiedIds,
 } from './hashMinification';
-import { renderStartupScript } from './startupScript';
+import { createLoaderState, renderStartupScript } from './startupScript';
 import {
   getUnsplitTranslations,
   UNSPLIT_TRANSLATIONS_KEY,
@@ -249,6 +254,31 @@ export const createUngatedImportsWarning = (imports: UngatedImports[]) =>
     ),
   });
 
+export const createUngatedImportsError = (
+  imports: UngatedImports[],
+  source: string
+) =>
+  createDiagnosticMessage({
+    source: '@generaltranslation/compiler',
+    severity: 'Error',
+    whatHappened: `experimentalSplitTranslations cannot load the translations of ${nameSome(imports.flatMap(({ targets }) => targets))}`,
+    why: `a dynamic import the build could not wrap loads them, so their messages would render the source text: one in a module that cannot resolve ${source}, with a computed path, in a dependency, or in a CommonJS module`,
+    fix: `Add ${getPackageName(source)} to the dependencies of the package that holds the import, or import those chunks with import() of a literal path from a module of the app`,
+    details: nameSome(
+      imports.map(
+        ({ chunk, targets }) => `${chunk} imports ${targets.join(', ')}`
+      )
+    ),
+  });
+
+// `@scope/name/entry` and `name/entry` to the package's name
+function getPackageName(source: string): string {
+  return source
+    .split('/')
+    .slice(0, source.startsWith('@') ? 2 : 1)
+    .join('/');
+}
+
 export function getFileHash(source: string): string {
   return getDigest(source).slice(0, FILE_HASH_LENGTH);
 }
@@ -337,6 +367,8 @@ export function renderChunkTranslations(
   unsplit: { locale: string; count: number; bytes: number }[];
   /** Writes the startup script of each entry chunk, by its file, for a page that finds the build's files at a base */
   startupScripts: Map<string, (base: string) => string>;
+  /** What the loader of a page that starts from each entry chunk starts with, by the chunk's file */
+  states: Map<string, SplitTranslationsState>;
 } {
   const locales = build.locales.filter((locale) => table[locale]);
   const files: { fileName: string; source: string }[] = [];
@@ -438,8 +470,26 @@ export function renderChunkTranslations(
   }
 
   const startupScripts = new Map<string, (base: string) => string>();
+  const states = new Map<string, SplitTranslationsState>();
   for (const entry of assignment.entries.keys()) {
     const hashes = entryHashes.get(entry) ?? {};
+    states.set(
+      entry,
+      createLoaderState({
+        base,
+        entry: getEntryKey(entry),
+        hashes,
+        tokens,
+        maps,
+        regions: undefined,
+        unsplit:
+          unsplit && unsplitFiles.length
+            ? { key: unsplit.key, hashes: unsplitHashes }
+            : undefined,
+        current: names && current,
+        assignment: names && assigned,
+      })
+    );
     const renderScript = (pageBase: string) =>
       renderStartupScript({
         base: pageBase,
@@ -465,7 +515,7 @@ export function renderChunkTranslations(
       startupScript: renderScript(base),
     };
   }
-  return { files, manifest, unsplit: unsplitFiles, startupScripts };
+  return { files, manifest, unsplit: unsplitFiles, startupScripts, states };
 }
 
 /**
@@ -605,6 +655,8 @@ export function writeChunkTranslations(
   importMap: ChunkImportMap | undefined;
   /** The names the lists hold the imported chunks under, see findImportedNames */
   importedNames: ChunkImportMap | undefined;
+  /** What a framework that renders on a server is handed, see `SplitTranslationsHost` */
+  output: SplitTranslationsOutput;
 } {
   const chunks = Object.values(bundle).filter(
     (
@@ -649,23 +701,25 @@ export function writeChunkTranslations(
     throw new Error(createUncoveredChunkMessagesError(uncovered));
   }
   const isLoadedWith = createIsLoadedWith(assigned);
-  const { files, manifest, unsplit, startupScripts } = renderChunkTranslations(
-    assignment,
-    build,
-    table,
-    base,
-    {
-      key: path.posix.join(assetsDir, UNSPLIT_TRANSLATIONS_KEY),
-      translations: getUnsplitTranslations(table, build),
-    },
-    build.naming === 'map'
-      ? {
-          key: path.posix.join(assetsDir, TRANSLATIONS_MAP_KEY),
-          files: path.posix.join(assetsDir, CONTENT_FILES_KEY),
-        }
-      : undefined,
-    path.posix.join(assetsDir, CURRENT_NAMES_KEY)
-  );
+  const unsplitTranslations = getUnsplitTranslations(table, build);
+  const { files, manifest, unsplit, startupScripts, states } =
+    renderChunkTranslations(
+      assignment,
+      build,
+      table,
+      base,
+      {
+        key: path.posix.join(assetsDir, UNSPLIT_TRANSLATIONS_KEY),
+        translations: unsplitTranslations,
+      },
+      build.naming === 'map'
+        ? {
+            key: path.posix.join(assetsDir, TRANSLATIONS_MAP_KEY),
+            files: path.posix.join(assetsDir, CONTENT_FILES_KEY),
+          }
+        : undefined,
+      path.posix.join(assetsDir, CURRENT_NAMES_KEY)
+    );
   for (const file of files) emitFile({ type: 'asset', ...file });
   emitFile({
     type: 'asset',
@@ -685,5 +739,46 @@ export function writeChunkTranslations(
     bundledCatalogs: findBundledCatalogs(chunks, gtFiles, build),
     importMap,
     importedNames,
+    output: {
+      entries: Object.fromEntries(
+        [...assignment.entries].map(([entry, messages]) => [
+          entry,
+          { state: states.get(entry)!, messages, files: [] },
+        ])
+      ),
+      imports: Object.fromEntries(assignment.imports),
+      files: Object.fromEntries(assignment.files),
+      ...(build.minifiedIds && {
+        hashes: getIdHashes(
+          [...assignment.entries.values(), ...assignment.files.values()],
+          build.minifiedIds
+        ),
+      }),
+      unsplit: getUnsplitHashes(unsplitTranslations),
+    },
   };
+}
+
+/** The hash of each id that some file holds, in a build with hash minification. */
+export function getIdHashes(
+  held: Iterable<Iterable<string>>,
+  minified: MinifiedIds
+): Record<string, string> {
+  const hashes: Record<string, string> = {};
+  for (const ids of held) {
+    for (const id of ids) {
+      const hash = minified.hashes.get(id);
+      if (hash !== undefined) hashes[id] = hash;
+    }
+  }
+  return hashes;
+}
+
+/** The hashes of the unsplit messages of any locale, in their order. */
+export function getUnsplitHashes(
+  unsplit: Record<string, Record<string, unknown>>
+): string[] {
+  return [
+    ...new Set(Object.values(unsplit).flatMap((held) => Object.keys(held))),
+  ].sort();
 }

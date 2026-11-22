@@ -25,7 +25,6 @@ import {
   type ChunkImportMap,
 } from './transform/chunk-translations/chunkImportMap';
 import {
-  CHUNK_TRANSLATIONS_SOURCE,
   UNSPLIT_LOADER_PLACEHOLDER,
   getChunkTranslations,
   getMinifyHashes,
@@ -43,6 +42,7 @@ import {
   UNSTARTED_APP_WARNING,
   createBundledCatalogsWarning,
   createMissingTranslationsWarning,
+  createUngatedImportsError,
   createUngatedImportsWarning,
   createUnreadImportsError,
   loadChunkTranslationsTable,
@@ -143,11 +143,22 @@ import {
  */
 export interface GTUnpluginOptions extends PluginConfig, GTConfig {}
 
+export type { SplitTranslationsHost, SplitTranslationsOptions } from './config';
+// Whether a build splits translations, for a framework plugin that resolves
+// keys of the option before it passes it on
+export { getChunkTranslations as isSplitTranslationsEnabled } from './transform/chunk-translations/resolveChunkTranslations';
+
 export const MISSING_GT_CONFIG_WARNING =
   '[@generaltranslation/compiler] No gtConfig found. Auto JSX injection and parsingFlags features require a gt.config.json. See https://generaltranslation.com/en/docs/react/concepts/compiler.';
 
 function isDependency(id: string): boolean {
   return /[\\/]node_modules[\\/]/.test(id);
+}
+
+/** The name of the Vite environment a hook runs in, when it runs in one. */
+function getEnvironmentName(context: unknown): string | undefined {
+  return (context as { environment?: { name?: string } } | null)?.environment
+    ?.name;
 }
 
 function shouldWarn(logLevel: PluginConfig['logLevel']): boolean {
@@ -267,6 +278,12 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         ? gtConfigLoadResult.gtConfig
         : undefined;
     const splitTranslations = options.experimentalSplitTranslations;
+    const host = options.splitTranslationsHost;
+    // A framework that renders on a server names the environments a browser
+    // loads; every environment of a client-rendered app is one
+    const isSplit = (context: unknown): boolean =>
+      !host ||
+      host.clientEnvironments.includes(getEnvironmentName(context) ?? '');
     const resolveChunkTranslationsOptions = () => {
       const split = getChunkTranslationsSplit(splitTranslations?.by);
       return resolveChunkTranslations(loadedGTConfig, {
@@ -278,6 +295,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           previous: splitTranslations?.previous,
         }),
         minifyHashes: getMinifyHashes(splitTranslations?.minifyHashes),
+        source: host?.loader,
       });
     };
     const chunkTranslationsResolution = getChunkTranslations(splitTranslations)
@@ -368,7 +386,11 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       },
       transform(code: string, id: string) {
         // Initialize processing state
-        const state = initializeState(resolvedOptions, id, chunkTranslations);
+        const state = initializeState(
+          resolvedOptions,
+          id,
+          isSplit(this) ? chunkTranslations : undefined
+        );
         if (debugManifest) state.debugManifest = debugManifest;
         try {
           // Skip transformation if not needed
@@ -586,7 +608,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       _outputOptions: unknown,
       bundle: Record<string, { type: string }>
     ): void {
-      if (!isProduction()) return;
+      if (!isProduction() || !isSplit(this)) return;
       const written = regions
         ? writeRegions(this, bundle)
         : writeChunkTranslations(bundle, chunkTranslations!, {
@@ -604,7 +626,10 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       if (written.missingLocales.length) {
         console.warn(createMissingTranslationsWarning(written.missingLocales));
       }
-      if (!chunkTranslations!.starts) {
+      host?.onSplit(written.output);
+      if (host) {
+        // The framework's runtime starts the app, not initializeGTSPA
+      } else if (!chunkTranslations!.starts) {
         console.warn(UNSTARTED_APP_WARNING);
       } else if (written.bundledCatalogs.length) {
         console.warn(createBundledCatalogsWarning(written.bundledCatalogs));
@@ -625,11 +650,12 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     }
     // Chunks are rendered once every module is compiled, so every call site is known
     function renderChunk(
+      this: unknown,
       code: string,
       chunk?: { fileName: string },
       rendered?: { sourcemap?: boolean | string }
     ) {
-      if (!isProduction()) return null;
+      if (!isProduction() || !isSplit(this)) return null;
       const tracked =
         chunk && rendered?.sourcemap ? trackReplacements(code) : undefined;
       const withMap = (rewritten: string) =>
@@ -675,6 +701,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     const nameImportedChunks = {
       order: 'post',
       handler(
+        this: unknown,
         _outputOptions: unknown,
         bundle: Record<
           string,
@@ -686,7 +713,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           } & BundledChunk
         >
       ): void {
-        if (!isProduction()) return;
+        if (!isProduction() || !isSplit(this)) return;
         const needsFiles = (target: string) => imported.has(target);
         // The import map is not read from the bundle again: a plugin may
         // have rewritten it since the lists were written, and what is
@@ -729,7 +756,15 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           }
         }
         if (unread.length) throw new Error(createUnreadImportsError(unread));
-        if (unwrapped.length && shouldWarn(options.logLevel)) {
+        if (!unwrapped.length) return;
+        // Every module of a framework's app resolves the loader, so there an
+        // unwrapped import is a page that renders source text
+        if (host) {
+          throw new Error(
+            createUngatedImportsError(unwrapped, chunkTranslations.source)
+          );
+        }
+        if (shouldWarn(options.logLevel)) {
           console.warn(createUngatedImportsWarning(unwrapped));
         }
       },
@@ -785,14 +820,16 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           return !isDependency(id);
         },
         async transform(code: string, id: string) {
-          if (!isProduction() || !code.includes('import(')) return null;
+          if (!isProduction() || !isSplit(this) || !code.includes('import(')) {
+            return null;
+          }
           // A module that cannot reach gt-react keeps its imports as they are
           const { resolve } = this as unknown as {
             resolve?: (source: string, importer: string) => Promise<unknown>;
           };
           if (
             resolve &&
-            !(await resolve.call(this, CHUNK_TRANSLATIONS_SOURCE, id))
+            !(await resolve.call(this, chunkTranslations.source, id))
           ) {
             return null;
           }
@@ -801,7 +838,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             id,
             chunkTranslations.naming,
             regions !== undefined,
-            chunkTranslations.minifiedIds !== undefined
+            chunkTranslations.minifiedIds !== undefined,
+            chunkTranslations.source
           ) ?? null) as never;
         },
       },
