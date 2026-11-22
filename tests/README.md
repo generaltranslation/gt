@@ -8,25 +8,26 @@ The apps directly under `tests/apps/` exercise local workspace builds of the GT
 packages across supported frameworks and bundlers. They use `workspace:*`
 dependencies, so no manual linking or per-app install is required.
 
-| App                                        | Stack                           | GT package          |
-| ------------------------------------------ | ------------------------------- | ------------------- |
-| `next-app-router`                          | Next.js App Router              | `gt-next`           |
-| `next-app-router-dictionary`               | Next.js App Router dictionaries | `gt-next`           |
-| `next-app-router-locale-routing`           | Next.js locale routes           | `gt-next`           |
-| `next-app-router-locale-routing-ssg`       | Next.js locale routes with SSG  | `gt-next`           |
-| `next-app-router-locale-routing-use-cache` | Next.js Cache Components        | `gt-next`           |
-| `next-latest-locale-switch-no-routing`     | Latest Next.js without routing  | `gt-next`           |
-| `next-latest-locale-switch-routing`        | Latest Next.js locale routing   | `gt-next`           |
-| `next-pages-router`                        | Next.js Pages Router            | `gt-next`           |
-| `tanstack-start`                           | TanStack Start                  | `gt-tanstack-start` |
-| `gt-node-express`                          | Express                         | `gt-node`           |
-| `react-native`                             | Expo + React Native             | `gt-react-native`   |
-| `vite-react`                               | Vite + React                    | `gt-react`          |
-| `vite-chunk-translations`                  | Vite + React, files per chunk   | `gt-react`          |
-| `webpack-react`                            | webpack + React                 | `gt-react`          |
-| `rollup-react`                             | Rollup + React                  | `gt-react`          |
-| `rolldown-react`                           | Rolldown + React                | `gt-react`          |
-| `esbuild-react`                            | esbuild + React                 | `gt-react`          |
+| App                                        | Stack                              | GT package          |
+| ------------------------------------------ | ---------------------------------- | ------------------- |
+| `next-app-router`                          | Next.js App Router                 | `gt-next`           |
+| `next-app-router-dictionary`               | Next.js App Router dictionaries    | `gt-next`           |
+| `next-app-router-locale-routing`           | Next.js locale routes              | `gt-next`           |
+| `next-app-router-locale-routing-ssg`       | Next.js locale routes with SSG     | `gt-next`           |
+| `next-app-router-locale-routing-use-cache` | Next.js Cache Components           | `gt-next`           |
+| `next-latest-locale-switch-no-routing`     | Latest Next.js without routing     | `gt-next`           |
+| `next-latest-locale-switch-routing`        | Latest Next.js locale routing      | `gt-next`           |
+| `next-pages-router`                        | Next.js Pages Router               | `gt-next`           |
+| `tanstack-start`                           | TanStack Start                     | `gt-tanstack-start` |
+| `gt-node-express`                          | Express                            | `gt-node`           |
+| `react-native`                             | Expo + React Native                | `gt-react-native`   |
+| `vite-react`                               | Vite + React                       | `gt-react`          |
+| `vite-chunk-translations`                  | Vite + React, files per chunk      | `gt-react`          |
+| `tanstack-start-split-translations`        | TanStack Start, split translations | `gt-tanstack-start` |
+| `webpack-react`                            | webpack + React                    | `gt-react`          |
+| `rollup-react`                             | Rollup + React                     | `gt-react`          |
+| `rolldown-react`                           | Rolldown + React                   | `gt-react`          |
+| `esbuild-react`                            | esbuild + React                    | `gt-react`          |
 
 Run an app from the repository root with its workspace name:
 
@@ -66,6 +67,27 @@ needs no browser: it builds the app with `--sourcemap`, without the split and
 with each way of splitting, with and without hash minification, and checks
 that the bundler reports no broken source map and that positions in the
 emitted chunks map back to their file, line and column.
+
+`tanstack-start-split-translations` checks the same option in a
+server-rendered app on `gt-tanstack-start`, where the split applies to the
+client build and the server sends a page the translations of its own chunks.
+Its script builds the app with the split off, by chunk and by module, each with
+and without hash minification, and by chunk with files named by a map, serves
+each build from a process of its own and drives it in headless Chromium: a
+first visit of every route, navigations, a hover preload, a lazily imported
+component, a `msg()` that only server code holds, a locale switch, a deploy
+while a page is open, a prerendered shell, static prerendering, locale routing, a base
+other than `/`, assets on a second origin and the dictionary API. Give it names
+to run a part of them:
+
+```bash
+pnpm --filter gt-test-tanstack-start-split-translations check:install
+pnpm --filter gt-test-tanstack-start-split-translations check
+pnpm --filter gt-test-tanstack-start-split-translations check "deploy" "shell"
+```
+
+The check does not run in CI, like those of `vite-chunk-translations`: run it
+after a change to the split, the compiler or `gt-tanstack-start`.
 
 Run the browser automation for every browser-capable development app, or select
 a comma-separated subset. The React Native app remains a manual native test:
