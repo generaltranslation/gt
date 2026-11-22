@@ -10,6 +10,10 @@ import logger from '../../../logs/logger';
 import { createInterpolationFailureMessage } from '../messages';
 import type { TranslationOptions } from '../../types/options';
 
+// Outside a plural, the ICU parser only treats braces, `<`, `''`, `'<` and `'>` as
+// syntax, so a message without them parses to a single literal equal to itself.
+const ICU_SYNTAX = /[{}<]|'['>]/;
+
 /**
  * Applies string interpolation and cutoff formatting. Fallsback to the original message if interpolation fails.
  * @param {string} message - The message to interpolate.
@@ -22,6 +26,10 @@ export function interpolateIcuMessage<T extends string | null | undefined>(
 ): T extends string ? string : T {
   // Return if the encoded message is null or undefined
   if (!encodedMsg) return encodedMsg as T extends string ? string : T;
+
+  if (options.$maxChars == null && !ICU_SYNTAX.test(encodedMsg)) {
+    return encodedMsg as T extends string ? string : T;
+  }
 
   // Get the source to use as a fallback
   const source = options.$_fallback;
@@ -50,9 +58,10 @@ export function interpolateIcuMessage<T extends string | null | undefined>(
       options.$format
     );
     // Apply cutoff formatting
-    const cutoffMessage = formatCutoff(interpolatedMessage, {
-      maxChars: options.$maxChars,
-    });
+    const cutoffMessage =
+      options.$maxChars == null
+        ? interpolatedMessage
+        : formatCutoff(interpolatedMessage, { maxChars: options.$maxChars });
     return cutoffMessage as T extends string ? string : T;
   } catch {
     logger.warn(createInterpolationFailureMessage(encodedMsg));
@@ -66,9 +75,10 @@ export function interpolateIcuMessage<T extends string | null | undefined>(
     }
 
     // Apply cutoff formatting
-    const cutoffMessage = formatCutoff(encodedMsg, {
-      maxChars: options.$maxChars,
-    });
+    const cutoffMessage =
+      options.$maxChars == null
+        ? encodedMsg
+        : formatCutoff(encodedMsg, { maxChars: options.$maxChars });
     return cutoffMessage as T extends string ? string : T;
   }
 }
