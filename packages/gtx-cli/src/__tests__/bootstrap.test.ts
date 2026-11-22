@@ -17,7 +17,7 @@ import {
 } from 'vitest';
 
 const execAsync = promisify(exec);
-const packagesRoot = fileURLToPath(new URL('../..', import.meta.url));
+const packagesRoot = fileURLToPath(new URL('../../..', import.meta.url));
 const WRAPPER_BIN = 'gtx-cli/bin/main.js';
 const SECRET = 'gtx-api-fake-created-key';
 const VAULT_KEY = 'a'.repeat(64);
