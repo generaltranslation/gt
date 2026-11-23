@@ -156,6 +156,8 @@ export function createConfigModule(
   compatCode: string;
   localeRouting: boolean;
   omittedApiKeys: boolean;
+  /** The app's own loadTranslations file, when it has one */
+  customLoader: string | undefined;
 } {
   const config = readConfigFile(configFile);
   // The browser imports this module too, so credentials must never be in it.
@@ -229,5 +231,6 @@ export function createConfigModule(
     compatCode,
     localeRouting: config.localeRouting === true,
     omittedApiKeys: apiKey !== undefined || devApiKey !== undefined,
+    customLoader,
   };
 }

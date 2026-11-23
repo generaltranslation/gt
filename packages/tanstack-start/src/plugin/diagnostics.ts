@@ -31,6 +31,17 @@ export const splitRequiresCompilerError = createDiagnosticMessage({
   wayOut: 'turn experimentalSplitTranslations off',
 });
 
+export function createSplitCustomLoaderError(file: string): string {
+  return createDiagnosticMessage({
+    source: 'gt-tanstack-start',
+    severity: 'Error',
+    whatHappened: `experimentalSplitTranslations cannot be used with the loadTranslations of ${file}`,
+    why: 'the build writes the translations a navigation loads from the files at files.gt.output, and the server would render a first visit from what that loader returns, which can be other translations or other locales',
+    fix: `Remove ${file} and the loadTranslationsPath option, so every translation comes from files.gt.output`,
+    wayOut: 'turn experimentalSplitTranslations off',
+  });
+}
+
 export function createSplitServerMessagesError(): string {
   return createDiagnosticMessage({
     source: 'gt-tanstack-start',

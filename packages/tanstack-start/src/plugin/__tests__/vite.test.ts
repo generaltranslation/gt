@@ -1133,4 +1133,30 @@ describe('experimentalSplitTranslations', () => {
     split.generate('ssr', 'JSON.parse("__GT_SERVER_MESSAGES__")');
     expect(() => split.write('ssr')).not.toThrow();
   });
+
+  it('fails a build that splits translations and has a loadTranslations of its own, which can return other translations than the files the build reads', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const { plugins, root } = createPlugins(SPLIT, OUTPUT);
+    fs.mkdirSync(path.join(root, 'src'));
+    fs.writeFileSync(
+      path.join(root, 'src/loadTranslations.ts'),
+      'export default async () => ({});'
+    );
+    const start = (command: ResolvedConfig['command']) => {
+      for (const name of ['gt-tanstack-start', SPLIT_PLUGIN_NAME]) {
+        resolveConfig(findPlugin(plugins, name)!, root, plugins, command);
+      }
+      const buildStart = plugins[0].buildStart as (this: object) => void;
+      buildStart.call({
+        error: (message: string) => {
+          throw new Error(message);
+        },
+      });
+    };
+    expect(() => start('build')).toThrow(
+      /^gt-tanstack-start Error: experimentalSplitTranslations cannot be used with the loadTranslations of .*src\/loadTranslations\.ts because the build writes the translations a navigation loads from the files at files\.gt\.output/
+    );
+    // The dev server does not split, and keeps the loader
+    expect(() => start('serve')).not.toThrow();
+  });
 });

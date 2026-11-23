@@ -13,6 +13,7 @@ import {
 import {
   createApiKeysOmittedWarning,
   createConfigChangedWarning,
+  createSplitCustomLoaderError,
   duplicateCompilerWarning,
 } from './diagnostics';
 import { isClientEnvironment } from './splitTranslations';
@@ -39,6 +40,7 @@ const configModules = ((
         codeWithoutLoader: string;
         compatCode: string;
         localeRouting: boolean;
+        customLoader: string | undefined;
         options: string;
       }
     >;
@@ -98,6 +100,7 @@ export function gtTanstackStart(
       compatCode,
       localeRouting,
       omittedApiKeys,
+      customLoader,
     } = createConfigModule(root, cwd, configFile, configModuleOptions);
     if (omittedApiKeys) {
       logger?.warnOnce(
@@ -109,6 +112,7 @@ export function gtTanstackStart(
       codeWithoutLoader,
       compatCode,
       localeRouting,
+      customLoader,
       options: moduleOptions,
     };
     if (isServe) configModules.set(key, configModule);
@@ -130,6 +134,17 @@ export function gtTanstackStart(
         ).length > 1
       ) {
         config.logger.warnOnce(duplicateCompilerWarning);
+      }
+    },
+    // A build that splits translations takes them from files.gt.output on
+    // both sides: the server renders a first visit from them, and the files
+    // a navigation loads are written from them.
+    buildStart() {
+      const loader = split?.isActive()
+        ? getConfigModule().customLoader
+        : undefined;
+      if (loader !== undefined) {
+        this.error(createSplitCustomLoaderError(path.relative(cwd, loader)));
       }
     },
     configureServer(server) {
