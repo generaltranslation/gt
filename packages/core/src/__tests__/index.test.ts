@@ -156,12 +156,18 @@ describe.sequential('GeneralTranslation scopes', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('does not read GT_API_KEY', () => {
+  it('does not read GT_API_KEY', async () => {
     vi.stubEnv('GT_API_KEY', 'env-key');
+    fetchMock.mockResolvedValue(Response.json({ results: [] }));
+
+    await new GTRuntime({ userTokenProvider, projectId: 'prj' }).translateMany(
+      [],
+      'es'
+    );
 
     expect(
-      new GTRuntime({ userTokenProvider, projectId: 'prj' }).apiKey
-    ).toBeUndefined();
+      new Request(...fetchMock.mock.calls[0]).headers.get('authorization')
+    ).toBe('Bearer token');
   });
 
   it('constructs a project-scoped GeneralTranslation with every project method', () => {
@@ -337,7 +343,7 @@ describe.sequential('GeneralTranslation scopes', () => {
       input.customMapping.spanish.code = 'de';
 
       expect(() => {
-        (instance as { apiKey?: string }).apiKey = 'other';
+        (instance as { projectId: string }).projectId = 'other';
       }).toThrow(TypeError);
       expect(() => (localeConfig.locales as string[]).push('fr')).toThrow(
         TypeError
