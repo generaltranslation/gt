@@ -329,13 +329,13 @@ describe('Vue CLI', () => {
 
       const routed = routeMain();
       expect(commandNames(routed)).toEqual(
-        commandNames(initialize(NodeCLI, 'gt-i18n'))
+        commandNames(initialize(NodeCLI, Libraries.GT_I18N))
       );
       expect(commandNames(routed)).toEqual(
         expect.arrayContaining(['generate', 'validate'])
       );
       expect(
-        new InlineLibraryProbe(new Command(), 'gt-i18n').inlineLibrary()
+        new InlineLibraryProbe(new Command(), Libraries.GT_I18N).inlineLibrary()
       ).toBe(Libraries.GT_I18N);
     });
 
