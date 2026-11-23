@@ -28,6 +28,7 @@ All types of contributions are encouraged and valued. See the [Table of Contents
       - [How Do I Submit a Good Enhancement Suggestion?](#how-do-i-submit-a-good-enhancement-suggestion)
     - [Your First Code Contribution](#your-first-code-contribution)
     - [Improving The Documentation](#improving-the-documentation)
+    - [Prerelease Branches](#prerelease-branches)
   - [Styleguides](#styleguides)
     - [Commit Messages](#commit-messages)
   - [Join The Project Team](#join-the-project-team)
@@ -158,6 +159,19 @@ pnpm install
 Updating, improving and correcting the documentation
 
 -->
+
+### Prerelease Branches
+
+A prerelease branch is a long-lived branch that publishes prerelease versions under its own npm dist-tag. For example, `samsara` publishes `@samsara`. A branch is a prerelease branch while its `.changeset/pre.json` is in pre mode, and its label is the `tag` in that file (the branch name if there is no `tag`). For `samsara`, both are `samsara`.
+
+Label everything that belongs to a prerelease branch with that label:
+
+- **Pull requests** that target the branch. This includes every pull request in a stack that eventually lands there, where a pull request's base is another pull request's head branch, and pull requests into integration branches cut from it.
+- **Issues** about the branch, such as a bug that only shows up in a `@samsara` release.
+
+If you can't add labels, name the prerelease branch in the issue or pull request description and ask a maintainer to add the label.
+
+CI enforces the label on pull requests. The **Prerelease label** check starts at the pull request's base and stops at the first branch whose `pre.json` is in pre mode and requires that file's `tag`. It also stops at the default branch, where no label is required. Until then, while the branch is the head of an open pull request in this repository, it moves to that pull request's base (up to 10 hops). Adding the label re-runs the check. Issues are not checked, so add the label when you open one.
 
 ## Styleguides
 

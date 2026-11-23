@@ -1,0 +1,34 @@
+name: Prerelease Label
+
+# A pull request that lands on a prerelease branch, directly or through a
+# stack of pull requests, must carry the label named by the pre-mode tag in that
+# branch's .changeset/pre.json. See CONTRIBUTING.md.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  prerelease-label:
+    name: Prerelease label
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          sparse-checkout: scripts/check-prerelease-label.mjs
+          sparse-checkout-cone-mode: false
+
+      - name: Require the prerelease branch label
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/check-prerelease-label.mjs
