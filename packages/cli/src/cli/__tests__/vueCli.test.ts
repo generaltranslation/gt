@@ -316,6 +316,37 @@ describe('Vue CLI', () => {
       }
     });
 
+    it('routes a gt-i18n-only root to the Node inline commands', () => {
+      useProject({
+        dependencies: { 'gt-i18n': '*' },
+        devDependencies: { gt: '*' },
+      });
+      class InlineLibraryProbe extends NodeCLI {
+        inlineLibrary() {
+          return this.getInlineLibrary();
+        }
+      }
+
+      const routed = routeMain();
+      expect(commandNames(routed)).toEqual(
+        commandNames(initialize(NodeCLI, 'gt-i18n'))
+      );
+      expect(commandNames(routed)).toEqual(
+        expect.arrayContaining(['generate', 'validate'])
+      );
+      expect(
+        new InlineLibraryProbe(new Command(), 'gt-i18n').inlineLibrary()
+      ).toBe(Libraries.GT_I18N);
+    });
+
+    it('keeps gt-vue ahead of a direct gt-i18n dependency', () => {
+      useProject({
+        dependencies: { 'gt-vue': '*', 'gt-i18n': '*', vite: '*' },
+      });
+
+      expect(findCommand(routeMain(), 'init').description()).toMatch(/gt-vue/);
+    });
+
     it('describes Vue source defaults only on Vue inline commands', () => {
       const sourceHelp = (program: Command) =>
         findCommand(program, 'translate').options.find(

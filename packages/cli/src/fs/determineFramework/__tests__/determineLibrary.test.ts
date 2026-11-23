@@ -60,6 +60,43 @@ describe('determineLibrary', () => {
       expect(result.library).toBe(Libraries.GT_NODE);
     });
 
+    it('detects gt-i18n when it is the only GT runtime dependency', () => {
+      mockExistsSync.mockImplementation((path) =>
+        String(path).endsWith('package.json')
+      );
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({
+          dependencies: { 'gt-i18n': '1.0.40' },
+          devDependencies: { gt: '2.27.0' },
+        })
+      );
+
+      const result = determineLibrary();
+      expect(result.library).toBe(Libraries.GT_I18N);
+    });
+
+    it.each([
+      ['gt-node', Libraries.GT_NODE],
+      ['gt-react', Libraries.GT_REACT],
+      ['next-intl', 'next-intl'],
+      ['i18next', 'i18next'],
+    ] as const)(
+      'keeps %s ahead of a gt-i18n dependency',
+      (dependency, expected) => {
+        mockExistsSync.mockImplementation((path) =>
+          String(path).endsWith('package.json')
+        );
+        mockReadFileSync.mockReturnValue(
+          JSON.stringify({
+            dependencies: { [dependency]: '*', 'gt-i18n': '*' },
+          })
+        );
+
+        const result = determineLibrary();
+        expect(result.library).toBe(expected);
+      }
+    );
+
     it("returns 'base' when package.json has no GT dependencies", () => {
       mockExistsSync.mockImplementation((path) => {
         if (String(path).endsWith('package.json')) return true;

@@ -1,16 +1,16 @@
 import { Command } from 'commander';
 import { SupportedLibraries } from '../types/index.js';
 import { InlineCLI } from './inline.js';
-import { Libraries, NODE_LIBRARIES } from '../types/libraries.js';
+import { NODE_LIBRARIES, NodeLibrary } from '../types/libraries.js';
 import { checkMonorepoVersionConsistency } from '../utils/monorepoVersionCheck.js';
 
 /**
- * CLI tool for managing translations with gt-node
+ * CLI tool for managing translations with gt-node or standalone gt-i18n
  */
 export class NodeCLI extends InlineCLI {
   constructor(
     command: Command,
-    library: typeof Libraries.GT_NODE,
+    library: NodeLibrary,
     additionalModules?: SupportedLibraries[]
   ) {
     super(command, library, additionalModules);
