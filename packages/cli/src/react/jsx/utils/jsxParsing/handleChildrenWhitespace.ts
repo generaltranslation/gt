@@ -198,9 +198,9 @@ export function handleChildrenWhitespace(
     return newChildren.length === 1 ? newChildren[0] : newChildren;
   } else if (isElementNode(currentTree)) {
     // Process all props recursively
-    const elementIsBranch = currentTree.branching === 'Branch';
+    const elementIsSelect = currentTree.branching === 'Select';
     const elementIsPlural =
-      currentTree.branching !== undefined && !elementIsBranch;
+      currentTree.branching !== undefined && !elementIsSelect;
     const processedProps = !currentTree.props
       ? undefined
       : Object.fromEntries(
@@ -222,7 +222,7 @@ export function handleChildrenWhitespace(
               if (elementIsPlural && isAcceptedPluralForm(key as string))
                 shouldProcess = true;
               // Process branch children
-              if (elementIsBranch && key !== 'branch') shouldProcess = true;
+              if (elementIsSelect && key !== 'value') shouldProcess = true;
               // Do not process raw strings
               if (typeof value === 'string' && key !== 'children')
                 shouldProcess = false;

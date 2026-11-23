@@ -1,4 +1,4 @@
-import { T, Plural, Branch, Var, Num, Currency } from "gt-next";
+import { T, Plural, Select, Var, Num, Currency } from "gt-next";
 
 export default function WhitespaceTestCases() {
 
@@ -27,9 +27,9 @@ export default function WhitespaceTestCases() {
       {/* Case 6: Padded string attributes - should preserve exact whitespace */}
         <Plural n={1} _1="   File   " _2={"   Files   "} />
 
-      {/* Case 7: Branch with empty and padded attributes */}
-        <Branch 
-          branch={1}
+      {/* Case 7: Select with empty and padded attributes */}
+        <Select 
+          value={1}
           option1="" 
           option2="   Padded   " 
           option3={<span>JSX content</span>}
@@ -102,8 +102,8 @@ export default function WhitespaceTestCases() {
          Text    with     multiple   spaces   
 
       
-        <Branch
-          branch="mixed"
+        <Select
+          value="mixed"
           short="Brief"
           long={`Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.`}
           mixed={
@@ -219,8 +219,8 @@ yo
 
       <span>{true}{true}</span>
      
-    <Branch
-    branch="false"
+    <Select
+    value="false"
     a={false}
     b={true}
     c={null}
@@ -238,8 +238,8 @@ yo
 
 
       
-        <Branch
-          branch="bool"
+        <Select
+          value="bool"
           true_val={<>{true}</>}
           false_val={<>{false}</>}
           mixed_true={<>Before {true} after</>}
@@ -258,8 +258,8 @@ yo
       &nbsp;yo&nbsp; &nbsp;yo&nbsp;
 
       
-        <Branch
-          branch="nested"
+        <Select
+          value="nested"
           option1={
             <>
               <>

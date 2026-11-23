@@ -364,7 +364,7 @@ function constructJsxElement(
     return { errors };
   }
 
-  // Construct JsxChildren. The children of a Branch or a Plural are its
+  // Construct JsxChildren. The children of a Select or a Plural are its
   // `other` branch, which constructGTProp constructs.
   const jsxChildrenValidation: ReturnType<
     typeof constructJsxChildrenForJsxElement
@@ -381,7 +381,7 @@ function constructJsxElement(
   const children: JsxChildren | undefined = jsxChildrenValidation.value;
 
   // Construct GT Tag
-  // Branch props count from this element's id, not from after its children.
+  // Select props count from this element's id, not from after its children.
   const tagValidation = constructGTProp(
     callExprPath,
     new IdObject(idNumber),
@@ -482,7 +482,7 @@ function constructGTProp(
     return { errors };
   }
 
-  // For Branch and Plural, get the properties
+  // For Select and Plural, get the properties
   const parametersPath = callExprPath.get(
     'arguments'
   )[1] as NodePath<t.ObjectExpression>;

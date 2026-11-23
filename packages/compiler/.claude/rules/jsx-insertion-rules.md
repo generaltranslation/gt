@@ -249,13 +249,13 @@ This does NOT apply to auto-inserted \_Var. When the pass itself inserts a \_Var
 <div><_T>Date: <DateTime>{date}</DateTime></_T></div>
 ```
 
-## Rule 8: Branch and Plural — \_T wraps from parent, control props untouched, content props processed
+## Rule 8: Select and Plural — \_T wraps from parent, control props untouched, content props processed
 
-Branch and Plural components trigger \_T insertion at the **parent** level. The `<T>` component already knows how to translate their branches, so static content inside Branch/Plural props and children is left alone.
+Select and Plural components trigger \_T insertion at the **parent** level. The `<T>` component already knows how to translate their branches, so static content inside Select/Plural props and children is left alone.
 
 **Control props are never modified.** These are selector/configuration props, not translatable content:
 
-- Branch: `branch` (selector key), `data-*` (HTML attributes, ignored at runtime)
+- Select: `value` (selector key), `data-*` (HTML attributes, ignored at runtime)
 - Plural: `n` (count), `locales` (locale hint)
 
 **Content props** (branch value keys like `Ernest`, `summary`, plural forms like `one`, `other`, and `children` as fallback) are processed:
@@ -266,19 +266,19 @@ Branch and Plural components trigger \_T insertion at the **parent** level. The 
 - **Dynamic content prop values containing JSX** (ternaries, logical expressions) get \_Var wrapped. JSX inside those \_Var wrappers still gets \_T.
 
 ```jsx
-// Branch as only child — _T wraps at parent, `branch` selector untouched
-<div><Branch branch="mode" summary={<p>Summary</p>}>Fallback</Branch></div>
-<div><_T><Branch branch="mode" summary={<p>Summary</p>}>Fallback</Branch></_T></div>
-// `branch` is a control prop → never Var-wrapped, even if dynamic
+// Select as only child — _T wraps at parent, `value` selector untouched
+<div><Select value="mode" summary={<p>Summary</p>}>Fallback</Select></div>
+<div><_T><Select value="mode" summary={<p>Summary</p>}>Fallback</Select></_T></div>
+// `value` is a control prop → never Var-wrapped, even if dynamic
 
 // Plural as only child — _T wraps at parent, `n` and `locales` untouched
 <div><Plural n={count} one="item" other="items" /></div>
 <div><_T><Plural n={count} one="item" other="items" /></_T></div>
 // `n` is a control prop → never Var-wrapped, even though `count` is dynamic
 
-// Branch with static JSX in prop arguments — NO _T inside the props
-<div><Branch branch="mode" summary={<p>Summary text</p>} details={<p>Details text</p>}>Fallback</Branch></div>
-<div><_T><Branch branch="mode" summary={<p>Summary text</p>} details={<p>Details text</p>}>Fallback</Branch></_T></div>
+// Select with static JSX in prop arguments — NO _T inside the props
+<div><Select value="mode" summary={<p>Summary text</p>} details={<p>Details text</p>}>Fallback</Select></div>
+<div><_T><Select value="mode" summary={<p>Summary text</p>} details={<p>Details text</p>}>Fallback</Select></_T></div>
 // Only 1 _T at div — "Summary text" and "Details text" are static, left alone
 
 // Plural with static JSX in prop arguments — NO _T inside the props
@@ -286,36 +286,36 @@ Branch and Plural components trigger \_T insertion at the **parent** level. The 
 <div><_T><Plural n={count} one={<span>One item</span>} other={<span>Many items</span>} /></_T></div>
 // Only 1 _T at div — "One item" and "Many items" are static, left alone
 
-// Branch with nested JSX children — NO _T inside children either
-<div><Branch branch="test"><p>Fallback text</p></Branch></div>
-<div><_T><Branch branch="test"><p>Fallback text</p></Branch></_T></div>
+// Select with nested JSX children — NO _T inside children either
+<div><Select value="test"><p>Fallback text</p></Select></div>
+<div><_T><Select value="test"><p>Fallback text</p></Select></_T></div>
 // Only 1 _T at div — "Fallback text" is static, left alone
 
-// Branch alongside text — _T wraps everything at parent
-<div>Results: <Branch branch="view" list={<ul>...</ul>}>Default</Branch></div>
-<div><_T>Results: <Branch branch="view" list={<ul>...</ul>}>Default</Branch></_T></div>
+// Select alongside text — _T wraps everything at parent
+<div>Results: <Select value="view" list={<ul>...</ul>}>Default</Select></div>
+<div><_T>Results: <Select value="view" list={<ul>...</ul>}>Default</Select></_T></div>
 
-// Branch with dynamic expression in content prop — dynamic value gets _Var
-<div><Branch branch="hello" hello={count} /></div>
-<div><_T><Branch branch="hello" hello={<_Var>{count}</_Var>} /></_T></div>
-// count is dynamic → _Var wraps it (Branch is inside _T region)
-// Note: `branch` selector stays as-is — it's a control prop
+// Select with dynamic expression in content prop — dynamic value gets _Var
+<div><Select value="hello" hello={count} /></div>
+<div><_T><Select value="hello" hello={<_Var>{count}</_Var>} /></_T></div>
+// count is dynamic → _Var wraps it (Select is inside _T region)
+// Note: `value` selector stays as-is — it's a control prop
 
-// Branch with JSX content prop containing dynamic children — _Var inside JSX
-<div><Branch branch="mode" Ernest={<>Hello {userName}</>} /></div>
-<div><_T><Branch branch="mode" Ernest={<>Hello <_Var>{userName}</_Var></>} /></_T></div>
+// Select with JSX content prop containing dynamic children — _Var inside JSX
+<div><Select value="mode" Ernest={<>Hello {userName}</>} /></div>
+<div><_T><Select value="mode" Ernest={<>Hello <_Var>{userName}</_Var></>} /></_T></div>
 // The Fragment itself is static JSX (no _T inside), but {userName} is dynamic → _Var
 
-// Branch with ternary containing JSX in prop — ternary gets _Var, JSX inside gets _T
-<div><Branch branch="mode" summary={condition ? <p>Option A</p> : <p>Option B</p>}>Fallback</Branch></div>
-<div><_T><Branch branch="mode" summary={<_Var>{condition ? <p><_T>Option A</_T></p> : <p><_T>Option B</_T></p>}</_Var>}>Fallback</Branch></_T></div>
+// Select with ternary containing JSX in prop — ternary gets _Var, JSX inside gets _T
+<div><Select value="mode" summary={condition ? <p>Option A</p> : <p>Option B</p>}>Fallback</Select></div>
+<div><_T><Select value="mode" summary={<_Var>{condition ? <p><_T>Option A</_T></p> : <p><_T>Option B</_T></p>}</_Var>}>Fallback</Select></_T></div>
 // The ternary is dynamic → _Var. The <p> elements inside are JSX with text → each gets _T.
 // This works because _Var is auto-inserted, so JSX inside it is still fair game.
 ```
 
-## Rule 9: Derive and Static — same treatment as Branch/Plural
+## Rule 9: Derive and Static — same treatment as Select/Plural
 
-Same as Branch/Plural. \_T wraps from the parent level. Static JSX props are left alone; dynamic props get \_Var wrapped. JSX inside auto-inserted \_Var is still eligible for \_T.
+Same as Select/Plural. \_T wraps from the parent level. Static JSX props are left alone; dynamic props get \_Var wrapped. JSX inside auto-inserted \_Var is still eligible for \_T.
 
 ```jsx
 // Derive as only child
@@ -331,11 +331,11 @@ Same as Branch/Plural. \_T wraps from the parent level. Static JSX props are lef
 <div><_T><Derive context={<_Var>{someVar}</_Var>}>{getName()}</Derive></_T></div>
 ```
 
-## Rule 10: Non-children props are independent (except Branch/Plural/Derive/Static)
+## Rule 10: Non-children props are independent (except Select/Plural/Derive/Static)
 
 For **regular components**, JSX in non-`children` props (e.g. `header`, `icon`, `footer`) is an independent subtree. The pass processes it separately — the parent's \_T state does not carry over. This is the default behavior for any component that is not a GT opaque component.
 
-**Exception:** Branch, Plural, Derive, and Static (see Rules 8-9). Their props are not processed independently as separate subtrees. Instead, static JSX props are left alone and dynamic props get \_Var wrapped within the parent's \_T context.
+**Exception:** Select, Plural, Derive, and Static (see Rules 8-9). Their props are not processed independently as separate subtrees. Instead, static JSX props are left alone and dynamic props get \_Var wrapped within the parent's \_T context.
 
 ```jsx
 // header prop has its own JSX — processed independently
@@ -503,20 +503,20 @@ A similar issue exists with \_Var. Auto-injected \_Var wrappers could break user
 
 ### Opaque GT components inside Derive produce independent entries
 
-When Branch, Plural, or other opaque GT components appear inside Derive's children, they get their own independent \_T and produce standalone hash entries. This is correct and intentional — the same JSX could appear inside a function definition that is invoked by Derive, where the compiler cannot know it's in a Derive context.
+When Select, Plural, or other opaque GT components appear inside Derive's children, they get their own independent \_T and produce standalone hash entries. This is correct and intentional — the same JSX could appear inside a function definition that is invoked by Derive, where the compiler cannot know it's in a Derive context.
 
 ```jsx
 // Direct child of Derive:
-<div>Hello <Derive><Branch branch="x">fallback</Branch></Derive></div>
+<div>Hello <Derive><Select value="x">fallback</Select></Derive></div>
 
 // After injection:
 <div>
-  <_T>Hello <Derive><_T><Branch branch="x">fallback</Branch></_T></Derive></_T>
+  <_T>Hello <Derive><_T><Select value="x">fallback</Select></_T></Derive></_T>
 </div>
 
 // Produces 2 hash entries:
 //   1. ["Hello ", { t: "Derive", i: 1 }]  (outer _T — contains Derive)
-//   2. { t: "Branch", i: 1, c: "fallback" }  (inner _T — standalone Branch)
+//   2. { t: "Select", i: 1, c: "fallback" }  (inner _T — standalone Select)
 //
 // At runtime, removeInjectedT strips the inner _T, but the standalone hash
 // entry is still needed for translation resolution.
@@ -525,11 +525,11 @@ When Branch, Plural, or other opaque GT components appear inside Derive's childr
 This is consistent with the function-definition case:
 
 ```jsx
-// Function that returns Branch:
+// Function that returns Select:
 function getNav() {
-  return <Branch branch='x'>fallback</Branch>;
+  return <Select value='x'>fallback</Select>;
 }
-// The compiler inserts _T inside getNav(), producing the same standalone Branch entry.
+// The compiler inserts _T inside getNav(), producing the same standalone Select entry.
 // If this function is called inside <Derive>{getNav()}</Derive>, the inner _T is
 // removed at runtime — but the hash entry must exist for both cases to work.
 ```
@@ -543,7 +543,7 @@ The CLI extraction tool must be aware that:
 1. The compiler **will** produce nested \_T in Derive cases — this is expected, not a bug
 2. The runtime removes these nested \_T before hash computation, so the **effective** structure (after removal) is what the hash is computed against
 3. The CLI must simulate the same removal when computing hashes from source to maintain agreement
-4. Opaque GT components (Branch, Plural) inside Derive must produce their own standalone hash entries, matching what the compiler produces
+4. Opaque GT components (Select, Plural) inside Derive must produce their own standalone hash entries, matching what the compiler produces
 
 ---
 
@@ -562,7 +562,7 @@ The CLI extraction tool must be aware that:
 | `<T>Hello</T>`                      | No            | No              | — (user T, hands off)           |
 | `<div><Var>{x}</Var></div>`         | No            | No              | — (no text)                     |
 | `<div>Hi <Var>{x}</Var></div>`      | Yes           | No              | Inside div (user Var untouched) |
-| `<div><Branch ...>F</Branch></div>` | Yes           | No              | Inside div (wraps Branch)       |
+| `<div><Select ...>F</Select></div>` | Yes           | No              | Inside div (wraps Select)       |
 | `<div><Derive>{x}</Derive></div>`   | Yes           | No              | Inside div (wraps Derive)       |
 | `<div>Hi {x ? <a/> : <b/>}</div>`   | Yes           | Yes (ternary)   | Inside div                      |
 | `<input placeholder="Hi" />`        | No            | No              | — (attributes untouched)        |

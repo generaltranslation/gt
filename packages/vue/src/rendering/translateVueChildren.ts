@@ -43,7 +43,7 @@ const variableTypes = {
   variable: 'v',
 } as const satisfies Record<string, VariableType>;
 
-type Transformation = 'branch' | 'fragment' | 'plural' | 'variable' | undefined;
+type Transformation = 'select' | 'fragment' | 'plural' | 'variable' | undefined;
 
 /**
  * Empty-rendering primitives that React preserves verbatim in branch source.
@@ -488,10 +488,10 @@ function visitChildren(
   const transformation = getTransformation(metadata);
   const variableType =
     transformation === 'variable' ? getVariableType(metadata) : undefined;
-  // The default slot of a Branch or a Plural is its `other` branch, which
+  // The default slot of a Select or a Plural is its `other` branch, which
   // getBranches reads.
   const defaultSlot =
-    variableType || transformation === 'branch' || transformation === 'plural'
+    variableType || transformation === 'select' || transformation === 'plural'
       ? { children: undefined, replace: false }
       : readDefaultSlot(children);
   const sourceChildren = variableType
@@ -517,7 +517,7 @@ function visitChildren(
     vnode: children,
   };
 
-  if (transformation === 'branch' || transformation === 'plural') {
+  if (transformation === 'select' || transformation === 'plural') {
     const branches = getBranches(
       children,
       transformation,
@@ -578,7 +578,7 @@ function getGTMetadata(vnode: VNode): string | undefined {
 function getTransformation(metadata?: string): Transformation {
   const [type] = metadata?.split('-') ?? [];
   if (type === 'translate') return 'fragment';
-  if (type === 'branch' || type === 'plural' || type === 'variable') {
+  if (type === 'select' || type === 'plural' || type === 'variable') {
     return type;
   }
   return undefined;
@@ -596,7 +596,7 @@ function getVariableType(metadata: string | undefined): VariableType {
  * Materializes the authored default slot that React receives as `children`.
  *
  * GT rich content is static by contract: runtime values belong in a variable
- * component and alternatives belong in Branch or Plural. Vue represents even
+ * component and alternatives belong in Select or Plural. Vue represents even
  * a static custom component child as a lazy, zero-argument slot, so T invokes
  * that authored slot once and later replaces it with the translated children.
  * Scoped or otherwise dynamic slots are rejected by extraction instead of
@@ -662,7 +662,7 @@ function bindSlotToOwner<T extends (...args: never[]) => unknown>(
 
 function getBranches(
   vnode: VNode,
-  transformation: 'branch' | 'plural',
+  transformation: 'select' | 'plural',
   branchElementId: number,
   identity: string,
   identityRender: TranslationIdentityRender
@@ -731,7 +731,7 @@ function getBranches(
 
   // Plural branches are keyed as they are stored: `_0` is ICU's `=0`.
   const acceptedInputs: [string, BranchSourceInput][] =
-    transformation === 'branch'
+    transformation === 'select'
       ? Object.entries(inputs)
       : Object.entries(inputs)
           .filter(([key]) => isAcceptedPluralForm(key))
@@ -945,7 +945,7 @@ function serializeNode(
       data[shortName as keyof HtmlContentPropKeysRecord] = value;
     }
   }
-  if (node.transformation === 'branch' || node.transformation === 'plural') {
+  if (node.transformation === 'select' || node.transformation === 'plural') {
     const branches = Object.entries(node.branches)
       .map(
         ([key, branch]) => [key, serializeBranch(node, key, branch)] as const
@@ -961,7 +961,7 @@ function serializeNode(
       data.b = Object.fromEntries(branches);
       data.t =
         node.transformation !== 'plural'
-          ? 'b'
+          ? 's'
           : isOrdinal(node.vnode)
             ? 'o'
             : 'p';
@@ -1161,13 +1161,13 @@ function renderElement(
   identityRender: TranslationIdentityRender
 ): VNodeChild {
   if (
-    source.transformation === 'branch' ||
+    source.transformation === 'select' ||
     source.transformation === 'plural'
   ) {
     const targetBranches = target.d?.b ?? {};
     const selectKey = (branches: object) =>
-      source.transformation === 'branch'
-        ? getBranchKey(source.vnode.props?.branch, branches)
+      source.transformation === 'select'
+        ? getBranchKey(source.vnode.props?.value, branches)
         : getPluralKey(
             source.vnode.props?.n,
             Object.keys(branches),
@@ -1332,11 +1332,11 @@ function renderDefaultNode(
   if (node.transformation === 'fragment') {
     return renderDefaultNodes(node.children, state, identityRender, locale);
   }
-  if (node.transformation === 'branch') {
+  if (node.transformation === 'select') {
     return renderDefaultNodes(
       getSelectedSourceBranch(
         node,
-        getBranchKey(node.vnode.props?.branch, node.branches)
+        getBranchKey(node.vnode.props?.value, node.branches)
       ).nodes,
       state,
       identityRender,

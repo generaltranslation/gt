@@ -19,7 +19,7 @@ export type { WithGTStaticProps } from './pages-dir/withGTStaticProps';
 
 // ===== Components ===== //
 export {
-  Branch,
+  Select,
   Currency,
   DateTime,
   Derive,

@@ -46,12 +46,12 @@ describe('gt-vue package layout', () => {
   it('exports the complete runtime API from the root entry point', () => {
     expect(Object.keys(gtVue).sort()).toEqual(
       [
-        'Branch',
         'Currency',
         'DateTime',
         'Num',
         'Ordinal',
         'Plural',
+        'Select',
         'T',
         'Var',
         'createGT',
@@ -84,8 +84,8 @@ describe('gt-vue package layout', () => {
           nestedTrue: { t: 'div', c: true },
           nestedNull: { t: 'div', c: { t: 'span', c: null } },
           branches: {
-            t: 'Branch',
-            d: { t: 'b', b: { active: true, inactive: false, empty: null } },
+            t: 'Select',
+            d: { t: 's', b: { active: true, inactive: false, empty: null } },
           },
         } satisfies TranslationCatalog;
 

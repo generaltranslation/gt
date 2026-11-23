@@ -2,7 +2,7 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
-import { BRANCH_COMPONENT } from '../react/jsx/utils/constants.js';
+import { SELECT_COMPONENT } from '../react/jsx/utils/constants.js';
 import {
   colorizeFilepath,
   colorizeComponent,
@@ -240,7 +240,7 @@ export const warnInvalidIcuSync = (
 export const warnTernarySync = (file: string, location?: string): string =>
   withLocation(
     file,
-    'Found ternary expression. A Branch component may be more appropriate here.',
+    'Found ternary expression. A Select component may be more appropriate here.',
     location
   );
 
@@ -295,7 +295,7 @@ export const warnDataAttrOnBranch = (
 ): string =>
   withLocation(
     file,
-    `${colorizeComponent(`<${BRANCH_COMPONENT}>`)} component ignores attributes prefixed with ${colorizeIdString('"data-"')}. Found ${colorizeIdString(attrName)}. Remove it or use a different attribute name.`,
+    `${colorizeComponent(`<${SELECT_COMPONENT}>`)} component ignores attributes prefixed with ${colorizeIdString('"data-"')}. Found ${colorizeIdString(attrName)}. Remove it or use a different attribute name.`,
     location
   );
 

@@ -45,11 +45,11 @@ describe('transformSvelteSource', () => {
 
   it('redeclares enclosing snippets in the snippets generated for nested content', () => {
     const result = transform(`<script>
-  import { T, Branch } from 'gt-svelte';
+  import { T, Select } from 'gt-svelte';
   import W from './W.svelte';
   let s;
 </script>
-<T><div>{#snippet a()}outer{/snippet}<span>{#snippet a()}inner{/snippet}<W content={a} /></span></div><Branch branch={s}>{#snippet on()}{#snippet tip()}Hint{/snippet}<W content={tip} />{/snippet}Off</Branch></T>`);
+<T><div>{#snippet a()}outer{/snippet}<span>{#snippet a()}inner{/snippet}<W content={a} /></span></div><Select value={s}>{#snippet on()}{#snippet tip()}Hint{/snippet}<W content={tip} />{/snippet}Off</Select></T>`);
     expect(result?.errors).toEqual([]);
     const code = result!.code;
     // The inner declaration shadows the outer one, as in the source.
@@ -289,10 +289,10 @@ let items = [1];</script>
 
   it('gives branches whose names contain $ distinct snippet names', () => {
     const result = transform(`<script>
-  import { T, Branch } from 'gt-svelte';
+  import { T, Select } from 'gt-svelte';
   let s, t;
 </script>
-<T><Branch branch={s}>{#snippet a()}<Branch branch={t}>{#snippet e()}Nested{/snippet}</Branch>{/snippet}{#snippet a$b3$e()}<u>First</u><i>Second</i>{/snippet}</Branch></T>`);
+<T><Select value={s}>{#snippet a()}<Select value={t}>{#snippet e()}Nested{/snippet}</Select>{/snippet}{#snippet a$b3$e()}<u>First</u><i>Second</i>{/snippet}</Select></T>`);
     expect(result?.errors).toEqual([]);
     expect(() =>
       compile(result!.code, { filename: 'Fixture.svelte', generate: 'server' })
@@ -374,7 +374,7 @@ ${SCSS}
 describe('errors', () => {
   const errorsFor = (markup: string, script = '') =>
     analyzeSvelteSource(
-      `<script>import { T, Var, Plural, Ordinal, Branch } from 'gt-svelte';${script}</script>${markup}`,
+      `<script>import { T, Var, Plural, Ordinal, Select } from 'gt-svelte';${script}</script>${markup}`,
       { parse }
     ).errors.map((error) => error.whatHappened);
 
@@ -471,7 +471,7 @@ describe('errors', () => {
     ).toEqual(['{#snippet _01()} is not a plural form']);
   });
 
-  it('rejects spread props on Plural and Branch', () => {
+  it('rejects spread props on Plural and Select', () => {
     expect(
       errorsFor('<T><Plural n={1} {...forms} /></T>', 'let forms;')
     ).toEqual([
@@ -484,16 +484,16 @@ describe('errors', () => {
     ]);
     expect(
       errorsFor(
-        '<T><Branch branch={s} {...branches}>Fallback</Branch></T>',
+        '<T><Select value={s} {...branches}>Fallback</Select></T>',
         'let s, branches;'
       )
     ).toEqual([
-      'Spread props are not supported on <Branch> because its branches must be known at build time',
+      'Spread props are not supported on <Select> because its branches must be known at build time',
     ]);
     expect(
       analyzeSvelteSource(
-        `<script>import { T, Branch as Choice } from 'gt-svelte'; let s, b;</script>
-<T><Choice branch={s} {...b}>x</Choice></T>`,
+        `<script>import { T, Select as Choice } from 'gt-svelte'; let s, b;</script>
+<T><Choice value={s} {...b}>x</Choice></T>`,
         { parse }
       ).errors.map((error) => error.whatHappened)
     ).toEqual([
@@ -512,8 +512,8 @@ describe('errors', () => {
 
   it('accepts names that Object.prototype also has', () => {
     const { translations, errors } = analyzeSvelteSource(
-      `<script>import { T, Branch } from 'gt-svelte'; let s;</script>
-<T><Branch branch={s}>{#snippet constructor()}C{/snippet}{#snippet toString()}S{/snippet}Other</Branch></T>`,
+      `<script>import { T, Select } from 'gt-svelte'; let s;</script>
+<T><Select value={s}>{#snippet constructor()}C{/snippet}{#snippet toString()}S{/snippet}Other</Select></T>`,
       { parse }
     );
     expect(errors).toEqual([]);
@@ -540,22 +540,22 @@ describe('errors', () => {
     ]);
     expect(
       errorsFor(
-        '<T><Branch branch={s} a="A">{#snippet other()}B{/snippet}</Branch></T>',
+        '<T><Select value={s} a="A">{#snippet other()}B{/snippet}</Select></T>',
         'let s;'
       )
     ).toEqual([
-      '<Branch> has no other branch. Write the fallback as its children',
+      '<Select> has no other branch. Write the fallback as its children',
     ]);
   });
 
   it('rejects branches named __proto__', () => {
     const problem = '"__proto__" cannot be used as a branch name';
     expect(
-      errorsFor('<T><Branch branch={s} __proto__="P">x</Branch></T>', 'let s;')
+      errorsFor('<T><Select value={s} __proto__="P">x</Select></T>', 'let s;')
     ).toEqual([problem]);
     expect(
       errorsFor(
-        '<T><Branch branch={s}>{#snippet __proto__()}P{/snippet}x</Branch></T>',
+        '<T><Select value={s}>{#snippet __proto__()}P{/snippet}x</Select></T>',
         'let s;'
       )
     ).toEqual([problem]);

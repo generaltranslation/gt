@@ -1,4 +1,4 @@
-import { T, Plural, Branch } from "gt-next";
+import { T, Plural, Select } from "gt-next";
 export default function Home() {
   return (
     <T>
@@ -8,8 +8,8 @@ export default function Home() {
       _2="Special: !@#$%^&*()_+-=[]{}|;:,.<>?"
     >{`Template with \${variable} and \`backticks\``}</Plural>
 
-<Branch
-          branch="language"
+<Select
+          value="language"
           english="Hello World"
           spanish="Hola Mundo ñáéíóú"
           chinese="你好世界"
@@ -22,8 +22,8 @@ export default function Home() {
           _1={`simple template`}
           _2={`another simple template`}
         />
-        <Branch
-          branch="format"
+        <Select
+          value="format"
           single={`single line`}
           multi={`
             line 1

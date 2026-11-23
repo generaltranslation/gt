@@ -1,4 +1,4 @@
-import { T, Plural, Branch, Num, Currency, DateTime } from "gt-next";
+import { T, Plural, Select, Num, Currency, DateTime } from "gt-next";
 export default function Home() {
   const count = 5;
   const amount = 100.5;
@@ -13,8 +13,8 @@ export default function Home() {
               You have <Num>{count}</Num> item costing{" "}
               <Currency currency="USD">{amount}</Currency>
               on <DateTime>{date}</DateTime> in the
-              <Branch
-                branch="location"
+              <Select
+                value="location"
                 home="home folder"
                 work={<>work directory</>}
               />

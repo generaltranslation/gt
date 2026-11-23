@@ -45,7 +45,7 @@ Key concepts:
 - `_T` (`GtInternalTranslateJsx`) wraps the highest ancestor with translatable text
 - `_Var` (`GtInternalVar`) wraps dynamic expressions, only inside `_T` regions
 - User-written `<T>`, `<Var>`, `<Num>`, `<Currency>`, `<DateTime>` are never modified
-- `Branch`, `Plural`, `Derive`, `Static` trigger `_T` at the parent level
+- `Select`, `Plural`, `Derive`, `Static` trigger `_T` at the parent level
 - Nested `_T` inside `Derive` is expected — removed at runtime by `removeInjectedT()`
 
 ## Configuration
@@ -69,7 +69,7 @@ Test suites in `src/passes/__tests__/`:
 
 - `jsxInsertionPass.test.ts` — JSX insertion behavior, edge cases and regressions
 - `jsxInsertionE2E.test.ts` — end-to-end pipeline tests
-- `hashInjection.test.ts` — `<T>` hash injection for derive and Branch/Plural ids
+- `hashInjection.test.ts` — `<T>` hash injection for derive and Select/Plural ids
 - `testHelpers.ts` — shared parse/traverse/generate pipeline for pass tests
 
 `src/__tests__/taggedTemplateHashInjectionPass.test.ts` covers the tagged template hashes through the real plugin transform.

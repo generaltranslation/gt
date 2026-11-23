@@ -1,14 +1,14 @@
-import { Branch } from 'gt-react';
+import { Select } from 'gt-react';
 
 export default function BranchNestedInBranch() {
   return (
     <div>
-      <Branch
-        branch={'outer' as string}
+      <Select
+        value={'outer' as string}
         a={
-          <Branch branch={'inner' as string} x="Inner X" y="Inner Y">Inner default</Branch>
+          <Select value={'inner' as string} x="Inner X" y="Inner Y">Inner default</Select>
         }
-      >Outer default</Branch>
+      >Outer default</Select>
     </div>
   );
 }

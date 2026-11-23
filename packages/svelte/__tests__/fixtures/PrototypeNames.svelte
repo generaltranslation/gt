@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { T, Var, Branch } from 'gt-svelte';
+  import { T, Var, Select } from 'gt-svelte';
 
   let { status = 'constructor' }: { status?: string } = $props();
   const a = 'A';
@@ -11,8 +11,8 @@
 </p>
 <p class="branch">
   <T
-    ><Branch branch={status}
-      >{#snippet constructor()}Builder{/snippet}Other</Branch
+    ><Select value={status}
+      >{#snippet constructor()}Builder{/snippet}Other</Select
     ></T
   >
 </p>

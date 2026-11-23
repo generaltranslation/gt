@@ -1,4 +1,4 @@
-import { T, Plural, Branch } from "gt-next";
+import { T, Plural, Select } from "gt-next";
 export default function Home() {
   return (
     <T>
@@ -10,8 +10,8 @@ export default function Home() {
         few={3.14159}
         many={1e6}
       >{0xff}</Plural>
-      <Branch
-        branch="status"
+      <Select
+        value="status"
         active={true}
         inactive={false}
         unknown={null}

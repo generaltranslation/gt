@@ -15,7 +15,7 @@ pub fn is_variable_component_name(name: &Atom) -> bool {
 
 /// Check if a name is a GT branch
 pub fn is_branch_name(name: &Atom) -> bool {
-  matches!(name.as_ref(), "Branch" | "Plural" | "Ordinal")
+  matches!(name.as_ref(), "Select" | "Plural" | "Ordinal")
 }
 
 #[cfg(test)]
@@ -34,7 +34,7 @@ mod tests {
 
     #[test]
     fn rejects_non_translation_components() {
-      let components = ["Div", "Span", "T2", "t", "Translation", "Var", "Branch"];
+      let components = ["Div", "Span", "T2", "t", "Translation", "Var", "Select"];
       for component in &components {
         let name = Atom::new(*component);
         assert!(
@@ -68,7 +68,7 @@ mod tests {
 
     #[test]
     fn rejects_non_variable_components() {
-      let components = ["T", "Branch", "Plural", "div", "var", "num", "Variable"];
+      let components = ["T", "Select", "Plural", "div", "var", "num", "Variable"];
       for component in &components {
         let name = Atom::new(*component);
         assert!(
@@ -90,7 +90,7 @@ mod tests {
 
     #[test]
     fn recognizes_branch_components() {
-      let branch_components = ["Branch", "Plural", "Ordinal"];
+      let branch_components = ["Select", "Plural", "Ordinal"];
       for component in &branch_components {
         let name = Atom::new(*component);
         assert!(
@@ -106,7 +106,7 @@ mod tests {
         "T",
         "Var",
         "div",
-        "branch",
+        "select",
         "plural",
         "Branches",
         "PluralForm",
@@ -133,7 +133,7 @@ mod tests {
     #[test]
     fn no_overlap_between_categories() {
       let all_names = [
-        "T", "Var", "Num", "N", "Currency", "Derive", "DateTime", "RelativeTime", "Branch", "Plural", "Ordinal",
+        "T", "Var", "Num", "N", "Currency", "Derive", "DateTime", "RelativeTime", "Select", "Plural", "Ordinal",
       ];
 
       for name_str in &all_names {

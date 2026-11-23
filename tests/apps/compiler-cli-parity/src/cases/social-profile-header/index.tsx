@@ -1,4 +1,4 @@
-import { Plural, Num, Branch } from 'gt-react';
+import { Plural, Num, Select } from 'gt-react';
 
 export default function SocialProfileHeader() {
   const user = {
@@ -25,12 +25,12 @@ export default function SocialProfileHeader() {
       <div>
         <div>
           <h1>{user.name}</h1>
-          <Branch
-            branch={user.status}
+          <Select
+            value={user.status}
             online={<span>Online</span>}
             away={<span>Away</span>}
             offline={<span>Offline</span>}
-          ><span>Unknown</span></Branch>
+          ><span>Unknown</span></Select>
         </div>
 
         {!user.isOwnProfile && (

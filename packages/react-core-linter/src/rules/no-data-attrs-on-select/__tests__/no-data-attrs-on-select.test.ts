@@ -1,5 +1,5 @@
 import { RuleTester } from '@typescript-eslint/rule-tester';
-import { noDataAttrsOnBranch } from '../index.js';
+import { noDataAttrsOnSelect } from '../index.js';
 
 // RuleTester.run() registers its own describe/it blocks (vitest globals), so
 // it must be called at the top level. Inside it() the cases never execute.
@@ -11,15 +11,15 @@ const ruleTester = new RuleTester({
   },
 });
 
-const errors = [{ messageId: 'noDataAttrsOnBranch' as const }];
+const errors = [{ messageId: 'noDataAttrsOnSelect' as const }];
 
-ruleTester.run('no-data-attrs-on-branch', noDataAttrsOnBranch, {
+ruleTester.run('no-data-attrs-on-select', noDataAttrsOnSelect, {
   valid: [
     {
-      name: 'Branch without data-* attributes',
+      name: 'Select without data-* attributes',
       code: `
-        import { Branch } from 'gt-react';
-        const el = <Branch branch={val} morning={<p>morning</p>}>default</Branch>;
+        import { Select } from 'gt-react';
+        const el = <Select value={val} morning={<p>morning</p>}>default</Select>;
       `,
     },
     {
@@ -34,28 +34,28 @@ ruleTester.run('no-data-attrs-on-branch', noDataAttrsOnBranch, {
       `,
     },
     {
-      name: 'Branch from a library outside libs',
+      name: 'Select from a library outside libs',
       code: `
-        import { Branch } from 'gt-react';
-        const el = <Branch data-testid="x" branch={val}>default</Branch>;
+        import { Select } from 'gt-react';
+        const el = <Select data-testid="x" value={val}>default</Select>;
       `,
       options: [{ libs: ['gt-next'] }],
     },
   ],
   invalid: [
     {
-      name: 'data-* attribute on Branch',
+      name: 'data-* attribute on Select',
       code: `
-        import { Branch } from 'gt-react';
-        const el = <Branch data-testid="x" branch={val} morning={<p>morning</p>}>default</Branch>;
+        import { Select } from 'gt-react';
+        const el = <Select data-testid="x" value={val} morning={<p>morning</p>}>default</Select>;
       `,
       errors,
     },
     {
-      name: 'data-* attribute on aliased Branch with explicit libs',
+      name: 'data-* attribute on aliased Select with explicit libs',
       code: `
-        import { Branch as B } from 'gt-next';
-        const el = <B data-track="y" branch={val} morning={<p>morning</p>}>default</B>;
+        import { Select as B } from 'gt-next';
+        const el = <B data-track="y" value={val} morning={<p>morning</p>}>default</B>;
       `,
       options: [{ libs: ['gt-next'] }],
       errors,

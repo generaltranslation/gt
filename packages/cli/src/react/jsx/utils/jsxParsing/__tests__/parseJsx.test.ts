@@ -156,9 +156,9 @@ describe('Derive resolution across files', () => {
       derived('utils3-a', 'utils3-b', 'utils1-a', 'utils1-b'),
     ],
     [
-      'a Derive next to a Branch',
+      'a Derive next to a Select',
       page(
-        '<T>Status: <Derive>{getStatus()}</Derive><Branch branch="mode" light="Light" dark="Dark">Default</Branch></T>',
+        '<T>Status: <Derive>{getStatus()}</Derive><Select value="mode" light="Light" dark="Dark">Default</Select></T>',
         { outer: 'import { getStatus } from "./libs/utils1";' }
       ),
       { 'libs/utils1.ts': 'export function getStatus() { return "Active"; }' },
@@ -167,11 +167,11 @@ describe('Derive resolution across files', () => {
           'Status: ',
           { t: 'Derive', i: 1, c: 'Active' },
           {
-            t: 'Branch',
+            t: 'Select',
             i: 2,
             d: {
               b: { light: 'Light', dark: 'Dark', other: 'Default' },
-              t: 'b',
+              t: 's',
             },
           },
         ],
@@ -536,7 +536,7 @@ describe('derive in the context prop', () => {
   });
 });
 
-describe('Derive inside Plural/Branch props', () => {
+describe('Derive inside Plural/Select props', () => {
   const twoGreetings =
     'function getGreeting() { if (isFormal) return "Good day"; return "Hey"; }';
 
@@ -554,15 +554,15 @@ describe('Derive inside Plural/Branch props', () => {
       'function getAnimal() { if (Math.random() > 0.5) return "cat"; if (Math.random() > 0.5) return "dog"; return "bird"; }',
     ],
     [
-      'a Branch prop',
+      'a Select prop',
       2,
-      '<Branch branch={mode} formal={<><Derive>{getGreeting()}</Derive>, welcome</>} casual="What\'s up" />',
+      '<Select value={mode} formal={<><Derive>{getGreeting()}</Derive>, welcome</>} casual="What\'s up" />',
       twoGreetings,
     ],
     [
-      'a Branch prop and the Branch children (2 x 3)',
+      'a Select prop and the Select children (2 x 3)',
       6,
-      '<Branch branch={mode} formal={<><Derive>{getGreeting()}</Derive>, welcome</>}><Derive>{getDefault()}</Derive> there</Branch>',
+      '<Select value={mode} formal={<><Derive>{getGreeting()}</Derive>, welcome</>}><Derive>{getDefault()}</Derive> there</Select>',
       `${twoGreetings}
        function getDefault() { if (isNight) return "Good night"; if (isMorning) return "Good morning"; return "Hello"; }`,
     ],
@@ -594,9 +594,9 @@ describe('Derive inside Plural/Branch props', () => {
 
 // https://github.com/generaltranslation/gt/issues/2449
 // IDs must match the runtime's addGTIdentifier (react-core). The children of
-// a Branch or a Plural are its `other` branch, and every branch starts its own
+// a Select or a Plural are its `other` branch, and every branch starts its own
 // counter from the branching element's ID in both implementations.
-describe('GT IDs of Branch/Plural children, which are the other branch', () => {
+describe('GT IDs of Select/Plural children, which are the other branch', () => {
   const plural = {
     t: 'Plural',
     i: 1,
@@ -618,15 +618,15 @@ describe('GT IDs of Branch/Plural children, which are the other branch', () => {
       [plural, { t: 'span', i: 2, c: ' live' }],
     ],
     [
-      'an element after Branch children',
-      '<T><Branch branch="open" open="Open"><span>Closed</span></Branch><span> live</span></T>',
+      'an element after Select children',
+      '<T><Select value="open" open="Open"><span>Closed</span></Select><span> live</span></T>',
       [
         {
-          t: 'Branch',
+          t: 'Select',
           i: 1,
           d: {
             b: { open: 'Open', other: { t: 'span', i: 2, c: 'Closed' } },
-            t: 'b',
+            t: 's',
           },
         },
         { t: 'span', i: 2, c: ' live' },
@@ -634,15 +634,15 @@ describe('GT IDs of Branch/Plural children, which are the other branch', () => {
     ],
     [
       'branch props of a later element',
-      `<T>${pluralJsx}<Branch branch="open" open={<b>Open</b>}>Closed</Branch></T>`,
+      `<T>${pluralJsx}<Select value="open" open={<b>Open</b>}>Closed</Select></T>`,
       [
         plural,
         {
-          t: 'Branch',
+          t: 'Select',
           i: 2,
           d: {
             b: { open: { t: 'b', i: 3, c: 'Open' }, other: 'Closed' },
-            t: 'b',
+            t: 's',
           },
         },
       ],
@@ -712,7 +712,7 @@ describe('<N>, the count of its <Plural>', () => {
   );
 });
 
-describe('Branch/Plural props that are never rendered', () => {
+describe('Select/Plural props that are never rendered', () => {
   it.each([
     [
       'an exact number with a leading zero',
@@ -747,7 +747,7 @@ describe('Branch/Plural props that are never rendered', () => {
   it.each([
     ['Plural', '<Plural n={2} one="one bottle" other="bottles" />'],
     ['Ordinal', '<Ordinal n={2} one="1st" other="nth" />'],
-    ['Branch', '<Branch branch="open" open="Open" other="Closed" />'],
+    ['Select', '<Select value="open" open="Open" other="Closed" />'],
   ])('rejects an other prop on <%s>', (component, jsx) => {
     const { errors } = extractUserT(page(`<T>${jsx}</T>`));
 
@@ -800,7 +800,7 @@ describe('a component of the author named like a branching component', () => {
   const module = (imports: string, jsx: string) =>
     `${imports}\nexport default function Page() { return <T>${jsx}</T>; }`;
 
-  it.each(['Ordinal', 'Plural', 'Branch'])(
+  it.each(['Ordinal', 'Plural', 'Select'])(
     'keeps their own <%s> an ordinary element',
     (name) => {
       const result = extractUserT(
@@ -831,11 +831,11 @@ describe('a component of the author named like a branching component', () => {
   });
 });
 
-describe('a spread attribute on Branch/Plural', () => {
+describe('a spread attribute on Select/Plural', () => {
   it.each([
     ['Plural', '<Plural n={count} {...forms} />'],
     ['Ordinal', '<Ordinal n={place} {...forms} />'],
-    ['Branch', '<Branch branch={status} {...branches}>Closed</Branch>'],
+    ['Select', '<Select value={status} {...branches}>Closed</Select>'],
   ])('is rejected on <%s> inside <T>', (component, jsx) => {
     const { updates, errors } = extractUserT(page(`<T>${jsx}</T>`));
 
@@ -972,14 +972,14 @@ describe('Derive of a variable', () => {
       page(
         `<T>
           <Derive>{includeOptionalPrefix ? "Optional prefix: " : ""}</Derive>
-          <Branch branch={showReviewerName} true={"Jordan"} false={""} />
+          <Select value={showReviewerName} true={"Jordan"} false={""} />
           {" approved the build for "}
           <Var name="release-name">{releaseName}</Var>
         </T>`
       )
     );
     const rest = [
-      { t: 'Branch', i: 2, d: { t: 'b', b: { true: 'Jordan', false: '' } } },
+      { t: 'Select', i: 2, d: { t: 's', b: { true: 'Jordan', false: '' } } },
       ' approved the build for ',
       { i: 3, k: 'release-name', v: 'v' },
     ];

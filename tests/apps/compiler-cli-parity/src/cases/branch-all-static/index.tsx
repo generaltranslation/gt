@@ -1,9 +1,9 @@
-import { Branch } from 'gt-react';
+import { Select } from 'gt-react';
 
 export default function BranchAllStatic() {
   return (
     <div>
-      <Branch branch={'color' as string} red="Red" blue="Blue">Default</Branch>
+      <Select value={'color' as string} red="Red" blue="Blue">Default</Select>
     </div>
   );
 }

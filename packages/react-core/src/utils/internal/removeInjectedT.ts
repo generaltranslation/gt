@@ -32,7 +32,7 @@ export function removeInjectedT(children: ReactNode): ReactNode {
  *
  * Rules:
  * 1. Variable components (Var, Num, Currency, DateTime) - hands off
- * 2. Branching components (Branch, Plural) - explore respective branches
+ * 2. Branching components (Select, Plural) - explore respective branches
  * 3. Derivation components (Derive) - add/remove derivation depth
  * 4. Translation components (T) - remove _T if within a derivation context
  * 5. Then move on to processing the element's children
@@ -53,12 +53,12 @@ function handleSingleChildElement(
     }
 
     // (2) If the element is a branching component, explore respective branches
-    else if (kind === 'branch') {
+    else if (kind === 'select') {
       // Traverse into each branch
       const newProps = Object.entries(elementProps).reduce<
         Record<string, unknown>
       >((acc, [branchName, branch]) => {
-        if (branchName !== 'branch' && !branchName.startsWith('data-')) {
+        if (branchName !== 'value' && !branchName.startsWith('data-')) {
           acc[branchName] = handleChildren(
             branch as ReactNode,
             derivationDepth

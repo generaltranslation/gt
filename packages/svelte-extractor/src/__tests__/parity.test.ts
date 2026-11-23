@@ -4,7 +4,7 @@ import { analyzeSvelteSource } from '../index.js';
 import { serializeReactT } from './reactParity.js';
 
 const IMPORTS = `<script>
-  import { T, Var, Num, Currency, DateTime, RelativeTime, Branch, Plural, Ordinal } from 'gt-svelte';
+  import { T, Var, Num, Currency, DateTime, RelativeTime, Select, Plural, Ordinal } from 'gt-svelte';
   import Link from './Link.svelte';
   let name = 'Ada';
   let count = 2;
@@ -138,23 +138,23 @@ const cases: { name: string; svelte: string; tsx: string }[] = [
   {
     name: 'branch with string, snippet, and nested plural',
     svelte: `<T>
-      <Branch branch={status} inactive="Inactive">
+      <Select value={status} inactive="Inactive">
         {#snippet active()}
           <i>Active</i> with <Plural n={count} one="one task">many tasks</Plural>
         {/snippet}
         Unknown
-      </Branch>
+      </Select>
     </T>`,
     tsx: `<T>
-      <Branch
-        branch={status}
+      <Select
+        value={status}
         inactive="Inactive"
         active={<>
           <i>Active</i> with <Plural n={count} one="one task">many tasks</Plural>
         </>}
       >
         Unknown
-      </Branch>
+      </Select>
     </T>`,
   },
   {

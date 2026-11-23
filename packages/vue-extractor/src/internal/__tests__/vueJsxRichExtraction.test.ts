@@ -451,11 +451,11 @@ describe('Vue JSX rich extraction', () => {
   it('preserves scalar branch slot wires and drops literals in branch arrays', async () => {
     const output = await extractFromVueSource(
       `
-        import { Branch, T } from 'gt-vue';
+        import { Select, T } from 'gt-vue';
         export const View = () => (
           <T>
-            <Branch
-              branch="yes"
+            <Select
+              value="yes"
               v-slots={{
                 default: () => [true],
                 no: () => [false],
@@ -480,25 +480,25 @@ describe('Vue JSX rich extraction', () => {
           other: true,
           yes: true,
         },
-        t: 'b',
+        t: 's',
       },
       i: 1,
-      t: 'Branch',
+      t: 'Select',
     };
 
     expect(output.errors).toEqual([]);
     expect(output.results[0]?.source).toEqual(source);
-    expect(hashSource({ dataFormat: 'JSX', source })).toBe('0401db2633fc35ff');
+    expect(hashSource({ dataFormat: 'JSX', source })).toBe('a7fa8c3e7492b9fa');
   });
 
-  it('omits undefined Branch slots while retaining authored empty arrays', async () => {
+  it('omits undefined Select slots while retaining authored empty arrays', async () => {
     const output = await extractFromVueSource(
       `
-        import { Branch, T } from 'gt-vue';
+        import { Select, T } from 'gt-vue';
         export const View = () => (
           <T>
-            <Branch
-              branch="empty"
+            <Select
+              value="empty"
               v-slots={{
                 scalar: () => undefined,
                 wrapped: () => [undefined],
@@ -514,9 +514,9 @@ describe('Vue JSX rich extraction', () => {
 
     expect(output.errors).toEqual([]);
     expect(output.results[0]?.source).toEqual({
-      d: { b: { empty: [], nested: [] }, t: 'b' },
+      d: { b: { empty: [], nested: [] }, t: 's' },
       i: 1,
-      t: 'Branch',
+      t: 'Select',
     });
   });
 
@@ -552,9 +552,9 @@ describe('Vue JSX rich extraction', () => {
   it('serializes immutable primitive globals in JSX', async () => {
     const output = await extractFromVueSource(
       `
-        import { Branch, T } from 'gt-vue';
+        import { Select, T } from 'gt-vue';
         export const View = () => (
-          <T>{undefined}{NaN}{Infinity}<Branch branch="few" missing={undefined} few={Infinity} many={NaN}>Fallback</Branch></T>
+          <T>{undefined}{NaN}{Infinity}<Select value="few" missing={undefined} few={Infinity} many={NaN}>Fallback</Select></T>
         );
       `,
       '/project/src/View.tsx',
@@ -567,9 +567,9 @@ describe('Vue JSX rich extraction', () => {
         'NaN',
         'Infinity',
         {
-          d: { b: { few: 'Infinity', many: 'NaN', other: 'Fallback' }, t: 'b' },
+          d: { b: { few: 'Infinity', many: 'NaN', other: 'Fallback' }, t: 's' },
           i: 1,
-          t: 'Branch',
+          t: 'Select',
         },
       ],
     ]);
@@ -1028,14 +1028,14 @@ describe('Vue JSX rich extraction', () => {
     ]);
   });
 
-  it('serializes Branch v-slots with independent IDs and slot precedence', async () => {
+  it('serializes Select v-slots with independent IDs and slot precedence', async () => {
     const output = await extractFromVueSource(
       `
         import * as GT from 'gt-vue';
         const name = getName();
         const tone = getTone();
         export const View = () => (
-          <GT.T><GT.Branch branch={tone} formal="ignored attribute" v-slots={{
+          <GT.T><GT.Select value={tone} formal="ignored attribute" v-slots={{
             formal: () => [<strong>Hello</strong>, ' ', <GT.Var>{name}</GT.Var>],
             casual: () => [<em>Hi</em>, ' ', <GT.Var>{name}</GT.Var>],
             default: () => 'Fallback',
@@ -1054,10 +1054,10 @@ describe('Vue JSX rich extraction', () => {
             formal: [{ c: 'Hello', i: 2, t: 'strong' }, ' ', { i: 3, v: 'v' }],
             other: 'Fallback',
           },
-          t: 'b',
+          t: 's',
         },
         i: 1,
-        t: 'Branch',
+        t: 'Select',
       },
       { c: 'After', i: 2, t: 'span' },
     ]);
@@ -1103,7 +1103,7 @@ describe('Vue JSX rich extraction', () => {
     async (filename) => {
       const output = await extractFromVueSource(
         `
-          import { Branch, Plural, T } from 'gt-vue';
+          import { Select, Plural, T } from 'gt-vue';
           export const View = () => (
             <T>
               <Plural
@@ -1117,8 +1117,8 @@ describe('Vue JSX rich extraction', () => {
               >
                 {0xff}
               </Plural>
-              <Branch
-                branch="status"
+              <Select
+                value="status"
                 active={true}
                 inactive={false}
                 unknown={null}
@@ -1162,10 +1162,10 @@ describe('Vue JSX rich extraction', () => {
               pending: '',
               unknown: null,
             },
-            t: 'b',
+            t: 's',
           },
           i: 2,
-          t: 'Branch',
+          t: 'Select',
         },
         {
           d: {
@@ -1185,7 +1185,7 @@ describe('Vue JSX rich extraction', () => {
           dataFormat: 'JSX',
           source: output.results[0]!.source,
         })
-      ).toBe('a100a94c819867a1');
+      ).toBe('47d280cc661fac4f');
     }
   );
 
@@ -1247,11 +1247,11 @@ describe('Vue JSX rich extraction', () => {
   it('keeps named JSX slots ahead of direct boolean and null props', async () => {
     const output = await extractFromVueSource(
       `
-        import { Branch, Plural, T } from 'gt-vue';
+        import { Select, Plural, T } from 'gt-vue';
         export const View = () => (
           <T>
-            <Branch
-              branch="formal"
+            <Select
+              value="formal"
               formal={false}
               casual={null}
               v-slots={{
@@ -1279,10 +1279,10 @@ describe('Vue JSX rich extraction', () => {
       {
         d: {
           b: { casual: 'Casual slot', formal: 'Formal slot' },
-          t: 'b',
+          t: 's',
         },
         i: 1,
-        t: 'Branch',
+        t: 'Select',
       },
       {
         d: { b: { few: 'Few slot', one: 'One slot' }, t: 'p' },
@@ -1375,12 +1375,12 @@ describe('Vue JSX rich extraction', () => {
     ]);
   });
 
-  it('rejects nested T inside a traversed Branch slot without extracting it twice', async () => {
+  it('rejects nested T inside a traversed Select slot without extracting it twice', async () => {
     const output = await extractFromVueSource(
       `
-        import { Branch, T } from 'gt-vue';
+        import { Select, T } from 'gt-vue';
         export const View = () => (
-          <T><Branch v-slots={{ formal: () => <T>Nested</T> }} /></T>
+          <T><Select v-slots={{ formal: () => <T>Nested</T> }} /></T>
         );
       `,
       '/project/src/View.tsx'
@@ -1428,9 +1428,9 @@ describe('Vue JSX rich extraction', () => {
       diagnostic: 'gt-vue <Ordinal> component without an n prop',
     },
     {
-      name: 'other slot on Branch, whose fallback is its children',
-      source: `<T><Branch branch="a" v-slots={{ a: () => 'A', other: () => 'Other' }} /></T>`,
-      diagnostic: 'other branch on a gt-vue <Branch>',
+      name: 'other slot on Select, whose fallback is its children',
+      source: `<T><Select value="a" v-slots={{ a: () => 'A', other: () => 'Other' }} /></T>`,
+      diagnostic: 'other branch on a gt-vue <Select>',
     },
     {
       name: 'internal hash override',
@@ -1563,22 +1563,22 @@ describe('Vue JSX rich extraction', () => {
     },
     {
       name: 'scoped branch slot',
-      source: `<T><Branch v-slots={{ formal: (props) => <b>{props.label}</b> }} /></T>`,
+      source: `<T><Select v-slots={{ formal: (props) => <b>{props.label}</b> }} /></T>`,
       diagnostic: 'dynamic or scoped JSX slot',
     },
     {
       name: 'dynamic slots object',
-      source: `<T><Branch v-slots={getSlots()} /></T>`,
+      source: `<T><Select v-slots={getSlots()} /></T>`,
       diagnostic: 'dynamic v-slots',
     },
     {
       name: 'duplicate branch prop',
-      source: `<T><Branch formal="First" formal="Second" /></T>`,
+      source: `<T><Select formal="First" formal="Second" /></T>`,
       diagnostic: 'duplicate branch prop "formal"',
     },
     {
       name: 'spread branch props',
-      source: `<T><Branch {...branches} /></T>`,
+      source: `<T><Select {...branches} /></T>`,
       diagnostic: 'spread prop',
     },
     {
@@ -1588,7 +1588,7 @@ describe('Vue JSX rich extraction', () => {
     },
     {
       name: 'compiler-dependent object slots',
-      source: `<T><Branch>{{ formal: () => 'Formal' }}</Branch></T>`,
+      source: `<T><Select>{{ formal: () => 'Formal' }}</Select></T>`,
       diagnostic: 'object-slot child syntax',
     },
     {
@@ -1630,7 +1630,7 @@ describe('Vue JSX rich extraction', () => {
     const output = await extractFromVueSource(
       `
         import { Suspense } from 'vue';
-        import { Branch, DateTime, Num, Ordinal, Plural, T, Var } from 'gt-vue';
+        import { Select, DateTime, Num, Ordinal, Plural, T, Var } from 'gt-vue';
         ${setup}
         export const View = () => (${source});
       `,

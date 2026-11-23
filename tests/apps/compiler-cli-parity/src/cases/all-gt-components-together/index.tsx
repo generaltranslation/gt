@@ -1,4 +1,4 @@
-import { T, Var, Branch, Plural, Derive } from 'gt-react';
+import { T, Var, Select, Plural, Derive } from 'gt-react';
 
 function getLabel() {
   return 'derived';
@@ -12,7 +12,7 @@ export default function AllGtComponentsTogether() {
       <T>Manual translation</T>
       <p>Auto text with <Var>{name}</Var></p>
       <div>
-        <Branch branch={'status' as string} active="Active" inactive="Inactive">Default</Branch>
+        <Select value={'status' as string} active="Active" inactive="Inactive">Default</Select>
       </div>
       <div>
         <Plural n={count} one="one item">many items</Plural>

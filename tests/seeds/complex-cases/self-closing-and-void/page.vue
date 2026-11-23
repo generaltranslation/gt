@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Branch, Num, T, Var } from 'gt-vue';
+import { Select, Num, T, Var } from 'gt-vue';
 import { Fragment } from 'vue';
 
 const count = 5;
@@ -7,7 +7,7 @@ const count = 5;
 
 <template>
   <T>
-    <Branch branch="type">
+    <Select value="type">
       <template #line>
         <Fragment><hr />Line break<br />New line</Fragment>
       </template>
@@ -17,6 +17,6 @@ const count = 5;
       <template #input>
         <Fragment><input type="text" placeholder="Input" />Field with <Num :value="count" /></Fragment>
       </template>
-    </Branch>
+    </Select>
   </T>
 </template>

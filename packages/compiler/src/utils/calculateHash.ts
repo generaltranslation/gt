@@ -76,7 +76,7 @@ function handleElement(element: JsxElement): boolean {
   if (
     element.d &&
     element.d.t &&
-    ['p', 'o', 'b'].includes(element.d.t) &&
+    ['p', 'o', 's'].includes(element.d.t) &&
     element.d.b
   ) {
     return Object.values(element.d.b).some((branch) => handleChildren(branch));

@@ -5,7 +5,7 @@ export { default as Num } from './components/Num.svelte';
 export { default as Currency } from './components/Currency.svelte';
 export { default as DateTime } from './components/DateTime.svelte';
 export { default as RelativeTime } from './components/RelativeTime.svelte';
-export { default as Branch } from './components/Branch.svelte';
+export { default as Select } from './components/Select.svelte';
 export { default as Plural } from './components/Plural.svelte';
 export { default as Ordinal } from './components/Ordinal.svelte';
 export {

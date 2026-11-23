@@ -1,9 +1,9 @@
-import { T, Branch } from "gt-next";
+import { T, Select } from "gt-next";
 export default function Home() {
   return (
     <T >
-    <Branch
-      branch="type"
+    <Select
+      value="type"
       number={42}
       bigNumber={9007199254740991}
       scientific={1e-20}

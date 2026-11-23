@@ -80,7 +80,7 @@ describe('@generaltranslation/react-core package exports', () => {
                 ['components', 'T'],
                 ['hooks', 'useGT'],
                 ['hooks', 'useMessages'],
-                ['components-rsc', 'Branch'],
+                ['components-rsc', 'Select'],
               ]) {
                 const mod = await load(name);
                 assert.equal(typeof mod[exportName], 'function', format + ' ' + name);

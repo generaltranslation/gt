@@ -5,7 +5,7 @@ export const INLINE_TRANSLATION_HOOK = 'useGT';
 export const INLINE_TRANSLATION_HOOK_ASYNC = 'getGT';
 export const TRANSLATION_COMPONENT = 'T';
 export const DERIVE_COMPONENT = 'Derive';
-export const BRANCH_COMPONENT = 'Branch';
+export const SELECT_COMPONENT = 'Select';
 export const DEFAULT_GT_IMPORT_SOURCE = 'gt-react';
 export const INTERNAL_TRANSLATION_COMPONENT = 'GtInternalTranslateJsx';
 export const INTERNAL_VAR_COMPONENT = 'GtInternalVar';
@@ -39,7 +39,7 @@ export const GT_TRANSLATION_FUNCS = [
   CURRENCY_COMPONENT,
   NUM_COMPONENT,
   N_COMPONENT,
-  BRANCH_COMPONENT,
+  SELECT_COMPONENT,
   INTERNAL_TRANSLATION_COMPONENT,
   INTERNAL_VAR_COMPONENT,
   PLURAL_COMPONENT,
@@ -70,8 +70,8 @@ export const GT_ATTRIBUTES = [
 // Data attribute prefix injected by build tools
 export const DATA_ATTR_PREFIX = 'data-' as const;
 
-/** Branch control props — not translatable content. */
-export const BRANCH_CONTROL_PROPS = new Set(['branch']);
+/** Select control props — not translatable content. */
+export const SELECT_CONTROL_PROPS = new Set(['value']);
 
 /** Plural control props — not translatable content. */
 export const PLURAL_CONTROL_PROPS = new Set(['n']);
