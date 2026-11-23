@@ -40,13 +40,20 @@ describe('gt-react react-server surface', () => {
     vi.stubEnv('GT_API_KEY', 'env-api-key');
     const { initializeGT } = await import('../index.rsc');
     try {
+      const fetchMock = vi.fn<typeof fetch>(async () =>
+        Response.json({ results: [] })
+      );
+      vi.stubGlobal('fetch', fetchMock);
       initializeGT({ defaultLocale: 'en', loadTranslations: async () => ({}) });
-      expect(getI18nConfig().getTranslationRuntime()).toMatchObject({
-        projectId: 'env-project-id',
-        apiKey: 'env-api-key',
-      });
+      const runtime = getI18nConfig().getTranslationRuntime();
+      await runtime.translateMany([], 'es');
+      expect(runtime.projectId).toBe('env-project-id');
+      expect(
+        new Request(...fetchMock.mock.calls[0]).headers.get('authorization')
+      ).toBe('Bearer env-api-key');
     } finally {
       vi.unstubAllEnvs();
+      vi.unstubAllGlobals();
       const registry = Reflect.get(globalThis, '__generaltranslation');
       if (registry) Reflect.deleteProperty(registry, 'i18n');
     }
