@@ -296,14 +296,16 @@ function getHole(
       const kind = helper === 'ordinal' ? 'selectordinal' : helper;
       return { kind, name: binding.name, value: binding, branches };
     }
-    case 'number':
+    case 'num':
     case 'date':
     case 'time': {
       if (args.length < 1 || args.length > 2) nonStatic();
       const binding = getHoleVariable(args[0], scope, bindings);
-      const options = args[1] && getIntlOptions(args[1], helper, binding);
+      // num() builds the tree node named after ICU's keyword.
+      const kind = helper === 'num' ? 'number' : helper;
+      const options = args[1] && getIntlOptions(args[1], kind, binding);
       return {
-        kind: helper,
+        kind,
         name: binding.name,
         value: binding,
         ...(options && { options }),

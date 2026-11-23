@@ -23,7 +23,7 @@ import {
   date,
   derive,
   n,
-  number,
+  num,
   part,
   plural,
   select,
@@ -400,7 +400,7 @@ describe('rendering', () => {
     const count = 2;
     const role = 'admin' as 'admin' | 'member';
     expect(
-      gt`${plural(count, { one: 'One file', other: part`${n} files` })} for ${select(role, { admin: 'admins', member: 'members' })}, ${number(0.5, { style: 'percent' })} done by ${date(new Date(Date.UTC(2024, 0, 2)), { timeZone: 'UTC', style: 'medium' })}`
+      gt`${plural(count, { one: 'One file', other: part`${n} files` })} for ${select(role, { admin: 'admins', member: 'members' })}, ${num(0.5, { style: 'percent' })} done by ${date(new Date(Date.UTC(2024, 0, 2)), { timeZone: 'UTC', style: 'medium' })}`
     ).toBe('2 files for admins, 50% done by Jan 2, 2024');
   });
 
@@ -466,13 +466,11 @@ describe('rendering', () => {
     const gt = await setup({
       fr: {
         // The translation holds only the style; the currency is call-site context.
-        [keyOf()`Total: ${number({ price }, { style: 'currency', currency: 'EUR' })}`]:
+        [keyOf()`Total: ${num({ price }, { style: 'currency', currency: 'EUR' })}`]:
           ['Total : ', ['price', 'number', 'currency']],
       },
     });
-    expect(
-      gt`Total: ${number({ price }, { style: 'currency', currency })}`
-    ).toBe(
+    expect(gt`Total: ${num({ price }, { style: 'currency', currency })}`).toBe(
       `Total : ${new Intl.NumberFormat('fr', { style: 'currency', currency }).format(price)}`
     );
     // A miss formats the source in the source locale.
@@ -528,11 +526,11 @@ describe('rendering', () => {
   it('rejects helper values without exactly one key', () => {
     const values: Record<string, number> = { count: 2, total: 8 };
     const empty: Record<string, number> = {};
-    expect(() => number(values)).toThrow('Object keys: count, total');
+    expect(() => num(values)).toThrow('Object keys: count, total');
     expect(() => plural(values, { other: 'x' })).toThrow(
       'Object keys: count, total'
     );
-    expect(() => number(empty)).toThrow('Object keys: none');
+    expect(() => num(empty)).toThrow('Object keys: none');
   });
 });
 
@@ -686,7 +684,7 @@ describe('gt-i18n precomputed messages', () => {
     [
       'number and date formatting context',
       (tag) =>
-        tag()`${number({ price: 1234.5 }, { style: 'currency', currency: 'EUR' })} by ${date({ due }, { style: 'medium', timeZone: 'UTC' })} at ${time({ at: due }, { style: 'short', timeZone: 'UTC' })}`,
+        tag()`${num({ price: 1234.5 }, { style: 'currency', currency: 'EUR' })} by ${date({ due }, { style: 'medium', timeZone: 'UTC' })} at ${time({ at: due }, { style: 'short', timeZone: 'UTC' })}`,
       [
         ['price', 'number', 'currency'],
         ' avant le ',
@@ -808,7 +806,7 @@ describe('gt-i18n precomputed messages', () => {
     'looks up %s by its configured name',
     async (_name, config, locale, expected) => {
       const args = precompute()`Color`;
-      const price = precompute()`${number({ price: 1234.5 })}`;
+      const price = precompute()`${num({ price: 1234.5 })}`;
       initializeI18nConfig(config);
       setI18nCache(
         new I18nCache({

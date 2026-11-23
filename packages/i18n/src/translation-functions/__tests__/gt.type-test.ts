@@ -4,7 +4,7 @@ import {
   date,
   derive,
   n,
-  number,
+  num,
   part,
   plural,
   select,
@@ -79,19 +79,19 @@ export function validUsage(): string[] {
     gt`Signed in as ${derive(labels[role])}`,
     gt`Signed in as ${derive(getRole())}`,
     gt`Signed in as ${derive(getRoleLabel())}`,
-    gt`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`,
+    gt`Total: ${num({ price }, { style: 'currency', currency: 'USD' })}`,
     gt`Due ${date({ due }, { style: 'medium' })}`,
     gt`${plural(count, { one: 'One file', other: part`${n} files` })}`,
     gt`${ordinal(count, { one: part`${n}st`, other: part`${n}th` })}`,
     gt`${select(role, { admin: 'Admin', member: 'Member' })}`,
     gt`${select(who, { admin: 'Admin', other: 'Someone' })}`,
-    gt`Total: ${number(price, { style: 'currency', currency: 'USD' })}`,
+    gt`Total: ${num(price, { style: 'currency', currency: 'USD' })}`,
     gt`Due ${date(due, { style: 'medium' })} or ${date(0)}`,
     // Formatting context may be dynamic; message options are literals.
-    gt`Total: ${number({ price }, { style: 'currency', currency, currencyDisplay: 'code' })}`,
-    gt`${number({ price }, { style: 'percent', maximumFractionDigits: digits })}`,
-    gt`${number({ price }, { style: 'unit', unit: 'kilometer', unitDisplay: 'long' })}`,
-    gt`${number({ price }, { notation: 'compact' })}`,
+    gt`Total: ${num({ price }, { style: 'currency', currency, currencyDisplay: 'code' })}`,
+    gt`${num({ price }, { style: 'percent', maximumFractionDigits: digits })}`,
+    gt`${num({ price }, { style: 'unit', unit: 'kilometer', unitDisplay: 'long' })}`,
+    gt`${num({ price }, { notation: 'compact' })}`,
     gt`Due ${date({ due }, { style: 'medium', timeZone })}`,
     gt`Due ${date({ due }, { month: 'short', day: 'numeric', hour: 'numeric', hourCycle: 'h23' })}`,
     gt`Starts at ${time({ due }, { style: 'short', timeZone })}`,
@@ -216,37 +216,37 @@ export function mistakes(): unknown[] {
     gt({ contxt: 'button' })`Save`,
 
     // @ts-expect-error number of a string
-    number({ price: 'free' }),
+    num({ price: 'free' }),
 
     // @ts-expect-error unnamed time of a string
     time('12:00'),
 
     // @ts-expect-error a number style that is not one literal
-    number({ price }, { style: percentOrCurrency, currency }),
+    num({ price }, { style: percentOrCurrency, currency }),
 
     // @ts-expect-error a number style of any string
-    number({ price }, { style: input as Intl.NumberFormatOptions['style'] }),
+    num({ price }, { style: input as Intl.NumberFormatOptions['style'] }),
 
     // @ts-expect-error currency style without a currency
-    number({ price }, { style: 'currency' }),
+    num({ price }, { style: 'currency' }),
 
     // @ts-expect-error unit style without a unit
-    number({ price }, { style: 'unit' }),
+    num({ price }, { style: 'unit' }),
 
     // @ts-expect-error a unit that is not a literal
-    number({ price }, { style: 'unit', unit: input }),
+    num({ price }, { style: 'unit', unit: input }),
 
     // @ts-expect-error a unit pattern, which may be many units
-    number({ price }, { style: 'unit', unit: meterUnit }),
+    num({ price }, { style: 'unit', unit: meterUnit }),
 
     // @ts-expect-error a unit without the unit style
-    number({ price }, { unit: 'kilometer' }),
+    num({ price }, { unit: 'kilometer' }),
 
     // @ts-expect-error a unit with another style
-    number({ price }, { style: 'percent', unit: 'kilometer' }),
+    num({ price }, { style: 'percent', unit: 'kilometer' }),
 
-    // @ts-expect-error not an option of number()
-    number({ price }, { maximumFractionDigit: 1 }),
+    // @ts-expect-error not an option of num()
+    num({ price }, { maximumFractionDigit: 1 }),
 
     // @ts-expect-error not an option of date()
     date({ due }, { timeStyle: 'short' }),
@@ -277,10 +277,10 @@ export function mistakes(): unknown[] {
 
     // An explicit first type argument leaves the options' type uninferred;
     // they are still checked as Intl options.
-    number<{ price: number }>({ price }, { style: 'percent' }),
+    num<{ price: number }>({ price }, { style: 'percent' }),
 
     // @ts-expect-error an unknown style with an explicit type argument
-    number<{ price: number }>({ price }, { style: 'banana' }),
+    num<{ price: number }>({ price }, { style: 'banana' }),
 
     // @ts-expect-error an unknown date style with an explicit type argument
     date<{ due: Date }>({ due }, { style: 'huge' }),

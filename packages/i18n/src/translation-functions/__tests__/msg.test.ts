@@ -9,7 +9,7 @@ import { m as globalM, mFallback, msg, type Msg } from '../../index';
 import { createMessages, getMessages } from '../../internal';
 import { buildMessage } from '../buildMessage';
 import { getGT } from '../gt';
-import { date, number, part, plural, select } from '../placeholders';
+import { date, num, part, plural, select } from '../placeholders';
 import { n } from '../placeholders';
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
@@ -144,7 +144,7 @@ describe('msg', () => {
     const m = await setup();
     const due = new Date(Date.UTC(2024, 0, 15));
     const nickname = undefined;
-    const message = msg`Due ${date({ due }, { style: 'medium', timeZone: 'UTC' })}, ${number({ id: 12n })}, ${{ ratio: NaN }}, ${plural(Infinity, { other: part`${n} left` })}, hi ${{ nickname }}`;
+    const message = msg`Due ${date({ due }, { style: 'medium', timeZone: 'UTC' })}, ${num({ id: 12n })}, ${{ ratio: NaN }}, ${plural(Infinity, { other: part`${n} left` })}, hi ${{ nickname }}`;
     const expected = 'Due Jan 15, 2024, 12, NaN, ∞ left, hi ';
     expect((message as Msg).values).toEqual({
       due,

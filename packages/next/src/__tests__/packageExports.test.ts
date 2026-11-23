@@ -270,7 +270,7 @@ describe('gt-next package exports', () => {
     'mFallback',
     'msg',
     'n',
-    'number',
+    'num',
     'ordinal',
     'parseLocale',
     'part',

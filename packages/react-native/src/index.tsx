@@ -44,7 +44,7 @@ export {
   plural,
   ordinal,
   select,
-  number,
+  num,
   date,
   time,
   part,

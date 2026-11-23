@@ -113,7 +113,7 @@ const rootExportNames = [
   'mFallback',
   'msg',
   'n',
-  'number',
+  'num',
   'ordinal',
   'part',
   'plural',

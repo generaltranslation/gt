@@ -6,7 +6,7 @@ import {
   msg,
   type Msg,
   n,
-  number,
+  num,
   plural,
   part,
 } from '../../index';
@@ -40,7 +40,7 @@ export function validUsage(): unknown[] {
     fallback,
     // Helpers and their values are captured like any value.
     msg`Due ${date({ due })}`,
-    msg`Id ${number({ id })} or ${id}`,
+    msg`Id ${num({ id })} or ${id}`,
     msg`${plural({ count }, { one: part`${n} item`, other: part`${n} items` })}`,
   ];
 }

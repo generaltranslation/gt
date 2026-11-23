@@ -6,7 +6,7 @@ import {
   date,
   derive,
   n,
-  number,
+  num,
   part,
   plural,
   select,
@@ -100,11 +100,11 @@ const cases: Record<string, (t: GT) => string> = {
   ordinal: (t) =>
     t`You finished ${ordinal({ place }, { one: part`${n}st`, two: part`${n}nd`, few: part`${n}rd`, other: part`${n}th` })}!`,
   'number-intl-options': (t) =>
-    t`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`,
+    t`Total: ${num({ price }, { style: 'currency', currency: 'USD' })}`,
   'number-currency-dynamic': (t) =>
-    t`Total: ${number({ price }, { style: 'currency', currency, currencyDisplay: 'code' })}`,
+    t`Total: ${num({ price }, { style: 'currency', currency, currencyDisplay: 'code' })}`,
   'number-unit': (t) =>
-    t`${number({ distance }, { style: 'unit', unit: 'kilometer', maximumFractionDigits: 1 })} away`,
+    t`${num({ distance }, { style: 'unit', unit: 'kilometer', maximumFractionDigits: 1 })} away`,
   date: (t) => t`Due ${date({ due }, { style: 'medium' })}`,
   'date-style-dynamic-time-zone': (t) =>
     t`Due ${date({ due }, { style: 'medium', timeZone })}`,
@@ -119,7 +119,7 @@ const cases: Record<string, (t: GT) => string> = {
   anonymous: (t) => t`Hi ${name}!`,
   'anonymous-numbering': (t) => t`${first} meets ${second} today`,
   'anonymous-helper-values': (t) =>
-    t`${plural(count, { one: 'One file', other: part`${n} files` })} for ${select(role, { admin: 'admins', other: 'everyone' })}, ${number(price, { style: 'percent' })} by ${date(due)} from ${name}`,
+    t`${plural(count, { one: 'One file', other: part`${n} files` })} for ${select(role, { admin: 'admins', other: 'everyone' })}, ${num(price, { style: 'percent' })} by ${date(due)} from ${name}`,
   'literal-icu-syntax': (t) =>
     t`Don't stop, '{team}' ${derive("O'Brien {x} #1")} and ${{ name }}`,
   'part-in-branch': (t) =>

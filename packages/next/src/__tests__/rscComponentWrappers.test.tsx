@@ -135,7 +135,7 @@ describe('rsc component wrappers', () => {
       'plural',
       'ordinal',
       'select',
-      'number',
+      'num',
       'date',
       'time',
       'part',
