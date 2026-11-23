@@ -31,6 +31,18 @@ export const splitRequiresCompilerError = createDiagnosticMessage({
   wayOut: 'turn experimentalSplitTranslations off',
 });
 
+export function createSplitServerMessagesError(): string {
+  return createDiagnosticMessage({
+    source: 'gt-tanstack-start',
+    severity: 'Error',
+    whatHappened:
+      'experimentalSplitTranslations could not give the server the messages of its own code',
+    why: 'no chunk of the server build holds the place they are written into',
+    fix: 'Report this defect of the build to General Translation',
+    wayOut: 'turn experimentalSplitTranslations off',
+  });
+}
+
 export function createSplitOrderError(): string {
   return createDiagnosticMessage({
     source: 'gt-tanstack-start',

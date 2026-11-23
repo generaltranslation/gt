@@ -284,6 +284,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     const isSplit = (context: unknown): boolean =>
       !host ||
       host.clientEnvironments.includes(getEnvironmentName(context) ?? '');
+    // The hashes of the msg() messages in the environments that are not split
+    const serverMessages = new Set<string>();
     const resolveChunkTranslationsOptions = () => {
       const split = getChunkTranslationsSplit(splitTranslations?.by);
       return resolveChunkTranslations(loadedGTConfig, {
@@ -391,6 +393,9 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
           id,
           isSplit(this) ? chunkTranslations : undefined
         );
+        if (host && chunkTranslations && isProduction() && !isSplit(this)) {
+          state.settings.serverMessages = serverMessages;
+        }
         if (debugManifest) state.debugManifest = debugManifest;
         try {
           // Skip transformation if not needed
@@ -608,7 +613,11 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       _outputOptions: unknown,
       bundle: Record<string, { type: string }>
     ): void {
-      if (!isProduction() || !isSplit(this)) return;
+      if (!isProduction()) return;
+      if (!isSplit(this)) {
+        host?.onServerMessages([...serverMessages].sort());
+        return;
+      }
       const written = regions
         ? writeRegions(this, bundle)
         : writeChunkTranslations(bundle, chunkTranslations!, {

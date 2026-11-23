@@ -9,11 +9,21 @@ import type {
 } from '@generaltranslation/compiler';
 import type { SplitTranslationsOutput } from 'generaltranslation/internal';
 import type { Plugin } from 'vite';
-import { createSplitOrderError } from './diagnostics';
+import {
+  createSplitOrderError,
+  createSplitServerMessagesError,
+} from './diagnostics';
 
 export const SPLIT_MODULE_ID = 'gt-tanstack-start/internal/splitTranslations';
 const SPLIT_TABLE_MODULE_ID = 'gt-tanstack-start/internal/_split-table';
 const RESOLVED_SPLIT_TABLE_MODULE_ID = '\0gt-tanstack-start:split-table';
+// What stands for the server's own messages in the table's module until the
+// server build has compiled every module, and so knows them
+const SERVER_MESSAGES_MARKER = '__GT_SERVER_MESSAGES__';
+const SERVER_MESSAGES_STRING = new RegExp(
+  `(["'\`])${SERVER_MESSAGES_MARKER}\\1`,
+  'g'
+);
 
 // TanStack Start's names for the environment a browser loads and for the one
 // that renders pages
@@ -58,6 +68,11 @@ export function createSplitPlugin(): {
 } {
   let isBuild = false;
   let output: SplitTranslationsOutput | undefined;
+  let serverMessages: string[] = [];
+  // The environments whose build read the table's module since they started,
+  // and those of them whose chunks then held no place for the messages
+  const readTable = new Set<string>();
+  const lacksMessages = new Set<string>();
   // Whether the server environment last read the table before there was one
   let serverLacksTable = false;
   const isActive = () => isBuild && process.env.NODE_ENV === 'production';
@@ -80,24 +95,56 @@ export function createSplitPlugin(): {
         return RESOLVED_SPLIT_TABLE_MODULE_ID;
       }
     },
+    buildStart() {
+      readTable.delete(this.environment.name);
+    },
     load(id) {
       if (id !== RESOLVED_SPLIT_TABLE_MODULE_ID) return;
+      readTable.add(this.environment.name);
       if (this.environment.name === SERVER_ENVIRONMENT) {
         serverLacksTable = !output;
       }
-      return `export const table = ${
-        output
-          ? `JSON.parse(${JSON.stringify(JSON.stringify(output))})`
-          : 'undefined'
-      };`;
+      return [
+        `export const table = ${
+          output
+            ? `JSON.parse(${JSON.stringify(JSON.stringify(output))})`
+            : 'undefined'
+        };`,
+        `export const serverMessages = JSON.parse(${JSON.stringify(SERVER_MESSAGES_MARKER)});`,
+      ].join('\n');
+    },
+    // After the compiler's own hook, which says what the messages are. They
+    // are known only now, once every module of the build is compiled, so
+    // they are written into the chunk that holds the table's module.
+    generateBundle: {
+      order: 'post',
+      handler(_options, bundle) {
+        if (!isActive() || isClientEnvironment(this)) return;
+        const messages = JSON.stringify(JSON.stringify(serverMessages));
+        let written = false;
+        for (const chunk of Object.values(bundle)) {
+          if (chunk.type !== 'chunk') continue;
+          chunk.code = chunk.code.replace(SERVER_MESSAGES_STRING, () => {
+            written = true;
+            return messages;
+          });
+        }
+        const { name } = this.environment;
+        if (!written && readTable.has(name)) lacksMessages.add(name);
+        else lacksMessages.delete(name);
+      },
     },
     // A build that is only analyzed, as server components have before the
     // client is built, writes nothing and may read no table. The server that
     // is written renders pages, and without the table it would send them
     // translations that the split's call sites cannot read.
     writeBundle() {
-      if (this.environment.name === SERVER_ENVIRONMENT && serverLacksTable) {
+      const { name } = this.environment;
+      if (name === SERVER_ENVIRONMENT && serverLacksTable) {
         this.error(createSplitOrderError());
+      }
+      if (lacksMessages.has(name)) {
+        this.error(createSplitServerMessagesError());
       }
     },
   };
@@ -109,6 +156,9 @@ export function createSplitPlugin(): {
       clientEnvironments: [CLIENT_ENVIRONMENT],
       onSplit(written) {
         output = written;
+      },
+      onServerMessages(hashes) {
+        serverMessages = hashes;
       },
     },
   };

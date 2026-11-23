@@ -6,3 +6,9 @@ import type { SplitTranslationsOutput } from 'generaltranslation/internal';
  * translations.
  */
 export const table: SplitTranslationsOutput | undefined = undefined;
+
+/**
+ * The hashes of the `msg()` messages in the server's own code, which the
+ * plugin writes in once the server build has compiled its modules.
+ */
+export const serverMessages: readonly string[] = [];

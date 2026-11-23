@@ -3,7 +3,10 @@ import type { SplitTranslationsOutput } from 'generaltranslation/internal';
 import type { SplitRouter } from '../splitTranslations';
 
 const { built } = vi.hoisted(() => ({
-  built: {} as { table: SplitTranslationsOutput | undefined },
+  built: {} as {
+    table: SplitTranslationsOutput | undefined;
+    serverMessages: string[];
+  },
 }));
 
 // What the compiler hands the plugin of a build by chunk: the import of the
@@ -47,6 +50,14 @@ vi.mock('gt-tanstack-start/internal/_split-table', () => ({
   get table() {
     return built.table;
   },
+  get serverMessages() {
+    return built.serverMessages;
+  },
+}));
+// The catalog of each locale, as the server loads it
+vi.mock('@generaltranslation/react-core/pure', () => ({
+  getTranslationsSnapshot: async (locale: string) =>
+    locale === 'fr' ? { fr: CATALOG } : {},
 }));
 
 const { createSplitSeed, createSplitShellSeed, findPageChunks } =
@@ -75,6 +86,7 @@ const createRouter = (origin = ''): SplitRouter => ({
 describe('what the server sends with a page', () => {
   beforeEach(() => {
     built.table = TABLE;
+    built.serverMessages = [];
   });
 
   it.each([
@@ -156,9 +168,25 @@ describe('what the server sends with a page', () => {
     });
   });
 
-  it('seeds a prerendered shell with where the files of every locale are, and no translations', () => {
-    expect(createSplitShellSeed(createRouter('/app'))).toEqual({
+  it('seeds a prerendered shell with where the files of every locale are, and no translations', async () => {
+    expect(await createSplitShellSeed(createRouter('/app'))).toEqual({
       s: { b: '/app/', f: 'assets/index-a1', h: { fr: '11' }, v: { fr: '22' } },
+    });
+  });
+
+  it("adds the messages of the server's own code to every page under their hash: one no route of the page reads, and in a shell those of each locale", async () => {
+    // The settings route, which this page does not load, reads the first too
+    built.serverMessages = ['settings', 'server'];
+    expect(createSplitSeed(createRouter(), 'fr', CATALOG)?.t).toEqual({
+      settings: 'RÉGLAGES',
+      server: 'SERVEUR',
+      home: 'ACCUEIL',
+      shared: 'PARTAGÉ',
+      reports: 'RAPPORTS',
+      status: 'PRÊT',
+    });
+    expect((await createSplitShellSeed(createRouter()))?.m).toEqual({
+      fr: { settings: 'RÉGLAGES', server: 'SERVEUR' },
     });
   });
 

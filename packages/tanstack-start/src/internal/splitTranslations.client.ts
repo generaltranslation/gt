@@ -11,8 +11,8 @@ import type * as Disabled from './splitTranslations';
 
 export const createSplitSeed: typeof Disabled.createSplitSeed = () => undefined;
 
-export const createSplitShellSeed: typeof Disabled.createSplitShellSeed = () =>
-  undefined;
+export const createSplitShellSeed: typeof Disabled.createSplitShellSeed =
+  async () => undefined;
 
 export const seedSplit: typeof Disabled.seedSplit = (seed) =>
   seedChunkTranslations(seed);

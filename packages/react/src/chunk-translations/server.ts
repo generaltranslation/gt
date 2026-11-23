@@ -16,7 +16,24 @@ type Page = {
    * from another than the build's base, as from a CDN
    */
   base: string | undefined;
+  /**
+   * The hashes of the messages that the server's own code can send a page as
+   * data, which the compiler tells the framework's plugin of
+   * (`onServerMessages`). The browser reads them by their hash, so their
+   * translations go with every page.
+   */
+  serverMessages: readonly string[];
 };
+
+const pickMessages = (
+  hashes: readonly string[],
+  translations: Record<string, unknown>
+): Record<string, unknown> =>
+  Object.fromEntries(
+    hashes.flatMap((hash) =>
+      translations[hash] == null ? [] : [[hash, translations[hash]]]
+    )
+  );
 
 function findEntry(
   output: SplitTranslationsOutput,
@@ -42,10 +59,10 @@ const pick = <T>(
 
 /**
  * What a page rendered for one request is seeded with: the translations of
- * the entry, of the imports of `chunks`, and of the unsplit messages, read
- * from the locale's catalog. Undefined when the build has no files for the
- * locale, as for the default one: the page then takes its translations as it
- * does without the split.
+ * the entry, of the imports of `chunks`, of the unsplit messages and of the
+ * server's own messages, read from the locale's catalog. Undefined when the
+ * build has no files for the locale, as for the default one: the page then
+ * takes its translations as it does without the split.
  *
  * @param output What the compiler handed the framework's plugin.
  * @param page.locale The locale of the response.
@@ -58,6 +75,7 @@ export function createChunkTranslationsSeed(
     translations,
     chunks,
     base,
+    serverMessages,
   }: Page & { locale: string; translations: Record<string, unknown> }
 ): ChunkTranslationsSeed | undefined {
   const entry = findEntry(output, chunks);
@@ -70,7 +88,7 @@ export function createChunkTranslationsSeed(
       ...imported.flatMap((chunk) => output.imports[chunk]),
     ]),
   ];
-  const seeded: Record<string, unknown> = {};
+  const seeded = pickMessages(serverMessages, translations);
   const add = (passed: string) => {
     const translation = translations[output.hashes?.[passed] ?? passed];
     if (translation != null) seeded[passed] = translation;
@@ -95,15 +113,34 @@ export function createChunkTranslationsSeed(
 /**
  * What a page that every visitor gets, whatever their locale, is seeded
  * with, as a prerendered shell: where the files of each locale are. Its
- * loader requests the files of the visitor's locale itself. Undefined when
- * the build wrote no files.
+ * loader requests the files of the visitor's locale itself. No file of the
+ * build holds the server's own messages for sure, so the seed holds their
+ * translations in every locale. Undefined when the build wrote no files.
  *
  * @param output What the compiler handed the framework's plugin.
+ * @param page.catalogs The catalog of each locale the build has files for, by locale. Read only when the server has messages of its own.
  */
 export function createChunkTranslationsShellSeed(
   output: SplitTranslationsOutput,
-  { chunks, base }: Page
+  {
+    chunks,
+    base,
+    serverMessages,
+    catalogs,
+  }: Page & { catalogs: Record<string, Record<string, unknown> | undefined> }
 ): ChunkTranslationsSeed | undefined {
   const entry = findEntry(output, chunks);
-  return entry && { s: getState(entry.state, base) };
+  if (!entry) return undefined;
+  const messages = Object.fromEntries(
+    Object.keys(entry.state.h).map((locale) => [
+      locale,
+      pickMessages(serverMessages, catalogs[locale] ?? {}),
+    ])
+  );
+  return {
+    s: getState(entry.state, base),
+    ...(serverMessages.length > 0 && {
+      m: messages as NonNullable<ChunkTranslationsSeed['m']>,
+    }),
+  };
 }

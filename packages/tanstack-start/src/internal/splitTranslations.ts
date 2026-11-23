@@ -28,7 +28,7 @@ export const createSplitSeed: (
 /** On the server: what a prerendered shell, which every visitor gets, starts with. */
 export const createSplitShellSeed: (
   router: SplitRouter
-) => ChunkTranslationsSeed | undefined = () => undefined;
+) => Promise<ChunkTranslationsSeed | undefined> = async () => undefined;
 
 /** In the browser: resolves once the page can hydrate. */
 export const seedSplit: (

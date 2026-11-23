@@ -1010,6 +1010,10 @@ describe('experimentalSplitTranslations', () => {
       resolveId: (this: object, id: string, importer: string) => unknown;
       load: (this: object, id: string) => unknown;
       writeBundle: (this: object) => void;
+      generateBundle: {
+        order: string;
+        handler: (this: object, options: object, bundle: object) => void;
+      };
     };
     const context = (name: string) => ({
       environment: { name },
@@ -1029,6 +1033,13 @@ describe('experimentalSplitTranslations', () => {
         ),
       write: (environment: string) =>
         hooks.writeBundle.call(context(environment)),
+      order: hooks.generateBundle.order,
+      /** The code of a server chunk once the build has generated it. */
+      generate: (environment: string, code: string) => {
+        const bundle = { 'server.js': { type: 'chunk', code } };
+        hooks.generateBundle.handler.call(context(environment), {}, bundle);
+        return bundle['server.js'].code;
+      },
     };
   }
   const SPLIT_MODULE = 'gt-tanstack-start/internal/splitTranslations';
@@ -1067,8 +1078,10 @@ describe('experimentalSplitTranslations', () => {
     });
     // With server components, both server environments are analyzed before
     // the client is built, and write nothing
-    expect(split.loadTable('rsc')).toBe('export const table = undefined;');
-    expect(split.loadTable('ssr')).toBe('export const table = undefined;');
+    const EMPTY =
+      'export const table = undefined;\nexport const serverMessages = JSON.parse("__GT_SERVER_MESSAGES__");';
+    expect(split.loadTable('rsc')).toBe(EMPTY);
+    expect(split.loadTable('ssr')).toBe(EMPTY);
     expect(() => split.write('rsc')).not.toThrow();
     expect(() => split.write('ssr')).toThrow(
       'gt-tanstack-start Error: experimentalSplitTranslations cannot give the server the translation files of the client build because the server was built before the client'
@@ -1081,10 +1094,43 @@ describe('experimentalSplitTranslations', () => {
     };
     split.host.onSplit(output);
     const code = split.loadTable('ssr') as string;
-    expect(code.startsWith('export const table = JSON.parse(')).toBe(true);
+    const [table, messages] = code.split('\n');
+    expect(table.startsWith('export const table = JSON.parse(')).toBe(true);
     expect(
-      new Function(`${code.replace('export const table =', 'return')}`)()
+      new Function(`${table.replace('export const table =', 'return')}`)()
     ).toEqual(output);
+    expect(messages).toBe(
+      'export const serverMessages = JSON.parse("__GT_SERVER_MESSAGES__");'
+    );
+    expect(() => split.write('ssr')).not.toThrow();
+  });
+
+  it("writes the messages of the server's own code into the server build once the compiler knows them, whatever quotes the bundler gave their place", () => {
+    const split = createSplit('build', 'production');
+    split.host.onSplit({ entries: {}, imports: {}, files: {}, unsplit: [] });
+    split.loadTable('ssr');
+    split.host.onServerMessages(['b487f69759ed704b', "it's"]);
+    // After the compiler's hook, which is what says them
+    expect(split.order).toBe('post');
+    expect(
+      split.generate(
+        'ssr',
+        'const a = JSON.parse("__GT_SERVER_MESSAGES__"), b = JSON.parse(`__GT_SERVER_MESSAGES__`);'
+      )
+    ).toBe(
+      'const a = JSON.parse("[\\"b487f69759ed704b\\",\\"it\'s\\"]"), b = JSON.parse("[\\"b487f69759ed704b\\",\\"it\'s\\"]");'
+    );
+    // The browser's chunks are left alone
+    expect(
+      split.generate('client', 'JSON.parse("__GT_SERVER_MESSAGES__")')
+    ).toBe('JSON.parse("__GT_SERVER_MESSAGES__")');
+    // A build that is only analyzed keeps no code of its modules and writes
+    // nothing. One that is written without the messages fails.
+    expect(split.generate('ssr', 'export {};')).toBe('export {};');
+    expect(() => split.write('ssr')).toThrow(
+      'gt-tanstack-start Error: experimentalSplitTranslations could not give the server the messages of its own code'
+    );
+    split.generate('ssr', 'JSON.parse("__GT_SERVER_MESSAGES__")');
     expect(() => split.write('ssr')).not.toThrow();
   });
 });

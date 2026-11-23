@@ -34,6 +34,12 @@ export type ChunkTranslationsSeed = {
   c?: string[];
   /** The keys of the files whose translations `t` holds */
   k?: string[];
+  /**
+   * In a seed without `t`: the translations of the messages that the
+   * server's own code can send the page as data, by locale and hash. No file
+   * the page loads holds them for sure.
+   */
+  m?: Record<string, Translations>;
 };
 
 /**
@@ -64,6 +70,7 @@ export function seedChunkTranslations(
   const state: ChunkTranslationsState = Object.assign(getState(), seed.s);
   const locale = getTranslatedLocale();
   if (locale === undefined) return Promise.resolve();
+  if (seed.m) register(state, locale, seed.m[locale]);
   const started = seed.t
     ? holdSeeded(state, locale, seed.t, seed.c || [], seed.k || [])
     : Promise.all([

@@ -2006,6 +2006,13 @@ describe('gt-react/chunk-translations', () => {
       translations: CATALOG,
       chunks: ['assets/index-a1.js', ORDERS_CHUNK, 'assets/vendor-e5.js'],
       base: undefined,
+      serverMessages: [],
+    };
+    const SHELL = {
+      chunks: [],
+      base: undefined,
+      serverMessages: [],
+      catalogs: {},
     };
     const note = () => t({ $_hash: NOTE } as never)`Note`;
     /** A server-rendered app keeps no catalog in the browser. */
@@ -2081,20 +2088,51 @@ describe('gt-react/chunk-translations', () => {
       });
     });
 
+    it("adds the server's own messages under their hash, also one that a chunk the page does not load reads by an id", async () => {
+      // The Reports chunk reads the message by an id, and a server function
+      // sends the same text to the page as a msg()
+      const minified = {
+        ...OUTPUT,
+        files: { ...OUTPUT.files, 'assets/Reports-d4': ['kR3_x0Qa.0'] },
+        hashes: { 'kR3_x0Qa.0': 'reports' },
+      };
+      const page = { ...PAGE, serverMessages: ['reports', 'unknown'] };
+      expect(createChunkTranslationsSeed(minified, page)?.t).toEqual({
+        reports: 'Rapports',
+        [SAVE]: 'Enregistrer',
+        [ORDERS]: 'Commandes',
+        [NOTE]: 'Remarque',
+      });
+      // A page of every locale holds them for each locale with files
+      const shell = createChunkTranslationsShellSeed(minified, {
+        ...SHELL,
+        serverMessages: ['reports'],
+        catalogs: { fr: CATALOG, de: { reports: 'Berichte' } },
+      })!;
+      expect(shell.m).toEqual({
+        fr: { reports: 'Rapports' },
+        de: { reports: 'Berichte' },
+      });
+      serve({
+        ...FILES,
+        '/assets/gt-unsplit.fr.55555555.json': { [NOTE]: 'Remarque' },
+      });
+      await startSeeded();
+      await seedChunkTranslations(shell);
+      expect(t({ $_hash: 'reports' } as never)`Reports`).toBe('Rapports');
+    });
+
     it('makes no seed for a locale the build has no files for, and one without translations for a page of every locale', () => {
       expect(
         createChunkTranslationsSeed(OUTPUT, { ...PAGE, locale: 'en' })
       ).toBeUndefined();
       expect(
-        createChunkTranslationsShellSeed(OUTPUT, { chunks: [], base: '/app/' })
+        createChunkTranslationsShellSeed(OUTPUT, { ...SHELL, base: '/app/' })
       ).toEqual({
         s: { ...OUTPUT.entries['assets/index-a1.js'].state, b: '/app/' },
       });
       expect(
-        createChunkTranslationsShellSeed(
-          { ...OUTPUT, entries: {} },
-          { chunks: [], base: undefined }
-        )
+        createChunkTranslationsShellSeed({ ...OUTPUT, entries: {} }, SHELL)
       ).toBeUndefined();
     });
 
@@ -2159,10 +2197,7 @@ describe('gt-react/chunk-translations', () => {
           '/assets/gt-aa.fr.66666666.json': { [SAVE]: 'Enregistrer' },
         });
         await startSeeded();
-        const seed = createChunkTranslationsShellSeed(OUTPUT, {
-          chunks: [],
-          base: undefined,
-        })!;
+        const seed = createChunkTranslationsShellSeed(OUTPUT, SHELL)!;
 
         await seedChunkTranslations({ s: { ...seed.s, ...state } });
 
@@ -2179,10 +2214,7 @@ describe('gt-react/chunk-translations', () => {
       await startSeeded();
       vi.useFakeTimers();
       await seedChunkTranslations(
-        createChunkTranslationsShellSeed(OUTPUT, {
-          chunks: [],
-          base: undefined,
-        })!
+        createChunkTranslationsShellSeed(OUTPUT, SHELL)!
       );
       await vi.runAllTimersAsync();
       expect(fetched).not.toHaveBeenCalled();

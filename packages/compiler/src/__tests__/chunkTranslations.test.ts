@@ -18,6 +18,7 @@ import {
 } from 'vitest';
 import MagicString from 'magic-string';
 import type { UnpluginContextMeta, UnpluginOptions } from 'unplugin';
+import { hashSource } from 'generaltranslation/id';
 import gtUnplugin from '../index';
 import type { GTUnpluginOptions, SplitTranslationsHost } from '../index';
 import { locate, trace } from './sourcePositions';
@@ -5110,6 +5111,7 @@ const HOST: SplitTranslationsHost = {
   loader: LOADER,
   clientEnvironments: ['client'],
   onSplit() {},
+  onServerMessages() {},
 };
 const SERVER_RENDERED: GTUnpluginOptions = {
   gtConfig: {
@@ -5238,15 +5240,20 @@ describe('experimentalSplitTranslations in a server-rendered app', () => {
    * A client bundle whose entry holds `code` and imports a chunk with a
    * message. Returns what names the imported chunks, the last step of a build.
    */
-  async function buildClient(code: string, options?: GTUnpluginOptions) {
+  async function buildClient(
+    code: string,
+    options?: GTUnpluginOptions,
+    module?: string
+  ) {
     const onSplit = vi.fn();
-    const { compile, wrap, transform } = createBuild({
+    const { compile, wrap, transform, transformCode } = createBuild({
       ...SERVER_RENDERED,
       experimentalSplitTranslations: {},
       splitTranslationsHost: { ...HOST, onSplit },
       ...options,
     });
     await transform(CLIENT);
+    if (module !== undefined) await transformCode(CLIENT, module);
     compile.vite.configResolved({ base: '/', build: { assetsDir: 'assets' } });
     wrap.vite.options!({});
     const chunk = (fileName: string, source: string, rest = {}) => ({
@@ -5305,6 +5312,51 @@ describe('experimentalSplitTranslations in a server-rendered app', () => {
           files: { 'assets/Orders': [SAVE_TEMPLATE] },
           unsplit: [],
         },
+      ],
+    ]);
+  });
+
+  it("keeps a message unsplit when a msg('text') has it too, which m() reads by its hash from any page", async () => {
+    const { onSplit } = await buildClient(
+      `e(()=>import("./Orders.js"),"${IMPORTED_CHUNKS_PLACEHOLDER}")`,
+      undefined,
+      "import { msg } from 'gt-tanstack-start';\nexport const label = msg('Save');"
+    );
+    expect(onSplit.mock.calls[0][0]).toMatchObject({
+      files: { 'assets/Orders': [SAVE_TEMPLATE] },
+      unsplit: [SAVE_TEMPLATE],
+    });
+  });
+
+  it('tells the framework of the msg() messages in the code of a server, as a template or a string, and of no other message there', async () => {
+    const onServerMessages = vi.fn();
+    const { compile, transformCode } = createBuild({
+      ...SERVER_RENDERED,
+      splitTranslationsHost: { ...HOST, onServerMessages },
+    });
+    await transformCode(
+      SERVER,
+      `import { getGT, msg } from 'gt-tanstack-start';
+export async function handler() {
+  const t = await getGT();
+  return [t\`Archive\`, msg\`Draft\`, msg('Save'), msg(\`Sent\`), msg(handler.name)];
+}`
+    );
+    // The same call in the code of a browser is the client build's to place
+    await transformCode(
+      CLIENT,
+      "import { msg } from 'gt-tanstack-start';\nexport const label = msg('Deleted');"
+    );
+    expect(onServerMessages).not.toHaveBeenCalled();
+    (compile.vite.generateBundle as Hook).call(
+      { ...SERVER, emitFile() {} },
+      ...([{}, {}] as never[])
+    );
+    expect(onServerMessages.mock.calls).toEqual([
+      [
+        ['Draft', 'Save', 'Sent']
+          .map((source) => hashSource({ source, dataFormat: 'MESSAGE_TREE' }))
+          .sort(),
       ],
     ]);
   });

@@ -112,6 +112,28 @@ export function injectTaggedTemplateHash(
   return true;
 }
 
+/**
+ * The hash of the message of `msg('text')`, a call of an imported `msg` with
+ * one string: what `m()` computes when it renders that string. Undefined for
+ * any other call.
+ */
+export function getStringMessageHash(
+  path: NodePath<t.CallExpression>
+): string | undefined {
+  const { callee, arguments: args } = path.node;
+  if (!t.isIdentifier(callee) || args.length !== 1) return undefined;
+  if (getHelperName(callee.name, path.scope) !== 'msg') return undefined;
+  const [message] = args;
+  const text = t.isStringLiteral(message)
+    ? message.value
+    : t.isTemplateLiteral(message) && message.expressions.length === 0
+      ? message.quasis[0].value.cooked
+      : undefined;
+  return text == null
+    ? undefined
+    : hashSource({ source: text, dataFormat: 'MESSAGE_TREE' });
+}
+
 // Set while a template is read as the runtime most likely reads it.
 let assumesPrimitives = false;
 

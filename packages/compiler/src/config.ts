@@ -141,6 +141,15 @@ export type SplitTranslationsHost = {
    * what the server needs to send a page the translations of its chunks.
    */
   onSplit: (output: SplitTranslationsOutput) => void;
+  /**
+   * Called once an environment that is no client's has compiled its modules,
+   * with the hashes of the `msg()` messages in the modules of every such
+   * environment so far. Code that only a server runs can send such a message
+   * to a browser as data, where `m()` reads it by its hash, whatever file
+   * the client build put a message of the same text in. So the framework
+   * sends their translations with every page.
+   */
+  onServerMessages: (hashes: string[]) => void;
 };
 
 /**
@@ -235,6 +244,8 @@ export interface PluginSettings {
   devHotReload: { jsx: boolean };
   /** Set when a build writes translations per chunk, which the build then splits */
   chunkTranslations?: ChunkTranslations;
+  /** Set in an environment such a build does not split: where the hashes of its msg() messages go */
+  serverMessages?: Set<string>;
   /** Replace static t templates with calls that read a precomputed message */
   precomputeMessages: boolean;
 }

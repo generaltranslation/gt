@@ -6,8 +6,9 @@ import {
   createChunkTranslationsSeed,
   createChunkTranslationsShellSeed,
 } from 'gt-react/chunk-translations/server';
+import { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 import type { SplitTranslationsOutput } from 'generaltranslation/internal';
-import { table } from 'gt-tanstack-start/internal/_split-table';
+import { serverMessages, table } from 'gt-tanstack-start/internal/_split-table';
 import { findClientReferenceChunks } from '../rsc/clientReferenceChunks';
 import type * as Disabled from './splitTranslations';
 
@@ -66,16 +67,33 @@ export const createSplitSeed: typeof Disabled.createSplitSeed = (
   table && translations
     ? createChunkTranslationsSeed(table, {
         ...findPageChunks(router, table),
+        serverMessages,
         locale,
         translations,
       })
     : undefined;
 
-export const createSplitShellSeed: typeof Disabled.createSplitShellSeed = (
-  router
-) =>
-  table &&
-  createChunkTranslationsShellSeed(table, findPageChunks(router, table));
+export const createSplitShellSeed: typeof Disabled.createSplitShellSeed =
+  async (router) => {
+    if (!table) return undefined;
+    const page = findPageChunks(router, table);
+    // The shell is one page for every locale, so it holds the server's own
+    // messages in each. Without such messages no catalog is read.
+    const locales = serverMessages.length
+      ? Object.values(table.entries).flatMap(({ state }) =>
+          Object.keys(state.h)
+        )
+      : [];
+    const catalogs = Object.assign(
+      {},
+      ...(await Promise.all([...new Set(locales)].map(getTranslationsSnapshot)))
+    ) as Record<string, Record<string, unknown>>;
+    return createChunkTranslationsShellSeed(table, {
+      ...page,
+      serverMessages,
+      catalogs,
+    });
+  };
 
 export const seedSplit: typeof Disabled.seedSplit = async () => undefined;
 
