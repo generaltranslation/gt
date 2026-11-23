@@ -78,9 +78,25 @@ export function integrateRouter<State extends GTRouterState>(
       // visitor's own, whose files it loads itself.
       if (router.isShell?.()) {
         const split = await createSplitShellSeed(router);
+        // The shell hydrates with the state it was rendered with, so its
+        // translations are keyed as the browser's call sites read them
+        const rendered = split
+          ? createSplitSeed(
+              router,
+              loaded.locale,
+              loaded.translations[loaded.locale]
+            )
+          : undefined;
         return {
           ...dehydrated,
-          gt: { ...loaded, shell: true, ...(split && { split }) },
+          gt: {
+            ...loaded,
+            ...(rendered?.t && {
+              translations: { [loaded.locale]: rendered.t },
+            }),
+            shell: true,
+            ...(split && { split }),
+          },
         };
       }
       // In a build that splits translations the page gets those of its own

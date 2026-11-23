@@ -2,6 +2,16 @@ import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 
+const { split } = vi.hoisted(() => ({
+  split: {
+    createSplitSeed: vi.fn((): object | undefined => undefined),
+    createSplitShellSeed: vi.fn(
+      async (): Promise<object | undefined> => undefined
+    ),
+  },
+}));
+vi.mock('gt-tanstack-start/internal/splitTranslations', () => split);
+
 const { mockConditionStore } = vi.hoisted(() => ({
   mockConditionStore: {
     getLocale: vi.fn(() => 'fr'),
@@ -185,6 +195,29 @@ describe.sequential('setupRouterGTIntegration server', () => {
       translations: { hello: 'bonjour' },
       children: 'app',
     });
+  });
+
+  it('gives a prerendered shell of a build that splits translations its own translations as the call sites of the browser read them, and where the files of every locale are', async () => {
+    const seed = { s: { b: '/', f: 'assets/index', h: {}, v: {} } };
+    split.createSplitShellSeed.mockResolvedValueOnce(seed);
+    split.createSplitSeed.mockReturnValueOnce({
+      ...seed,
+      t: { 'kR3_x0Qa.0': 'bonjour' },
+    });
+    const router = createRouter({}, () => true);
+    setupRouterGTIntegration({ router });
+
+    await expect(router.options.dehydrate?.()).resolves.toEqual({
+      gt: {
+        locale: 'fr',
+        region: undefined,
+        enableI18n: true,
+        translations: { fr: { 'kR3_x0Qa.0': 'bonjour' } },
+        shell: true,
+        split: seed,
+      },
+    });
+    expect(split.createSplitSeed).toHaveBeenCalledWith(router, 'fr', undefined);
   });
 
   it('marks the GT state of a prerendered SPA shell', async () => {
