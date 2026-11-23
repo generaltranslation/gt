@@ -10,8 +10,10 @@ import { getState, getTranslatedLocale } from './state';
 import {
   addArrived,
   getFileUrl,
+  readLists,
   register,
   request,
+  requestOnceListed,
   warnMissingLocale,
 } from './request';
 import { isSameAssignment, readCurrentMap, readCurrentNames } from './recovery';
@@ -82,9 +84,13 @@ function requestMappedFile(
 ): Promise<boolean> {
   const listed = state.i;
   if (!listed) {
-    return requestMap(state, locale).then((loaded) =>
-      loaded && state.i ? requestMappedFile(state, locale, file) : false
-    );
+    return requestMap(state, locale).then((loaded) => {
+      if (state.i) return loaded && requestMappedFile(state, locale, file);
+      requestOnceListed(state, file, () =>
+        requestMappedFile(state, locale, file)
+      );
+      return false;
+    });
   }
   const own = listed.h?.[listed.k.indexOf(file)];
   const getCurrent = () =>
@@ -145,8 +151,6 @@ function requestMap(
     `map ${locale}`,
     getFileUrl(state, state.k, locale, token),
     requested,
-    (map: EntryFile) => {
-      state.i = map.i;
-    }
+    (map: EntryFile) => readLists(state, map.i)
   );
 }

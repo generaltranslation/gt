@@ -25,6 +25,7 @@ import { gzipSync } from 'node:zlib';
 import { chromium } from 'playwright-core';
 import { checkArrival, holdBack } from './lateTranslations.mjs';
 import { entriesOf, heldBy, isMinifiedId } from './minifiedTranslations.mjs';
+import { checkSlowHost } from './slowHost.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CHECK = join(root, '.check');
@@ -1472,6 +1473,41 @@ async function checkVariant(name, variant) {
       rendered([], ['frame', 'footer'])
     );
     await app.close();
+  }
+
+  // In the builds whose imports need files the entry does not hold
+  if (variant.requestCost === 0) {
+    const prompt = [
+      built.mapOf('fr'),
+      built.unsplitOf('fr'),
+      ...built.entryFiles('fr'),
+    ];
+    const late = built.everyFile('fr').filter((file) => !prompt.includes(file));
+    const rendered = (lost) =>
+      Object.fromEntries(
+        [
+          'title',
+          'hook',
+          'heading orders',
+          'orders',
+          'jsx orders',
+          'badge',
+          'glossary',
+        ].map((element) => [
+          element.split(' ')[0],
+          render(built, 'fr', element, lost),
+        ])
+      );
+    await checkSlowHost({
+      open,
+      check,
+      url,
+      prompt,
+      isTranslationsFile: (path) => isTranslations({ path }),
+      timeout: TIMEOUT_MS,
+      sources: rendered(late),
+      expected: rendered([]),
+    });
   }
   served.close();
   servedOff.close();

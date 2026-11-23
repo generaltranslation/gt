@@ -5,6 +5,7 @@ import {
 import type {
   ChunkTranslationsState,
   EntryFile,
+  ImportedFiles,
   MinifiedTranslations,
   Translations,
 } from './state';
@@ -34,9 +35,43 @@ export function requestEntry(
     (file: EntryFile) => {
       register(state, locale, file.t);
       // Elsewhere when the build has maps
-      if (file.i) state.i = file.i;
+      if (file.i) readLists(state, file.i);
     }
   );
+}
+
+/**
+ * Keeps the lists of the files each import needs, and requests the files of
+ * the imports that ran without them.
+ */
+export function readLists(
+  state: ChunkTranslationsState,
+  lists: ImportedFiles | undefined
+): void {
+  state.i = lists;
+  const unlisted = state.il;
+  if (!lists || !unlisted) return;
+  state.il = undefined;
+  const waits = (state.wt ||= [0]);
+  waits[2] = true;
+  for (const key in unlisted) {
+    // What stands in for a file that is gone is in time, and added here
+    void unlisted[key]().then(() => addArrived(state));
+  }
+  waits[2] = false;
+}
+
+/**
+ * Requests files once the lists that name them have arrived, for what ran
+ * when they were late or failed. Nothing waits for these files.
+ * @param key What is asked for: once, however often it ran without the lists.
+ */
+export function requestOnceListed(
+  state: ChunkTranslationsState,
+  key: string,
+  requestFiles: () => Promise<unknown>
+): void {
+  (state.il ||= {})[key] = requestFiles;
 }
 
 export function warnMissingLocale(
@@ -120,6 +155,8 @@ export function takeArrived(
  * - A file that fails is requested again by the next import that needs it.
  * - A file that is late is not waited for again: what needs it renders the
  *   source until it arrives, and it is still read when it does.
+ * - Once the wait for a file has run out, no file is waited for until one
+ *   has arrived in time, see `getWait()`.
  * - A file the host does not have is one it answers 404 or 410 for, or
  *   answers with something that is not JSON, as a host does that serves a
  *   page for every path it has no file for. Only then is `recover` called,
@@ -139,26 +176,45 @@ export function request<F extends object>(
   const requests = (state.r ||= {});
   return (requests[key] ||= new Promise((resolve) => {
     const timeout = getTimeout(state);
-    let late = false;
-    const timer = setTimeout(() => {
-      late = true;
+    const wait = getWait(state);
+    const start = Date.now();
+    const waits = (state.wt ||= [0]);
+    const inTime = waits[0];
+    // Late from the start for what has run already
+    let late = !!waits[2];
+    let reported = false;
+    const report = () => {
+      reported = true;
       console.warn(createTimeoutWarning(url, timeout));
+    };
+    let timer = setTimeout(() => {
+      late = true;
+      if (wait) {
+        waits[1] = inTime;
+        report();
+      } else {
+        // Not waited for, and reported when it takes as long as a late file
+        timer = setTimeout(report, timeout);
+      }
       requests[key] = Promise.resolve(false);
       resolve(false);
-    }, timeout);
+    }, wait);
     const fail = (details: string) => {
       clearTimeout(timer);
-      console.warn(createFailedWarning(url, details));
+      // A file is reported once, as late or as failed
+      if (!reported) console.warn(createFailedWarning(url, details));
+      reported = true;
       requests[key] = undefined;
       resolve(false);
     };
-    (requested || fetchJson(url)).then(
+    const reading = (requested || fetchJson(url)).then(
       (file) => {
         if (!file || typeof file !== 'object') {
           fail('The file is not a JSON object');
           return;
         }
         clearTimeout(timer);
+        if (Date.now() - start < timeout) waits[0]++;
         read(file as F);
         // A late file is read when it arrives, as nothing waits for it, and
         // what rendered without it is told
@@ -185,16 +241,19 @@ export function request<F extends object>(
         void recovered.then((arrived) => {
           if (arrived === undefined) {
             missing[url] = true;
-            if (!late) fail(details);
-          } else if (late) {
-            if (arrived) addArrived(state);
+            // Late already, and so not asked for again
+            if (!reported) fail(details);
           } else {
             clearTimeout(timer);
+            // Nothing waits for what stands in for a late file
+            if (late && arrived) addArrived(state);
             resolve(arrived);
           }
         });
       }
     );
+    // Whatever reading it throws, the request settles
+    void reading.catch((error: unknown) => fail(String(error)));
   }));
 }
 
@@ -210,4 +269,17 @@ export function fetchJson(
 
 export function getTimeout(state: ChunkTranslationsState): number {
   return state.w ?? 10_000;
+}
+
+/**
+ * How long a file that is requested now is waited for: the timeout, and not
+ * at all once the wait for a file has run out, until a file has arrived
+ * within the timeout of its own request since that late file was requested.
+ * A host that answers no file in time so costs a page one wait, and not one
+ * more for each import that the code of another import starts. Nor is a
+ * file waited for that `readLists()` requests, for an import that has run.
+ */
+export function getWait(state: ChunkTranslationsState): number {
+  const [inTime, late, ran] = state.wt || [0];
+  return !ran && (late === undefined || inTime > late) ? getTimeout(state) : 0;
 }

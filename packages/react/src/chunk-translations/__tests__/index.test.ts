@@ -13,6 +13,7 @@ import {
   type ChunkTranslationsState,
 } from '..';
 import { resolveChunkUrl } from '../gate';
+import { request } from '../request';
 import { getReactI18nCache, t } from '@generaltranslation/react-core/pure';
 import { T } from '@generaltranslation/react-core/components';
 import { useGT, useMessages } from '@generaltranslation/react-core/hooks';
@@ -191,6 +192,25 @@ function mount(hash: string, source: string) {
   act(() => root.render(createElement(Messages)));
   return { text: () => element.textContent, renders: () => renders };
 }
+/** A file that takes `ms` to arrive, on fake timers. */
+const slow = (file: unknown, ms: number) => () =>
+  new Promise<Response>((resolve) =>
+    setTimeout(() => resolve(new Response(JSON.stringify(file))), ms)
+  );
+
+/**
+ * Imports nested in each other, as a route under lazy layouts: each starts
+ * when the one around it runs, and says so in `steps`.
+ */
+const nestedImports = (load: Load, chunks: string[], steps: string[]) =>
+  chunks.reduceRight<() => Promise<unknown>>(
+    (inner, chunk) => () =>
+      load(() => {
+        steps.push(chunk);
+        return inner();
+      }, chunk),
+    () => Promise.resolve()
+  )();
 
 describe('gt-react/chunk-translations', () => {
   let warn: ReturnType<typeof vi.spyOn>;
@@ -626,6 +646,334 @@ describe('gt-react/chunk-translations', () => {
 
     expect(orders()).toBe('Commandes');
     expect(messages.renders()).toBe(1);
+  });
+
+  describe('the request of a file', () => {
+    const FILE = '/assets/Orders-b2.fr.22222222.json';
+    const after =
+      <V>(value: V) =>
+      () =>
+        new Promise<V>((resolve) => setTimeout(() => resolve(value), 3000));
+    const missing = () =>
+      Promise.resolve(new Response('Not found', { status: 404 }));
+    // What the page's state says of its waits when the file is requested
+    const WAITS: [string, ChunkTranslationsState['wt']][] = [
+      ['that is waited for', undefined],
+      ['that is not waited for', [0, 0]],
+      ['of an import that has run', [0, undefined, true]],
+    ];
+    // What the page is warned of when the file is not there in time
+    const LATE = 'did not load within 2000 ms';
+    const FAILED = 'Could not load the translations';
+    const busy = () => new Response('Busy', { status: 503 });
+    const unreadable = () => {
+      throw new TypeError('Not what a build writes');
+    };
+    /** `again` is whether the next import asks for the file again. */
+    type Outcome = [
+      name: string,
+      file: Files[string],
+      warning: string | undefined,
+      again: boolean,
+      recover?: () => Promise<boolean | undefined>,
+      read?: () => void,
+    ];
+    const OUTCOMES: Outcome[] = [
+      ['a file that arrives at once', {}, undefined, false],
+      ['a file that arrives after the timeout', slow({}, 3000), LATE, false],
+      ['a response that never ends', () => new Promise(() => {}), LATE, false],
+      ['a host that fails', () => Promise.resolve(busy()), FAILED, true],
+      [
+        'a host that fails after the timeout',
+        () =>
+          new Promise<Response>((resolve) =>
+            setTimeout(() => resolve(busy()), 3000)
+          ),
+        LATE,
+        true,
+      ],
+      [
+        'a missing file that nothing stands in for',
+        missing,
+        FAILED,
+        true,
+        () => Promise.resolve(undefined),
+      ],
+      [
+        'a missing file that nothing stands in for, known after the timeout',
+        missing,
+        LATE,
+        false,
+        after(undefined),
+      ],
+      [
+        'a missing file that another stands in for',
+        missing,
+        undefined,
+        false,
+        () => Promise.resolve(true),
+      ],
+      [
+        'a missing file that another stands in for after the timeout',
+        missing,
+        LATE,
+        false,
+        after(true),
+      ],
+      ['a file whose reading throws', {}, FAILED, true, undefined, unreadable],
+      [
+        'a file that arrives after the timeout, whose reading throws',
+        slow({}, 3000),
+        LATE,
+        true,
+        undefined,
+        unreadable,
+      ],
+    ];
+
+    it.each(
+      WAITS.flatMap(([waited, wt]) =>
+        OUTCOMES.map(
+          ([name, file, warning, again, recover, read]) =>
+            [waited, name, file, warning, again, recover, read, wt] as const
+        )
+      )
+    )(
+      '%s settles with %s',
+      async (_waited, _name, file, warning, again, recover, read, wt) => {
+        serve({ [FILE]: file });
+        vi.useFakeTimers();
+        const state: ChunkTranslationsState = { w: 2000, wt: wt && [...wt] };
+        let settled: boolean | undefined;
+        void request(
+          state,
+          'file',
+          FILE,
+          undefined,
+          read ?? (() => {}),
+          recover
+        ).then((arrived) => (settled = arrived));
+
+        // No later than its timeout, whatever becomes of it afterwards
+        await vi.advanceTimersByTimeAsync(2000);
+        expect(settled).toBe(warning === undefined);
+        // Nor does the next import wait for it for good: it asks again for
+        // a file that failed
+        await vi.advanceTimersByTimeAsync(3000);
+        const kept = state.r!.file;
+        expect(kept === undefined).toBe(again);
+        expect(
+          kept && (await Promise.race([kept, Promise.resolve('pending')]))
+        ).not.toBe('pending');
+        // And it is reported once, as late or as failed
+        expect(warn.mock.calls.map(([reported]) => reported)).toEqual(
+          warning === undefined ? [] : [expect.stringContaining(warning)]
+        );
+      }
+    );
+  });
+
+  describe('on a host that is slow', () => {
+    const LAYOUT_CHUNK = 'assets/Layout-d4.js';
+    const PANEL_CHUNK = 'assets/Panel-e5.js';
+    const HELP_CHUNK = 'assets/Help-f6.js';
+    const LAYOUT_FILE = '/assets/Layout-d4.fr.22222222.json';
+    const PANEL_FILE = '/assets/Panel-e5.fr.22222222.json';
+    const HELP_FILE = '/assets/Help-f6.fr.22222222.json';
+    const ENTRY = {
+      t: { [SAVE]: 'Enregistrer' },
+      i: {
+        k: [
+          'assets/Layout-d4',
+          'assets/Orders-b2',
+          'assets/Panel-e5',
+          'assets/Help-f6',
+        ],
+        c: [[1], [1], [1], [1]],
+      },
+    };
+    const NESTED = [LAYOUT_CHUNK, ORDERS_CHUNK, PANEL_CHUNK];
+
+    it('waits once for the files of imports nested in each other, still requests them, and waits for none while none arrives in time', async () => {
+      const fetched = serve({
+        '/assets/index-a1.fr.11111111.json': ENTRY,
+        [LAYOUT_FILE]: slow({}, 3000),
+        [ORDERS_FILE]: slow(FILES[ORDERS_FILE], 3000),
+        [PANEL_FILE]: slow({}, 3000),
+        [HELP_FILE]: slow({}, 3000),
+      });
+      writeState({ w: 2000 });
+      await start();
+      vi.useFakeTimers();
+      const steps: string[] = [];
+
+      const loading = nestedImports(loadChunk, NESTED, steps);
+      await vi.advanceTimersByTimeAsync(1999);
+      expect(steps).toEqual([]);
+      // One wait after the first request, where each import waited its own;
+      // a file that is not waited for takes one turn of the timers
+      await vi.advanceTimersByTimeAsync(1 + NESTED.length);
+      expect(steps).toEqual(NESTED);
+      await loading;
+      expect(orders()).toBe('Orders');
+      expect(fetched.mock.calls.flat().slice(1)).toEqual([
+        LAYOUT_FILE,
+        ORDERS_FILE,
+        PANEL_FILE,
+      ]);
+      expect(warn).toHaveBeenCalledTimes(1);
+
+      // What is not waited for is reported when it is late too
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(orders()).toBe('Commandes');
+      expect(warn.mock.calls.map(([warning]) => warning)).toEqual(
+        [LAYOUT_FILE, ORDERS_FILE, PANEL_FILE].map((file) =>
+          expect.stringContaining(`${file} did not load within 2000 ms`)
+        )
+      );
+
+      // Long after: every file was late, so the host is taken to be slow still
+      await vi.advanceTimersByTimeAsync(60_000);
+      void nestedImports(loadChunk, [HELP_CHUNK], steps);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(steps).toEqual([...NESTED, HELP_CHUNK]);
+    });
+
+    it('waits again once a file has arrived in time', async () => {
+      serve({
+        '/assets/index-a1.fr.11111111.json': ENTRY,
+        [LAYOUT_FILE]: slow({}, 30_000),
+        [ORDERS_FILE]: slow(FILES[ORDERS_FILE], 100),
+        [PANEL_FILE]: slow({}, 1500),
+      });
+      writeState({ w: 2000 });
+      await start();
+      vi.useFakeTimers();
+      const steps: string[] = [];
+      void nestedImports(loadChunk, [LAYOUT_CHUNK], steps);
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(steps).toEqual([LAYOUT_CHUNK]);
+
+      // Not waited for, though it is fast: no file has arrived in time yet
+      const unwaited = plainImport(steps)();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(steps).toEqual([LAYOUT_CHUNK, 'import']);
+      expect(await unwaited).toEqual({ evaluated: 'Orders' });
+      await vi.advanceTimersByTimeAsync(100);
+      expect(orders()).toBe('Commandes');
+
+      void nestedImports(loadChunk, [PANEL_CHUNK], steps);
+      await vi.advanceTimersByTimeAsync(1499);
+      expect(steps).toEqual([LAYOUT_CHUNK, 'import']);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(steps).toEqual([LAYOUT_CHUNK, 'import', PANEL_CHUNK]);
+      expect(warn).toHaveBeenCalledTimes(1);
+    });
+
+    it('still waits for the next import when one file is late and another of the same import arrived in time', async () => {
+      serve({
+        '/assets/index-a1.fr.11111111.json': {
+          ...ENTRY,
+          // The import of the first chunk also needs the file of the second
+          i: { ...ENTRY.i, c: [[1, 1, 1], [1], [1], [1]] },
+        },
+        [LAYOUT_FILE]: slow({}, 30_000),
+        [ORDERS_FILE]: slow(FILES[ORDERS_FILE], 100),
+        [PANEL_FILE]: slow({}, 1500),
+      });
+      writeState({ w: 2000 });
+      await start();
+      vi.useFakeTimers();
+      const steps: string[] = [];
+      void nestedImports(loadChunk, [LAYOUT_CHUNK, PANEL_CHUNK], steps);
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(steps).toEqual([LAYOUT_CHUNK]);
+      expect(orders()).toBe('Commandes');
+
+      await vi.advanceTimersByTimeAsync(1499);
+      expect(steps).toEqual([LAYOUT_CHUNK]);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(steps).toEqual([LAYOUT_CHUNK, PANEL_CHUNK]);
+      expect(warn).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows the source after one wait, and renders mounted messages again when the files of the nested imports arrive', async () => {
+      serve({
+        '/assets/index-a1.fr.11111111.json': ENTRY,
+        [LAYOUT_FILE]: slow({}, 3000),
+        [ORDERS_FILE]: slow(FILES[ORDERS_FILE], 3000),
+        [PANEL_FILE]: slow({}, 3000),
+      });
+      writeState({ w: 2000 });
+      await start();
+      const messages = mount(ORDERS, 'Orders');
+      vi.useFakeTimers();
+      const steps: string[] = [];
+
+      const loading = nestedImports(loadChunk, NESTED, steps);
+      await vi.advanceTimersByTimeAsync(2000 + NESTED.length);
+      expect(steps).toEqual(NESTED);
+      await loading;
+      expect(messages.text()).toBe('Orders | Orders | Orders');
+
+      // The file of the second import, which nothing waited for
+      await act(() => vi.advanceTimersByTimeAsync(3000));
+      expect(messages.text()).toBe('Commandes | Commandes | Commandes');
+    });
+
+    it("renders mounted messages again when the files arrive of an import that ran before the entry's file did", async () => {
+      serve({
+        ...FILES,
+        '/assets/index-a1.fr.11111111.json': slow(
+          FILES['/assets/index-a1.fr.11111111.json'],
+          3000
+        ),
+      });
+      writeState({ w: 2000 });
+      vi.useFakeTimers();
+      const starting = start();
+      await vi.advanceTimersByTimeAsync(2000);
+      await starting;
+      const messages = mount(ORDERS, 'Orders');
+      const loading = plainImport([])();
+      await vi.advanceTimersByTimeAsync(1);
+      await loading;
+      expect(messages.text()).toBe('Orders | Orders | Orders');
+
+      // The entry's file arrives, and with it the import's file is requested
+      // and read, though it is there at once
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+      expect(messages.text()).toBe('Commandes | Commandes | Commandes');
+    });
+
+    it("runs an import once the wait for the entry's file has run out, and requests its files when that arrives", async () => {
+      const fetched = serve({
+        ...FILES,
+        '/assets/index-a1.fr.11111111.json': slow(
+          FILES['/assets/index-a1.fr.11111111.json'],
+          3000
+        ),
+      });
+      writeState({ w: 2000 });
+      vi.useFakeTimers();
+      const starting = start();
+      await vi.advanceTimersByTimeAsync(2000);
+      await starting;
+
+      const loading = plainImport([])();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(await loading).toEqual({ evaluated: 'Orders' });
+      expect(fetched).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(fetched.mock.calls.flat()).toEqual([
+        '/assets/index-a1.fr.11111111.json',
+        ORDERS_FILE,
+      ]);
+      expect(save()).toBe('Enregistrer');
+      expect(orders()).toBe('Commandes');
+      expect(warn).toHaveBeenCalledTimes(1);
+    });
   });
 
   it.each([
@@ -1109,6 +1457,30 @@ describe('gt-react/chunk-translations', () => {
         [file('d0000000')]: {},
       };
 
+      it('settles the request of a missing file that an import asked for after it ran, so the next import of the chunk runs', async () => {
+        const fetched = serve({ ...DEPLOYED_MAP, [MAP]: slow(OWN, 3000) });
+        writeOpen({ f: 'assets/gt', k: 'assets/gt-map', w: 2000 });
+        vi.useFakeTimers();
+        await initializeMappedChunkTranslations(initializeGTSPA, CONFIG);
+        const first = preloadedImport([])(loadMappedChunk);
+        await vi.advanceTimersByTimeAsync(2000);
+        expect(await first).toEqual({ evaluated: 'Orders' });
+        const messages = mount(ORDERS, 'Orders');
+
+        // The map arrives, the files it names are gone, and the names and
+        // the map of the build that is served now are there at once
+        await act(() => vi.advanceTimersByTimeAsync(1000));
+        expect(urls(fetched)).toContain(file('a1111111'));
+        expect(messages.text()).toBe(
+          'Commandes, encore | Commandes, encore | Commandes, encore'
+        );
+
+        let ran = false;
+        void preloadedImport([])(loadMappedChunk).then(() => (ran = true));
+        await vi.advanceTimersByTimeAsync(2000);
+        expect(ran).toBe(true);
+      });
+
       it('reads the map of the build that is served now, and requests each missing file by its name there', async () => {
         const fetched = await startOpen(DEPLOYED_MAP);
         const messages = mount(SAVE, 'Save');
@@ -1485,6 +1857,51 @@ describe('gt-react/chunk-translations', () => {
       expect(orders()).toBe('Du lien');
     });
 
+    it.each([
+      [
+        'an import',
+        () => preloadedImport([])(loadMappedChunk),
+        { evaluated: 'Orders' },
+      ],
+      [
+        'the files of a chunk the app preloads itself',
+        () => loadMappedChunkTranslations(['assets/Orders-b2']),
+        undefined,
+      ],
+    ])(
+      'does not wait for the map again once its wait has run out, and requests the files it lists when it arrives: %s',
+      async (_name, load, loaded) => {
+        const fetched = serve({
+          ...MAPPED,
+          [MAP]: slow(LISTED, 3000),
+          [MAPPED_ORDERS_FILE]: slow(MAPPED[MAPPED_ORDERS_FILE], 100),
+        });
+        writeMapped({ w: 2000 });
+        vi.useFakeTimers();
+        await startMapped();
+        let ran = false;
+        const loading = load()!.then((result) => {
+          ran = true;
+          return result;
+        });
+        await vi.advanceTimersByTimeAsync(1999);
+        expect(ran).toBe(false);
+        await vi.advanceTimersByTimeAsync(1);
+        expect(await loading).toEqual(loaded);
+        expect(fetched.mock.calls.flat().sort()).toEqual(
+          [ENTRY_FILE, MAP].sort()
+        );
+
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(fetched.mock.calls.flat()).toContain(MAPPED_ORDERS_FILE);
+        // The entry's file arrived in time, so files are waited for: but not
+        // this one, which what has run already reads late
+        await vi.advanceTimersByTimeAsync(100);
+        expect(orders()).toBe('Commandes');
+        expect(warn).toHaveBeenCalledTimes(1);
+      }
+    );
+
     it('renders the source of what the map would have found and warns when the map is missing', async () => {
       const files = { ...MAPPED };
       delete files[MAP];
@@ -1590,6 +2007,80 @@ describe('gt-react/chunk-translations', () => {
       route.respond();
       expect(await loading).toEqual({ evaluated: 'Commandes' });
       expect(steps).toEqual([PRELOAD, 'import']);
+    });
+
+    it.each([
+      [
+        'an import',
+        () => preloadedImport([])(loadRegionChunk),
+        { evaluated: 'Orders' },
+      ],
+      [
+        'the files of a chunk the app preloads itself',
+        () => loadRegionChunkTranslations(['assets/gt-bb', 'assets/gt-cc']),
+        undefined,
+      ],
+    ])(
+      'does not wait for the map again once its wait has run out, and requests the files it lists when it arrives: %s',
+      async (_name, load, loaded) => {
+        const fetched = serve({ ...SPLIT, [MAP]: slow(SPLIT[MAP], 3000) });
+        writeSplitState({ w: 2000 });
+        vi.useFakeTimers();
+        await startSplit();
+        let ran = false;
+        const loading = load()!.then((result) => {
+          ran = true;
+          return result;
+        });
+        await vi.advanceTimersByTimeAsync(1999);
+        expect(ran).toBe(false);
+        await vi.advanceTimersByTimeAsync(1);
+        expect(await loading).toEqual(loaded);
+        expect(fetched.mock.calls.flat().sort()).toEqual([MAP, SHELL].sort());
+
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(fetched.mock.calls.flat().sort()).toEqual(
+          [MAP, ROUTE, SHARED, SHELL].sort()
+        );
+        expect(orders()).toBe('Commandes');
+        expect(title()).toBe('Aperçu');
+        expect(warn).toHaveBeenCalledTimes(1);
+      }
+    );
+
+    it('waits once for the files of imports nested in each other', async () => {
+      const lists = {
+        k: [...LISTED.k.slice(0, 4), 'assets/Layout-d4', 'assets/Orders-b2'],
+        c: [0, 0, 0, 0, [0, 1, 1], [0, 3, 1]],
+        h: LISTED.h,
+      };
+      const fetched = serve({
+        ...SPLIT,
+        [MAP]: { i: lists },
+        [SHARED]: slow(SPLIT[SHARED], 3000),
+        [ROUTE]: slow(SPLIT[ROUTE], 3000),
+      });
+      writeSplitState({ w: 2000 });
+      await startSplit();
+      await tick();
+      vi.useFakeTimers();
+      const steps: string[] = [];
+
+      const loading = nestedImports(
+        loadRegionChunk,
+        ['assets/Layout-d4.js', ORDERS_CHUNK],
+        steps
+      );
+      await vi.advanceTimersByTimeAsync(1999);
+      expect(steps).toEqual([]);
+      await vi.advanceTimersByTimeAsync(3);
+      expect(steps).toEqual(['assets/Layout-d4.js', ORDERS_CHUNK]);
+      await loading;
+      expect(fetched.mock.calls.flat()).toContain(ROUTE);
+
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(orders()).toBe('Commandes');
+      expect(title()).toBe('Aperçu');
     });
 
     it("waits for the entry's files too when an import starts before they have arrived", async () => {
@@ -1733,6 +2224,28 @@ describe('gt-react/chunk-translations', () => {
       const state = () =>
         (globalThis as { __GT_CHUNK_TRANSLATIONS__?: ChunkTranslationsState })
           .__GT_CHUNK_TRANSLATIONS__!;
+
+      it('requests what stands in for a missing file that an import asked for after it ran, and the next import of the chunk runs', async () => {
+        const fetched = serve({ ...DEPLOYED, [MAP]: slow(SPLIT[MAP], 3000) });
+        writeSplitState({ n: 'assets/gt-current', w: 2000 });
+        vi.useFakeTimers();
+        await startSplit();
+        const first = preloadedImport([])(loadRegionChunk);
+        await vi.advanceTimersByTimeAsync(2000);
+        expect(await first).toEqual({ evaluated: 'Orders' });
+        const messages = mount(ORDERS, 'Orders');
+
+        await act(() => vi.advanceTimersByTimeAsync(1000));
+        expect(urls(fetched)).toContain(NEXT_SHARED);
+        expect(messages.text()).toBe(
+          'Commandes, encore | Commandes, encore | Commandes, encore'
+        );
+
+        let ran = false;
+        void preloadedImport([])(loadRegionChunk).then(() => (ran = true));
+        await vi.advanceTimersByTimeAsync(2000);
+        expect(ran).toBe(true);
+      });
 
       it('reads the lists of the build that is served now when a file is missing, and requests what they list for the chunk', async () => {
         const fetched = await startOpen(DEPLOYED);
@@ -2097,6 +2610,48 @@ describe('gt-react/chunk-translations', () => {
           expect(await reports()).toEqual({ evaluated: 'Overview' });
           await new Promise((resolve) => setTimeout(resolve, 100));
           expect(title()).toBe('Aperçu, encore');
+        });
+
+        it('renders mounted messages again when the files in place of a missing one arrive, for an import that did not wait for it', async () => {
+          // The Orders file never arrives, so the page waits for no file.
+          // Reports then runs at once: its file is gone, and the file in its
+          // place is requested once the lists are read. By then a file has
+          // arrived in time, so that file is waited for, by nothing
+          const files = built();
+          Object.assign(files, {
+            [ROUTE]: slow({}, 30_000),
+            [CURRENT]: slow({ v: { fr: '99999999' } }, 500),
+            '/assets/gt-ee.fr.34343434.json': slow(
+              { [TITLE]: 'Aperçu, encore' },
+              300
+            ),
+            '/assets/gt-ff.fr.78787878.json': slow({}, 100),
+          });
+          const fetched = await startOpen(files);
+          state().w = 2000;
+          const messages = mount(TITLE, 'Overview');
+          vi.useFakeTimers();
+          void preloadedImport([])(loadRegionChunk);
+          await vi.advanceTimersByTimeAsync(2000);
+
+          const loading = reports();
+          await vi.advanceTimersByTimeAsync(2);
+          expect(await loading).toEqual({ evaluated: 'Overview' });
+          state().e!.fr!['assets/gt-ff'] = '78787878';
+          void loadRegionChunkTranslations(['assets/gt-ff']);
+          await vi.advanceTimersByTimeAsync(498);
+          expect(urls(fetched)).toContain('/assets/gt-ee.fr.34343434.json');
+          expect(messages.text()).toBe('Overview | Overview | Overview');
+
+          await act(() => vi.advanceTimersByTimeAsync(300));
+          expect(messages.text()).toBe(
+            'Aperçu, encore | Aperçu, encore | Aperçu, encore'
+          );
+          expect(
+            warn.mock.calls.filter(([warning]) =>
+              String(warning).includes('gt-ee.fr.34343434.json')
+            )
+          ).toEqual([]);
         });
 
         it('asks for the files in place of a missing one when the lists arrive after its timeout', async () => {
