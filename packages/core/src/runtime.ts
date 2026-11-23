@@ -51,7 +51,7 @@ export class GTRuntime {
 
   /**
    * @param params - Credentials, the project, and optionally the locale configuration and base URL.
-   * @throws {Error} If `projectId` is not a non-empty string.
+   * @throws {Error} If `projectId` is empty or blank.
    */
   constructor(params: GTProjectConfig) {
     const { projectId } = params;
