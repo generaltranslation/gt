@@ -4,6 +4,9 @@ import { LookupOptions } from '../translation-functions/types/options';
 import { Translation } from '../types';
 import type { IcuMessage } from '@generaltranslation/format/types';
 
+const HASH_CACHE_LIMIT = 5000;
+const hashCache = new Map<string, string>();
+
 /**
  * Hash a message string
  */
@@ -22,14 +25,42 @@ export function hashMessage<T extends Translation>(
     return metadataOptions.$_hash;
   }
 
-  return hashSource({
+  const maxChars =
+    metadataOptions.$maxChars != null
+      ? Math.abs(metadataOptions.$maxChars)
+      : undefined;
+  const requiresReview = metadataOptions.$requiresReview === true;
+  // Exactly the inputs hashSource reads below; $id is not one of them.
+  const cacheKey =
+    typeof message === 'string'
+      ? JSON.stringify([
+          options.$format,
+          metadataOptions.$context || '',
+          maxChars ?? null,
+          requiresReview,
+          message,
+        ])
+      : undefined;
+  if (cacheKey !== undefined) {
+    const cached = hashCache.get(cacheKey);
+    if (cached !== undefined) return cached;
+  }
+
+  const hash = hashSource({
     source:
       options.$format === 'ICU' ? indexVars(message as IcuMessage) : message,
     ...(metadataOptions.$context && { context: metadataOptions.$context }),
-    ...(metadataOptions.$maxChars != null && {
-      maxChars: Math.abs(metadataOptions.$maxChars),
-    }),
-    ...(metadataOptions.$requiresReview === true && { requiresReview: true }),
+    ...(maxChars != null && { maxChars }),
+    ...(requiresReview && { requiresReview: true }),
     dataFormat: options.$format,
   });
+
+  if (cacheKey !== undefined) {
+    if (hashCache.size >= HASH_CACHE_LIMIT) {
+      const oldestKey = hashCache.keys().next().value;
+      if (oldestKey !== undefined) hashCache.delete(oldestKey);
+    }
+    hashCache.set(cacheKey, hash);
+  }
+  return hash;
 }

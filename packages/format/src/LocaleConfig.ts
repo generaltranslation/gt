@@ -43,6 +43,15 @@ type LocalesOption = {
 
 type WithLocales<T = object> = T & LocalesOption;
 
+// Target locales can come from request headers, so the cache is bounded.
+const REQUIRES_TRANSLATION_CACHE_LIMIT = 1000;
+
+const requiresTranslationCache = new WeakMap<object, Map<string, boolean>>();
+
+function hasCustomMappingEntries(customMapping?: CustomMapping): boolean {
+  return customMapping !== undefined && Object.keys(customMapping).length > 0;
+}
+
 /**
  * Approved-locales work that requiresTranslation and determineLocale would
  * otherwise redo on every call: canonical codes plus the validated and
@@ -342,12 +351,40 @@ export class LocaleConfig {
             this.customMapping
           )
       : undefined;
-    return _requiresTranslationWithScope(
-      this.resolveCanonicalLocale(sourceLocale),
-      this.resolveCanonicalLocale(targetLocale),
-      approvedScope,
-      this.customMapping
-    );
+    const canonicalSource = this.resolveCanonicalLocale(sourceLocale);
+    const canonicalTarget = this.resolveCanonicalLocale(targetLocale);
+    const compute = () =>
+      _requiresTranslationWithScope(
+        canonicalSource,
+        canonicalTarget,
+        approvedScope,
+        this.customMapping
+      );
+
+    // Custom mappings can be edited in place and change which locales are valid.
+    const usesDefaultScope =
+      approvedLocales === undefined || approvedLocales === this.locales;
+    if (!usesDefaultScope || hasCustomMappingEntries(this.customMapping)) {
+      return compute();
+    }
+
+    const scopeKey = approvedScope ?? this;
+    let answers = requiresTranslationCache.get(scopeKey);
+    if (!answers) {
+      answers = new Map();
+      requiresTranslationCache.set(scopeKey, answers);
+    }
+    const key = JSON.stringify([canonicalSource, canonicalTarget]);
+    const cached = answers.get(key);
+    if (cached !== undefined) return cached;
+
+    const result = compute();
+    if (answers.size >= REQUIRES_TRANSLATION_CACHE_LIMIT) {
+      const oldestKey = answers.keys().next().value;
+      if (oldestKey !== undefined) answers.delete(oldestKey);
+    }
+    answers.set(key, result);
+    return result;
   }
 
   /**

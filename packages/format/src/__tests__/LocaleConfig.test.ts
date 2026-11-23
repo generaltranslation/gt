@@ -1,7 +1,17 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { intlCache } from '../cache/IntlCache';
 import { LocaleConfig } from '../LocaleConfig';
+import { _requiresTranslationWithScope } from '../locales/requiresTranslation';
 import type { CustomMapping } from '../types';
+
+vi.mock('../locales/requiresTranslation', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../locales/requiresTranslation')>();
+  return {
+    ...actual,
+    _requiresTranslationWithScope: vi.fn(actual._requiresTranslationWithScope),
+  };
+});
 
 describe('LocaleConfig', () => {
   it('refreshes its prepared locale scope after the configured locales mutate', () => {
@@ -183,5 +193,101 @@ describe('determineLocale approved spelling', () => {
     expect(config.determineLocale('en-US')).toBe('en-us');
     locales[0] = 'EN-us';
     expect(config.determineLocale('en-US')).toBe('EN-us');
+  });
+});
+
+const computeSpy = vi.mocked(_requiresTranslationWithScope);
+
+describe('requiresTranslation cache', () => {
+  beforeEach(() => {
+    computeSpy.mockClear();
+  });
+
+  it('reuses the default-scope answer for repeated calls', () => {
+    const config = new LocaleConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'es', 'fr'],
+    });
+
+    expect(config.requiresTranslation('es')).toBe(true);
+    expect(config.requiresTranslation('es')).toBe(true);
+    expect(config.requiresTranslation('en-US')).toBe(false);
+    expect(config.requiresTranslation('en-US')).toBe(false);
+    expect(computeSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('memoizes when no locales are configured', () => {
+    const config = new LocaleConfig({ defaultLocale: 'en' });
+
+    expect(config.requiresTranslation('ja')).toBe(true);
+    expect(config.requiresTranslation('ja')).toBe(true);
+    expect(computeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('memoizes with the empty custom mapping I18nConfig always passes', () => {
+    const config = new LocaleConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'es'],
+      customMapping: {},
+    });
+
+    config.requiresTranslation('es');
+    config.requiresTranslation('es');
+    expect(computeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('answers from the edited scope after locales change in place', () => {
+    const config = new LocaleConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'es'],
+    });
+    expect(config.requiresTranslation('fr')).toBe(false);
+
+    config.locales.push('fr');
+
+    expect(config.requiresTranslation('fr')).toBe(true);
+  });
+
+  it('does not memoize when the custom mapping has entries', () => {
+    const customMapping: Record<string, { code: string }> = {};
+    const config = new LocaleConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'es'],
+      customMapping,
+    });
+    expect(config.requiresTranslation('es')).toBe(true);
+
+    customMapping['es'] = { code: 'en' };
+
+    expect(config.requiresTranslation('es')).toBe(false);
+    config.requiresTranslation('es');
+    expect(computeSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not memoize an explicit approved-locales list', () => {
+    const config = new LocaleConfig({
+      defaultLocale: 'en',
+      locales: ['en', 'es'],
+    });
+
+    expect(config.requiresTranslation('fr', 'en', ['en', 'fr'])).toBe(true);
+    expect(config.requiresTranslation('fr', 'en', ['en', 'fr'])).toBe(true);
+    expect(computeSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('evicts the oldest answer once 1000 pairs are cached', () => {
+    const config = new LocaleConfig({ defaultLocale: 'en' });
+    const sources = Array.from(
+      { length: 1000 },
+      (_, index) => `x-${index.toString(36).padStart(3, '0')}`
+    );
+    config.requiresTranslation('es');
+    for (const source of sources) config.requiresTranslation('es', source);
+    computeSpy.mockClear();
+
+    config.requiresTranslation('es', sources[sources.length - 1]);
+    expect(computeSpy).not.toHaveBeenCalled();
+    config.requiresTranslation('es');
+    expect(computeSpy).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,6 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { hashSource } from 'generaltranslation/id';
 import { hashMessage } from '../hashMessage';
 import { hashStringMessage } from '../hashStringMessage';
+
+vi.mock('generaltranslation/id', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('generaltranslation/id')>();
+  return { ...actual, hashSource: vi.fn(actual.hashSource) };
+});
 
 describe('hashMessage', () => {
   // ===== REGRESSION ===== //
@@ -101,5 +107,64 @@ describe('hashStringMessage', () => {
         name: 'Ada',
       })
     ).toBe(expected);
+  });
+});
+
+const hashSpy = vi.mocked(hashSource);
+
+describe('hashMessage cache', () => {
+  beforeEach(() => {
+    hashSpy.mockClear();
+  });
+
+  it('hashes a repeated identical call once', () => {
+    const first = hashMessage('Memo {count} items', {
+      $format: 'ICU',
+      $context: 'cart',
+    });
+    const second = hashMessage('Memo {count} items', {
+      $format: 'ICU',
+      $context: 'cart',
+    });
+
+    expect(second).toBe(first);
+    expect(hashSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps calls that differ in any hashed option apart', () => {
+    const message = 'Memo distinct options';
+    const variants = [
+      { $format: 'STRING' },
+      { $format: 'ICU' },
+      { $format: 'STRING', $context: 'menu' },
+      { $format: 'STRING', $maxChars: 12 },
+      { $format: 'STRING', $requiresReview: true },
+    ] as const;
+
+    const hashes = variants.map((options) => hashMessage(message, options));
+    const repeated = variants.map((options) => hashMessage(message, options));
+
+    expect(new Set(hashes).size).toBe(variants.length);
+    expect(repeated).toEqual(hashes);
+    expect(hashSpy).toHaveBeenCalledTimes(variants.length);
+  });
+
+  it('ignores $id and the sign of $maxChars, as the uncached hash does', () => {
+    const base = hashMessage('Memo limits', {
+      $format: 'STRING',
+      $maxChars: 8,
+    });
+
+    expect(
+      hashMessage('Memo limits', { $format: 'STRING', $maxChars: -8 })
+    ).toBe(base);
+    expect(
+      hashMessage('Memo limits', {
+        $format: 'STRING',
+        $maxChars: 8,
+        $id: 'limits.label',
+      })
+    ).toBe(base);
+    expect(hashSpy).toHaveBeenCalledTimes(1);
   });
 });
