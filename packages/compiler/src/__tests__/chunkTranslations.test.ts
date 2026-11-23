@@ -5309,6 +5309,18 @@ describe('experimentalSplitTranslations in a server-rendered app', () => {
     ]);
   });
 
+  it.each(['silent', 'error'] as const)(
+    'hands it over in a build whose logLevel is %s, which silences warnings alone',
+    async (logLevel) => {
+      const { onSplit } = await buildClient(
+        `e(()=>import("./Orders.js"),"${IMPORTED_CHUNKS_PLACEHOLDER}")`,
+        { logLevel }
+      );
+      expect(onSplit).toHaveBeenCalledTimes(1);
+      expect(console.warn).not.toHaveBeenCalled();
+    }
+  );
+
   it('fails the build on an import it could not wrap that loads translations, naming the package to add', async () => {
     const name = await buildClient(`import("./Orders.js")`);
     expect(name).toThrow(

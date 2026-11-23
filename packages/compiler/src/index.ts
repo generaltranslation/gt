@@ -622,11 +622,11 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
       isLoadedWith = written.isLoadedWith;
       importMap = written.importMap;
       importedNames = written.importedNames;
+      host?.onSplit(written.output);
       if (!shouldWarn(options.logLevel)) return;
       if (written.missingLocales.length) {
         console.warn(createMissingTranslationsWarning(written.missingLocales));
       }
-      host?.onSplit(written.output);
       if (host) {
         // The framework's runtime starts the app, not initializeGTSPA
       } else if (!chunkTranslations!.starts) {
