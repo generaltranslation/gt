@@ -54,7 +54,6 @@ export type Binding = (
       path: string[];
       /** A function when the scope is created later. */
       scope: Scope | (() => Scope | undefined);
-      map?: (symbol: TrackedSymbol) => TrackedSymbol;
     }
   | {
       type: 'values';

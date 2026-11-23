@@ -7,7 +7,7 @@ import { topLevelClasses } from '../analysis/module-syntax.js';
 import type { SourceRange } from '../analysis/types.js';
 import { GeneratedCode } from './angular/generated-code.js';
 import { writeTemplate } from './angular/template.js';
-import type { SourceElement } from './elements.js';
+
 import type {
   ComponentFields,
   GeneratedScript,
@@ -38,14 +38,13 @@ export const angularComponentLanguage: SourceLanguage = {
     const generated = new GeneratedCode(source);
     generated.copy(0, source.length);
 
-    const elements: SourceElement[] = [];
     const componentFields: ComponentFields[] = [];
 
     for (const { start, end, className } of inlineTemplates(source, file)) {
       generated.glue('\n');
 
       const template = { start, end, escapedString: true };
-      elements.push(...writeTemplate(compiler, generated, file, template));
+      writeTemplate(compiler, generated, file, template);
       componentFields.push({
         specifier: '',
         className,
@@ -58,7 +57,6 @@ export const angularComponentLanguage: SourceLanguage = {
       // Not "tsx": `<T>value` casts and generic arrows are not JSX.
       lang: 'ts',
       mappings: generated.mappings,
-      elements,
       componentFields,
     };
   },
@@ -78,7 +76,7 @@ export const angularTemplateLanguage: SourceLanguage = {
     if (!compiler) return pageScripts(source);
 
     const generated = new GeneratedCode(source);
-    const elements = writeTemplate(compiler, generated, file);
+    writeTemplate(compiler, generated, file);
 
     // `user.component.html` → `./user.component.ts`; Angular 20's `user.html` → `./user.ts`.
     const componentModule = `./${path.basename(file, '.html')}.ts`;
@@ -87,7 +85,6 @@ export const angularTemplateLanguage: SourceLanguage = {
       code: generated.code,
       lang: 'ts',
       mappings: generated.mappings,
-      elements,
       componentFields: [{ specifier: componentModule }],
     };
   },
@@ -115,19 +112,15 @@ export const analogLanguage: SourceLanguage = {
       if (isInline) copyScript(generated, script);
     }
 
-    const elements: SourceElement[] = [];
-
     for (const template of templates) {
       const content = contentRange(template);
-      if (content)
-        elements.push(...writeTemplate(compiler, generated, file, content));
+      if (content) writeTemplate(compiler, generated, file, content);
     }
 
     return {
       code: generated.code,
       lang: 'ts',
       mappings: generated.mappings,
-      elements,
     };
   },
 };

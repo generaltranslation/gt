@@ -29,7 +29,7 @@ import type { FileSelection } from '../project/files.js';
 import { projectPackages, type ProjectPackages } from '../project/packages.js';
 import { warningMessage, type Diagnostic } from '../utils/diagnostics.js';
 import { isDependency, isWithin, relativePath } from '../utils/paths.js';
-import { checkCatalog, unknownMessagesWarning } from './catalog-check.js';
+import { isInCatalog, unknownMessagesWarning } from './catalog-check.js';
 import { MetadataFiles } from './metadata-files.js';
 import { MissingTools } from './missing-tools.js';
 import { OutdirProjects } from './outdir-projects.js';
@@ -344,8 +344,7 @@ export class ContextCollector {
   }
 
   private analyzeLoaded(file: string): void {
-    const { projectRoot: root } = this.settings;
-    const usages = analyzeModule({ graph: this.moduleGraph, file, root });
+    const usages = analyzeModule(this.moduleGraph, file);
 
     this.tagInlangProjects(usages);
     this.checkCatalogs(file, usages);
@@ -374,15 +373,11 @@ export class ContextCollector {
     }
   }
 
-  /** Records on each message usage whether its outdir's catalog has the message. */
   private checkCatalogs(file: string, usages: readonly ParaglideUsage[]): void {
     for (const usage of usages) {
       const outdir = this.messageOutdir(usage);
       const catalog = outdir && this.catalogs.get(outdir);
-      if (!catalog) continue;
-
-      usage.catalog = checkCatalog(usage, catalog);
-      if (usage.catalog.exists) continue;
+      if (!catalog || isInCatalog(usage, catalog)) continue;
 
       const position = `${this.relative(file)}:${usage.line}:${usage.column}`;
       this.unknownMessages.push(`${usage.name} (${position})`);
@@ -393,13 +388,10 @@ export class ContextCollector {
   private messageOutdir(usage: ParaglideUsage): string | undefined {
     if (usage.target !== 'message') return undefined;
 
-    const messageFile = usage.resolution.at(-1);
-    if (!messageFile) return undefined;
-
-    const file = path.resolve(this.settings.projectRoot, messageFile);
-
     // The innermost one, if outdirs are nested.
-    return this.moduleGraph.outdirs.find((outdir) => isWithin(outdir, file));
+    return this.moduleGraph.outdirs.find((outdir) =>
+      isWithin(outdir, usage.targetFile)
+    );
   }
 
   private warnMissingIncludes(missing: readonly string[]): void {
@@ -427,13 +419,8 @@ export class ContextCollector {
   private warnNoOutdir(): void {
     if (this.moduleGraph.outdirs.length > 0) return;
 
-    // Custom targets (components, packages) can still have usages.
-    const hasUsages = this.usageCounts().length > 0;
-
     this.warn({
-      whatHappened: hasUsages
-        ? 'Messages and runtime functions are not recorded, only other targets'
-        : 'No usages can be recorded',
+      whatHappened: 'No usages can be recorded',
       why: 'no Paraglide outdir was found',
     });
   }

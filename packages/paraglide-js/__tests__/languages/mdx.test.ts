@@ -7,21 +7,15 @@ import {
   type ParseFunction,
 } from '../../src/compiler/languages/language.js';
 import { mdxLanguage } from '../../src/compiler/languages/mdx.js';
-import {
-  ADAPTER_FILES,
-  ADAPTER_TARGETS,
-  analyzeProject,
-  describeUsages,
-} from '../helpers/project.js';
+import { analyzeProject, describeUsages } from '../helpers/project.js';
 
 const file = '/app/src/pages/guide.mdx';
 
 async function analyze(lines: string[]) {
   return analyzeProject(
-    { [file]: lines.join('\n'), ...ADAPTER_FILES },
+    { [file]: lines.join('\n') },
     {
       entry: file,
-      targets: ADAPTER_TARGETS,
       languages: [...defaultLanguages, mdxLanguage],
     }
   );
@@ -51,18 +45,15 @@ describe('MDX, through @mdx-js/language-service', () => {
       'message:title:call 3',
       'message:heading:call 5',
       'message:inline:call 7',
-      'message:kind:call 9 <Note kind>',
-      'message:inside:call 10 <Note>',
-      'adapter:ParaglideMessage:component 13',
-      'message:tos:reference 13 <ParaglideMessage message>',
-      'message:item:call 15 <li title>',
+      'message:kind:call 9',
+      'message:inside:call 10',
+      'message:tos:reference 13',
+      'message:item:call 15',
     ]);
     expect(usages[2]).toMatchObject({
-      expression: 'm.inline()',
       line: 7,
       column: 17,
-      scope: 'guide',
-      resolution: ['src/paraglide/messages.js'],
+      targetFile: '/app/src/paraglide/messages.js',
     });
   });
 
@@ -109,12 +100,10 @@ describe('MDX, through @mdx-js/language-service', () => {
       ``,
       `Grüße 👋 aus Köln: {m.greeting()} <b title={m.bold()}>ß</b>`,
     ]);
-    expect(
-      usages.map(({ expression, column }) => `${expression} ${column}`)
-    ).toEqual([
+    expect(usages.map(({ name, column }) => `${name} ${column}`)).toEqual([
       // 👋 is two UTF-16 units.
-      'm.greeting() 21',
-      'm.bold() 45',
+      'greeting 21',
+      'bold 45',
     ]);
   });
 

@@ -81,23 +81,22 @@ describe('dynamic member access', () => {
     [
       'usages in the key are recorded too',
       `m[getLocale()]();`,
-      ['message:*:call dynamic', 'runtime:getLocale:call'],
+      ['message:*:call dynamic'],
     ],
     ['an untracked object', `obj[key]();`, []],
   ])('%s', async (_name, code, expected) => {
     expect(await usages(code)).toEqual(expected);
   });
 
-  test('the expression and position are the whole access', async () => {
-    const [usage] = await analyzeProject({
-      [ENTRY]: imports + 'm[`error_${code}`]();',
-    });
+  test('the position is the whole access', async () => {
+    const code = imports + 'm[`error_${code}`]();';
+    const [usage] = await analyzeProject({ [ENTRY]: code });
     expect(usage).toMatchObject({
       name: 'error_*',
       dynamic: true,
-      expression: 'm[`error_${code}`]()',
       line: 3,
       column: 1,
     });
+    expect(code.slice(usage!.start, usage!.end)).toBe('m[`error_${code}`]()');
   });
 });

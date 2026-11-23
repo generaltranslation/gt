@@ -3,29 +3,14 @@ import { parseSync } from 'oxc-parser';
 import type * as Glint from '@glint/ember-tsc';
 import type * as GlintStandalone from '@glint/ember-tsc/transform/standalone';
 import { walk, type ESTree, type Node } from '../analysis/ast.js';
-import type { SourceRange } from '../analysis/types.js';
+
 import { applyEdits, type Edit } from './edits.js';
-import {
-  openingTagEnd,
-  type SourceAttribute,
-  type SourceElement,
-} from './elements.js';
 import type { SourceLanguage } from './language.js';
 import { mappingsFromVolar, type Mapping } from './mapping.js';
 
-type TransformedModule = NonNullable<
-  ReturnType<typeof GlintStandalone.rewriteModuleStandalone>
->;
-type MappingTree = NonNullable<
-  TransformedModule['correlatedSpans'][number]['glimmerAstMapping']
->;
 type Environment = Parameters<
   typeof GlintStandalone.rewriteModuleStandalone
 >[1];
-type GlimmerElement = SourceRange & {
-  tag: string;
-  attributes: Map<object, SourceAttribute>;
-};
 
 const GLINT_DSL = '__glintDSL__';
 const GLINT_REF = '__glintRef__';
@@ -68,9 +53,8 @@ export const emberLanguage: SourceLanguage = {
       glintMappings,
       lang
     );
-    const elements = sourceElements(transformed, source);
 
-    return { code, lang, mappings, elements };
+    return { code, lang, mappings };
   },
 };
 
@@ -109,16 +93,13 @@ function normalizeGlintCode(
   const edits: Edit[] = [];
 
   walk(program, {
-    enter(node, ancestors) {
+    enter(node) {
       if (isMemberOf(node, GLINT_REF, 'this')) {
         edits.push({ start: node.object.start, end: node.property.start });
         return false;
       }
 
-      edits.push(
-        ...arrowFunction(node),
-        ...resolvedCall(node, ancestors.at(-1))
-      );
+      edits.push(...arrowFunction(node), ...resolvedCall(node));
       return true;
     },
   });
@@ -153,10 +134,9 @@ function arrowFunction(node: Node): Edit[] {
 
 /**
  * `__glintDSL__.resolve(helper)(args)` → `helper(args)`: `{{m.title}}` then reads
- * as the call it is. A component keeps the wrapper: in
- * `emitComponent(__glintDSL__.resolve(Card)(…))`, `Card` is a component tag.
+ * as the call it is.
  */
-function resolvedCall(node: Node, parent: Node | undefined): Edit[] {
+function resolvedCall(node: Node): Edit[] {
   if (node.type !== 'CallExpression') return [];
 
   const resolver = node.callee;
@@ -172,91 +152,10 @@ function resolvedCall(node: Node, parent: Node | undefined): Edit[] {
   )
     return [];
 
-  const isComponent =
-    parent?.type === 'CallExpression' &&
-    parent.arguments.some((argument) => argument === node) &&
-    isMemberOf(parent.callee, GLINT_DSL, 'emitComponent');
-  if (isComponent) return [];
-
   return [
     { start: resolver.start, end: value.start },
     { start: value.end, end: resolver.end },
   ];
-}
-
-function sourceElements(
-  transformed: TransformedModule,
-  source: string
-): SourceElement[] {
-  const elements = glimmerElements(transformed);
-
-  return elements.map((element) => sourceElement(element, source));
-}
-
-function glimmerElements(transformed: TransformedModule): GlimmerElement[] {
-  const elements = new Map<object, GlimmerElement>();
-
-  const visit = (
-    tree: MappingTree,
-    templateStart: number,
-    parent: GlimmerElement | undefined
-  ) => {
-    const node = tree.sourceNode;
-    const start = templateStart + tree.originalRange.start;
-    const end = templateStart + tree.originalRange.end;
-    let element = parent;
-
-    if (node.type === 'ElementNode') {
-      element = elements.get(node) ?? {
-        tag: node.tag,
-        start,
-        end,
-        attributes: new Map(),
-      };
-      elements.set(node, element);
-      extend(element, start, end);
-    } else if (node.type === 'AttrNode' && parent) {
-      const attribute = parent.attributes.get(node) ?? {
-        name: node.name,
-        start,
-        end,
-      };
-      parent.attributes.set(node, attribute);
-      extend(attribute, start, end);
-    }
-
-    for (const child of tree.children) visit(child, templateStart, element);
-  };
-
-  for (const span of transformed.correlatedSpans) {
-    if (span.glimmerAstMapping)
-      visit(span.glimmerAstMapping, span.originalStart, undefined);
-  }
-
-  return [...elements.values()];
-}
-
-function sourceElement(element: GlimmerElement, source: string): SourceElement {
-  const { tag, start, end } = element;
-  const nameStart = start + 1;
-  const nameEnd = nameStart + tag.length;
-
-  const attributes = [...element.attributes.values()];
-  const attributeEnds = attributes.map((attribute) => attribute.end);
-
-  // `<Card>`, `<@block>`, `<this.Card>`, `<ui.Card>`; not `<:named>` blocks.
-  const isComponent = /^[A-Z@]/.test(tag) || /^[\w$]+\./.test(tag);
-
-  return {
-    name: tag,
-    start: nameEnd,
-    end,
-    nameStart,
-    nameEnd,
-    openEnd: openingTagEnd(source, nameEnd, attributeEnds),
-    component: isComponent,
-    attributes,
-  };
 }
 
 function isMemberOf(
@@ -272,10 +171,4 @@ function isMemberOf(
     node.property.type === 'Identifier' &&
     properties.includes(node.property.name)
   );
-}
-
-/** Glint maps a node in parts: the widest range is the node's. */
-function extend(range: SourceRange, start: number, end: number): void {
-  range.start = Math.min(range.start, start);
-  range.end = Math.max(range.end, end);
 }
