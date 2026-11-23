@@ -90,7 +90,7 @@ export class GTRuntime {
     timeout?: number
   ): Promise<TranslationResult> {
     const [result] = await translateEntries(
-      this.resolveTranslateCall('translate', options, timeout),
+      this.resolveTranslateCall(options, timeout),
       [source]
     );
     return result;
@@ -130,21 +130,20 @@ export class GTRuntime {
     timeout?: number
   ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
     return translateEntries(
-      this.resolveTranslateCall('translateMany', options, timeout),
+      this.resolveTranslateCall(options, timeout),
       sources
     );
   }
 
   /** Resolves a call's options against this runtime's configuration. */
   private resolveTranslateCall(
-    functionName: 'translate' | 'translateMany',
     options: string | TranslateOptions,
     timeout: number | undefined
   ): RuntimeTranslateCall {
     const callOptions =
       typeof options === 'string' ? { targetLocale: options } : options;
-    if (!callOptions?.targetLocale) {
-      throw new Error(noTargetLocaleProvidedError(functionName));
+    if (!callOptions.targetLocale) {
+      throw new Error(noTargetLocaleProvidedError);
     }
     const { customMapping, defaultLocale } = this.localeConfig;
     return {

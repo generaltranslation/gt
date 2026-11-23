@@ -2,13 +2,12 @@ import { createDiagnosticMessage } from './diagnostics';
 
 const GT_SOURCE = 'GT';
 
-export const noTargetLocaleProvidedError = (functionName: string) =>
-  createDiagnosticMessage({
-    source: GT_SOURCE,
-    severity: 'Error',
-    whatHappened: `Cannot call \`${functionName}\` without a target locale`,
-    fix: `Pass the target locale to \`${functionName}()\``,
-  });
+export const noTargetLocaleProvidedError = createDiagnosticMessage({
+  source: GT_SOURCE,
+  severity: 'Error',
+  whatHappened: 'Cannot translate without a target locale',
+  fix: 'Pass the target locale to `translate()` or `translateMany()`',
+});
 
 export const noScopeIdProvidedError = (scope: 'project' | 'org') =>
   createDiagnosticMessage({

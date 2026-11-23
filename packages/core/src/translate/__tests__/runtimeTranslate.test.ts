@@ -222,7 +222,7 @@ describe.sequential('runtime translation requests', () => {
   });
 
   it.each(['translate', 'translateMany'] as const)(
-    'names %s when the target locale is missing, before any request',
+    '%s rejects an empty target locale, before any request',
     async (method) => {
       const result =
         method === 'translate'
@@ -230,7 +230,7 @@ describe.sequential('runtime translation requests', () => {
           : runtime.translateMany(['Hello'], '');
 
       await expect(result).rejects.toThrow(
-        `GT Error: Cannot call \`${method}\` without a target locale. Pass the target locale to \`${method}()\`.`
+        'GT Error: Cannot translate without a target locale. Pass the target locale to `translate()` or `translateMany()`.'
       );
       expect(fetchMock).not.toHaveBeenCalled();
     }
