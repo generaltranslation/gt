@@ -55,8 +55,7 @@ export class GTRuntime {
    */
   constructor(params: GTProjectConfig) {
     const { projectId, baseUrl, localeConfig, ...credentials } = params;
-    if (typeof projectId !== 'string' || !projectId.trim())
-      throw new Error(noScopeIdProvidedError('project'));
+    if (!projectId.trim()) throw new Error(noScopeIdProvidedError('project'));
     this.projectId = projectId;
     this.baseUrl = baseUrl;
     this.localeConfig = snapshotLocaleConfig(localeConfig ?? {});

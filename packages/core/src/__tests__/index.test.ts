@@ -99,35 +99,29 @@ describe.sequential('GeneralTranslation scopes', () => {
   it.each([
     [
       'GeneralTranslation projectId',
-      (id: unknown) =>
-        new GeneralTranslation({
-          apiKey: 'key',
-          projectId: id as string,
-        }) as unknown,
+      (projectId: string) =>
+        new GeneralTranslation({ apiKey: 'key', projectId }) as unknown,
     ],
     [
       'GeneralTranslation project',
-      (id: unknown) =>
-        new GeneralTranslation({ apiKey: 'key' }).project(id as string),
+      (projectId: string) =>
+        new GeneralTranslation({ apiKey: 'key' }).project(projectId),
     ],
     [
       'GTRuntime projectId',
-      (id: unknown) =>
-        new GTRuntime({ apiKey: 'key', projectId: id as string }),
+      (projectId: string) => new GTRuntime({ apiKey: 'key', projectId }),
     ],
-  ])('%s rejects empty, blank and non-string IDs', (_label, create) => {
-    for (const id of ['', '   ', 123, null]) {
+  ])('%s rejects empty and blank IDs', (_label, create) => {
+    for (const id of ['', '   ']) {
       expect(() => create(id)).toThrow(
         'GT Error: The project ID must be a non-empty string. Pass the project ID.'
       );
     }
   });
 
-  it('GeneralTranslation org rejects empty, blank and non-string IDs', () => {
-    for (const id of ['', '   ', 123, undefined, null]) {
-      expect(() =>
-        new GeneralTranslation({ apiKey: 'key' }).org(id as string)
-      ).toThrow(
+  it('GeneralTranslation org rejects empty and blank IDs', () => {
+    for (const id of ['', '   ']) {
+      expect(() => new GeneralTranslation({ apiKey: 'key' }).org(id)).toThrow(
         'GT Error: The organization ID must be a non-empty string. Pass the organization ID.'
       );
     }

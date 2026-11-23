@@ -23,10 +23,7 @@ import {
   type GTAccountConfig,
   type GTProjectConfig,
 } from './client/clientConfig';
-import {
-  noScopeIdProvidedError,
-  projectKeyWithoutProjectIdError,
-} from './logging/errors';
+import { projectKeyWithoutProjectIdError } from './logging/errors';
 
 export type { LocaleConfig } from '@generaltranslation/format';
 export type { GTAccountConfig } from './client/clientConfig';
@@ -143,15 +140,11 @@ class GTAccount {
    * @throws {Error} If `orgId` is not a non-empty string.
    */
   org(orgId: string): OrgHandle {
-    if (typeof orgId !== 'string' || !orgId.trim())
-      throw new Error(noScopeIdProvidedError('org'));
-    const org = new OrgHandle(
+    return new OrgHandle(
       this.clientSettings,
       this.params.localeConfig?.customMapping,
       orgId
     );
-    Object.freeze(org);
-    return org;
   }
 
   /**
