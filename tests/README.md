@@ -76,9 +76,12 @@ Its script builds the app with the split off, by chunk and by module, each with
 and without hash minification, and by chunk with files named by a map, serves
 each build from a process of its own and drives it in headless Chromium: a
 first visit of every route, navigations, a hover preload, a lazily imported
-component, a `msg()` that only server code holds, a locale switch, a deploy
-while a page is open, a prerendered shell, static prerendering, locale routing, a base
-other than `/`, assets on a second origin and the dictionary API. Give it names
+component, a page that streams, `msg()` messages that only server code holds
+(one of them with the text of another route's message), a locale switch, a
+deploy while a page is open, a prerendered shell in the source locale and in a
+translated one, static prerendering, locale routing, a base other than `/`,
+assets on a second origin, the dictionary API, and the build's refusal of a
+custom `loadTranslations`. Give it names
 to run a part of them:
 
 ```bash

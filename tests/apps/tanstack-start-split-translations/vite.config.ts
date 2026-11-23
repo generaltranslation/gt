@@ -29,8 +29,21 @@ export default defineConfig({
           },
         },
       }),
-      // CHECK_SPA: the app is a prerendered shell that every visitor gets
-      ...(process.env.CHECK_SPA === 'true' && { spa: { enabled: true } }),
+      // CHECK_SPA: the app is a prerendered shell that every visitor gets.
+      // CHECK_SHELL_LOCALE: the locale the shell is rendered in, when not
+      // the source one
+      ...(process.env.CHECK_SPA === 'true' && {
+        spa: {
+          enabled: true,
+          ...(process.env.CHECK_SHELL_LOCALE && {
+            prerender: {
+              headers: {
+                cookie: `generaltranslation.locale=${process.env.CHECK_SHELL_LOCALE}`,
+              },
+            },
+          }),
+        },
+      }),
       // CHECK_PRERENDER: every route is also written as a static page
       ...(process.env.CHECK_PRERENDER === 'true' && {
         prerender: { enabled: true, crawlLinks: true },
@@ -43,6 +56,10 @@ export default defineConfig({
     gtTanstackStart({
       // scripts/check.mjs builds the app once more from changed translations
       config: process.env.CHECK_CONFIG ?? 'gt.config.json',
+      // CHECK_LOADER: a loadTranslations of the app's own
+      ...(process.env.CHECK_LOADER && {
+        loadTranslationsPath: process.env.CHECK_LOADER,
+      }),
       // No `type`: the compiler is on in the builds that split translations
       // and off in the others, as in an app that sets nothing else
       experimentalCompilerOptions: {

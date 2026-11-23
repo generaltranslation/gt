@@ -213,20 +213,32 @@ for (const [name, env] of Object.entries(SPLITS)) {
         unsplit
       );
     }
-    const notice = () =>
-      visitor.page.locator('[data-notice]').first().textContent();
+    // The same server function sends a second msg(), with the text of a t
+    // template of the home page, whose chunk this page does not load: the
+    // build ties that text to the home page's file, and the browser still
+    // reads the server's message by its hash.
+    const sent = (page) =>
+      page.evaluate(() =>
+        ['[data-notice]', '[data-shared]'].map(
+          (selector) => document.querySelector(selector)?.textContent
+        )
+      );
+    const SENT = ['CHECKED BY THE SERVER', 'WELCOME BACK'];
     const streamed = await open(server.origin, 'fr');
     await streamed.visit('/deferred');
+    const first = await sent(streamed.page);
     check(
-      `${title}: it is translated on a first visit`,
-      (await streamed.page.locator('[data-notice]').textContent()) ===
-        'CHECKED BY THE SERVER'
+      `${title}: both messages the server sends are translated on a first visit`,
+      first.join() === SENT.join(),
+      first
     );
     await streamed.close();
     await visitor.navigate('/deferred');
+    const navigated = await sent(visitor.page);
     check(
-      `${title}: it is translated after a navigation`,
-      (await notice()) === 'CHECKED BY THE SERVER'
+      `${title}: both are translated after a navigation`,
+      navigated.join() === SENT.join(),
+      navigated
     );
     await visitor.navigate('/reports');
     visitor.takeTranslationRequests();
@@ -425,6 +437,71 @@ for (const [name, env] of Object.entries({ off: SPLITS.off, on: SPLIT })) {
     await walk(title, server.origin, locale, locale, true);
   }
   await server.close();
+}
+
+// A shell rendered in a translated locale: it hydrates in that locale, with
+// the translations it was rendered with, before the browser renders the
+// visitor's own.
+for (const [name, env] of Object.entries({ off: SPLITS.off, on: SPLIT })) {
+  const title = `shell rendered in fr, split ${name}`;
+  if (!selected(title)) continue;
+  const directory = build(title, {
+    ...env,
+    CHECK_SPA: 'true',
+    CHECK_SHELL_LOCALE: 'fr',
+  });
+  check(
+    `${title}: the shell is in fr`,
+    readFileSync(join(directory, 'client', '_shell.html'), 'utf8').includes(
+      'RENDERED IN THE BROWSER'
+    )
+  );
+  const server = await serve(directory, { pages: 'shell' });
+  for (const locale of ['en', 'fr']) {
+    await walk(title, server.origin, locale, locale, true);
+  }
+  await server.close();
+}
+
+// A loadTranslations of the app's own can return other translations than
+// the files the build writes a navigation's translations from, so a build
+// that splits refuses it.
+{
+  const title = 'a loadTranslations of the app';
+  if (selected(title)) {
+    const run = (name, env) => {
+      try {
+        execFileSync('pnpm', ['exec', 'vite', 'build', '--logLevel', 'error'], {
+          cwd: root,
+          stdio: 'pipe',
+          env: {
+            ...process.env,
+            NODE_ENV: 'production',
+            GT_SPLIT_TRANSLATIONS_BY: '',
+            GT_MINIFY_HASHES: 'false',
+            CHECK_OUT_DIR: join(root, '.check', name),
+            CHECK_LOADER: 'scripts/loadTranslations.ts',
+            ...env,
+          },
+        });
+        return '';
+      } catch (error) {
+        return String(error.stderr);
+      }
+    };
+    const failure = run('loader-split-on', { GT_SPLIT_TRANSLATIONS: 'true' });
+    check(
+      `${title}: fails a build that splits translations, and says where they have to come from`,
+      failure.includes(
+        'experimentalSplitTranslations cannot be used with the loadTranslations of scripts/loadTranslations.ts'
+      ) && failure.includes('files.gt.output'),
+      failure.slice(0, 300)
+    );
+    check(
+      `${title}: builds without the split`,
+      run('loader-split-off', { GT_SPLIT_TRANSLATIONS: 'false' }) === ''
+    );
+  }
 }
 
 // Static prerendering: every route is also a static page, rendered at build
