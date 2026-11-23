@@ -47,16 +47,19 @@ function startLogin(exchangeMs: number): Login {
   };
 }
 
-/** A GET whose connection this side drops after `abortMs`, as a browser abandons a navigation. */
+/** A GET whose connection this side drops `abortMs` after sending it, as a browser abandons a navigation. */
 function abandonedGet(url: string, abortMs: number): Promise<void> {
   return new Promise((resolve) => {
     const req = request(url, () => undefined);
     req.on('error', () => resolve());
+    // Counted from when the request is sent, since one dropped before a busy runner connects never reaches the server.
+    req.on('finish', () =>
+      setTimeout(() => {
+        req.destroy();
+        resolve();
+      }, abortMs)
+    );
     req.end();
-    setTimeout(() => {
-      req.destroy();
-      resolve();
-    }, abortMs);
   });
 }
 
