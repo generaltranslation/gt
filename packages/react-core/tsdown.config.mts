@@ -31,9 +31,4 @@ const esm = createTsdownUnbundleConfig({
   ],
 });
 
-export default defineConfig(
-  withPackageChecks([
-    { ...cjs, minify: true, dts: true },
-    { ...esm, minify: true },
-  ])
-);
+export default defineConfig(withPackageChecks([{ ...cjs, dts: true }, esm]));

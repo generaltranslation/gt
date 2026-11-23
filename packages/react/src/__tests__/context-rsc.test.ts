@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   createConditionStoreSingleton,
   getI18nConfig,
+  getTranslationRuntimeParams,
   initializeI18nConfig,
   type ReadonlyConditionStoreInterface,
 } from 'gt-i18n/internal';
@@ -41,7 +42,7 @@ describe('gt-react react-server surface', () => {
     const { initializeGT } = await import('../index.rsc');
     try {
       initializeGT({ defaultLocale: 'en', loadTranslations: async () => ({}) });
-      expect(getI18nConfig().getTranslationRuntime()).toMatchObject({
+      expect(getTranslationRuntimeParams()).toMatchObject({
         projectId: 'env-project-id',
         apiKey: 'env-api-key',
       });

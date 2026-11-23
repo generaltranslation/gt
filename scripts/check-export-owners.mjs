@@ -39,6 +39,13 @@ export const duplicateExceptions = [
       'Server-safe components are part of both the client and the RSC component entries.',
   },
   {
+    packageName: 'gt-react',
+    subpaths: ['.', './client-entry'],
+    names: '*',
+    reason:
+      'gt-next imports its client components and hooks through ./client-entry: Turbopack keeps every export of the full entry, including initializeGTSPA and the i18nCache, once it is shared across client chunks.',
+  },
+  {
     packageName: 'gt-rrweb',
     subpaths: ['.', './harvest'],
     names: ['HarvestOptions', 'LocaleTextOverlay', 'TranslationsLoader'],

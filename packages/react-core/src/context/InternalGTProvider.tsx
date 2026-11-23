@@ -1,5 +1,5 @@
 import { useEffect, useMemo, type ReactNode } from 'react';
-import { I18nStore } from '../i18n-store/I18nStore';
+import type { I18nStore } from '../i18n-store/I18nStore';
 import type { Locale, Hash } from 'gt-i18n/internal';
 import type { Content } from '@generaltranslation/format';
 import { getGTContext } from './context';
@@ -15,7 +15,8 @@ export type InternalGTProviderProps = {
   setLocale: (locale: string) => void;
   setRegion: (region: string | undefined) => void;
   setEnableI18n: (enabled: boolean) => void;
-  i18nStore: I18nStore;
+  // Dev hot reload only: omitted in production, where lookups read the snapshots
+  i18nStore?: I18nStore;
   // Custom override missing translation behavior for dev hot reload
   onMissingTranslation?: OnMissingTranslation;
 };
@@ -69,7 +70,7 @@ export function InternalGTProvider({
 
   // Update cache with data from server, do not emit events
   useEffect(() => {
-    i18nStore.updateTranslations(translations);
+    i18nStore?.updateTranslations(translations);
   }, [translations, i18nStore]);
 
   return <GTContext.Provider value={value}>{children}</GTContext.Provider>;

@@ -1,3 +1,4 @@
+import { createGTRuntime } from '../i18n-config/createGTRuntime';
 import logger from '../logs/logger';
 import { I18nCacheConfig, I18nCacheConstructorParams } from './types';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
@@ -108,7 +109,6 @@ class I18nCache<TranslationValue extends Content = Content> {
           : params.cacheExpiryTime,
       batchConfig: params.batchConfig,
       runtimeTranslation: params.runtimeTranslation,
-      _versionId: params._versionId,
     };
 
     // Create cache miss handlers
@@ -125,7 +125,7 @@ class I18nCache<TranslationValue extends Content = Content> {
     // Without a project ID or API key, each runtime translation request rejects.
     const i18nConfig = getI18nConfig();
     this.createTranslateMany = createTranslateManyFactory(
-      () => i18nConfig.getTranslationRuntime(),
+      () => createGTRuntime(i18nConfig),
       this.config.runtimeTranslation?.timeout ?? DEFAULT_TRANSLATION_TIMEOUT,
       {
         ...(this.config.modelProvider && {
@@ -162,13 +162,6 @@ class I18nCache<TranslationValue extends Content = Content> {
   }
 
   // ========== Getters and Setters ========== //
-
-  /**
-   * Get the version ID
-   */
-  getVersionId(): string | undefined {
-    return this.config._versionId;
-  }
 
   /** The translation TTL in milliseconds: `null` never expires. */
   getCacheExpiryTime(): number | null {

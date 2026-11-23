@@ -1,4 +1,7 @@
-import { getReactI18nCache } from '@generaltranslation/react-core/pure';
+import {
+  getReactI18nCache,
+  updateGlobalTranslationsSnapshot,
+} from '@generaltranslation/react-core/pure';
 import type {
   ChunkTranslationsState,
   EntryFile,
@@ -81,8 +84,9 @@ export function register(
 }
 
 /**
- * Adds the files that have arrived to the translations cache, in one call:
- * each call copies the locale's whole table. A load of the locale that is
+ * Adds the files that have arrived to the translations (the global snapshot
+ * in production, the cache otherwise), in one call: each cache call copies
+ * the locale's whole table. A load of the locale that is
  * still running would replace what is added before it resolves, so until it
  * has, they wait for it to take them.
  */
@@ -90,7 +94,12 @@ export function addArrived(state: ChunkTranslationsState): void {
   if (!state.y || !state.t) return;
   const arrived = state.t;
   state.t = undefined;
-  getReactI18nCache().updateTranslations(arrived);
+  // Production SPAs read the global snapshot and create no cache.
+  if (process.env.NODE_ENV === 'production') {
+    updateGlobalTranslationsSnapshot(arrived);
+  } else {
+    getReactI18nCache().updateTranslations(arrived);
+  }
 }
 
 /** What has arrived for a locale, which its load takes. */

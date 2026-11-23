@@ -1,6 +1,7 @@
 export {
   createGT,
   getGT,
+  lookupCachedTranslation,
   renderCachedMessage,
   type CreateGTParams,
 } from './translation-functions/gt';
@@ -22,6 +23,8 @@ export {
 export { GtInternalRuntimeTranslateJsx } from './translation-functions/internal/runtime-translate';
 export { createLookupOptions } from './translation-functions/internal/helpers';
 export { I18nCache } from './i18n-cache/I18nCache';
+export { getTranslationRuntimeParams } from './i18n-config/createGTRuntime';
+export { createRemoteTranslationLoader } from './i18n-cache/translations-manager/translations-loaders/createRemoteTranslationLoader';
 export type { TranslationsCacheMissEvent } from './i18n-cache/I18nCache';
 export { ReadonlyConditionStore } from './condition-store/ReadonlyConditionStore';
 export type { ReadonlyConditionStoreParams } from './condition-store/ReadonlyConditionStore';

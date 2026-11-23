@@ -13,7 +13,10 @@ import {
   type MessageTree,
   type MessageValues,
 } from '@generaltranslation/icu';
-import { formatIcu } from '@generaltranslation/icu/parser';
+import {
+  formatIntlMessage,
+  type IntlMessageOptions,
+} from './formatIntlMessage';
 import { intlCache } from '../cache/IntlCache';
 import {
   _prepareApprovedLocales,
@@ -30,7 +33,6 @@ import { _getLocaleDirection } from '../locales/getLocaleDirection';
 import { defaultDefaultLocale } from '../settings/settings';
 import { _isSameDialect } from '../locales/isSameDialect';
 import { _isSupersetLocale } from '../locales/isSupersetLocale';
-import type { FormatVariables } from '../types';
 import {
   snapshotLocaleConfig,
   type LocaleConfig,
@@ -44,7 +46,6 @@ import {
 import { _resolveAliasLocale } from '../locales/resolveAliasLocale';
 import { _resolveCanonicalLocale } from '../locales/resolveCanonicalLocale';
 import type { CutoffFormatOptions } from '../formatting/custom-formats/CutoffFormat/types';
-import type { StringFormat } from '../types-dir/jsx/content';
 
 /** `locale` overrides the instance locale for one call. */
 type LocaleOption = {
@@ -52,7 +53,7 @@ type LocaleOption = {
 };
 
 /** `locales` replaces the whole formatting fallback list for one call. */
-type WithLocales<T = object> = T &
+export type WithLocales<T = object> = T &
   LocaleOption & {
     locales?: string | string[];
   };
@@ -124,7 +125,7 @@ type LocaleResolutionScope = {
  * intl.formatNum(1234); // in es
  * intl.formatNum(1234, { locale: 'fr' }); // in fr
  */
-export class GTIntl {
+export class LocaleIntl {
   readonly defaultLocale: string;
   readonly locales: readonly string[];
   readonly customMapping?: LocaleConfig['customMapping'];
@@ -221,7 +222,7 @@ export class GTIntl {
    * `Intl` picks from a list, and formats a locale it has no data for in the
    * host's locale.
    */
-  private getFormattingLocales(
+  getFormattingLocales(
     locale: string | undefined,
     locales: string | string[] | undefined
   ): string | string[] {
@@ -316,23 +317,6 @@ export class GTIntl {
         formatOptions
       )
       .format(value);
-  }
-
-  formatMessage(
-    message: string,
-    options: WithLocales<{
-      variables?: FormatVariables;
-      dataFormat?: StringFormat;
-    }> = {}
-  ) {
-    const { locale, locales, variables, dataFormat } = options;
-    if (dataFormat === 'STRING') return message;
-    return formatIcu(
-      message,
-      this.getFormattingLocales(locale, locales),
-      variables ?? {},
-      { timeZone: this.timeZone }
-    );
   }
 
   /**
@@ -563,5 +547,12 @@ export class GTIntl {
       this.resolveCanonicalLocale(superLocale),
       this.resolveCanonicalLocale(subLocale)
     );
+  }
+}
+
+/** LocaleIntl, and ICU message strings with formatMessage(). */
+export class GTIntl extends LocaleIntl {
+  formatMessage(message: string, options?: IntlMessageOptions): string {
+    return formatIntlMessage(this, message, options);
   }
 }

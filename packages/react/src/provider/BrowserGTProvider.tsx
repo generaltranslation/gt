@@ -81,7 +81,16 @@ export function BrowserGTProvider(props: SharedGTProviderProps) {
     syncConditions,
   ]);
 
-  const i18nStore = useI18nStore();
+  // Only create I18nStore in development on client. Keep the construction
+  // inline in the NODE_ENV check (Turbopack-specific; webpack is unaffected):
+  // Turbopack keeps an import that is only used by a helper whose sole call
+  // site is a folded-away branch once the imported module is shared across
+  // chunks, which would ship I18nStore and the i18nCache in production.
+  const i18nStoreRef = useRef<I18nStore | undefined>(undefined);
+  if (process.env.NODE_ENV !== 'production' && !i18nStoreRef.current) {
+    i18nStoreRef.current = new I18nStore();
+  }
+  const i18nStore = i18nStoreRef.current;
 
   return (
     <InternalGTProvider
@@ -95,12 +104,4 @@ export function BrowserGTProvider(props: SharedGTProviderProps) {
       i18nStore={i18nStore}
     />
   );
-}
-
-function useI18nStore(): I18nStore {
-  const i18nStoreRef = useRef<I18nStore | null>(null);
-  if (i18nStoreRef.current == null) {
-    i18nStoreRef.current = new I18nStore();
-  }
-  return i18nStoreRef.current;
 }

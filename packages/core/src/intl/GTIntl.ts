@@ -1,10 +1,10 @@
-import {
-  GTIntl as ResolvedGTIntl,
-  type LocaleConfig,
-} from '@generaltranslation/format';
+import type { LocaleConfig } from '@generaltranslation/format';
 import {
   defaultDefaultLocale,
   defaultLocaleMatcher,
+  formatIntlMessage,
+  LocaleIntl as ResolvedLocaleIntl,
+  type IntlMessageOptions,
 } from '@generaltranslation/format/internal';
 import type { WithOptional } from '../formatting/formatting';
 import {
@@ -13,10 +13,10 @@ import {
 } from '../logging/diagnostics';
 import { hostTimeZone } from '../utils/hostTimeZone';
 
-type LocaleOption = ConstructorParameters<typeof ResolvedGTIntl>[1];
+type LocaleOption = ConstructorParameters<typeof ResolvedLocaleIntl>[1];
 
 type RelativeTimeFromDateOptions = Parameters<
-  ResolvedGTIntl['formatRelativeTimeFromDate']
+  ResolvedLocaleIntl['formatRelativeTimeFromDate']
 >[1];
 
 // A config is built far more often than it names a new zone.
@@ -49,8 +49,9 @@ function checkTimeZone(timeZone: string): string {
 /**
  * The locale and formatting helpers of `@generaltranslation/format`, with
  * what a caller leaves out resolved: that package takes every argument.
+ * Without formatMessage(), so subclasses leave the ICU parser out of bundles.
  */
-export class GTIntl extends ResolvedGTIntl {
+export class LocaleIntl extends ResolvedLocaleIntl {
   constructor(localeConfig: LocaleConfig = {}, options?: LocaleOption) {
     super(
       {
@@ -75,5 +76,12 @@ export class GTIntl extends ResolvedGTIntl {
       ...options,
       baseDate: options?.baseDate ?? new Date(),
     });
+  }
+}
+
+/** LocaleIntl, and ICU message strings with formatMessage(). */
+export class GTIntl extends LocaleIntl {
+  formatMessage(message: string, options?: IntlMessageOptions): string {
+    return formatIntlMessage(this, message, options);
   }
 }

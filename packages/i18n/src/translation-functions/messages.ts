@@ -13,6 +13,7 @@ import {
   createRenderTree,
   getGT,
   loadCreateGTParams,
+  lookupCachedTranslation,
 } from './gt';
 import { isMsg, type Msg } from './msg';
 import type { MessageTreeMetadata } from './renderMessage';
@@ -114,6 +115,7 @@ export function createMessages(params: CreateGTParams): M {
 export const m: M = /* @__PURE__ */ createMessages({
   getLocale: () => getWritableConditionStore().getLocale(),
   getEnableI18n: () => getWritableConditionStore().getEnableI18n(),
+  lookupTranslation: lookupCachedTranslation,
 });
 
 /** Loads the locale's translations, then returns an m bound to that locale. */

@@ -1,7 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { isMessageTree, type MessageTree } from '@generaltranslation/icu';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createGT, type GT, type GTOptions } from '../gt';
+import {
+  createGT,
+  lookupCachedTranslation,
+  type GT,
+  type GTOptions,
+} from '../gt';
 import {
   date,
   derive,
@@ -137,7 +142,10 @@ const cases: Record<string, (t: GT) => string> = {
 };
 
 describe('message-tree-wire-format fixture parity', () => {
-  const t = createGT({ getLocale: () => 'en' });
+  const t = createGT({
+    getLocale: () => 'en',
+    lookupTranslation: lookupCachedTranslation,
+  });
 
   beforeEach(() => {
     captured.tree = undefined;

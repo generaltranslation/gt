@@ -6,7 +6,7 @@ export {
 } from './settings/settingsUrls';
 // What a caller leaves out is resolved in this package and nowhere else, so
 // the other General Translation packages format through these.
-export { GTIntl } from './intl/GTIntl';
+export { GTIntl, LocaleIntl } from './intl/GTIntl';
 export {
   formatCurrency,
   formatCutoff,

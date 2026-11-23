@@ -9,7 +9,7 @@ const { mockNextLink, mockUseLocale } = vi.hoisted(() => ({
   mockUseLocale: vi.fn(),
 }));
 
-vi.mock('gt-react', () => ({
+vi.mock('gt-react/client-entry', () => ({
   useLocale: mockUseLocale,
   useDefaultLocale: () => 'en',
 }));

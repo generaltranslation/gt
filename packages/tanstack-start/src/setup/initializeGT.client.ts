@@ -6,6 +6,10 @@ import type { SharedGTProviderProps } from 'gt-react';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { createGlobalSingleton } from 'gt-i18n/internal';
 import {
+  getI18nConfig,
+  initializeReactI18nCache,
+} from '@generaltranslation/react-core/pure';
+import {
   config as pluginConfig,
   loadTranslations as pluginLoadTranslations,
 } from 'gt-tanstack-start/internal/_config';
@@ -45,6 +49,18 @@ function initialize(config: InitializeGTParams): void {
   const reload = createLocaleReload();
 
   initializeReactGT(config);
+
+  // gt-react only creates a client i18nCache in development. TanStack Start
+  // also needs one in production: route loaders and getGT(), getMessages(),
+  // and getTranslations() run in the browser during client-side navigation.
+  if (process.env.NODE_ENV === 'production') {
+    initializeReactI18nCache({
+      cacheExpiryTime: null,
+      ...config,
+      projectId: config.projectId || getI18nConfig().getProjectId(),
+    });
+  }
+
   createOrUpdateBrowserConditionStore({
     ...config,
     _reload: reload,

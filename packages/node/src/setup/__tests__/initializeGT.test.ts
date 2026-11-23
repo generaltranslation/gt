@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getI18nConfig } from 'gt-i18n/internal';
+import { getTranslationRuntimeParams } from 'gt-i18n/internal';
 import { initializeGT } from '../initializeGT';
 
 describe.sequential('initializeGT credentials', () => {
@@ -14,7 +14,7 @@ describe.sequential('initializeGT credentials', () => {
 
     initializeGT({ projectId: 'explicit-project-id' });
 
-    expect(getI18nConfig().getTranslationRuntime()).toMatchObject({
+    expect(getTranslationRuntimeParams()).toMatchObject({
       projectId: 'explicit-project-id',
       apiKey: 'env-api-key',
     });
@@ -25,7 +25,7 @@ describe.sequential('initializeGT credentials', () => {
     initializeGT({ projectId: 'project-id' });
     vi.stubEnv('GT_API_KEY', 'late-api-key');
 
-    expect(() => getI18nConfig().getTranslationRuntime()).toThrow(
+    expect(() => getTranslationRuntimeParams()).toThrow(
       'Runtime translation needs an API key'
     );
   });

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { I18nConfig } from '../I18nConfig';
+import { getTranslationRuntimeParams } from '../createGTRuntime';
 
 describe('I18nConfig', () => {
   beforeEach(() => {
@@ -69,6 +70,18 @@ describe('I18nConfig', () => {
     const config = new I18nConfig({ defaultLocale: 'fr' });
 
     expect(config.getLocales()).toEqual(['fr']);
+  });
+
+  it('getVersionId() returns the _versionId passed to the constructor', () => {
+    const config = new I18nConfig({ _versionId: 'version-abc' });
+
+    expect(config.getVersionId()).toBe('version-abc');
+  });
+
+  it('getVersionId() returns undefined when no _versionId was provided', () => {
+    const config = new I18nConfig();
+
+    expect(config.getVersionId()).toBeUndefined();
   });
 
   it('skips locale validation when GT services are disabled', () => {
@@ -157,30 +170,34 @@ describe('I18nConfig', () => {
     vi.stubEnv('GT_API_KEY', 'env-key');
 
     expect(() =>
-      new I18nConfig({ projectId: 'project' }).getTranslationRuntime()
+      getTranslationRuntimeParams(new I18nConfig({ projectId: 'project' }))
     ).toThrow('Runtime translation needs an API key');
     expect(
-      new I18nConfig({
-        projectId: 'project',
-        apiKey: 'key',
-      }).getTranslationRuntime().apiKey
+      getTranslationRuntimeParams(
+        new I18nConfig({
+          projectId: 'project',
+          apiKey: 'key',
+        })
+      ).apiKey
     ).toBe('key');
   });
 
   it('builds a translation runtime only with a projectId and an API key', () => {
     expect(() =>
-      new I18nConfig({ projectId: 'project' }).getTranslationRuntime()
+      getTranslationRuntimeParams(new I18nConfig({ projectId: 'project' }))
     ).toThrow('Runtime translation needs an API key');
     expect(() =>
-      new I18nConfig({ apiKey: 'key' }).getTranslationRuntime()
+      getTranslationRuntimeParams(new I18nConfig({ apiKey: 'key' }))
     ).toThrow('Runtime translation needs a projectId');
     expect(
-      new I18nConfig({
-        projectId: 'project',
-        apiKey: 'key',
-        defaultLocale: 'en',
-        locales: ['es'],
-      }).getTranslationRuntime()
+      getTranslationRuntimeParams(
+        new I18nConfig({
+          projectId: 'project',
+          apiKey: 'key',
+          defaultLocale: 'en',
+          locales: ['es'],
+        })
+      )
     ).toMatchObject({
       projectId: 'project',
       localeConfig: { defaultLocale: 'en', locales: ['en', 'es'] },

@@ -16,3 +16,8 @@ export {
   defaultDefaultLocale,
   defaultLocaleMatcher,
 } from './settings/settings';
+export { LocaleIntl } from './intl/GTIntl';
+export {
+  formatIntlMessage,
+  type IntlMessageOptions,
+} from './intl/formatIntlMessage';

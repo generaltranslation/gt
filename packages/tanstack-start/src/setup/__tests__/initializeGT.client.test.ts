@@ -25,6 +25,14 @@ const {
 vi.mock('gt-tanstack-start/internal/_config', () => pluginModule);
 vi.mock('gt-tanstack-start/internal/localeRouting', () => localeRoutingModule);
 
+// Run effects inline so GTProvider can be called as a plain function
+vi.mock('react', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react')>()),
+  useEffect: (effect: () => void) => {
+    effect();
+  },
+}));
+
 vi.mock('gt-react', () => ({
   createOrUpdateBrowserConditionStore: mockCreateOrUpdateBrowserConditionStore,
   initializeGT: mockInitializeReactGT,

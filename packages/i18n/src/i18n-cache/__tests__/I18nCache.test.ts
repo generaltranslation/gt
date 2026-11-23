@@ -185,13 +185,6 @@ describe('I18nCache', () => {
       expect(callsContaining(warnSpy, 'I18nCache:').length).toBe(0);
       expect(callsContaining(errorSpy, 'I18nCache:').length).toBe(0);
     });
-
-    it('getVersionId() returns the _versionId passed to the constructor', () => {
-      expect(createCache({ _versionId: 'version-abc' }).getVersionId()).toBe(
-        'version-abc'
-      );
-      expect(createCache().getVersionId()).toBeUndefined();
-    });
   });
 
   describe('translation loader routing', () => {

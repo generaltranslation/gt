@@ -1,4 +1,5 @@
 import {
+  initializeReactI18nCache,
   internalInitializeGTSRA,
   type ReactInitializeGTParams,
 } from '@generaltranslation/react-core/pure';
@@ -8,9 +9,11 @@ import {
  * `cacheExpiryTime` is ignored.
  */
 export function initializeGT(config: ReactInitializeGTParams): void {
-  internalInitializeGTSRA({
+  const runtimeConfig = {
     ...config,
     // The provider loads a locale once, so the cache has to keep it.
     cacheExpiryTime: null,
-  });
+  };
+  internalInitializeGTSRA(runtimeConfig);
+  initializeReactI18nCache(runtimeConfig);
 }

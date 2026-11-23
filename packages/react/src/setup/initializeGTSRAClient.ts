@@ -1,4 +1,5 @@
 import {
+  initializeReactI18nCache,
   internalInitializeGTSRA,
   type ReactInitializeGTParams,
 } from '@generaltranslation/react-core/pure';
@@ -9,12 +10,17 @@ import { addRuntimeCredentials } from './runtimeCredentials';
  * browser, so `cacheExpiryTime` is ignored.
  */
 export function initializeGTSRAClient(config: ReactInitializeGTParams): void {
-  internalInitializeGTSRA(
-    addRuntimeCredentials({
-      ...config,
-      // Translations arrive through updateTranslations(), and an expired
-      // locale would drop them.
-      cacheExpiryTime: null,
-    })
-  );
+  const runtimeConfig = addRuntimeCredentials({
+    ...config,
+    // Translations arrive through updateTranslations(), and an expired
+    // locale would drop them.
+    cacheExpiryTime: null,
+  });
+  internalInitializeGTSRA(runtimeConfig);
+
+  // Dev hot reload only: production client lookups read the provider's
+  // snapshots, so no client i18nCache is needed
+  if (process.env.NODE_ENV !== 'production') {
+    initializeReactI18nCache(runtimeConfig);
+  }
 }

@@ -6,6 +6,7 @@ import {
   isI18nConfigInitialized,
 } from '../i18n-config/singleton-operations';
 import { formatMessage as formatUnconfiguredMessage } from 'generaltranslation/internal';
+import { formatIntlMessage } from '@generaltranslation/format/internal';
 
 /**
  * Given an encoded message and variables, formats the message.
@@ -30,7 +31,7 @@ export function formatMessage(
         dataFormat,
       });
     }
-    return getI18nConfig().formatMessage(encodedMsg, {
+    return formatIntlMessage(getI18nConfig(), encodedMsg, {
       variables,
       locales,
       dataFormat,
