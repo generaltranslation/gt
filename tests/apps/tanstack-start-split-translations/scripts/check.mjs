@@ -21,7 +21,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 import { serve } from './serve.mjs';
-import { createOpen, createReporter } from './visitor.mjs';
+import { createOpen, createReporter, USER_AGENT } from './visitor.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const only = process.argv.slice(2);
@@ -230,6 +230,29 @@ for (const [name, env] of Object.entries(SPLITS)) {
     );
     await visitor.navigate('/reports');
     visitor.takeTranslationRequests();
+  }
+
+  // The server sends /deferred in parts: the page with its fallback first,
+  // and what the server function returns once it has. A check that only
+  // ever got whole pages would not see what hydrates in between.
+  {
+    const answer = await fetch(`${server.origin}/deferred`, {
+      headers: {
+        cookie: 'generaltranslation.locale=fr',
+        'user-agent': USER_AGENT,
+      },
+    });
+    const decoder = new TextDecoder();
+    const parts = [];
+    for await (const part of answer.body) parts.push(decoder.decode(part));
+    check(
+      `${title}: /deferred arrives before its deferred data, which follows in a later part`,
+      parts.length > 1 &&
+        parts[0].includes('data-fallback') &&
+        !parts[0].includes('data-deferred') &&
+        parts.slice(1).join('').includes('data-deferred'),
+      parts.map((part) => part.length)
+    );
   }
 
   // Preloading on intent requests a route's translations with its chunks

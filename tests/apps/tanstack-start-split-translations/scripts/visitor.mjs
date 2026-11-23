@@ -6,6 +6,15 @@
 // script of the page records each element that ever shows anything else,
 // which is how a flash of source text is caught.
 
+/**
+ * What the pages and requests of a check say they are. TanStack Start sends
+ * a client it takes for a crawler, as headless Chromium by its own name, the
+ * whole page at once: only a browser gets a page in parts, with what is
+ * deferred after the rest.
+ */
+export const USER_AGENT =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+
 /** Prints one line per check; `finish()` exits with 1 when any failed. */
 export function createReporter() {
   let failed = 0;
@@ -35,7 +44,10 @@ export function createOpen({ browser, routes, expected, settled }) {
    * expected in, when not that one.
    */
   return async function open(origin, locale, renders = locale) {
-    const context = await browser.newContext({ locale: 'en-US' });
+    const context = await browser.newContext({
+      locale: 'en-US',
+      userAgent: USER_AGENT,
+    });
     if (locale !== undefined) {
       await context.addCookies([
         { name: 'generaltranslation.locale', value: locale, url: origin },

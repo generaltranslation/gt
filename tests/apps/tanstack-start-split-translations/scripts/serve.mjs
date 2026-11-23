@@ -135,7 +135,10 @@ async function run({
     const cookies = answer.headers.getSetCookie();
     if (cookies.length) sent['set-cookie'] = cookies;
     response.writeHead(answer.status, sent);
-    response.end(Buffer.from(await answer.arrayBuffer()));
+    // Part by part, as a host sends it: a page with deferred data arrives
+    // before that data does
+    for await (const part of answer.body ?? []) response.write(part);
+    response.end();
   });
   server.listen(port, '127.0.0.1', () =>
     process.stdout.write(`${server.address().port}\n`)
