@@ -108,7 +108,7 @@ export class ModuleGraph {
     Promise<ModuleRecord | undefined>
   >();
   private readonly records = new Map<string, ModuleRecord>();
-  /** Changes whenever a module is added or removed. */
+  /** Changes whenever a module is added or the globals change. */
   private generation = 0;
 
   private globals = new Map<string, Binding>();
@@ -191,17 +191,6 @@ export class ModuleGraph {
         (file) => !visited.has(file) && this.shouldFollow(file)
       );
     }
-  }
-
-  clear(): void {
-    this.generation++;
-    this.loading.clear();
-    this.records.clear();
-    this.targets.clear();
-    this.outdirDetections.clear();
-
-    this.knownOutdirs = [];
-    for (const outdir of this.options.outdirs ?? []) this.addOutdir(outdir);
   }
 
   getRecord(file: string): ModuleRecord | undefined {
@@ -518,10 +507,7 @@ export class ModuleGraph {
 
     if (!loading) {
       loading = this.readRecord(file).then((record) => {
-        // A load that `clear()` superseded is dropped.
-        const isCurrent = this.loading.get(file) === loading;
-
-        if (record && isCurrent) {
+        if (record) {
           this.records.set(file, record);
           this.generation++;
         }

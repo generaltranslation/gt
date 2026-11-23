@@ -79,27 +79,11 @@ const AVAILABLE_LANGUAGE_TAGS =
  * what the `@inlang/paraglide-js` installed for that directory generates.
  */
 export class OutdirDetector {
-  private readonly verdicts = new Map<string, Promise<OutdirVerdict>>();
   private readonly paraglides = new Map<string, Promise<Paraglide>>();
 
   constructor(private readonly options: OutdirDetectorOptions = {}) {}
 
-  check(directory: string): Promise<OutdirVerdict> {
-    let verdict = this.verdicts.get(directory);
-
-    if (!verdict) {
-      verdict = this.verify(directory);
-      this.verdicts.set(directory, verdict);
-    }
-
-    return verdict;
-  }
-
-  clear(): void {
-    this.verdicts.clear();
-  }
-
-  private async verify(directory: string): Promise<OutdirVerdict> {
+  async check(directory: string): Promise<OutdirVerdict> {
     const files = await readOutdirFiles(directory);
     if (!files) return { outdir: false };
 
