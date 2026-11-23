@@ -9,6 +9,7 @@ describe('I18nConfig', () => {
 
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
   });
 
   it.each([
@@ -153,18 +154,22 @@ describe('I18nConfig', () => {
     ).toBe('en-GB');
   });
 
-  it('does not read the API key from the environment', () => {
+  it('does not read the API key from the environment', async () => {
     vi.stubEnv('GT_API_KEY', 'env-key');
+    const fetchMock = vi.fn<typeof fetch>(async () =>
+      Response.json({ results: [] })
+    );
+    vi.stubGlobal('fetch', fetchMock);
 
     expect(() =>
       new I18nConfig({ projectId: 'project' }).getTranslationRuntime()
     ).toThrow('Runtime translation needs an API key');
+    await new I18nConfig({ projectId: 'project', apiKey: 'key' })
+      .getTranslationRuntime()
+      .translateMany([], 'es');
     expect(
-      new I18nConfig({
-        projectId: 'project',
-        apiKey: 'key',
-      }).getTranslationRuntime().apiKey
-    ).toBe('key');
+      new Request(...fetchMock.mock.calls[0]).headers.get('authorization')
+    ).toBe('Bearer key');
   });
 
   it('builds a translation runtime only with a projectId and an API key', () => {

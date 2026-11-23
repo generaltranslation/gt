@@ -545,6 +545,25 @@ describe.sequential('runtime translation requests', () => {
     );
   });
 
+  it('reads a credential that the config defines with a getter, once', async () => {
+    let reads = 0;
+    class Config {
+      projectId = 'test-project';
+      get apiKey() {
+        reads += 1;
+        return 'getter-key';
+      }
+    }
+
+    await new GTRuntime(new Config()).translateMany([], options);
+
+    const [input, init] = fetchMock.mock.calls[0];
+    expect(new Request(input, init).headers.get('authorization')).toBe(
+      'Bearer getter-key'
+    );
+    expect(reads).toBe(1);
+  });
+
   it('sends only the model provider in request metadata', async () => {
     await runtime.translateMany([], { ...options, modelProvider: 'OPENAI' });
 
