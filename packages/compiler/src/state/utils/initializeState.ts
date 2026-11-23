@@ -49,6 +49,7 @@ export function initializeState(
     autoderive: _a,
     devHotReload: _b,
     experimentalSplitTranslations: _g,
+    splitTranslationsHost: _h,
     ...restOptions
   } = options;
 

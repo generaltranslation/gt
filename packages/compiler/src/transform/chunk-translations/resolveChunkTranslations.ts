@@ -1,5 +1,6 @@
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { splitTranslationsEnvNames } from 'generaltranslation/internal';
 import type { ChunkImportMapOptions } from './chunkImportMap';
 import type { GTConfig, SplitTranslationsOptions } from '../../config';
 import { DEFAULT_REQUEST_COST } from './assignTranslationsByRegion';
@@ -14,9 +15,9 @@ import {
  * `experimentalSplitTranslations` option is not set, so a build script can
  * turn the split on or off without changing the bundler config.
  */
-export const CHUNK_TRANSLATIONS_ENV_VAR = 'GT_SPLIT_TRANSLATIONS';
+export const CHUNK_TRANSLATIONS_ENV_VAR = splitTranslationsEnvNames.enabled;
 
-/** The entry compiled code loads translations with. */
+/** The entry compiled code loads translations with, unless a framework integration names its own. */
 export const CHUNK_TRANSLATIONS_SOURCE = 'gt-react/chunk-translations';
 
 /** The object the startup script and gt-react's entry share; `getState()` there. */
@@ -66,6 +67,8 @@ const ENV_FALSE_VALUES = new Set(['false', '0']);
 
 /** What a build that writes translations per chunk shares between its hooks. */
 export type ChunkTranslations = {
+  /** The entry compiled code imports the loader of the files from */
+  source: string;
   defaultLocale: string;
   /** The locales that get files: every configured locale but the default one */
   locales: string[];
@@ -121,7 +124,7 @@ export type RegionSplit = {
  * Environment variable read when `by` of the `experimentalSplitTranslations`
  * option is not set.
  */
-export const CHUNK_TRANSLATIONS_SPLIT_ENV_VAR = 'GT_SPLIT_TRANSLATIONS_BY';
+export const CHUNK_TRANSLATIONS_SPLIT_ENV_VAR = splitTranslationsEnvNames.by;
 
 /**
  * What decides which messages share a file: the chunk their call sites are
@@ -326,7 +329,8 @@ export function getChunkTranslations(
  * Environment variable read when `minifyHashes` of the
  * `experimentalSplitTranslations` option is not set.
  */
-export const CHUNK_TRANSLATIONS_MINIFY_HASHES_ENV_VAR = 'GT_MINIFY_HASHES';
+export const CHUNK_TRANSLATIONS_MINIFY_HASHES_ENV_VAR =
+  splitTranslationsEnvNames.minifyHashes;
 
 /**
  * Whether this build minifies the hashes its call sites pass (see
@@ -351,9 +355,11 @@ export function resolveChunkTranslations(
     naming = defaultChunkTranslationsNaming,
     regions,
     minifyHashes = false,
+    source = CHUNK_TRANSLATIONS_SOURCE,
   }: {
     framework: string;
     compileTimeHash: boolean;
+    source?: string;
     naming?: ChunkTranslationsNaming;
     regions?: RegionSplit;
     minifyHashes?: boolean;
@@ -409,6 +415,7 @@ export function resolveChunkTranslations(
     return { error: MINIFY_HASHES_WITH_TAGGED_IDS_ERROR };
   }
   return {
+    source,
     defaultLocale,
     locales,
     hashes: new Set(),

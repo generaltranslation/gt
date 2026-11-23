@@ -3,6 +3,7 @@ import {
   getReadonlyConditionStore,
 } from '@generaltranslation/react-core/pure';
 import type { Content } from '@generaltranslation/format';
+import type { SplitTranslationsState } from 'generaltranslation/internal';
 
 export type Translations = Record<string, Content>;
 
@@ -62,33 +63,12 @@ export type PreloadChunk<T> = (
 
 /**
  * What the page's startup script leaves on `globalThis` for this entry, with
- * what this entry keeps there. The compiler writes the first seven.
+ * what this entry keeps there. The compiler writes what
+ * `SplitTranslationsState` holds; a page a server rendered gets it from
+ * `seedChunkTranslations()`.
  * @internal
  */
-export type ChunkTranslationsState = {
-  /** The URL the build's files are served from */
-  b?: string;
-  /**
-   * The key of the entry's file: the entry chunk's file without its
-   * extension. In a build that names each file by its own hash, the key of
-   * every file that holds translations.
-   */
-  f?: string;
-  /** The hash in the name of the entry's file, by locale */
-  h?: Record<string, string>;
-  /**
-   * In a build that splits by module, where `f` and `h` are of the locale's
-   * map: the hash in the name of each file the entry holds, by locale and key
-   */
-  e?: Record<string, Record<string, string> | undefined>;
-  /**
-   * The token in the name of every other file of a locale, by locale. In a
-   * build that names each file by its own hash, the token in the name of the
-   * locale's map of those hashes.
-   */
-  v?: Record<string, string>;
-  /** The key of the maps, in a build that has them */
-  k?: string;
+export type ChunkTranslationsState = Partial<SplitTranslationsState> & {
   /** The maps the startup script requested, by locale */
   m?: Record<string, Promise<unknown> | undefined>;
   /** The locale the startup script read */
@@ -103,6 +83,11 @@ export type ChunkTranslationsState = {
   g?: Record<string, Promise<unknown> | undefined>;
   /** Milliseconds to wait for a file */
   w?: number;
+  /**
+   * The chunks a seed named, see `seedChunkTranslations()`: the page holds
+   * the translations their imports need, so those imports wait for no file
+   */
+  s?: Record<string, 1 | undefined>;
   /**
    * The translations that have arrived and are not in the translations cache
    * yet, by locale and hash
@@ -122,14 +107,6 @@ export type ChunkTranslationsState = {
   r?: Record<string, Promise<boolean> | undefined>;
   /** Whether the page was warned of a chunk the build named and the lists do not know */
   d?: boolean;
-  /**
-   * The key of the file that says what the locale's files are named by in
-   * the build the host serves now, and what says how this page's build
-   * assigned messages to files. The compiler writes both, as the fields
-   * above `l`.
-   */
-  n?: string;
-  c?: string;
   /** The reading of that file that is on its way */
   x?: Promise<void>;
   /**

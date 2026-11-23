@@ -163,9 +163,12 @@ describe.sequential('gt-tanstack-start package exports', () => {
         .filter((file) => /\.(cjs|mjs)$/.test(file))
         .sort()
     ).toEqual([
+      'chunk-translations.mjs',
       'compat.client.mjs',
+      'compat.rsc.mjs',
       'compat.server.mjs',
       'index.client.mjs',
+      'index.rsc.mjs',
       'index.server.mjs',
     ]);
   });
@@ -263,8 +266,12 @@ describe.sequential('gt-tanstack-start package exports', () => {
     ).toEqual([]);
   });
 
-  it('exports the same names from both entrypoints', () => {
-    for (const conditions of [[], ['--conditions=browser']]) {
+  it('exports the same names from every entrypoint', () => {
+    for (const conditions of [
+      [],
+      ['--conditions=browser'],
+      ['--conditions=react-server'],
+    ]) {
       node([
         ...conditions,
         '--input-type=module',
@@ -298,8 +305,12 @@ describe.sequential('gt-tanstack-start package exports', () => {
     ]);
   });
 
-  it('exports the components injected by the compiler, and not the SPA-only t, from both entrypoints', () => {
-    for (const conditions of [[], ['--conditions=browser']]) {
+  it('exports the components injected by the compiler, and not the SPA-only t, from every entrypoint', () => {
+    for (const conditions of [
+      [],
+      ['--conditions=browser'],
+      ['--conditions=react-server'],
+    ]) {
       node([
         ...conditions,
         '--input-type=module',
@@ -359,21 +370,71 @@ describe.sequential('gt-tanstack-start package exports', () => {
     [[], 'compat.server.mjs'],
     [['--conditions=browser'], 'compat.client.mjs'],
     [['--conditions=workerd', '--conditions=browser'], 'compat.server.mjs'],
-  ])('resolves gt-tanstack-start/compat with %j to %s', (conditions, file) => {
+    [['--conditions=react-server'], 'compat.rsc.mjs'],
+  ])(
+    'resolves gt-tanstack-start/compat with %j to %s, with the same names',
+    (conditions, file) => {
+      node([
+        ...conditions,
+        '--input-type=module',
+        '-e',
+        `
+        import assert from 'node:assert/strict';
+        import * as compat from 'gt-tanstack-start/compat';
+
+        assert.equal(
+          import.meta.resolve('gt-tanstack-start/compat').endsWith(${JSON.stringify(`/dist/${file}`)}),
+          true
+        );
+        assert.deepEqual(Object.keys(compat).sort(), [
+          'getTranslations',
+          'setupRouterGTIntegration',
+          'useTranslations',
+        ]);
+      `,
+      ]);
+    }
+  );
+
+  it('resolves the react-server entrypoint for server components', () => {
     node([
-      ...conditions,
+      '--conditions=react-server',
       '--input-type=module',
       '-e',
       `
         import assert from 'node:assert/strict';
 
         assert.equal(
-          import.meta.resolve('gt-tanstack-start/compat').endsWith(${JSON.stringify(`/dist/${file}`)}),
+          import.meta.resolve('gt-tanstack-start').endsWith('/dist/index.rsc.mjs'),
           true
         );
       `,
     ]);
   });
+
+  it('keeps LocaleSelector a client module that the react-server entrypoint imports', () => {
+    // A server component can only render a component with client state
+    // through a module that starts with the directive.
+    expect(readDistFile('rsc/clientBoundary.mjs')).toMatch(/^"use client";/);
+    expect(getModuleImports(readDistFile('index.rsc.mjs'))).toContainEqual({
+      source: './rsc/clientBoundary.mjs',
+      names: ['LocaleSelector'],
+    });
+  });
+
+  it.each(['index.rsc.mjs', 'compat.rsc.mjs'])(
+    'keeps the router integration and its provider out of %s',
+    (file) => {
+      // Server components render apart from the router, and gt-react's
+      // provider is a client component.
+      const imports = getModuleImports(readDistFile(file));
+
+      expect(imports.flatMap(({ names }) => names)).not.toContain('GTProvider');
+      expect(
+        imports.filter(({ source }) => /splitTranslations/.test(source))
+      ).toEqual([]);
+    }
+  );
 
   it.each(['workerd', 'worker'])(
     'resolves the server ESM entrypoint when %s and browser conditions are active',

@@ -18,8 +18,9 @@ import {
 } from 'vitest';
 import MagicString from 'magic-string';
 import type { UnpluginContextMeta, UnpluginOptions } from 'unplugin';
+import { hashSource } from 'generaltranslation/id';
 import gtUnplugin from '../index';
-import type { GTUnpluginOptions } from '../index';
+import type { GTUnpluginOptions, SplitTranslationsHost } from '../index';
 import { locate, trace } from './sourcePositions';
 import {
   assignTranslationsByChunk,
@@ -88,6 +89,7 @@ import {
 } from '../transform/chunk-translations/unsplitTranslations';
 import {
   getAssignmentHash,
+  getUnsplitHashes,
   renderChunkTranslations,
 } from '../transform/chunk-translations/writeChunkTranslations';
 
@@ -280,6 +282,7 @@ describe('experimentalSplitTranslations', () => {
           BUILD
         )
       ).toEqual({
+        source: 'gt-react/chunk-translations',
         defaultLocale: 'en',
         locales: ['fr', 'de'],
         hashes: new Set(),
@@ -2013,6 +2016,15 @@ export const { a } = await import(\`./a.js\`);`,
       ).toEqual({
         fr: { both: 'Les deux', dictionary: 'Dictionnaire', msg: 'Message' },
       });
+    });
+
+    it('lists for a framework the unsplit messages of every locale, once each', () => {
+      expect(
+        getUnsplitHashes({
+          fr: { msg: 'Message', both: 'Les deux' },
+          de: { both: 'Beide', dictionary: 'Wörterbuch' },
+        })
+      ).toEqual(['both', 'dictionary', 'msg']);
     });
 
     it('leaves the call that starts the app as it was written when there are none', () => {
@@ -4431,6 +4443,51 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       });
     });
 
+    it('hands a framework the loader state of each entry, the files each import needs, and the messages of each file as call sites pass them', () => {
+      const { written, emitted, manifest } = write();
+      const hashOf = (fileName: string) => fileName.split('.').at(-2);
+      expect(written.output).toEqual({
+        entries: {
+          'assets/index.js': {
+            state: {
+              b: '/',
+              f: 'assets/gt-map',
+              h: {
+                fr: hashOf(
+                  Object.keys(emitted).find((name) =>
+                    name.startsWith('assets/gt-map.fr.')
+                  )!
+                ),
+              },
+              v: {},
+              e: {
+                fr: {
+                  'assets/gt-10000000': hashOf(
+                    manifest.files['assets/gt-10000000'].fr
+                  ),
+                },
+              },
+              n: 'assets/gt-current',
+            },
+            messages: [],
+            files: ['assets/gt-10000000'],
+          },
+        },
+        imports: {
+          'assets/Home.js': ['assets/gt-20000000'],
+          'assets/Billing.js': ['assets/gt-30000000'],
+          'assets/Admin.js': ['assets/gt-40000000'],
+        },
+        files: {
+          'assets/gt-10000000': [HASH.title],
+          'assets/gt-20000000': [HASH.home, HASH.picker],
+          'assets/gt-30000000': [HASH.billing, HASH.invoice],
+          'assets/gt-40000000': [HASH.admin, HASH.panel],
+        },
+        unsplit: [],
+      });
+    });
+
     it("reads the build's chunk import map from the bundle once, lists a chunk under the name an import is written with and under no other, and returns both", () => {
       createPlugins(ON, 'vite', {
         'translations/fr.json': JSON.stringify(CATALOG),
@@ -4776,7 +4833,15 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
           );
           // Once each, also the date picker's, which two chunks read
           expect(file[0]).toEqual(Object.values(hashed));
+          // A framework is told the ids of each file, and the hash of each
+          expect(minified.written.output.files[key].toSorted()).toEqual(
+            Object.keys(unpack(file)).sort()
+          );
         }
+        expect(minified.written.output.hashes).toEqual(
+          Object.fromEntries(minifiedIds.hashes)
+        );
+        expect(plain.written.output.hashes).toBeUndefined();
         expect(() =>
           write({
             bundle: {
@@ -5029,5 +5094,311 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
         'would leave 12 messages without their translation when the code that reads them runs'
       );
     });
+  });
+});
+
+/**
+ * The plugin of a framework that renders an app on a server passes
+ * `splitTranslationsHost`: the split then applies to the environments a
+ * browser loads, compiled code imports the loader from the framework's
+ * package, and the plugin is handed what the build wrote. How such a build
+ * runs in a browser is checked by tests/apps/tanstack-start-split-translations.
+ */
+// The hash of the `Save` template
+const SAVE_TEMPLATE = 'ab72d114d0d156a9';
+const LOADER = 'gt-tanstack-start/chunk-translations';
+const HOST: SplitTranslationsHost = {
+  loader: LOADER,
+  clientEnvironments: ['client'],
+  onSplit() {},
+  onServerMessages() {},
+};
+const SERVER_RENDERED: GTUnpluginOptions = {
+  gtConfig: {
+    defaultLocale: 'en',
+    locales: ['fr'],
+    files: { gt: { output: 'translations/[locale].json' } },
+  },
+  experimentalSplitTranslations: { minifyHashes: true },
+  precomputeMessages: false,
+  splitTranslationsHost: HOST,
+};
+const SERVER_RENDERED_MODULE = `import { useGT } from 'gt-tanstack-start';
+export function Save() {
+  const t = useGT();
+  return t\`Save\`;
+}
+export const load = () => import('./Orders');`;
+
+const SERVER = { environment: { name: 'ssr' } };
+const CLIENT = { environment: { name: 'client' } };
+
+type Hook = (this: unknown, ...args: never[]) => unknown;
+type BuildPlugin = {
+  transform: Hook;
+  vite: {
+    configResolved: (config: object) => void;
+    options?: (options: object) => null;
+    renderChunk: Hook;
+    generateBundle: Hook | { handler: Hook };
+  };
+};
+
+function createBuild(options: GTUnpluginOptions = SERVER_RENDERED) {
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-split-server-'));
+  onTestFinished(() => fs.rmSync(cwd, { force: true, recursive: true }));
+  fs.mkdirSync(path.join(cwd, 'translations'));
+  fs.writeFileSync(
+    path.join(cwd, 'translations/fr.json'),
+    JSON.stringify({ [SAVE_TEMPLATE]: 'Enregistrer' })
+  );
+  vi.spyOn(process, 'cwd').mockReturnValue(cwd);
+  const [compile, wrap] = [
+    gtUnplugin.raw(options, { framework: 'vite' } as UnpluginContextMeta),
+  ].flat() as unknown as [BuildPlugin, BuildPlugin];
+  const id = path.join(cwd, 'App.jsx');
+  const run = async (hook: Hook, context: object, code: string) => {
+    const result = (await hook.call(
+      { addWatchFile() {}, ...context },
+      ...([code, id] as never[])
+    )) as { code: string } | string | null;
+    return result && typeof result === 'object' ? result.code : result;
+  };
+  return {
+    compile,
+    wrap,
+    transform: (context: object) =>
+      run(compile.transform, context, SERVER_RENDERED_MODULE),
+    transformCode: (context: object, code: string) =>
+      run(compile.transform, context, code),
+    wrapImports: (context: object) =>
+      run(wrap.transform, context, SERVER_RENDERED_MODULE),
+  };
+}
+
+describe('experimentalSplitTranslations in a server-rendered app', () => {
+  beforeEach(() => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('GT_SPLIT_TRANSLATIONS', '');
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it('keeps the hash at each call site of a build for a server, and wraps none of its imports', async () => {
+    const build = createBuild();
+    expect(await build.transform(SERVER)).toContain(
+      `$_hash: "${SAVE_TEMPLATE}"`
+    );
+    expect(await build.wrapImports(SERVER)).toBeNull();
+  });
+
+  it('splits the client build of the same plugins, which loads translations from the entry the integration names', async () => {
+    const build = createBuild();
+    const compiled = await build.transform(CLIENT);
+    // The id of a build with hash minification, until its chunk is rendered
+    expect(compiled).not.toContain(`"${SAVE_TEMPLATE}"`);
+    expect(compiled).toContain('$_hash:');
+    expect(await build.wrapImports(CLIENT)).toContain(
+      `import { loadMinifiedChunk as __gt_chunk_load } from "${LOADER}";`
+    );
+  });
+
+  it('writes no file for a server, and leaves its chunks as the bundler rendered them', async () => {
+    const { compile, wrap } = createBuild();
+    compile.vite.configResolved({ base: '/', build: { assetsDir: 'assets' } });
+    const code = `t({$_hash:"${SAVE_TEMPLATE}"})\`Save\``;
+    const bundle = {
+      'server.js': {
+        type: 'chunk',
+        fileName: 'server.js',
+        code,
+        imports: [],
+        dynamicImports: [],
+        isEntry: true,
+      },
+    };
+    const emitFile = vi.fn();
+    expect(
+      (compile.vite.renderChunk as Hook).call(SERVER, ...([code] as never[]))
+    ).toBeNull();
+    (compile.vite.generateBundle as Hook).call(
+      { ...SERVER, emitFile },
+      ...([{}, bundle] as never[])
+    );
+    (wrap.vite.generateBundle as { handler: Hook }).handler.call(
+      SERVER,
+      ...([{}, bundle] as never[])
+    );
+    expect(emitFile).not.toHaveBeenCalled();
+    expect(bundle['server.js'].code).toBe(code);
+  });
+
+  /**
+   * A client bundle whose entry holds `code` and imports a chunk with a
+   * message. Returns what names the imported chunks, the last step of a build.
+   */
+  async function buildClient(
+    code: string,
+    options?: GTUnpluginOptions,
+    module?: string
+  ) {
+    const onSplit = vi.fn();
+    const { compile, wrap, transform, transformCode } = createBuild({
+      ...SERVER_RENDERED,
+      experimentalSplitTranslations: {},
+      splitTranslationsHost: { ...HOST, onSplit },
+      ...options,
+    });
+    await transform(CLIENT);
+    if (module !== undefined) await transformCode(CLIENT, module);
+    compile.vite.configResolved({ base: '/', build: { assetsDir: 'assets' } });
+    wrap.vite.options!({});
+    const chunk = (fileName: string, source: string, rest = {}) => ({
+      type: 'chunk',
+      fileName,
+      code: source,
+      imports: [],
+      dynamicImports: [],
+      isEntry: false,
+      ...rest,
+    });
+    const bundle = {
+      'assets/index.js': chunk('assets/index.js', code, {
+        isEntry: true,
+        dynamicImports: ['assets/Orders.js'],
+      }),
+      'assets/Orders.js': chunk(
+        'assets/Orders.js',
+        `t({$_hash:"${SAVE_TEMPLATE}"})\`Save\``
+      ),
+    };
+    (compile.vite.generateBundle as Hook).call(
+      { ...CLIENT, emitFile() {} },
+      ...([{}, bundle] as never[])
+    );
+    const name = () =>
+      (wrap.vite.generateBundle as { handler: Hook }).handler.call(
+        CLIENT,
+        ...([{}, bundle] as never[])
+      );
+    return Object.assign(name, { onSplit });
+  }
+
+  it('hands the plugin of the framework what the client build wrote, once', async () => {
+    const { onSplit } = await buildClient(
+      `e(()=>import("./Orders.js"),"${IMPORTED_CHUNKS_PLACEHOLDER}")`
+    );
+    expect(onSplit.mock.calls).toEqual([
+      [
+        {
+          entries: {
+            'assets/index.js': {
+              state: {
+                b: '/',
+                f: 'assets/index',
+                h: { fr: 'ad5321fc' },
+                v: { fr: '5ba11f71' },
+                c: 'e9d6aae7',
+                n: 'assets/gt-current',
+              },
+              messages: [],
+              files: [],
+            },
+          },
+          imports: { 'assets/Orders.js': ['assets/Orders'] },
+          files: { 'assets/Orders': [SAVE_TEMPLATE] },
+          unsplit: [],
+        },
+      ],
+    ]);
+  });
+
+  it("keeps a message unsplit when a msg('text') has it too, which m() reads by its hash from any page", async () => {
+    const { onSplit } = await buildClient(
+      `e(()=>import("./Orders.js"),"${IMPORTED_CHUNKS_PLACEHOLDER}")`,
+      undefined,
+      "import { msg } from 'gt-tanstack-start';\nexport const label = msg('Save');"
+    );
+    expect(onSplit.mock.calls[0][0]).toMatchObject({
+      files: { 'assets/Orders': [SAVE_TEMPLATE] },
+      unsplit: [SAVE_TEMPLATE],
+    });
+  });
+
+  it('tells the framework of the msg() messages in the code of a server, as a template or a string, and of no other message there', async () => {
+    const onServerMessages = vi.fn();
+    const { compile, transformCode } = createBuild({
+      ...SERVER_RENDERED,
+      splitTranslationsHost: { ...HOST, onServerMessages },
+    });
+    await transformCode(
+      SERVER,
+      `import { getGT, msg } from 'gt-tanstack-start';
+export async function handler() {
+  const t = await getGT();
+  return [t\`Archive\`, msg\`Draft\`, msg('Save'), msg(\`Sent\`), msg(handler.name)];
+}`
+    );
+    // The same call in the code of a browser is the client build's to place
+    await transformCode(
+      CLIENT,
+      "import { msg } from 'gt-tanstack-start';\nexport const label = msg('Deleted');"
+    );
+    expect(onServerMessages).not.toHaveBeenCalled();
+    (compile.vite.generateBundle as Hook).call(
+      { ...SERVER, emitFile() {} },
+      ...([{}, {}] as never[])
+    );
+    expect(onServerMessages.mock.calls).toEqual([
+      [
+        ['Draft', 'Save', 'Sent']
+          .map((source) => hashSource({ source, dataFormat: 'MESSAGE_TREE' }))
+          .sort(),
+      ],
+    ]);
+  });
+
+  it.each(['silent', 'error'] as const)(
+    'hands it over in a build whose logLevel is %s, which silences warnings alone',
+    async (logLevel) => {
+      const { onSplit } = await buildClient(
+        `e(()=>import("./Orders.js"),"${IMPORTED_CHUNKS_PLACEHOLDER}")`,
+        { logLevel }
+      );
+      expect(onSplit).toHaveBeenCalledTimes(1);
+      expect(console.warn).not.toHaveBeenCalled();
+    }
+  );
+
+  it('fails the build on an import it could not wrap that loads translations, naming the package to add', async () => {
+    const name = await buildClient(`import("./Orders.js")`);
+    expect(name).toThrow(
+      /cannot load the translations of assets\/Orders\.js because a dynamic import the build could not wrap loads them.*cannot resolve gt-tanstack-start\/chunk-translations.*Add gt-tanstack-start to the dependencies/s
+    );
+  });
+
+  it('accepts a build whose imports are all wrapped, without asking for initializeGTSPA', async () => {
+    const name = await buildClient(
+      `e(()=>import("./Orders.js"),"${IMPORTED_CHUNKS_PLACEHOLDER}")`
+    );
+    expect(name).not.toThrow();
+    expect(console.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('initializeGTSPA')
+    );
+  });
+
+  it('only warns of such an import in an app that starts with initializeGTSPA', async () => {
+    const name = await buildClient(`import("./Orders.js")`, {
+      splitTranslationsHost: undefined,
+    });
+    expect(name).not.toThrow();
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Nothing waits for the translations of assets/Orders.js'
+      )
+    );
   });
 });

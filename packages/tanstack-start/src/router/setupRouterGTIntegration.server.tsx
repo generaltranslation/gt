@@ -5,6 +5,10 @@ import {
   isLocaleRoutingEnabled,
 } from 'gt-tanstack-start/internal/initializeGT.server';
 import {
+  createSplitSeed,
+  createSplitShellSeed,
+} from 'gt-tanstack-start/internal/splitTranslations';
+import {
   createGTRouterWrap,
   readGTRouterState,
   type GTConditionSource,
@@ -68,13 +72,45 @@ export function integrateRouter<State extends GTRouterState>(
     dehydrate: async () => {
       const dehydrated =
         (await originalDehydrate?.()) as GTDehydratedRouterData<State>;
-      const state = await gt.load();
+      const loaded = await gt.load();
       // A prerendered SPA shell is served to every visitor in the build-time
       // locale. The client hydrates it with that state, then renders the
-      // visitor's own.
+      // visitor's own, whose files it loads itself.
+      if (router.isShell?.()) {
+        const split = await createSplitShellSeed(router);
+        // The shell hydrates with the state it was rendered with, so its
+        // translations are keyed as the browser's call sites read them
+        const rendered = split
+          ? createSplitSeed(
+              router,
+              loaded.locale,
+              loaded.translations[loaded.locale]
+            )
+          : undefined;
+        return {
+          ...dehydrated,
+          gt: {
+            ...loaded,
+            ...(rendered?.t && {
+              translations: { [loaded.locale]: rendered.t },
+            }),
+            shell: true,
+            ...(split && { split }),
+          },
+        };
+      }
+      // In a build that splits translations the page gets those of its own
+      // chunks, and the server still renders from the whole catalog.
+      const split = loaded.enableI18n
+        ? createSplitSeed(
+            router,
+            loaded.locale,
+            loaded.translations[loaded.locale]
+          )
+        : undefined;
       return {
         ...dehydrated,
-        gt: router.isShell?.() ? { ...state, shell: true } : state,
+        gt: split ? { ...loaded, translations: {}, split } : loaded,
       };
     },
     Wrap: gt.Wrap,

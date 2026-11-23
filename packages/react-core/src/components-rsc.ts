@@ -36,6 +36,7 @@ export { RscT as T } from './components/translation/T.rsc';
 export { RscTx as Tx } from './components/translation/Tx.rsc';
 
 // ===== Helpers ===== //
+export { withRequestConditions } from './components/helpers/withRequestConditions';
 export { getPluralBranch } from './utils/plurals/getPluralBranch';
 export { getShouldTranslate } from './hooks/utils/getShouldTranslate';
 export { prepareT } from './utils/translation/prepareT.shared';
@@ -50,9 +51,11 @@ export {
 } from './utils/rendering/renderPipeline.rsc';
 
 // ===== Types ===== //
+export type { RequestConditions } from './components/helpers/withRequestConditions';
 export type {
   JsxTranslationOptions,
   PreparedT,
+  ResolvedTProps,
   TProps,
 } from './utils/translation/prepareT.shared';
 export type { SelectProps } from './components/branches/Select';

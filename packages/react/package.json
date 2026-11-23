@@ -190,6 +190,16 @@
         "types": "./dist/chunk-translations.d.mts",
         "default": "./dist/chunk-translations.mjs"
       }
+    },
+    "./chunk-translations/server": {
+      "require": {
+        "types": "./dist/chunk-translations.server.d.cts",
+        "default": "./dist/chunk-translations.server.cjs"
+      },
+      "import": {
+        "types": "./dist/chunk-translations.server.d.mts",
+        "default": "./dist/chunk-translations.server.mjs"
+      }
     }
   },
   "keywords": [

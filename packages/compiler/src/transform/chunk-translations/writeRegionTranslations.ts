@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { GTOutputFileConfig } from 'generaltranslation';
+import type {
+  SplitTranslationsOutput,
+  SplitTranslationsState,
+} from 'generaltranslation/internal';
 import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
@@ -40,7 +44,7 @@ import {
   readMinifiedIds,
   readPlaceholders,
 } from './hashMinification';
-import { renderStartupScript } from './startupScript';
+import { createLoaderState, renderStartupScript } from './startupScript';
 import {
   getUnsplitTranslations,
   UNSPLIT_TRANSLATIONS_KEY,
@@ -50,6 +54,8 @@ import {
   CURRENT_NAMES_KEY,
   findBundledCatalogs,
   getFileHash,
+  getIdHashes,
+  getUnsplitHashes,
   getFileName,
   loadChunkTranslationsTable,
   pickTranslations,
@@ -303,6 +309,10 @@ export function renderRegionTranslations(
   unsplit: { locale: string; count: number; bytes: number }[];
   /** Writes the startup script of each entry chunk, by its file, for a page that finds the build's files at a base */
   startupScripts: Map<string, (base: string) => string>;
+  /** What the loader of a page that starts from each entry chunk starts with, by the chunk's file */
+  states: Map<string, SplitTranslationsState>;
+  /** What the call sites pass for the messages of each file, by its key */
+  messages: Record<string, string[]>;
 } {
   const getKey = (id: string) =>
     path.posix.join(assetsDir, `${REGION_FILE_PREFIX}${id}`);
@@ -390,8 +400,37 @@ export function renderRegionTranslations(
   }
 
   const startupScripts = new Map<string, (base: string) => string>();
+  const states = new Map<string, SplitTranslationsState>();
   for (const [entry, ids] of assignment.entries) {
     const keys = getKeys(ids);
+    states.set(
+      entry,
+      createLoaderState({
+        base,
+        entry: mapKey,
+        hashes: mapHashes,
+        tokens: {},
+        maps: undefined,
+        regions: Object.fromEntries(
+          locales.map((locale) => [
+            locale,
+            Object.fromEntries(
+              keys.flatMap((key) =>
+                fileHashes[locale][key] ? [[key, fileHashes[locale][key]]] : []
+              )
+            ),
+          ])
+        ),
+        unsplit: unsplitFiles.length
+          ? {
+              key: path.posix.join(assetsDir, UNSPLIT_TRANSLATIONS_KEY),
+              hashes: unsplitHashes,
+            }
+          : undefined,
+        current,
+        assignment: undefined,
+      })
+    );
     const renderScript = (pageBase: string) =>
       renderStartupScript({
         base: pageBase,
@@ -426,6 +465,15 @@ export function renderRegionTranslations(
   return {
     files,
     startupScripts,
+    states,
+    messages: Object.fromEntries(
+      [...assignment.files].map(([id, hashes]) => [
+        getKey(id),
+        passedIds && build.minifiedIds
+          ? [...hashes].flatMap((hash) => passedIds.get(hash) ?? [])
+          : [...hashes],
+      ])
+    ),
     manifest: {
       ...manifest,
       assignment: {
@@ -540,6 +588,8 @@ export function writeRegionTranslations(
   importMap: ChunkImportMap | undefined;
   /** The names the lists hold the imported chunks under, see findImportedNames */
   importedNames: ChunkImportMap | undefined;
+  /** What a framework that renders on a server is handed, see `SplitTranslationsHost` */
+  output: SplitTranslationsOutput;
 } {
   const chunks = Object.values(bundle).filter(
     (file): file is RegionBundleFile & RegionChunk =>
@@ -591,36 +641,38 @@ export function writeRegionTranslations(
   if (uncovered.length)
     throw new Error(createUncoveredMessagesError(uncovered));
 
-  const { files, manifest, unsplit, startupScripts } = renderRegionTranslations(
-    {
-      files: assignment.files,
-      entries: new Map(
-        chunks.flatMap((chunk) =>
-          chunk.isEntry
-            ? [
-                [
-                  chunk.fileName,
-                  (chunk.facadeModuleId &&
-                    assignment.entries.get(chunk.facadeModuleId)) ||
-                    [],
-                ] as const,
-              ]
-            : []
-        )
-      ),
-      imports: imports.byChunk,
-      importedNames,
-    },
-    build,
-    table,
-    {
-      base,
-      assetsDir,
-      samples,
-      unsplit: getUnsplitTranslations(table, build),
-      ...(ids && { passedIds: findPassedIds(chunks, ids) }),
-    }
-  );
+  const unsplitTranslations = getUnsplitTranslations(table, build);
+  const { files, manifest, unsplit, startupScripts, states, messages } =
+    renderRegionTranslations(
+      {
+        files: assignment.files,
+        entries: new Map(
+          chunks.flatMap((chunk) =>
+            chunk.isEntry
+              ? [
+                  [
+                    chunk.fileName,
+                    (chunk.facadeModuleId &&
+                      assignment.entries.get(chunk.facadeModuleId)) ||
+                      [],
+                  ] as const,
+                ]
+              : []
+          )
+        ),
+        imports: imports.byChunk,
+        importedNames,
+      },
+      build,
+      table,
+      {
+        base,
+        assetsDir,
+        samples,
+        unsplit: unsplitTranslations,
+        ...(ids && { passedIds: findPassedIds(chunks, ids) }),
+      }
+    );
   for (const file of files) emitFile({ type: 'asset', ...file });
   emitFile({
     type: 'asset',
@@ -638,5 +690,19 @@ export function writeRegionTranslations(
     stats: { ...assignment.stats, files: assignment.files.size },
     importMap,
     importedNames,
+    output: {
+      entries: Object.fromEntries(
+        Object.entries(manifest.entries).map(([entry, held]) => [
+          entry,
+          { state: states.get(entry)!, messages: [], files: held.files },
+        ])
+      ),
+      imports: manifest.imports,
+      files: messages,
+      ...(build.minifiedIds && {
+        hashes: getIdHashes(Object.values(messages), build.minifiedIds),
+      }),
+      unsplit: getUnsplitHashes(unsplitTranslations),
+    },
   };
 }

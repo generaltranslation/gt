@@ -44,6 +44,14 @@
  * Nothing here runs when a module loads, and all state is on one global
  * object, which the startup script creates before any module runs.
  *
+ * A page that a server rendered has no startup script and no
+ * `initializeChunkTranslations()`. Its server sends a seed with it, made
+ * with `gt-react/chunk-translations/server`: where the build's files are,
+ * and the translations of what the page hydrates, so it requests no file
+ * before it hydrates. The framework's runtime gives it to
+ * `seedChunkTranslations()`, and every later import loads its files as
+ * above.
+ *
  * A build with the compiler's hash minification imports what it loads and
  * starts with by a second name, `loadMinifiedChunk()` for `loadChunk()` and
  * so on: a gt-react that does not read the files of such a build has no such
@@ -73,3 +81,8 @@ export {
   loadRegionChunk as loadMinifiedRegionChunk,
   loadRegionChunkTranslations,
 } from './chunk-translations/region';
+export type { ChunkTranslationsSeed } from './chunk-translations/seed';
+export {
+  loadSeededTranslations,
+  seedChunkTranslations,
+} from './chunk-translations/seed';

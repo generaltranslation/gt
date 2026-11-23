@@ -2,7 +2,10 @@ import { TraverseOptions } from '@babel/traverse';
 import * as t from '@babel/types';
 import { isGTMessageImportSource } from 'generaltranslation/internal';
 import { TransformState } from '../state/types';
-import { injectTaggedTemplateHash } from '../transform/injection/injectTaggedTemplateHash';
+import {
+  getStringMessageHash,
+  injectTaggedTemplateHash,
+} from '../transform/injection/injectTaggedTemplateHash';
 import type { MessageTree } from '@generaltranslation/icu';
 import {
   keepUnsplit,
@@ -24,14 +27,24 @@ export function taggedTemplateHashInjectionPass(
   findPrecompute?: () => boolean
 ): TraverseOptions {
   // A build with chunk translations splits t templates by chunk; m() renders
-  // a msg away from its call site, so its translation stays unsplit
+  // a msg away from its call site, so its translation stays unsplit. In an
+  // environment such a build does not split, as a server's, the msg can
+  // reach a browser as data: the build's host is told of it.
+  const { serverMessages } = state.settings;
+  const onMessage = state.settings.chunkTranslations
+    ? (hash: string) => keepUnsplit(hash, state)
+    : serverMessages && ((hash: string) => void serverMessages.add(hash));
   const onHash = state.settings.chunkTranslations
     ? (hash: string, isMsg: boolean, tree: MessageTree) => {
         if (!isMsg) return recordChunkHash(hash, state, tree);
         keepUnsplit(hash, state);
         return hash;
       }
-    : undefined;
+    : serverMessages &&
+      ((hash: string, isMsg: boolean) => {
+        if (isMsg) serverMessages.add(hash);
+        return hash;
+      });
   // A build with hash minification keeps what a template hashed at runtime can read
   const onRuntimeTree = state.settings.chunkTranslations?.runtimeReaders
     ? (tree: MessageTree | undefined) => recordRuntimeReader(tree, state)
@@ -46,6 +59,13 @@ export function taggedTemplateHashInjectionPass(
         state.statistics.taggedTemplateHashInjectionsCount += 1;
       }
     },
+    // msg('text') is no template to rewrite, and m() still reads it by hash
+    ...(onMessage && {
+      CallExpression(path) {
+        const hash = getStringMessageHash(path);
+        if (hash !== undefined) onMessage(hash);
+      },
+    }),
   };
 }
 

@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { withRequestConditions } from '../components-rsc';
 
 describe('@generaltranslation/react-core/components-rsc', () => {
   it('exports the placeholder RSC component surface', async () => {
@@ -35,4 +36,50 @@ describe('@generaltranslation/react-core/components-rsc', () => {
     expect(mod.createRenderPipeline).toBeUndefined();
     expect(mod.t).toBeUndefined();
   });
+
+  it("gives a bound component the request's conditions each time it renders", () => {
+    const Component = Object.assign(
+      (props: { children: string; _locale: string; _enableI18n: boolean }) =>
+        props,
+      { _gtt: { kind: 'translate' } as const }
+    );
+    const getRequestConditions = vi
+      .fn()
+      .mockReturnValueOnce({ _locale: 'fr', _enableI18n: true })
+      .mockReturnValueOnce({ _locale: 'de', _enableI18n: false });
+    const Bound = withRequestConditions(Component, getRequestConditions);
+
+    expect(Bound({ children: 'Save' })).toEqual({
+      children: 'Save',
+      _locale: 'fr',
+      _enableI18n: true,
+    });
+    expect(Bound({ children: 'Save' })).toEqual({
+      children: 'Save',
+      _locale: 'de',
+      _enableI18n: false,
+    });
+  });
+
+  it.each([
+    [undefined, { kind: 'translate' }],
+    [
+      { kind: 'translate', automatic: true },
+      { kind: 'translate', automatic: true },
+    ],
+  ] as const)(
+    'marks a bound component as %j says, or as the one it wraps',
+    (marker, expected) => {
+      const Component = Object.assign(() => null, {
+        _gtt: { kind: 'translate' } as const,
+      });
+      const Bound = withRequestConditions(
+        Component,
+        () => ({ _locale: 'fr', _enableI18n: true }),
+        marker
+      );
+
+      expect(Bound._gtt).toEqual(expected);
+    }
+  );
 });

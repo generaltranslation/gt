@@ -21,6 +21,51 @@ export function createCompilerUnresolvedWarning(error: unknown): string {
   });
 }
 
+export const splitRequiresCompilerError = createDiagnosticMessage({
+  source: 'gt-tanstack-start',
+  severity: 'Error',
+  whatHappened:
+    "experimentalSplitTranslations is on and experimentalCompilerOptions.type is 'none'",
+  why: 'the GT compiler is what splits translations',
+  fix: "Remove type from experimentalCompilerOptions in gtTanstackStart(), or set it to 'babel'",
+  wayOut: 'turn experimentalSplitTranslations off',
+});
+
+export function createSplitCustomLoaderError(file: string): string {
+  return createDiagnosticMessage({
+    source: 'gt-tanstack-start',
+    severity: 'Error',
+    whatHappened: `experimentalSplitTranslations cannot be used with the loadTranslations of ${file}`,
+    why: 'the build writes the translations a navigation loads from the files at files.gt.output, and the server would render a first visit from what that loader returns, which can be other translations or other locales',
+    fix: `Remove ${file} and the loadTranslationsPath option, so every translation comes from files.gt.output`,
+    wayOut: 'turn experimentalSplitTranslations off',
+  });
+}
+
+export function createSplitServerMessagesError(): string {
+  return createDiagnosticMessage({
+    source: 'gt-tanstack-start',
+    severity: 'Error',
+    whatHappened:
+      'experimentalSplitTranslations could not give the server the messages of its own code',
+    why: 'no chunk of the server build holds the place they are written into',
+    fix: 'Report this defect of the build to General Translation',
+    wayOut: 'turn experimentalSplitTranslations off',
+  });
+}
+
+export function createSplitOrderError(): string {
+  return createDiagnosticMessage({
+    source: 'gt-tanstack-start',
+    severity: 'Error',
+    whatHappened:
+      'experimentalSplitTranslations cannot give the server the translation files of the client build',
+    why: 'the server was built before the client, and gt-tanstack-start reads what the client build wrote while it builds the server',
+    fix: 'Build the client environment before the ssr environment, as TanStack Start does',
+    wayOut: 'turn experimentalSplitTranslations off',
+  });
+}
+
 export const duplicateCompilerWarning = createDiagnosticMessage({
   source: 'gt-tanstack-start',
   severity: 'Warning',

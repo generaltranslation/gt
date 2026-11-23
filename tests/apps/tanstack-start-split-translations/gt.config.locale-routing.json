@@ -1,0 +1,11 @@
+{
+  "defaultLocale": "en",
+  "locales": ["fr", "de"],
+  "localeRouting": true,
+  "files": {
+    "gt": {
+      "output": "src/_gt/[locale].json"
+    }
+  },
+  "src": ["src/**/*.tsx", "src/**/*.ts"]
+}

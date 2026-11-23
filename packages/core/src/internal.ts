@@ -28,6 +28,11 @@ export {
   type CredentialsEnv,
   type ResolvedCredentials,
 } from './config/credentials';
+export { splitTranslationsEnvNames } from './config/splitTranslations';
+export type {
+  SplitTranslationsOutput,
+  SplitTranslationsState,
+} from './types-dir/splitTranslations';
 export { getPluralBranchKey, isAcceptedPluralForm } from './settings/plurals';
 export {
   isGTMessageHelperName,

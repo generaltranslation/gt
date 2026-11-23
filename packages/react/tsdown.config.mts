@@ -41,6 +41,7 @@ const entries = [
   'src/compat.server.ts',
   'src/vite.ts',
   'src/chunk-translations.ts',
+  'src/chunk-translations.server.ts',
 ];
 
 // src/index.types.ts only backs the exports map's "types" conditions; its
@@ -53,12 +54,11 @@ export default defineConfig(
     entries.flatMap((entry, index) => {
       // Entries that share React context and singletons keep react-core and
       // gt-i18n external.
-      const entryDeps =
-        entry === 'src/chunk-translations.ts'
-          ? chunkTranslationsDeps
-          : /^src\/(?:index|compat)\./.test(entry)
-            ? contextDeps
-            : deps;
+      const entryDeps = entry.startsWith('src/chunk-translations.')
+        ? chunkTranslationsDeps
+        : /^src\/(?:index|compat)\./.test(entry)
+          ? contextDeps
+          : deps;
       const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);
 
       return [
