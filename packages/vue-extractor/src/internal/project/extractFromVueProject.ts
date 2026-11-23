@@ -391,7 +391,7 @@ function addCatalogHash(
 }
 
 /** Merges duplicate Vue hashes without repeating source-location metadata. */
-function deduplicateProjectUpdates(
+export function deduplicateProjectUpdates(
   updates: VueProjectExtractionResult[]
 ): void {
   const byHash = new Map<string, VueProjectExtractionResult>();
@@ -410,7 +410,8 @@ function deduplicateProjectUpdates(
       update.metadata.sourceCode
     );
   }
-  updates.splice(0, updates.length, ...byHash.values());
+  updates.length = 0;
+  for (const update of byHash.values()) updates.push(update);
 }
 
 function mergeUnique(

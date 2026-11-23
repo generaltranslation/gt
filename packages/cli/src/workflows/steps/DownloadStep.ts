@@ -218,9 +218,9 @@ export class DownloadTranslationsStep {
         forceDownload,
         this.inlineLibrary
       );
-      successful.push(...batchResult.successful);
-      skipped.push(...batchResult.skipped);
-      failed.push(...batchResult.failed);
+      for (const file of batchResult.successful) successful.push(file);
+      for (const file of batchResult.skipped) skipped.push(file);
+      for (const file of batchResult.failed) failed.push(file);
       remainingFiles = batchResult.retryable;
 
       this.spinner?.advance(
@@ -230,7 +230,7 @@ export class DownloadTranslationsStep {
       );
       if (remainingFiles.length === 0 || retry === TRANSIENT_READ_RETRIES) {
         // Files still retryable after the last retry did not download
-        failed.push(...remainingFiles);
+        for (const file of remainingFiles) failed.push(file);
         this.spinner?.advance(remainingFiles.length);
         return { successful, failed, skipped };
       }
