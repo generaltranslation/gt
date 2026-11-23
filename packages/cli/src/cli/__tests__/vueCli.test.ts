@@ -332,7 +332,7 @@ describe('Vue CLI', () => {
         commandNames(initialize(NodeCLI, Libraries.GT_I18N))
       );
       expect(commandNames(routed)).toEqual(
-        expect.arrayContaining(['generate', 'validate'])
+        expect.arrayContaining(['setup', 'generate', 'validate'])
       );
       expect(
         new InlineLibraryProbe(new Command(), Libraries.GT_I18N).inlineLibrary()

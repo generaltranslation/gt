@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { SupportedLibraries } from '../types/index.js';
 import { InlineCLI } from './inline.js';
-import { NODE_LIBRARIES, NodeLibrary } from '../types/libraries.js';
+import { Libraries, NODE_LIBRARIES, NodeLibrary } from '../types/libraries.js';
 import { checkMonorepoVersionConsistency } from '../utils/monorepoVersionCheck.js';
 
 /**
@@ -23,5 +23,12 @@ export class NodeCLI extends InlineCLI {
         actionCommand.opts().config
       );
     });
+  }
+
+  public override init(): void {
+    super.init();
+    if (this.library === Libraries.GT_I18N) {
+      this.setupSetupProjectCommand();
+    }
   }
 }
