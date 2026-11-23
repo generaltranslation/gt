@@ -191,7 +191,7 @@ describe('what the server sends with a page', () => {
   });
 
   it.each([
-    ['a locale the build has no files for', 'de', CATALOG, TABLE],
+    ['a locale without files of the build or translations', 'de', {}, TABLE],
     ['a locale whose catalog did not load', 'fr', undefined, TABLE],
     ['a build that does not split translations', 'fr', CATALOG, undefined],
   ])('sends nothing for %s', (_name, locale, translations, table) => {

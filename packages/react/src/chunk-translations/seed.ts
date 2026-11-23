@@ -105,6 +105,8 @@ function holdSeeded(
     requests[locale] = Promise.resolve(true);
     return;
   }
+  // A locale the build has no files for was seeded with every chunk
+  if (state.h?.[locale] === undefined) return;
   // Safari has no requestIdleCallback
   const idle =
     globalThis.requestIdleCallback ?? ((run: () => void) => setTimeout(run, 1));

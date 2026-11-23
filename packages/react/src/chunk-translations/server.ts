@@ -60,9 +60,14 @@ const pick = <T>(
 /**
  * What a page rendered for one request is seeded with: the translations of
  * the entry, of the imports of `chunks`, of the unsplit messages and of the
- * server's own messages, read from the locale's catalog. Undefined when the
- * build has no files for the locale, as for the default one: the page then
- * takes its translations as it does without the split.
+ * server's own messages, read from the locale's catalog and keyed as the
+ * browser reads them.
+ *
+ * The build may have no files for the locale while the catalog has
+ * translations, as when a server loads catalogs the build did not read.
+ * Nothing the page requests later could add to what it holds then, so it is
+ * seeded with the translations of every chunk. Undefined when there is
+ * nothing to seed, as in the default locale.
  *
  * @param output What the compiler handed the framework's plugin.
  * @param page.locale The locale of the response.
@@ -79,9 +84,12 @@ export function createChunkTranslationsSeed(
   }: Page & { locale: string; translations: Record<string, unknown> }
 ): ChunkTranslationsSeed | undefined {
   const entry = findEntry(output, chunks);
-  if (!entry || entry.state.h[locale] === undefined) return undefined;
+  if (!entry) return undefined;
   const { state } = entry;
-  const imported = chunks.filter((chunk) => output.imports[chunk]);
+  const hasFiles = state.h[locale] !== undefined;
+  const imported = hasFiles
+    ? chunks.filter((chunk) => output.imports[chunk])
+    : Object.keys(output.imports);
   const files = [
     ...new Set([
       ...entry.files,
@@ -96,6 +104,7 @@ export function createChunkTranslationsSeed(
   entry.messages.forEach(add);
   for (const file of files) output.files[file]?.forEach(add);
   output.unsplit.forEach(add);
+  if (!hasFiles && Object.keys(seeded).length === 0) return undefined;
   return {
     s: {
       ...getState(state, base),

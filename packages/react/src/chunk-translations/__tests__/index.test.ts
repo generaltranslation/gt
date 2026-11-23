@@ -2122,9 +2122,60 @@ describe('gt-react/chunk-translations', () => {
       expect(t({ $_hash: 'reports' } as never)`Reports`).toBe('Rapports');
     });
 
-    it('makes no seed for a locale the build has no files for, and one without translations for a page of every locale', () => {
+    it('seeds a locale the build has no files for with every chunk of its catalog, by the ids the browser reads, and then requests nothing', async () => {
+      // A catalog the server loaded for a locale the build did not read
+      const minified = {
+        ...OUTPUT,
+        files: {
+          'assets/Orders-b2': ['kR3_x0Qa.0'],
+          'assets/Reports-d4': ['Zc_R6KKp.0'],
+        },
+        hashes: { 'kR3_x0Qa.0': ORDERS, 'Zc_R6KKp.0': 'reports' },
+      };
+      const seed = createChunkTranslationsSeed(minified, {
+        ...PAGE,
+        locale: 'es',
+        translations: { [ORDERS]: 'Pedidos', reports: 'Informes' },
+      })!;
+      expect(seed).toEqual({
+        s: {
+          b: '/',
+          f: 'assets/index-a1',
+          h: {},
+          v: {},
+          n: 'assets/gt-current',
+          u: 'assets/gt-unsplit',
+          o: {},
+        },
+        t: { 'kR3_x0Qa.0': 'Pedidos', 'Zc_R6KKp.0': 'Informes' },
+        c: [ORDERS_CHUNK, 'assets/Reports-d4.js'],
+        k: ['assets/Orders-b2', 'assets/Reports-d4'],
+      });
+
+      const fetched = serve();
+      setLocale('es');
+      await initializeGTSPA({
+        defaultLocale: 'en',
+        locales: ['fr', 'es'],
+        loadTranslations: loadSeededTranslations,
+      });
+      vi.useFakeTimers();
+      await seedChunkTranslations(seed);
+      await vi.runAllTimersAsync();
+      vi.useRealTimers();
+      expect(t({ $_hash: 'kR3_x0Qa.0' } as never)`Orders`).toBe('Pedidos');
+      await loadChunk(evaluate([]), 'assets/Reports-d4.js');
+      expect(fetched).not.toHaveBeenCalled();
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('makes no seed for a locale without translations, and one without translations for a page of every locale', () => {
       expect(
-        createChunkTranslationsSeed(OUTPUT, { ...PAGE, locale: 'en' })
+        createChunkTranslationsSeed(OUTPUT, {
+          ...PAGE,
+          locale: 'en',
+          translations: {},
+        })
       ).toBeUndefined();
       expect(
         createChunkTranslationsShellSeed(OUTPUT, { ...SHELL, base: '/app/' })
