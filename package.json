@@ -13,6 +13,7 @@
     "watch": "pnpm build:watch",
     "build:watch": "turbo watch build --filter='./packages/*' --ui tui",
     "analyze:bundle": "pnpm --filter gt-bundle-analysis start",
+    "bench:message-formats": "pnpm --dir tools/message-format-bench install --frozen-lockfile && pnpm --dir tools/message-format-bench start",
     "test": "turbo run test --filter='./packages/*'",
     "lint": "pnpm check:library-defaults && pnpm check:reexports && pnpm check:test-locations && pnpm test:prerelease-label && pnpm check:config-schema && oxlint packages && pnpm --filter './examples/*' --filter './tests/apps/**/*' --if-present run lint && oxfmt --check .",
     "lint:fix": "oxlint packages --fix && pnpm --filter './examples/*' --filter './tests/apps/**/*' --if-present lint --fix && oxfmt .",
