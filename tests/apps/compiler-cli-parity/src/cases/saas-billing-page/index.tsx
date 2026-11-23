@@ -1,4 +1,4 @@
-import { Branch, Num } from 'gt-react';
+import { Select, Num } from 'gt-react';
 
 export default function SaasBillingPage() {
   const plan = { name: 'Pro', price: 49, interval: 'month' };
@@ -49,8 +49,8 @@ export default function SaasBillingPage() {
 
       <section>
         <h2>Payment Method</h2>
-        <Branch
-          branch={paymentMethod.type}
+        <Select
+          value={paymentMethod.type}
           card={
             <div>
               <span>{paymentMethod.brand} ending in {paymentMethod.last4}</span>
@@ -62,7 +62,7 @@ export default function SaasBillingPage() {
             <p>No payment method on file.</p>
             <button>Add payment method</button>
           </div>
-        </Branch>
+        </Select>
       </section>
 
       <section>

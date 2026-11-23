@@ -24,9 +24,9 @@ export function fillCount(branch: ReactNode, n: number | bigint): ReactNode {
     )
       return cloneElement(node, { _count: n });
     if (marker?.kind === 'plural' || marker?.kind === 'ordinal') return node;
-    // A <Branch> keeps its named branches in its props.
+    // A <Select> keeps its named branches in its props.
     const names =
-      marker?.kind === 'branch' ? Object.keys(node.props) : ['children'];
+      marker?.kind === 'select' ? Object.keys(node.props) : ['children'];
     const filled = names
       .map((name) => [name, fill(node.props[name] as ReactNode)] as const)
       .filter(([name, value]) => !Object.is(value, node.props[name]));

@@ -89,7 +89,7 @@ function holeVariants(
       case 'ordinal':
       case 'select':
         return branchHoleVariants(helper, expression, context);
-      case 'number':
+      case 'num':
       case 'date':
       case 'time': {
         if (args.length < 1 || args.length > 2) {
@@ -99,11 +99,12 @@ function holeVariants(
           );
         }
         const variable = getHoleVariable(args[0], context);
-        const options =
-          args[1] && getIntlOptions(args[1].node, helper, context);
+        // num() builds the tree node named after ICU's keyword.
+        const kind = helper === 'num' ? 'number' : helper;
+        const options = args[1] && getIntlOptions(args[1].node, kind, context);
         return [
           {
-            kind: helper,
+            kind,
             ...variable,
             ...(options && { options }),
           } as TemplateHole,

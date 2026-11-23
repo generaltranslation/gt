@@ -50,9 +50,9 @@
             "column": 43,
             "index": 269
           },
-          "identifierName": "Branch"
+          "identifierName": "Select"
         },
-        "name": "Branch"
+        "name": "Select"
       },
       {
         "type": "ObjectExpression",
@@ -103,9 +103,9 @@
                   "column": 18,
                   "index": 291
                 },
-                "identifierName": "branch"
+                "identifierName": "value"
               },
-              "name": "branch"
+              "name": "value"
             },
             "computed": false,
             "shorthand": false,
@@ -218,9 +218,9 @@
                       "column": 43,
                       "index": 346
                     },
-                    "identifierName": "Branch"
+                    "identifierName": "Select"
                   },
-                  "name": "Branch"
+                  "name": "Select"
                 },
                 {
                   "type": "ObjectExpression",
@@ -271,9 +271,9 @@
                             "column": 22,
                             "index": 372
                           },
-                          "identifierName": "branch"
+                          "identifierName": "value"
                         },
-                        "name": "branch"
+                        "name": "value"
                       },
                       "computed": false,
                       "shorthand": false,
@@ -800,9 +800,9 @@
                                               "column": 49,
                                               "index": 799
                                             },
-                                            "identifierName": "Branch"
+                                            "identifierName": "Select"
                                           },
-                                          "name": "Branch"
+                                          "name": "Select"
                                         },
                                         {
                                           "type": "ObjectExpression",
@@ -853,9 +853,9 @@
                                                     "column": 34,
                                                     "index": 837
                                                   },
-                                                  "identifierName": "branch"
+                                                  "identifierName": "value"
                                                 },
-                                                "name": "branch"
+                                                "name": "value"
                                               },
                                               "computed": false,
                                               "shorthand": false,
@@ -1233,11 +1233,11 @@
             "identifier": 0
           }
         ],
-        "Branch": [
+        "Select": [
           {
             "scopeId": 0,
-            "canonicalName": "Branch",
-            "aliasName": "Branch",
+            "canonicalName": "Select",
+            "aliasName": "Select",
             "isTranslationFunction": true,
             "type": "generaltranslation",
             "identifier": 0

@@ -6,7 +6,6 @@ import {
 } from 'vue';
 
 const NON_BRANCH_ATTRIBUTE_NAMES = new Set([
-  'branch',
   'class',
   'key',
   'n',
@@ -18,6 +17,7 @@ const NON_BRANCH_ATTRIBUTE_NAMES = new Set([
   'ref_for',
   'ref_key',
   'style',
+  'value',
 ]);
 
 /** Values that Vue and the extractor can represent as an attribute branch. */
@@ -72,7 +72,7 @@ export function asFragmentRoot(children: VNodeChild): VNodeChild[] {
 
 /**
  * Returns whether an inherited component attribute is translation content for
- * `Branch` or `Plural`.
+ * `Select` or `Plural`.
  *
  * Vue places presentation attributes, listeners, and arbitrary objects in the
  * same `$attrs` object as explicit branch attributes. Treating all of them as

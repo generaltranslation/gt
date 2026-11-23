@@ -67,9 +67,9 @@
                 "column": 37,
                 "index": 227
               },
-              "identifierName": "Branch"
+              "identifierName": "Select"
             },
-            "name": "Branch"
+            "name": "Select"
           },
           {
             "type": "ObjectExpression",
@@ -120,9 +120,9 @@
                       "column": 22,
                       "index": 253
                     },
-                    "identifierName": "branch"
+                    "identifierName": "value"
                   },
-                  "name": "branch"
+                  "name": "value"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -346,9 +346,9 @@
                 "column": 37,
                 "index": 400
               },
-              "identifierName": "Branch"
+              "identifierName": "Select"
             },
-            "name": "Branch"
+            "name": "Select"
           },
           {
             "type": "ObjectExpression",
@@ -399,9 +399,9 @@
                       "column": 22,
                       "index": 426
                     },
-                    "identifierName": "branch"
+                    "identifierName": "value"
                   },
-                  "name": "branch"
+                  "name": "value"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -625,9 +625,9 @@
                 "column": 37,
                 "index": 573
               },
-              "identifierName": "Branch"
+              "identifierName": "Select"
             },
-            "name": "Branch"
+            "name": "Select"
           },
           {
             "type": "ObjectExpression",
@@ -678,9 +678,9 @@
                       "column": 22,
                       "index": 599
                     },
-                    "identifierName": "branch"
+                    "identifierName": "value"
                   },
-                  "name": "branch"
+                  "name": "value"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -924,9 +924,9 @@
                 "column": 37,
                 "index": 746
               },
-              "identifierName": "Branch"
+              "identifierName": "Select"
             },
-            "name": "Branch"
+            "name": "Select"
           },
           {
             "type": "ObjectExpression",
@@ -977,9 +977,9 @@
                       "column": 22,
                       "index": 772
                     },
-                    "identifierName": "branch"
+                    "identifierName": "value"
                   },
-                  "name": "branch"
+                  "name": "value"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -1284,9 +1284,9 @@
                 "column": 37,
                 "index": 956
               },
-              "identifierName": "Branch"
+              "identifierName": "Select"
             },
-            "name": "Branch"
+            "name": "Select"
           },
           {
             "type": "ObjectExpression",
@@ -1337,9 +1337,9 @@
                       "column": 22,
                       "index": 982
                     },
-                    "identifierName": "branch"
+                    "identifierName": "value"
                   },
-                  "name": "branch"
+                  "name": "value"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -1672,11 +1672,11 @@
             "identifier": 0
           }
         ],
-        "Branch": [
+        "Select": [
           {
             "scopeId": 0,
-            "canonicalName": "Branch",
-            "aliasName": "Branch",
+            "canonicalName": "Select",
+            "aliasName": "Select",
             "isTranslationFunction": true,
             "type": "generaltranslation",
             "identifier": 0

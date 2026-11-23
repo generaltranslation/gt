@@ -17,7 +17,7 @@ import type {
 export function isBranchComponent(
   name: GTComponentName | undefined
 ): name is BranchElementName {
-  return name === 'Branch' || name === 'Plural' || name === 'Ordinal';
+  return name === 'Select' || name === 'Plural' || name === 'Ordinal';
 }
 
 export function createVueExtractionContext(

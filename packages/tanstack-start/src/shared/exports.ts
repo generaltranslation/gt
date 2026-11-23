@@ -1,6 +1,6 @@
 export {
   // ===== Components ===== //
-  Branch,
+  Select,
   Ordinal,
   Plural,
   Derive,
@@ -37,7 +37,7 @@ export {
   plural,
   ordinal,
   select,
-  number,
+  num,
   date,
   time,
   part,

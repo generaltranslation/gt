@@ -102,7 +102,7 @@ export type TranslationAnalysis =
 
 /**
  * Svelte passes component props as an object literal, where a `__proto__`
- * key sets the prototype, so `<Branch>` never receives such a branch.
+ * key sets the prototype, so `<Select>` never receives such a branch.
  */
 const PROTO_BRANCH_PROBLEM = '"__proto__" cannot be used as a branch name';
 
@@ -398,7 +398,7 @@ class TranslationBuilder {
     if (kind && kind in VARIABLE_TYPES) {
       return this.convertVariable(node, kind, scope, counter);
     }
-    if (kind === 'Branch' || kind === 'Plural' || kind === 'Ordinal') {
+    if (kind === 'Select' || kind === 'Plural' || kind === 'Ordinal') {
       return this.convertBranch(node, kind, scope, counter, whitespace);
     }
     return this.convertElement(node, scope, counter, whitespace);
@@ -546,7 +546,7 @@ class TranslationBuilder {
     };
   }
 
-  // ===== Branch / Plural ===== //
+  // ===== Select / Plural ===== //
 
   private convertBranch(
     node: SvelteElementNode,
@@ -564,7 +564,7 @@ class TranslationBuilder {
     const branchNames: string[] = [];
     // Plural branches are stored under ICU keys: `_0` is `=0`.
     const keyOf = (name: string) =>
-      kind !== 'Branch' ? getPluralBranchKey(name) : name;
+      kind !== 'Select' ? getPluralBranchKey(name) : name;
 
     // Attribute branches: static strings, like React string props.
     for (const attribute of node.attributes) {
@@ -613,7 +613,7 @@ class TranslationBuilder {
       if (!name || !isBranchName(kind, name)) {
         this.problem(
           child.start,
-          kind !== 'Branch'
+          kind !== 'Select'
             ? `{#snippet ${name}()} is not a plural form`
             : `{#snippet ${name}()} cannot be used as a <${node.name}> branch`
         );
@@ -685,7 +685,7 @@ class TranslationBuilder {
     }
     if (d) element.d = d;
 
-    const selector = findAttribute(node, kind !== 'Branch' ? 'n' : 'branch');
+    const selector = findAttribute(node, kind !== 'Select' ? 'n' : 'value');
     const snippetName = `${RESERVED_PREFIX}e_${scope}${id}`;
     (this.runtimeMetadata.b ??= {})[`${scope}${id}`] = {
       t: BRANCH_TRANSFORMATIONS[kind],
@@ -767,8 +767,8 @@ const createOtherBranchProblem = (component: string) =>
   `<${component}> has no other branch. Write the fallback as its children`;
 
 function isBranchName(kind: BranchElementName, name: string): boolean {
-  if (kind !== 'Branch') return isAcceptedPluralForm(name);
-  return name !== 'branch' && name !== 'children' && !name.startsWith('data-');
+  if (kind !== 'Select') return isAcceptedPluralForm(name);
+  return name !== 'value' && name !== 'children' && !name.startsWith('data-');
 }
 
 function getTagName(node: SvelteElementNode): string {

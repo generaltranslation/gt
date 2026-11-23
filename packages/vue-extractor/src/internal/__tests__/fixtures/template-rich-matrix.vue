@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  Branch as Choose,
+  Select as Choose,
   Currency,
   DateTime as When,
   Num,
@@ -30,7 +30,7 @@ const tone = 'formal';
       <When :value="date" />
       <Currency :value="cost" />
       <var>native</var>
-      <Choose :branch="tone" formal="Ignored because the slot wins">
+      <Choose :value="tone" formal="Ignored because the slot wins">
         <template #formal>
           Formal
           <Value>{{ name }}</Value>

@@ -346,9 +346,9 @@
                 "column": 37,
                 "index": 457
               },
-              "identifierName": "Branch"
+              "identifierName": "Select"
             },
-            "name": "Branch"
+            "name": "Select"
           },
           {
             "type": "ObjectExpression",
@@ -399,9 +399,9 @@
                       "column": 22,
                       "index": 483
                     },
-                    "identifierName": "branch"
+                    "identifierName": "value"
                   },
-                  "name": "branch"
+                  "name": "value"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -5413,9 +5413,9 @@
                           "column": 51,
                           "index": 3499
                         },
-                        "identifierName": "Branch"
+                        "identifierName": "Select"
                       },
-                      "name": "Branch"
+                      "name": "Select"
                     },
                     {
                       "type": "ObjectExpression",
@@ -5466,9 +5466,9 @@
                                 "column": 26,
                                 "index": 3529
                               },
-                              "identifierName": "branch"
+                              "identifierName": "value"
                             },
-                            "name": "branch"
+                            "name": "value"
                           },
                           "computed": false,
                           "shorthand": false,
@@ -7720,9 +7720,9 @@
                 "column": 37,
                 "index": 4934
               },
-              "identifierName": "Branch"
+              "identifierName": "Select"
             },
-            "name": "Branch"
+            "name": "Select"
           },
           {
             "type": "ObjectExpression",
@@ -7773,9 +7773,9 @@
                       "column": 22,
                       "index": 4960
                     },
-                    "identifierName": "branch"
+                    "identifierName": "value"
                   },
-                  "name": "branch"
+                  "name": "value"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -8159,9 +8159,9 @@
                 "column": 37,
                 "index": 5215
               },
-              "identifierName": "Branch"
+              "identifierName": "Select"
             },
-            "name": "Branch"
+            "name": "Select"
           },
           {
             "type": "ObjectExpression",
@@ -8212,9 +8212,9 @@
                       "column": 22,
                       "index": 5241
                     },
-                    "identifierName": "branch"
+                    "identifierName": "value"
                   },
-                  "name": "branch"
+                  "name": "value"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -8330,9 +8330,9 @@
                           "column": 50,
                           "index": 5303
                         },
-                        "identifierName": "Branch"
+                        "identifierName": "Select"
                       },
-                      "name": "Branch"
+                      "name": "Select"
                     },
                     {
                       "type": "ObjectExpression",
@@ -8383,9 +8383,9 @@
                                 "column": 26,
                                 "index": 5333
                               },
-                              "identifierName": "branch"
+                              "identifierName": "value"
                             },
-                            "name": "branch"
+                            "name": "value"
                           },
                           "computed": false,
                           "shorthand": false,
@@ -8672,9 +8672,9 @@
                                               "column": 59,
                                               "index": 5492
                                             },
-                                            "identifierName": "Branch"
+                                            "identifierName": "Select"
                                           },
-                                          "name": "Branch"
+                                          "name": "Select"
                                         },
                                         {
                                           "type": "ObjectExpression",
@@ -8725,9 +8725,9 @@
                                                     "column": 34,
                                                     "index": 5530
                                                   },
-                                                  "identifierName": "branch"
+                                                  "identifierName": "value"
                                                 },
-                                                "name": "branch"
+                                                "name": "value"
                                               },
                                               "computed": false,
                                               "shorthand": false,
@@ -9257,9 +9257,9 @@
                                               "column": 57,
                                               "index": 5931
                                             },
-                                            "identifierName": "Branch"
+                                            "identifierName": "Select"
                                           },
-                                          "name": "Branch"
+                                          "name": "Select"
                                         },
                                         {
                                           "type": "ObjectExpression",
@@ -9310,9 +9310,9 @@
                                                     "column": 34,
                                                     "index": 5969
                                                   },
-                                                  "identifierName": "branch"
+                                                  "identifierName": "value"
                                                 },
-                                                "name": "branch"
+                                                "name": "value"
                                               },
                                               "computed": false,
                                               "shorthand": false,
@@ -10107,11 +10107,11 @@
             "identifier": 0
           }
         ],
-        "Branch": [
+        "Select": [
           {
             "scopeId": 0,
-            "canonicalName": "Branch",
-            "aliasName": "Branch",
+            "canonicalName": "Select",
+            "aliasName": "Select",
             "isTranslationFunction": true,
             "type": "generaltranslation",
             "identifier": 0

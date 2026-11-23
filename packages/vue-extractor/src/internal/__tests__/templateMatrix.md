@@ -3,11 +3,11 @@
 The adversarial template suite ports the stable source-shaping behavior from
 the React JSX extractor and renderer where Vue has an equivalent construct.
 It covers rich native nesting, every supported variable component, static HTML
-content props, context, Branch and Plural fallbacks/branches, independent
+content props, context, Select and Plural fallbacks/branches, independent
 branch variable numbering, comments, whitespace, aliases, and component-name
 normalization.
 
-The React CLI parity audit additionally covers nested Branch/Plural trees,
+The React CLI parity audit additionally covers nested Select/Plural trees,
 legacy and CLDR plural forms, numeric boundaries and alternate literal forms,
 Unicode and control characters, empty translations and branches, HTML
 entities, Vue built-ins, custom and void elements, and formatter components
@@ -17,7 +17,7 @@ runtime variables; `Var` continues to require its value in the default slot.
 Vue-specific cases cover `v-if`/`v-for` precedence, `v-for` and `v-slot`
 destructuring defaults, executable directive arguments, slot scope, explicit
 default slots, static `<component :is>` resolution, and compiler-valid
-TypeScript expressions. Branch and Plural named slots are the Vue equivalent
+TypeScript expressions. Select and Plural named slots are the Vue equivalent
 of React branch props containing rich JSX.
 
 Static default-slot content authored on ordinary components and Vue built-ins
@@ -41,7 +41,7 @@ diagnostic instead of a partial catalog entry:
   static `context`, `id`, `maxChars`, and `requiresReview` metadata, including
   their `$`-prefixed aliases.
 
-The real-runtime parity probe compiles the same Branch and Plural templates
+The real-runtime parity probe compiles the same Select and Plural templates
 with Vue and renders them through gt-vue SSR. Catalog keys computed only from
 extractor output must produce the translated SSR output, which protects the
 hash boundary that ordinary unit snapshots cannot validate alone.

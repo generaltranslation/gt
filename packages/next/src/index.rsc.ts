@@ -88,7 +88,7 @@ export const withGTStaticProps: WithGTStaticPropsFunction = () => {
 };
 
 // ===== gt-react Components ===== //
-export { Branch, Derive } from 'gt-react';
+export { Select, Derive } from 'gt-react';
 
 // ===== gt-react Hooks ===== //
 export { useDefaultLocale, useLocaleProperties, useLocales } from 'gt-react';
@@ -105,7 +105,7 @@ export {
   mFallback,
   msg,
   n,
-  number,
+  num,
   part,
   plural,
   select,

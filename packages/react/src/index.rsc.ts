@@ -35,7 +35,7 @@ export function RegionSelector() {
 
 // ===== Components ===== //
 export {
-  Branch,
+  Select,
   Currency,
   DateTime,
   Derive,
@@ -109,7 +109,7 @@ export {
   plural,
   ordinal,
   select,
-  number,
+  num,
   date,
   time,
   part,
@@ -126,7 +126,7 @@ export { initializeGTSRA as initializeGT } from './setup/initializeGTSRA';
 
 // ===== Types ===== //
 export type {
-  BranchProps,
+  SelectProps,
   CurrencyProps,
   DateTimeProps,
   JsxTranslationOptions,

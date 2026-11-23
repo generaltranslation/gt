@@ -61,7 +61,7 @@ export function hasTranslatableContent(expr: TSESTree.Expression): boolean {
 
 /**
  * Type guard: ConditionalExpression where at least one branch
- * has translatable content (eligible for Branch wrapping).
+ * has translatable content (eligible for Select wrapping).
  */
 export function isBranchableConditional(
   expr: TSESTree.Expression
@@ -74,7 +74,7 @@ export function isBranchableConditional(
 
 /**
  * Type guard: LogicalExpression with && where the right operand
- * has translatable content (eligible for Branch wrapping).
+ * has translatable content (eligible for Select wrapping).
  */
 export function isBranchableLogicalAnd(
   expr: TSESTree.Expression

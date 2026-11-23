@@ -108,7 +108,7 @@ export function toRenderItems(
 }
 
 /**
- * Picks the translated branch to render for a Branch/Plural element, along
+ * Picks the translated branch to render for a Select/Plural element, along
  * with the source scopes its elements and variables resolve in.
  */
 export function selectBranch(
@@ -124,7 +124,7 @@ export function selectBranch(
 
   const branches = Object.keys(targetBranches);
   const targetBranch =
-    info.t === 'b'
+    info.t === 's'
       ? pickBranch(value, branches)
       : pickPluralForm(value, branches, context.locales, info.t === 'o');
   if (targetBranch === undefined) return none;
@@ -194,7 +194,7 @@ export function validateTarget(
 // ===== Helpers ===== //
 
 /**
- * Returns a Branch/Plural element's translated branches: `undefined` when
+ * Returns a Select/Plural element's translated branches: `undefined` when
  * it has none, and `null` when they are not a plain object.
  */
 function getBranches(
@@ -218,7 +218,7 @@ function getPairedSourceBranch(
 }
 
 /**
- * Returns the scopes a Branch/Plural element's branch content resolves in:
+ * Returns the scopes a Select/Plural element's branch content resolves in:
  * the paired source branch first, then its siblings, then the scopes the
  * element itself resolves in.
  */

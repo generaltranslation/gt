@@ -40,10 +40,10 @@
   },
   {
     "id": "independent-branch-numbering",
-    "description": "Mutually exclusive Branch slots restart after the parent and do not shift following siblings.",
+    "description": "Mutually exclusive Select slots restart after the parent and do not shift following siblings.",
     "source": [
       {
-        "t": "Branch",
+        "t": "Select",
         "i": 1,
         "d": {
           "b": {
@@ -73,7 +73,7 @@
             ],
             "other": "Fallback"
           },
-          "t": "b"
+          "t": "s"
         }
       },
       {
@@ -82,11 +82,11 @@
         "c": "After"
       }
     ],
-    "hash": "ed8ae5a527b746b1"
+    "hash": "833e05f3cb200a09"
   },
   {
     "id": "independent-plural-numbering",
-    "description": "Plural forms use the same independent numbering contract as Branch slots.",
+    "description": "Plural forms use the same independent numbering contract as Select slots.",
     "source": [
       {
         "t": "Plural",

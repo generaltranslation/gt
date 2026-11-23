@@ -10,7 +10,7 @@ export type GTComponentName =
   | 'Currency'
   | 'Plural'
   | 'Ordinal'
-  | 'Branch';
+  | 'Select';
 
 /** Vue builtins whose runtime identity changes rich-content traversal. */
 export type VueBuiltinName = 'Fragment' | 'Suspense';

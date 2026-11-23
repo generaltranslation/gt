@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { Branch, T } from 'gt-vue';
+import { Select, T } from 'gt-vue';
 </script>
 
 <template>
   <T>
-    <Branch
-      branch="constructor"
+    <Select
+      value="constructor"
       constructor="Constructor branch"
       toString="String branch"
     >
       Fallback
-    </Branch>
+    </Select>
   </T>
 </template>

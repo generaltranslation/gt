@@ -117,21 +117,21 @@
   },
   {
     "name": "number-intl-options",
-    "template": "t`Total: ${number({ price }, { style: 'currency', currency: 'USD' })}`",
+    "template": "t`Total: ${num({ price }, { style: 'currency', currency: 'USD' })}`",
     "options": {},
     "tree": ["Total: ", ["price", "number", "currency"]],
     "hash": "d0a156bbfb4a8267"
   },
   {
     "name": "number-currency-dynamic",
-    "template": "t`Total: ${number({ price }, { style: 'currency', currency, currencyDisplay: 'code' })}`",
+    "template": "t`Total: ${num({ price }, { style: 'currency', currency, currencyDisplay: 'code' })}`",
     "options": {},
     "tree": ["Total: ", ["price", "number", "currency"]],
     "hash": "d0a156bbfb4a8267"
   },
   {
     "name": "number-unit",
-    "template": "t`${number({ distance }, { style: 'unit', unit: 'kilometer', maximumFractionDigits: 1 })} away`",
+    "template": "t`${num({ distance }, { style: 'unit', unit: 'kilometer', maximumFractionDigits: 1 })} away`",
     "options": {},
     "tree": [
       [
@@ -245,7 +245,7 @@
   },
   {
     "name": "anonymous-helper-values",
-    "template": "t`${plural(count, { one: 'One file', other: part`${n} files` })} for ${select(role, { admin: 'admins', other: 'everyone' })}, ${number(price, { style: 'percent' })} by ${date(due)} from ${name}`",
+    "template": "t`${plural(count, { one: 'One file', other: part`${n} files` })} for ${select(role, { admin: 'admins', other: 'everyone' })}, ${num(price, { style: 'percent' })} by ${date(due)} from ${name}`",
     "options": {},
     "tree": [
       [

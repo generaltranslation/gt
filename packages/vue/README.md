@@ -181,7 +181,7 @@ slot:
 
 Content created inside `DocsLink`'s implementation is not visible to the outer
 `<T>`. Runtime values still belong in `<Var>`, and conditional alternatives
-belong in `<Branch>` or `<Plural>`. Scoped and arbitrary named slots depend on
+belong in `<Select>` or `<Plural>`. Scoped and arbitrary named slots depend on
 the child component's runtime behavior, so place `<T>` inside those slots or
 enclose the dynamic component boundary in `<Var>`. Component tags inside `<T>`
 must resolve at runtime; an unresolved component warning from Vue is a
@@ -238,7 +238,7 @@ const m = useMessages();
   slot.
 - `<Ordinal :n="place">` is `<Plural>` for ordinals such as 1st, 2nd and 3rd:
   it selects among the locale's ordinal categories.
-- `<Branch :branch="key">` selects an arbitrary named slot, or the default slot
+- `<Select :value="key">` selects an arbitrary named slot, or the default slot
   when no slot matches.
 
 Use the required `value` prop for every formatting value.

@@ -1,9 +1,9 @@
-import { Branch, T } from "gt-next";
+import { Select, T } from "gt-next";
 
 export default function Home() {
   return (      <T>
-    <Branch
-      branch="type"
+    <Select
+      value="type"
       option1=""
       option2={null}
       option3={<></>}

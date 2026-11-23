@@ -193,8 +193,8 @@ describe('injection pass', () => {
     ['a fragment with dynamic content', '<>Welcome {name}!</>', 1, 1],
     ['nested fragments', '<><>Hello World</></>', 1, 0],
 
-    // Branch and Plural are opaque: one T at the parent, Var for dynamic content
-    ['a Branch', '<div><Branch branch="test">Fallback</Branch></div>', 1, 0],
+    // Select and Plural are opaque: one T at the parent, Var for dynamic content
+    ['a Select', '<div><Select value="test">Fallback</Select></div>', 1, 0],
     [
       'a Plural (n is a control prop)',
       '<div><Plural n={count} one="item">items</Plural></div>',
@@ -202,8 +202,8 @@ describe('injection pass', () => {
       0,
     ],
     [
-      'an element in Branch children',
-      '<div><Branch branch="x"><p>Fallback text</p></Branch></div>',
+      'an element in Select children',
+      '<div><Select value="x"><p>Fallback text</p></Select></div>',
       1,
       0,
     ],
@@ -214,8 +214,8 @@ describe('injection pass', () => {
       0,
     ],
     [
-      'dynamic content in Branch children',
-      '<div>Text <Branch branch={x}>Fallback {name}</Branch></div>',
+      'dynamic content in Select children',
+      '<div>Text <Select value={x}>Fallback {name}</Select></div>',
       1,
       1,
     ],
@@ -226,32 +226,32 @@ describe('injection pass', () => {
       1,
     ],
     [
-      'dynamic content in a JSX Branch prop',
-      '<div><Branch branch="mode" Ernest={<>Hello {userName}</>}>fb</Branch></div>',
+      'dynamic content in a JSX Select prop',
+      '<div><Select value="mode" Ernest={<>Hello {userName}</>}>fb</Select></div>',
       1,
       1,
     ],
     [
-      'a dynamic Branch prop value',
-      '<div><Branch branch="hello" hello={count} /></div>',
+      'a dynamic Select prop value',
+      '<div><Select value="hello" hello={count} /></div>',
       1,
       1,
     ],
     [
-      'static Branch props',
-      '<div><Branch branch="x" a="A" b="B">fallback</Branch></div>',
+      'static Select props',
+      '<div><Select value="x" a="A" b="B">fallback</Select></div>',
       1,
       0,
     ],
     [
-      'a data-* attribute on Branch',
-      '<div><Branch branch="x" data-testid={id} hello={val}>fb</Branch></div>',
+      'a data-* attribute on Select',
+      '<div><Select value="x" data-testid={id} hello={val}>fb</Select></div>',
       1,
       1,
     ],
     [
-      'Branch and Plural siblings next to text',
-      '<div>Label: <Branch branch="x">fb</Branch><Plural n={c} one="1">n</Plural></div>',
+      'Select and Plural siblings next to text',
+      '<div>Label: <Select value="x">fb</Select><Plural n={c} one="1">n</Plural></div>',
       1,
       0,
     ],
@@ -283,8 +283,8 @@ describe('injection pass', () => {
       0,
     ],
     [
-      'Branch, Derive and a dynamic expression',
-      '<div>Label: <Branch branch="x">fb</Branch><Derive>{getStuff()}</Derive>{dynamicVal}</div>',
+      'Select, Derive and a dynamic expression',
+      '<div>Label: <Select value="x">fb</Select><Derive>{getStuff()}</Derive>{dynamicVal}</div>',
       1,
       1,
     ],
@@ -384,7 +384,7 @@ describe('injection pass', () => {
     ],
     [
       'a realistic page',
-      `import { Branch, Derive, Num } from "gt-next";
+      `import { Select, Derive, Num } from "gt-next";
        export default function Page() {
          return (
            <main>
@@ -397,9 +397,9 @@ describe('injection pass', () => {
                <div><Derive>{getDetails()}</Derive></div>
              </section>
              <footer>
-               <Branch branch="theme" dark={<span>Dark mode</span>} light={<span>Light mode</span>}>
+               <Select value="theme" dark={<span>Dark mode</span>} light={<span>Light mode</span>}>
                  Default
-               </Branch>
+               </Select>
              </footer>
            </main>
          );
@@ -447,7 +447,7 @@ describe('injection pass', () => {
 
 describe('injection and extraction', () => {
   const plural = { b: { one: 'item', other: 'items' }, t: 'p' };
-  const fallback = { b: { other: 'fallback' }, t: 'b' };
+  const fallback = { b: { other: 'fallback' }, t: 's' };
 
   // [description, code, sources of the extracted updates]
   it.each<[string, string, unknown[]]>([
@@ -542,9 +542,9 @@ describe('injection and extraction', () => {
       [[' · ', { t: 'b', i: 1, c: 'Bold words' }]],
     ],
     [
-      'a Branch in braces with the expression next to it',
-      page('<div>{name}{<Branch branch="x">fallback</Branch>}</div>'),
-      [[variable(1), { t: 'Branch', i: 2, d: fallback }]],
+      'a Select in braces with the expression next to it',
+      page('<div>{name}{<Select value="x">fallback</Select>}</div>'),
+      [[variable(1), { t: 'Select', i: 2, d: fallback }]],
     ],
     [
       'a string children prop as written',
@@ -717,15 +717,15 @@ describe('injection and extraction', () => {
       [['Hello ', variable(1)], 'Content'],
     ],
 
-    // Branch and Plural
+    // Select and Plural
     [
-      'a Branch with JSX props',
+      'a Select with JSX props',
       page(
-        '<div><Branch branch="test" a={<span>A</span>} b={<span>B</span>}>Fallback</Branch></div>'
+        '<div><Select value="test" a={<span>A</span>} b={<span>B</span>}>Fallback</Select></div>'
       ),
       [
         {
-          t: 'Branch',
+          t: 'Select',
           i: 1,
           d: {
             b: {
@@ -733,7 +733,7 @@ describe('injection and extraction', () => {
               b: { t: 'span', i: 2, c: 'B' },
               other: 'Fallback',
             },
-            t: 'b',
+            t: 's',
           },
         },
       ],
@@ -763,17 +763,17 @@ describe('injection and extraction', () => {
       ],
     ],
     [
-      'dynamic content in Branch children',
+      'dynamic content in Select children',
       page(
-        '<>Hello, my good friend <Branch branch={userName}>Fallback with Var {userName}</Branch></>'
+        '<>Hello, my good friend <Select value={userName}>Fallback with Var {userName}</Select></>'
       ),
       [
         [
           'Hello, my good friend ',
           {
-            t: 'Branch',
+            t: 'Select',
             i: 1,
-            d: { b: { other: ['Fallback with Var ', variable(2)] }, t: 'b' },
+            d: { b: { other: ['Fallback with Var ', variable(2)] }, t: 's' },
           },
         ],
       ],
@@ -790,34 +790,34 @@ describe('injection and extraction', () => {
       ],
     ],
     [
-      'dynamic content in a JSX Branch prop',
+      'dynamic content in a JSX Select prop',
       page(
-        '<div><Branch branch="mode" Ernest={<>Hello {userName}</>}>Fallback</Branch></div>'
+        '<div><Select value="mode" Ernest={<>Hello {userName}</>}>Fallback</Select></div>'
       ),
       [
         {
-          t: 'Branch',
+          t: 'Select',
           i: 1,
           d: {
             b: {
               Ernest: { t: 'C2', i: 2, c: ['Hello ', variable(3)] },
               other: 'Fallback',
             },
-            t: 'b',
+            t: 's',
           },
         },
       ],
     ],
     [
-      'the branches of a JSX ternary in a Branch prop',
+      'the branches of a JSX ternary in a Select prop',
       page(
-        '<div><Branch branch="mode" summary={flag ? <p>Option A</p> : <p>Option B</p>}>Fallback</Branch></div>'
+        '<div><Select value="mode" summary={flag ? <p>Option A</p> : <p>Option B</p>}>Fallback</Select></div>'
       ),
       [
         {
-          t: 'Branch',
+          t: 'Select',
           i: 1,
-          d: { b: { summary: variable(2), other: 'Fallback' }, t: 'b' },
+          d: { b: { summary: variable(2), other: 'Fallback' }, t: 's' },
         },
         'Option A',
         'Option B',
@@ -838,24 +838,24 @@ describe('injection and extraction', () => {
         'solo',
       ],
     ],
-    // Branch/Plural children are a branch: the following siblings count on
+    // Select/Plural children are a value: the following siblings count on
     // from the branching element's id
     [
-      'an element after Branch children with the next id',
+      'an element after Select children with the next id',
       page(
-        '<div><Branch branch={status} draft={<span>Draft</span>}><span>Unknown</span></Branch><span>Last saved {lastSaved}</span></div>'
+        '<div><Select value={status} draft={<span>Draft</span>}><span>Unknown</span></Select><span>Last saved {lastSaved}</span></div>'
       ),
       [
         [
           {
-            t: 'Branch',
+            t: 'Select',
             i: 1,
             d: {
               b: {
                 draft: { t: 'span', i: 2, c: 'Draft' },
                 other: { t: 'span', i: 2, c: 'Unknown' },
               },
-              t: 'b',
+              t: 's',
             },
           },
           { t: 'span', i: 2, c: ['Last saved ', variable(3)] },
@@ -995,16 +995,16 @@ describe('injection and extraction', () => {
       [['Hello ', { t: 'Derive', i: 1 }, ' and ', variable(2)]],
     ],
     [
-      'a Branch inside a Derive, also on its own',
+      'a Select inside a Derive, also on its own',
       page(
-        '<div>Hello <Derive><Branch branch="x">fallback</Branch></Derive></div>'
+        '<div>Hello <Derive><Select value="x">fallback</Select></Derive></div>'
       ),
       [
         [
           'Hello ',
-          { t: 'Derive', i: 1, c: { t: 'Branch', i: 2, d: fallback } },
+          { t: 'Derive', i: 1, c: { t: 'Select', i: 2, d: fallback } },
         ],
-        { t: 'Branch', i: 1, d: fallback },
+        { t: 'Select', i: 1, d: fallback },
       ],
     ],
     [
@@ -1144,10 +1144,10 @@ describe('injection and extraction', () => {
     ]);
   });
 
-  it('finds the T injected into a Branch prop ternary without re-parsing', () => {
+  it('finds the T injected into a Select prop ternary without re-parsing', () => {
     const ast = parseCode(
       page(
-        '<div><Branch branch="mode" summary={flag ? <p>Option A</p> : <p>Option B</p>}>Fallback</Branch></div>'
+        '<div><Select value="mode" summary={flag ? <p>Option A</p> : <p>Option B</p>}>Fallback</Select></div>'
       )
     );
     const { importAliases } = collectAliases(ast);

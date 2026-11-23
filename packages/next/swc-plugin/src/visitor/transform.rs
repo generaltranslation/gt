@@ -135,7 +135,7 @@ impl TransformVisitor {
 
   /// Check if we should track this component as a branch component
   pub fn should_track_component_as_branch(&self, name: &Atom) -> bool {
-    // Branch and Plural components components
+    // Select and Plural components components
     if let Some(branch_variable) = self.import_tracker.scope_tracker.get_variable(name) {
       if is_branch_name(&branch_variable.original_name) {
         return true;
@@ -414,8 +414,8 @@ mod tests {
       true,
     );
     visitor.import_tracker.scope_tracker.track_variable(
-      Atom::new("Branch"),
-      Atom::new("Branch"),
+      Atom::new("Select"),
+      Atom::new("Select"),
       true,
     );
     visitor
@@ -618,7 +618,7 @@ mod tests {
     fn tracks_branch_components() {
       let visitor = create_visitor_with_imports();
 
-      assert!(visitor.should_track_component_as_branch(&Atom::new("Branch")));
+      assert!(visitor.should_track_component_as_branch(&Atom::new("Select")));
       assert!(!visitor.should_track_component_as_branch(&Atom::new("T")));
       assert!(!visitor.should_track_component_as_branch(&Atom::new("div")));
     }

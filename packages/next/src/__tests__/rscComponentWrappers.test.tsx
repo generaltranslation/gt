@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { mockComponents, mockGetRequestConditions } = vi.hoisted(() => ({
   mockComponents: {
-    Branch: vi.fn(),
+    Select: vi.fn(),
     Currency: vi.fn(),
     DateTime: vi.fn(),
     Derive: vi.fn(),
@@ -122,7 +122,7 @@ describe('rsc component wrappers', () => {
     expect(module.Currency).toBeTypeOf('function');
     expect(module.DateTime).toBeTypeOf('function');
     expect(module.RelativeTime).toBeTypeOf('function');
-    expect(module.Branch).toBe(mockComponents.Branch);
+    expect(module.Select).toBe(mockComponents.Select);
     expect(module.Ordinal).toBeTypeOf('function');
     expect(module.Ordinal._gtt).toEqual({ kind: 'ordinal' });
     expect(module.Plural).toBeTypeOf('function');
@@ -135,7 +135,7 @@ describe('rsc component wrappers', () => {
       'plural',
       'ordinal',
       'select',
-      'number',
+      'num',
       'date',
       'time',
       'part',

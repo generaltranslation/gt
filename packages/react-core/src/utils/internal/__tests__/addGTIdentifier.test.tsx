@@ -9,7 +9,7 @@ import {
   renderDefaultChildren,
   renderTranslatedChildren,
 } from '../../rendering/renderPipeline.rsc';
-import { Branch } from '../../../components/branches/Branch';
+import { Select } from '../../../components/branches/Select';
 import {
   GtInternalOrdinal,
   Ordinal,
@@ -162,13 +162,13 @@ describe('<N>, the count of its <Plural>', () => {
     ).toBe('2e');
   });
 
-  it('renders the count in a named branch of a <Branch>', () => {
+  it('renders the count in a named branch of a <Select>', () => {
     initializeI18nConfig({ defaultLocale: 'en', locales: ['en'] });
     const source = addGTIdentifier(
       <Plural n={5}>
-        <Branch branch='photo' photo={[<N key='count' />, ' photos']}>
+        <Select value='photo' photo={[<N key='count' />, ' photos']}>
           {[<N key='count' />, ' files']}
-        </Branch>
+        </Select>
       </Plural>
     );
 
@@ -236,10 +236,10 @@ describe('<N>, the count of its <Plural>', () => {
     ],
     ['a function child', <div>{(() => 'x') as unknown as ReactNode}</div>],
     [
-      'a <Branch> with a NaN prop',
-      <Branch branch={NaN as unknown as string} {...{ photo: <b>p</b> }}>
+      'a <Select> with a NaN prop',
+      <Select value={NaN as unknown as string} {...{ photo: <b>p</b> }}>
         x
-      </Branch>,
+      </Select>,
     ],
     [
       'a nested <Plural> with an <N>',
@@ -312,14 +312,14 @@ describe('<N>, the count of its <Plural>', () => {
       ).toBe('5 files, 7');
     });
 
-    it('renders the count in a named branch of a <Branch>', () => {
+    it('renders the count in a named branch of a <Select>', () => {
       initializeI18nConfig({ defaultLocale: 'en', locales: ['en'] });
       expect(
         renderText(
           bare(
-            <Branch branch='photo' photo={[<Count key='count' />, ' photos']}>
+            <Select value='photo' photo={[<Count key='count' />, ' photos']}>
               files
-            </Branch>
+            </Select>
           )
         )
       ).toBe('5 photos');
@@ -465,25 +465,25 @@ describe('addGTIdentifier with <RelativeTime>', () => {
     });
   });
 
-  it('stores the children of a Branch as other, over an other prop', () => {
+  it('stores the children of a Select as other, over an other prop', () => {
     const tagged = addGTIdentifier(
-      <Branch branch='x' {...{ other: 'Prop' }}>
+      <Select value='x' {...{ other: 'Prop' }}>
         Children
-      </Branch>
+      </Select>
     );
 
     expect(gtBranches(tagged)).toEqual({ other: 'Children' });
   });
 
-  it('neither stores nor renders an other prop of a Branch with no children', () => {
+  it('neither stores nor renders an other prop of a Select with no children', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const tagged = addGTIdentifier(
-      <Branch branch='missing' {...{ other: 'Prop' }}>
+      <Select value='missing' {...{ other: 'Prop' }}>
         {undefined}
-      </Branch>
+      </Select>
     );
 
-    expect(writeChildrenAsObjects(tagged)).toEqual({ t: 'Branch', i: 1 });
+    expect(writeChildrenAsObjects(tagged)).toEqual({ t: 'Select', i: 1 });
     expect(
       renderDefaultChildren({
         children: tagged,
@@ -492,7 +492,7 @@ describe('addGTIdentifier with <RelativeTime>', () => {
       })
     ).toBeUndefined();
     expect(error).toHaveBeenCalledWith(
-      expect.stringContaining('<Branch> has no branch for its value')
+      expect.stringContaining('<Select> has no branch for its value')
     );
     error.mockRestore();
   });
@@ -504,9 +504,9 @@ describe('addGTIdentifier with <RelativeTime>', () => {
       const sources = [
         [
           'Before ',
-          <Branch key='b' branch='x'>
+          <Select key='b' value='x'>
             {empty}
-          </Branch>,
+          </Select>,
           ' after',
         ],
         [
@@ -526,7 +526,7 @@ describe('addGTIdentifier with <RelativeTime>', () => {
       ].map((source) => writeChildrenAsObjects(addGTIdentifier(source)));
 
       expect(sources).toEqual([
-        ['Before ', { t: 'Branch', i: 1 }, ' after'],
+        ['Before ', { t: 'Select', i: 1 }, ' after'],
         ['Before ', { t: 'Plural', i: 1 }, ' after'],
         ['Before ', { t: 'Ordinal', i: 1 }, ' after'],
       ]);

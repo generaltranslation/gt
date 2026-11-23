@@ -1,12 +1,12 @@
-import { Branch, T, Plural, Var, Currency } from "gt-next";
+import { Select, T, Plural, Var, Currency } from "gt-next";
 
 export default function Home() {
   const count = 5;
   const amount = 100.5;
   return (
     <T>
-      <Branch
-        branch="structure"
+      <Select
+        value="structure"
         nested={
           <div>
             <Plural
@@ -17,8 +17,8 @@ export default function Home() {
                 </span>
               }
               _2={
-                <Branch
-                  branch="inner"
+                <Select
+                  value="inner"
                   option1="Double nested!"
                   option2={
                     <>

@@ -50,7 +50,7 @@ describe('Vue template extraction', () => {
           { i: 8, v: 'c' },
           { t: 'var', i: 9, c: 'native' },
           {
-            t: 'Branch',
+            t: 'Select',
             i: 10,
             d: {
               b: {
@@ -58,7 +58,7 @@ describe('Vue template extraction', () => {
                 casual: [' Casual ', { i: 11, v: 'v' }],
                 other: [' Fallback ', { i: 11, v: 'v' }],
               },
-              t: 'b',
+              t: 's',
             },
           },
           {
@@ -97,11 +97,11 @@ describe('Vue template extraction', () => {
       'Dynamic component',
       'Explicit default',
       {
-        t: 'Branch',
+        t: 'Select',
         i: 1,
         d: {
           b: { casual: 'Second', formal: 'First' },
-          t: 'b',
+          t: 's',
         },
       },
       {
@@ -155,9 +155,9 @@ describe('Vue template extraction', () => {
     'drops named-slot separator whitespace with compiler whitespace %s',
     async (whitespace) => {
       const source = vueSource({
-        imports: 'Branch, Plural, T',
+        imports: 'Select, Plural, T',
         template:
-          '<T><Branch branch="formal"><template #formal>First</template> <template #casual>Second</template></Branch></T><T><Plural :n="1"><template #one>One</template> <template #default>Other</template></Plural></T>',
+          '<T><Select value="formal"><template #formal>First</template> <template #casual>Second</template></Select></T><T><Plural :n="1"><template #one>One</template> <template #default>Other</template></Plural></T>',
       });
 
       const output = await extractFromVueSource(source, '/fixtures/Slots.vue', {
@@ -168,9 +168,9 @@ describe('Vue template extraction', () => {
       expect(output.errors).toEqual([]);
       expect(richSources(output.results)).toEqual([
         {
-          t: 'Branch',
+          t: 'Select',
           i: 1,
-          d: { b: { formal: 'First', casual: 'Second' }, t: 'b' },
+          d: { b: { formal: 'First', casual: 'Second' }, t: 's' },
         },
         {
           t: 'Plural',
@@ -185,9 +185,9 @@ describe('Vue template extraction', () => {
     'preserves implicit default-slot separators with compiler whitespace %s',
     async (whitespace) => {
       const source = vueSource({
-        imports: 'Branch, T',
+        imports: 'Select, T',
         template:
-          '<T><span>A</span> <b>B</b></T><T><Branch branch="formal"><span>A</span> <template #formal>Formal</template> <b>B</b></Branch></T>',
+          '<T><span>A</span> <b>B</b></T><T><Select value="formal"><span>A</span> <template #formal>Formal</template> <b>B</b></Select></T>',
       });
 
       const output = await extractFromVueSource(source, '/fixtures/Slots.vue', {
@@ -199,7 +199,7 @@ describe('Vue template extraction', () => {
       expect(richSources(output.results)).toEqual([
         [{ t: 'span', i: 1, c: 'A' }, ' ', { t: 'b', i: 2, c: 'B' }],
         {
-          t: 'Branch',
+          t: 'Select',
           i: 1,
           d: {
             b: {
@@ -210,7 +210,7 @@ describe('Vue template extraction', () => {
                 { t: 'b', i: 3, c: 'B' },
               ],
             },
-            t: 'b',
+            t: 's',
           },
         },
       ]);
@@ -234,11 +234,11 @@ describe('Vue template extraction', () => {
   it('evaluates static TypeScript wrappers and BigInt template values', async () => {
     const output = await extractVue(`
       <script setup lang="ts">
-      import { Branch, T } from 'gt-vue';
+      import { Select, T } from 'gt-vue';
       </script>
       <template>
         <T :context="('catalog' satisfies string)">{{ 'Answer' satisfies string }}|{{ 1n }}|{{ \`X\${2n}\` }}</T>
-        <T><Branch branch="formal" :formal="(1n satisfies bigint)" /></T>
+        <T><Select value="formal" :formal="(1n satisfies bigint)" /></T>
       </template>
     `);
 
@@ -246,9 +246,9 @@ describe('Vue template extraction', () => {
     expect(richSources(output.results)).toEqual([
       'Answer|1|X2',
       {
-        t: 'Branch',
+        t: 'Select',
         i: 1,
-        d: { b: { formal: '1' }, t: 'b' },
+        d: { b: { formal: '1' }, t: 's' },
       },
     ]);
     expect(output.results[0]?.metadata.context).toBe('catalog');
@@ -296,30 +296,30 @@ describe('Vue template extraction', () => {
     },
     {
       name: 'ignores Vue-reserved branch props',
-      imports: 'Branch, T',
+      imports: 'Select, T',
       setup: 'const handler = () => undefined;',
       template:
-        '<T><Branch branch="formal" key="stable" ref="branchRef" ref-for ref-key="branch" data-note="ignored" :onVnodeMounted="handler" formal="Hello">Fallback</Branch></T>',
+        '<T><Select value="formal" key="stable" ref="branchRef" ref-for ref-key="branch" data-note="ignored" :onVnodeMounted="handler" formal="Hello">Fallback</Select></T>',
       expected: [
         {
-          t: 'Branch',
+          t: 'Select',
           i: 1,
-          d: { b: { formal: 'Hello', other: 'Fallback' }, t: 'b' },
+          d: { b: { formal: 'Hello', other: 'Fallback' }, t: 's' },
         },
       ] satisfies JsxChildren[],
     },
     {
       name: 'matches Vue falsy branch-child semantics',
-      imports: 'Branch, T',
+      imports: 'Select, T',
       template:
-        '<T><Branch branch="zero" :zero="0" :off="false" :empty="null">Fallback</Branch></T>',
+        '<T><Select value="zero" :zero="0" :off="false" :empty="null">Fallback</Select></T>',
       expected: [
         {
-          t: 'Branch',
+          t: 'Select',
           i: 1,
           d: {
             b: { zero: '0', off: false, empty: null, other: 'Fallback' },
-            t: 'b',
+            t: 's',
           },
         } as unknown as JsxChildren,
       ] satisfies JsxChildren[],
@@ -474,17 +474,17 @@ describe('Vue template extraction', () => {
     },
     {
       name: 'branch model directive',
-      imports: 'Branch, T',
+      imports: 'Select, T',
       setup: "const value = 'Hello';",
       template:
-        '<T><Branch branch="formal" formal="Hello" v-model="value">Fallback</Branch></T>',
+        '<T><Select value="formal" formal="Hello" v-model="value">Fallback</Select></T>',
       error: 'unsupported directive v-model',
     },
     {
       name: 'scoped branch slot',
-      imports: 'Branch, T',
+      imports: 'Select, T',
       template:
-        '<T><Branch branch="formal"><template #formal="{ value }">{{ value }}</template></Branch></T>',
+        '<T><Select value="formal"><template #formal="{ value }">{{ value }}</template></Select></T>',
       error: 'scoped slot',
     },
     {
@@ -762,11 +762,11 @@ describe('Vue template audit cases', () => {
     },
     {
       name: 'branch slots number independently from fallback and siblings',
-      script: `import { Branch, T, Var } from 'gt-vue';`,
-      template: `<T><Branch branch="formal"><template #formal><b><Var>x</Var></b></template><template #casual><i><Var>y</Var></i></template>Fallback <Var>z</Var></Branch><strong>After</strong></T>`,
+      script: `import { Select, T, Var } from 'gt-vue';`,
+      template: `<T><Select value="formal"><template #formal><b><Var>x</Var></b></template><template #casual><i><Var>y</Var></i></template>Fallback <Var>z</Var></Select><strong>After</strong></T>`,
       source: [
         {
-          t: 'Branch',
+          t: 'Select',
           i: 1,
           d: {
             b: {
@@ -782,7 +782,7 @@ describe('Vue template audit cases', () => {
               },
               other: ['Fallback ', { i: 2, v: 'v' }],
             },
-            t: 'b',
+            t: 's',
           },
         },
         { t: 'strong', i: 2, c: 'After' },
@@ -806,12 +806,12 @@ describe('Vue template audit cases', () => {
     },
     {
       name: 'named branch slot overrides the same prop',
-      script: `import { Branch, T } from 'gt-vue';`,
-      template: `<T><Branch branch="formal" formal="Prop"><template #formal>Slot</template>Fallback</Branch></T>`,
+      script: `import { Select, T } from 'gt-vue';`,
+      template: `<T><Select value="formal" formal="Prop"><template #formal>Slot</template>Fallback</Select></T>`,
       source: {
-        t: 'Branch',
+        t: 'Select',
         i: 1,
-        d: { b: { formal: 'Slot', other: 'Fallback' }, t: 'b' },
+        d: { b: { formal: 'Slot', other: 'Fallback' }, t: 's' },
       },
     },
     {
@@ -890,10 +890,10 @@ describe('Vue template audit cases', () => {
       diagnostic: 'named slot on a gt-vue <T>',
     },
     {
-      name: 'other slot on Branch, whose fallback is the default slot',
-      script: `import { Branch, T } from 'gt-vue';`,
-      template: `<T><Branch branch="a" a="A"><template #other>Other</template></Branch></T>`,
-      diagnostic: 'other branch on a gt-vue <Branch>',
+      name: 'other slot on Select, whose fallback is the default slot',
+      script: `import { Select, T } from 'gt-vue';`,
+      template: `<T><Select value="a" a="A"><template #other>Other</template></Select></T>`,
+      diagnostic: 'other branch on a gt-vue <Select>',
     },
     {
       name: 'other prop on Plural, whose fallback is the default slot',
@@ -939,14 +939,14 @@ describe('Vue template audit cases', () => {
     },
     {
       name: 'scoped branch slot',
-      script: `import { Branch, T } from 'gt-vue';`,
-      template: `<T><Branch branch="formal"><template #formal="{ value }">{{ value }}</template></Branch></T>`,
+      script: `import { Select, T } from 'gt-vue';`,
+      template: `<T><Select value="formal"><template #formal="{ value }">{{ value }}</template></Select></T>`,
       diagnostic: 'scoped slot',
     },
     {
       name: 'dynamic branch slot name',
-      script: `import { Branch, T } from 'gt-vue'; const slotName = 'formal';`,
-      template: `<T><Branch branch="formal"><template #[slotName]>Dynamic</template></Branch></T>`,
+      script: `import { Select, T } from 'gt-vue'; const slotName = 'formal';`,
+      template: `<T><Select value="formal"><template #[slotName]>Dynamic</template></Select></T>`,
       diagnostic: 'dynamic slot name',
     },
     {
@@ -1137,11 +1137,11 @@ describe('Vue template runtime parity', () => {
         .filter((update) => update.dataFormat === 'JSX')
         .map((update) => update.source);
       const branch: JsxChildren = {
-        t: 'Branch',
+        t: 'Select',
         i: 1,
         d: {
           b: { casual: 'Second', formal: 'First' },
-          t: 'b',
+          t: 's',
         },
       };
       const plural: JsxChildren = {
@@ -1226,10 +1226,10 @@ describe('consumer Vue template compiler parity', () => {
     const output = await extractFromVueSource(
       `
         <script setup>
-          import { Branch, Plural, T } from 'gt-vue';
+          import { Select, Plural, T } from 'gt-vue';
           import { Fragment } from 'vue';
         </script>
-        <template><T><div is="vue:Branch" formal="Formal" casual="Casual">Default</div><div is="vue:Plural" one="One">Many</div><div is="vue:Suspense"><b>Ready</b><template #fallback>Loading</template></div><div is="vue:Fragment"><i>First</i><u>Second</u></div></T></template>
+        <template><T><div is="vue:Select" formal="Formal" casual="Casual">Default</div><div is="vue:Plural" one="One">Many</div><div is="vue:Suspense"><b>Ready</b><template #fallback>Loading</template></div><div is="vue:Fragment"><i>First</i><u>Second</u></div></T></template>
       `,
       '/project/src/StaticRichVueIs.vue',
       { projectRoot: '/project' }
@@ -1239,11 +1239,11 @@ describe('consumer Vue template compiler parity', () => {
     const source = output.results[0]?.source;
     expect(source).toEqual([
       {
-        t: 'Branch',
+        t: 'Select',
         i: 1,
         d: {
           b: { formal: 'Formal', casual: 'Casual', other: 'Default' },
-          t: 'b',
+          t: 's',
         },
       },
       {
@@ -1269,7 +1269,7 @@ describe('consumer Vue template compiler parity', () => {
       },
     ]);
     expect(hashSource({ dataFormat: 'JSX', source: source! })).toBe(
-      '1ff5d7c491cd1c5e'
+      '1456491ed480f29f'
     );
   });
 
@@ -1345,10 +1345,10 @@ describe('consumer Vue template compiler parity', () => {
     const output = await extractFromVueSource(
       `
         <script setup>
-          import { Branch, T, Var } from 'gt-vue';
+          import { Select, T, Var } from 'gt-vue';
           import { Fragment } from 'vue';
         </script>
-        <template><T><div :is="Var" is="vue:Branch" formal="Wrong"><b>Hidden</b></div><Suspense :is="Var" is="vue:Branch"><b>Ready</b></Suspense><Fragment :is="Var" is="vue:Branch"><u>Fragment</u></Fragment><i>After</i></T></template>
+        <template><T><div :is="Var" is="vue:Select" formal="Wrong"><b>Hidden</b></div><Suspense :is="Var" is="vue:Select"><b>Ready</b></Suspense><Fragment :is="Var" is="vue:Select"><u>Fragment</u></Fragment><i>After</i></T></template>
       `,
       '/project/src/StaticVueIsPrecedence.vue',
       { projectRoot: '/project' }

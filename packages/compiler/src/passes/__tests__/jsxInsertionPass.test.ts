@@ -13,7 +13,7 @@ import {
 const IMPORTS = `
   import { jsx, jsxs } from 'react/jsx-runtime';
   import { Fragment } from 'react';
-  import { T, Var, Num, Currency, DateTime, RelativeTime, Branch, Plural, Ordinal, Derive } from 'gt-react';
+  import { T, Var, Num, Currency, DateTime, RelativeTime, Select, Plural, Ordinal, Derive } from 'gt-react';
 `;
 
 function insert(code: string, options: Record<string, unknown> = {}) {
@@ -270,7 +270,7 @@ describe('jsxInsertionPass', () => {
       expect(insertedCounts(`${IMPORTS}${compiled};`)).toEqual(counts);
     });
 
-    it('handles a page mixing text, links, Derive and Branch', () => {
+    it('handles a page mixing text, links, Derive and Select', () => {
       const code = `${IMPORTS}
         jsxs("div", { children: [
           jsx("header", { children: jsxs("h1", { children: ["Welcome to ", siteName] }) }),
@@ -283,10 +283,10 @@ describe('jsxInsertionPass', () => {
             jsx(Derive, { children: getGreeting() }),
             "!"
           ] }),
-          jsx("footer", { children: jsx(Branch, { branch: "type", legal: "Legal info", children: "Default footer" }) })
+          jsx("footer", { children: jsx(Select, { value: "type", legal: "Legal info", children: "Default footer" }) })
         ] });
       `;
-      // _T: h1, two links, main (text + Derive), footer (Branch). _Var: {siteName}
+      // _T: h1, two links, main (text + Derive), footer (Select). _Var: {siteName}
       expect(insertedCounts(code)).toEqual({ t: 5, var: 1 });
     });
   });
@@ -376,18 +376,18 @@ describe('jsxInsertionPass', () => {
     });
   });
 
-  describe('Branch, Plural and Derive', () => {
+  describe('Select, Plural and Derive', () => {
     it.each<Case>([
-      // Branch/Plural trigger _T at the parent (or around themselves at the
+      // Select/Plural trigger _T at the parent (or around themselves at the
       // root); their props and children get no _T of their own
       [
-        '<div><Branch branch="x" a="A" b="B">Fallback</Branch></div>',
-        `jsx("div", { children: jsx(Branch, { branch: "x", a: "A", b: "B", children: "Fallback" }) })`,
+        '<div><Select value="x" a="A" b="B">Fallback</Select></div>',
+        `jsx("div", { children: jsx(Select, { value: "x", a: "A", b: "B", children: "Fallback" }) })`,
         { t: 1, var: 0 },
       ],
       [
-        '<Branch branch="x" a="A">Default</Branch> (root)',
-        `jsx(Branch, { branch: "x", a: "A", children: "Default" })`,
+        '<Select value="x" a="A">Default</Select> (root)',
+        `jsx(Select, { value: "x", a: "A", children: "Default" })`,
         { t: 1, var: 0 },
       ],
       [
@@ -396,8 +396,8 @@ describe('jsxInsertionPass', () => {
         { t: 1, var: 0 },
       ],
       [
-        '<div><Branch branch="mode" summary={<p>Summary text</p>}>Fallback</Branch></div>',
-        `jsx("div", { children: jsx(Branch, { branch: "mode", summary: jsx("p", { children: "Summary text" }), children: "Fallback" }) })`,
+        '<div><Select value="mode" summary={<p>Summary text</p>}>Fallback</Select></div>',
+        `jsx("div", { children: jsx(Select, { value: "mode", summary: jsx("p", { children: "Summary text" }), children: "Fallback" }) })`,
         { t: 1, var: 0 },
       ],
       [
@@ -406,34 +406,34 @@ describe('jsxInsertionPass', () => {
         { t: 1, var: 0 },
       ],
       [
-        '<div><Branch branch="test"><p>Fallback text</p></Branch></div>',
-        `jsx("div", { children: jsx(Branch, { branch: "test", children: jsx("p", { children: "Fallback text" }) }) })`,
+        '<div><Select value="test"><p>Fallback text</p></Select></div>',
+        `jsx("div", { children: jsx(Select, { value: "test", children: jsx("p", { children: "Fallback text" }) }) })`,
         { t: 1, var: 0 },
       ],
       [
-        '<div>Label: <Branch branch="x">fb</Branch><Plural n={c} one="1">n</Plural></div>',
-        `jsxs("div", { children: ["Label: ", jsx(Branch, { branch: "x", children: "fb" }), jsx(Plural, { n: c, one: "1", children: "n" })] })`,
+        '<div>Label: <Select value="x">fb</Select><Plural n={c} one="1">n</Plural></div>',
+        `jsxs("div", { children: ["Label: ", jsx(Select, { value: "x", children: "fb" }), jsx(Plural, { n: c, one: "1", children: "n" })] })`,
         { t: 1, var: 0 },
       ],
       [
-        '<div><Plural n={c}><Branch branch="x">fb</Branch></Plural></div>',
-        `jsx("div", { children: jsx(Plural, { n: c, children: jsx(Branch, { branch: "x", children: "fb" }) }) })`,
+        '<div><Plural n={c}><Select value="x">fb</Select></Plural></div>',
+        `jsx("div", { children: jsx(Plural, { n: c, children: jsx(Select, { value: "x", children: "fb" }) }) })`,
         { t: 1, var: 0 },
       ],
       // Dynamic content props are wrapped in _Var; control and data-* props are not
       [
-        '<div><Branch branch="hello" hello={count} /></div>',
-        `jsx("div", { children: jsx(Branch, { branch: "hello", hello: count }) })`,
+        '<div><Select value="hello" hello={count} /></div>',
+        `jsx("div", { children: jsx(Select, { value: "hello", hello: count }) })`,
         { t: 1, var: 1 },
       ],
       [
-        '<div><Branch branch="x" data-testid="test" hello={val}>fb</Branch></div>',
-        `jsx("div", { children: jsx(Branch, { branch: "x", "data-testid": "test", hello: val, children: "fb" }) })`,
+        '<div><Select value="x" data-testid="test" hello={val}>fb</Select></div>',
+        `jsx("div", { children: jsx(Select, { value: "x", "data-testid": "test", hello: val, children: "fb" }) })`,
         { t: 1, var: 1 },
       ],
       [
-        '<div><Branch branch="mode" summary={cond ? <p>Option A</p> : <p>Option B</p>}>Fallback</Branch></div>',
-        `jsx("div", { children: jsx(Branch, { branch: "mode", summary: cond ? jsx("p", { children: "Option A" }) : jsx("p", { children: "Option B" }), children: "Fallback" }) })`,
+        '<div><Select value="mode" summary={cond ? <p>Option A</p> : <p>Option B</p>}>Fallback</Select></div>',
+        `jsx("div", { children: jsx(Select, { value: "mode", summary: cond ? jsx("p", { children: "Option A" }) : jsx("p", { children: "Option B" }), children: "Fallback" }) })`,
         { t: 3, var: 1 },
       ],
       // Derive children are opaque: no _Var
@@ -455,8 +455,8 @@ describe('jsxInsertionPass', () => {
       // The visitor cannot know an element sits inside Derive, so it still
       // inserts there; removeInjectedT() strips the nested _T at runtime
       [
-        '<div>Hello <Derive><Branch branch="x">fb</Branch></Derive></div>',
-        `jsxs("div", { children: ["Hello ", jsx(Derive, { children: jsx(Branch, { branch: "x", children: "fb" }) })] })`,
+        '<div>Hello <Derive><Select value="x">fb</Select></Derive></div>',
+        `jsxs("div", { children: ["Hello ", jsx(Derive, { children: jsx(Select, { value: "x", children: "fb" }) })] })`,
         { t: 2, var: 0 },
       ],
       [
@@ -485,15 +485,15 @@ describe('jsxInsertionPass', () => {
 
     it.each<[jsx: string, compiled: string, kept: RegExp[]]>([
       [
-        '<div><Branch branch="mode" Ernest={<>Hello {userName}</>} /></div>',
-        `jsx("div", { children: jsx(Branch, { branch: "mode", Ernest: jsxs(Fragment, { children: ["Hello ", userName] }) }) })`,
-        [/branch:\s*"mode"/],
+        '<div><Select value="mode" Ernest={<>Hello {userName}</>} /></div>',
+        `jsx("div", { children: jsx(Select, { value: "mode", Ernest: jsxs(Fragment, { children: ["Hello ", userName] }) }) })`,
+        [/value:\s*"mode"/],
       ],
       // Fallback children are processed element by element, not wrapped whole
       [
-        '<>Hello, my good friend<Branch branch={userName}>Fallback with Var {userName}</Branch></>',
-        `jsxs(Fragment, { children: ["Hello, my good friend", jsxs(Branch, { branch: userName, children: ["Fallback with Var ", userName] })] })`,
-        [/branch:\s*userName/, /"Fallback with Var "/],
+        '<>Hello, my good friend<Select value={userName}>Fallback with Var {userName}</Select></>',
+        `jsxs(Fragment, { children: ["Hello, my good friend", jsxs(Select, { value: userName, children: ["Fallback with Var ", userName] })] })`,
+        [/value:\s*userName/, /"Fallback with Var "/],
       ],
       [
         '<div><Plural n={count}>You have {count} items</Plural></div>',

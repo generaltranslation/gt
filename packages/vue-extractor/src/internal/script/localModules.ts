@@ -36,7 +36,7 @@ const GT_EXPORT_NAMES = [
   'Currency',
   'Plural',
   'Ordinal',
-  'Branch',
+  'Select',
   'msg',
   't',
   'useGT',

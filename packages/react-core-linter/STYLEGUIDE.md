@@ -25,7 +25,7 @@ Rules are created with `ESLintUtils.RuleCreator` and exported from `src/index.ts
 | `isGTFunction.ts`     | Scope-aware detection of GT imports (components, functions) |
 | `expression-utils.ts` | Static analysis predicates for AST expressions              |
 | `import-utils.ts`     | Auto-fix helpers for managing GT import declarations        |
-| `branching-utils.ts`  | Content-branch detection for `<Branch>`/`<Plural>`          |
+| `branching-utils.ts`  | Content-branch detection for `<Select>`/`<Plural>`          |
 
 ### Detection Pattern
 

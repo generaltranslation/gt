@@ -14,8 +14,8 @@
   "98b9ea16c811cdce": "Ajouter Au Panier",
   "76f5b4e182e09601": "Ajouté. Votre préréglage est enregistré dans la bouilloire au premier démarrage.",
   "78dc0c4ae56e57ae": "Chaque bouilloire est livrée avec une garantie de 2 ans.",
-  "9d9eeba49801c21c": {
-    "t": "Branch",
+  "82901a7ce3bdb6f3": {
+    "t": "Select",
     "i": 1,
     "d": {
       "b": {
@@ -40,7 +40,7 @@
           "c": "Chauffe à la température réglée."
         }
       },
-      "t": "b"
+      "t": "s"
     }
   },
   "933e66254f674890": {

@@ -1,10 +1,10 @@
-import { T, Branch } from "gt-next";
+import { T, Select } from "gt-next";
 export default function Home() {
   return (
     <T>
-      <Branch
-        branch="morning"
-        morning={<Branch branch="time" morning="Good morning" evening="Good evening" />}
+      <Select
+        value="morning"
+        morning={<Select value="time" morning="Good morning" evening="Good evening" />}
         evening="Good evening"
       />
     </T>

@@ -6,7 +6,7 @@ export const normalMessage = msg('Normal {literal}', { $context: 'normal' });
 
 <script setup lang="ts">
 import {
-  Branch,
+  Select,
   Currency,
   DateTime as When,
   Num,
@@ -45,7 +45,7 @@ function shadowed(t: (value: string) => string) {
       fallback
       <Value>{{ item }}</Value>
     </Plural>
-    <Branch :branch="tone" key="stable">
+    <Select :value="tone" key="stable">
       <template #formal>
         formal
         <Value>{{ name }}</Value>
@@ -56,7 +56,7 @@ function shadowed(t: (value: string) => string) {
       </template>
       fallback
       <Value>{{ name }}</Value>
-    </Branch>
+    </Select>
     <b>end</b>
     <Num :value="count" />
     <When :value="date" />

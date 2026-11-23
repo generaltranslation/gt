@@ -1,9 +1,9 @@
-import { T, Branch } from "gt-next";
+import { T, Select } from "gt-next";
 export default function Home() {
   return (
     <T>
-      <Branch
-        branch="content"
+      <Select
+        value="content"
         empty=""
         space=" "
         newline={"\n"}

@@ -1511,9 +1511,9 @@
                 "column": 37,
                 "index": 1379
               },
-              "identifierName": "Branch"
+              "identifierName": "Select"
             },
-            "name": "Branch"
+            "name": "Select"
           },
           {
             "type": "ObjectExpression",
@@ -1564,9 +1564,9 @@
                       "column": 22,
                       "index": 1405
                     },
-                    "identifierName": "branch"
+                    "identifierName": "value"
                   },
-                  "name": "branch"
+                  "name": "value"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -6234,9 +6234,9 @@
                 "column": 37,
                 "index": 4445
               },
-              "identifierName": "Branch"
+              "identifierName": "Select"
             },
-            "name": "Branch"
+            "name": "Select"
           },
           {
             "type": "ObjectExpression",
@@ -6287,9 +6287,9 @@
                       "column": 22,
                       "index": 4471
                     },
-                    "identifierName": "branch"
+                    "identifierName": "value"
                   },
-                  "name": "branch"
+                  "name": "value"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -11530,9 +11530,9 @@
                 "column": 37,
                 "index": 8713
               },
-              "identifierName": "Branch"
+              "identifierName": "Select"
             },
-            "name": "Branch"
+            "name": "Select"
           },
           {
             "type": "ObjectExpression",
@@ -11583,9 +11583,9 @@
                       "column": 22,
                       "index": 8739
                     },
-                    "identifierName": "branch"
+                    "identifierName": "value"
                   },
-                  "name": "branch"
+                  "name": "value"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -13370,9 +13370,9 @@
                 "column": 37,
                 "index": 9899
               },
-              "identifierName": "Branch"
+              "identifierName": "Select"
             },
-            "name": "Branch"
+            "name": "Select"
           },
           {
             "type": "ObjectExpression",
@@ -13423,9 +13423,9 @@
                       "column": 22,
                       "index": 9925
                     },
-                    "identifierName": "branch"
+                    "identifierName": "value"
                   },
-                  "name": "branch"
+                  "name": "value"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -14788,9 +14788,9 @@
                 "column": 37,
                 "index": 10998
               },
-              "identifierName": "Branch"
+              "identifierName": "Select"
             },
-            "name": "Branch"
+            "name": "Select"
           },
           {
             "type": "ObjectExpression",
@@ -14841,9 +14841,9 @@
                       "column": 22,
                       "index": 11024
                     },
-                    "identifierName": "branch"
+                    "identifierName": "value"
                   },
-                  "name": "branch"
+                  "name": "value"
                 },
                 "computed": false,
                 "shorthand": false,
@@ -17112,11 +17112,11 @@
             "identifier": 0
           }
         ],
-        "Branch": [
+        "Select": [
           {
             "scopeId": 0,
-            "canonicalName": "Branch",
-            "aliasName": "Branch",
+            "canonicalName": "Select",
+            "aliasName": "Select",
             "isTranslationFunction": true,
             "type": "generaltranslation",
             "identifier": 0

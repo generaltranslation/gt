@@ -111,14 +111,14 @@ function createRenderTranslatedChildren({
       });
     }
 
-    if (sourceGT?.transformation === 'branch') {
-      const { branch } = sourceProps;
+    if (sourceGT?.transformation === 'select') {
+      const { value } = sourceProps;
       const targetBranches = targetElement.d?.b || {};
-      const key = selectBranchKey(branch, targetBranches);
+      const key = selectBranchKey(value, targetBranches);
       const target = targetBranches[key] as TranslatedChildren;
       return renderTranslatedChildren({
         source: getBranch(
-          branch,
+          value,
           sourceGT.branches || {},
           target === undefined ? undefined : key
         ),

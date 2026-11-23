@@ -18,9 +18,9 @@ import {
   isAcceptedPluralForm,
 } from 'generaltranslation/internal';
 import { MultipliedTreeNode } from './types.js';
-import { DATA_ATTR_PREFIX, BRANCH_COMPONENT } from '../constants.js';
+import { DATA_ATTR_PREFIX, SELECT_COMPONENT } from '../constants.js';
 
-// The children of a <Plural> or a <Branch> are its `other` branch.
+// The children of a <Plural> or a <Select> are its `other` branch.
 function addFallbackBranch(
   branches: Record<string, JsxChildren>,
   children: unknown,
@@ -61,7 +61,7 @@ function constructGTProp(
   }, {});
 
   // Plural
-  if (branching && branching !== BRANCH_COMPONENT) {
+  if (branching && branching !== SELECT_COMPONENT) {
     const pluralBranches = Object.entries(props).reduce(
       (acc: Record<string, JsxChildren>, [branchName, branch]) => {
         if (isAcceptedPluralForm(branchName)) {
@@ -81,9 +81,9 @@ function constructGTProp(
       generaltranslation.b = pluralBranches;
     }
 
-    // Branch
-  } else if (branching === BRANCH_COMPONENT) {
-    const { children, branch: _branch, other: _other, ...allBranches } = props;
+    // Select
+  } else if (branching === SELECT_COMPONENT) {
+    const { children, value: _value, other: _other, ...allBranches } = props;
     // Filter out data-* attributes injected by build tools
     const branches = Object.fromEntries(
       Object.entries(allBranches).filter(
@@ -173,7 +173,7 @@ export default function addGTIdentifierToSyntaxTree(
         gtVariableNames
       );
 
-      // Save current index and recurse. The children of a Branch or a Plural
+      // Save current index and recurse. The children of a Select or a Plural
       // are a branch, constructed above.
       const currentIndex = indexObject.index;
       const children = branching

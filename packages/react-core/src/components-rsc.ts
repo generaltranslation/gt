@@ -4,7 +4,7 @@
 // as each component is split into shared logic plus runtime-specific wrappers.
 
 // ===== Components ===== //
-export { Branch, GtInternalBranch } from './components/branches/Branch';
+export { Select, GtInternalSelect } from './components/branches/Select';
 export { Derive, GtInternalDerive } from './components/derivation/Derive';
 export { GtInternalVar, Var } from './components/variables/Var';
 export {
@@ -55,7 +55,7 @@ export type {
   PreparedT,
   TProps,
 } from './utils/translation/prepareT.shared';
-export type { BranchProps } from './components/branches/Branch';
+export type { SelectProps } from './components/branches/Select';
 export type {
   PluralProps,
   ResolvedPluralProps,

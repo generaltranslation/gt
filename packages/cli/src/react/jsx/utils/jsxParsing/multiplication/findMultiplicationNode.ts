@@ -5,7 +5,7 @@ import {
   isWhitespaceJsxTree,
 } from '../types.js';
 import { isAcceptedPluralForm } from 'generaltranslation/internal';
-import { BRANCH_COMPONENT, BRANCH_CONTROL_PROPS } from '../../constants.js';
+import { SELECT_COMPONENT, SELECT_CONTROL_PROPS } from '../../constants.js';
 
 export type MultiplicationNodeResult = {
   parent: Record<string, unknown> | unknown[] | undefined;
@@ -69,15 +69,15 @@ export function findMultiplicationNode(
         if (result) return result;
       }
 
-      // For Plural/Branch, also search translatable content props
+      // For Plural/Select, also search translatable content props
       // Mirrors the prop filtering in handleChildrenWhitespace.ts and autoInsertion.ts
-      const elementIsBranch = curr.branching === BRANCH_COMPONENT;
-      const elementIsPlural = curr.branching !== undefined && !elementIsBranch;
-      if (elementIsPlural || elementIsBranch) {
+      const elementIsSelect = curr.branching === SELECT_COMPONENT;
+      const elementIsPlural = curr.branching !== undefined && !elementIsSelect;
+      if (elementIsPlural || elementIsSelect) {
         for (const [propKey, propValue] of Object.entries(curr.props)) {
           if (propKey === 'children') continue;
           if (elementIsPlural && !isAcceptedPluralForm(propKey)) continue;
-          if (elementIsBranch && BRANCH_CONTROL_PROPS.has(propKey)) continue;
+          if (elementIsSelect && SELECT_CONTROL_PROPS.has(propKey)) continue;
           if (propValue && typeof propValue === 'object') {
             const result = handleChildren(
               propValue as

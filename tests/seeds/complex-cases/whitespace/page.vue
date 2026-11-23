@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Branch, Currency, Num, Plural, T, Var } from 'gt-vue';
+import { Select, Currency, Num, Plural, T, Var } from 'gt-vue';
 import { Fragment } from 'vue';
 
 const amount = 100;
@@ -22,9 +22,9 @@ const count = 1;
     Hello World with spaces
     <Plural :n="1" _1="" _2="Files" />
     <Plural :n="1" _1="   File   " _2="   Files   " />
-    <Branch branch="1" option1="" option2="   Padded   ">
+    <Select value="1" option1="" option2="   Padded   ">
       <template #option3><span>JSX content</span></template>
-    </Branch>
+    </Select>
     Start
     <strong>Bold</strong>
     <em>Italic</em>
@@ -65,8 +65,8 @@ const count = 1;
       waiting.
     </div>
     Text with multiple spaces Text with multiple spaces
-    <Branch
-      branch="mixed"
+    <Select
+      value="mixed"
       short="Brief"
       long="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
     >
@@ -82,7 +82,7 @@ const count = 1;
           large content blocks with mixed variable types.
         </Fragment>
       </template>
-    </Branch>
+    </Select>
     Hello World with spaces{{ true }}{{ true }}
     <div />
     <div />
@@ -130,7 +130,7 @@ const count = 1;
     <span>{{ true }}</span>
     <span>{{ false }}</span>
     <span>{{ true }}{{ true }}</span>
-    <Branch branch="false" :a="false" :b="true" :c="null" :d="undefined">
+    <Select value="false" :a="false" :b="true" :c="null" :d="undefined">
       <template #e>
         <Fragment>{{ false }}</Fragment>
       </template>
@@ -152,8 +152,8 @@ const count = 1;
       <template #k>
         <Fragment>{{ undefined }}{{ true }}</Fragment>
       </template>
-    </Branch>
-    <Branch branch="bool">
+    </Select>
+    <Select value="bool">
       <template #true_val>
         <Fragment>{{ true }}</Fragment>
       </template>
@@ -172,9 +172,9 @@ const count = 1;
           <div />
         </Fragment>
       </template>
-    </Branch>
+    </Select>
      yo   yo 
-    <Branch branch="nested">
+    <Select value="nested">
       <template #option1>
         <Fragment>
           <Fragment>
@@ -200,6 +200,6 @@ const count = 1;
           </Fragment>
         </Fragment>
       </template>
-    </Branch>
+    </Select>
   </T>
 </template>

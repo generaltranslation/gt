@@ -44,7 +44,7 @@ export const withGTStaticProps: WithGTStaticPropsFunction = () => {
 
 // ===== Components ===== //
 export {
-  Branch,
+  Select,
   Currency,
   DateTime,
   Derive,
@@ -88,7 +88,7 @@ export {
   mFallback,
   msg,
   n,
-  number,
+  num,
   part,
   plural,
   select,

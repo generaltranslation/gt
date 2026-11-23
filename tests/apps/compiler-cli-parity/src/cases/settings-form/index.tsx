@@ -1,4 +1,4 @@
-import { Branch } from 'gt-react';
+import { Select } from 'gt-react';
 
 export default function SettingsForm() {
   const theme: string = 'dark';
@@ -7,7 +7,7 @@ export default function SettingsForm() {
       <fieldset>
         <legend>Appearance</legend>
         <label>Theme</label>
-        <Branch branch={theme} dark="Dark mode enabled" light="Light mode enabled">System default</Branch>
+        <Select value={theme} dark="Dark mode enabled" light="Light mode enabled">System default</Select>
       </fieldset>
       <fieldset>
         <legend>Notifications</legend>

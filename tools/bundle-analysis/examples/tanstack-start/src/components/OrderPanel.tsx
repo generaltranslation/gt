@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Branch,
+  Select,
   Currency,
   Num,
   Plural,
@@ -57,8 +57,8 @@ export function OrderPanel() {
           ))}
         </div>
         <T>
-          <Branch
-            branch={preset}
+          <Select
+            value={preset}
             green={
               <p className='order-note'>
                 Heats to 80 °C and holds for 30 minutes. Steep for 2 minutes.
@@ -76,7 +76,7 @@ export function OrderPanel() {
             }
           >
             <p className='order-note'>Heats to the set temperature.</p>
-          </Branch>
+          </Select>
         </T>
       </div>
 

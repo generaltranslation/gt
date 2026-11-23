@@ -43,7 +43,7 @@ describe('extractFromVueSource', () => {
         },
       },
       {
-        t: 'Branch',
+        t: 'Select',
         i: 4,
         d: {
           b: {
@@ -51,7 +51,7 @@ describe('extractFromVueSource', () => {
             casual: [' casual ', { i: 5, v: 'v' }],
             other: [' fallback ', { i: 5, v: 'v' }],
           },
-          t: 'b',
+          t: 's',
         },
       },
       { t: 'b', i: 5, c: 'end' },
@@ -180,12 +180,12 @@ describe('extractFromVueSource', () => {
     });
   });
 
-  it('propagates top-level component aliases with Branch semantics', async () => {
+  it('propagates top-level component aliases with Select semantics', async () => {
     const result = await extractFixtures(['component-aliases.vue']);
     const expectedSource: JsxChildren = {
-      t: 'Branch',
+      t: 'Select',
       i: 1,
-      d: { b: { formal: 'Hello', other: 'Fallback' }, t: 'b' },
+      d: { b: { formal: 'Hello', other: 'Fallback' }, t: 's' },
     };
 
     expect(result.errors).toEqual([]);
@@ -204,7 +204,7 @@ describe('extractFromVueSource', () => {
     expect(result.updates[0]).toMatchObject({
       dataFormat: 'JSX',
       source: {
-        t: 'Branch',
+        t: 'Select',
         i: 1,
         d: {
           b: {
@@ -212,7 +212,7 @@ describe('extractFromVueSource', () => {
             toString: 'String branch',
             other: ' Fallback ',
           },
-          t: 'b',
+          t: 's',
         },
       },
     });
