@@ -339,6 +339,11 @@ describe.sequential('GeneralTranslation scopes', () => {
       expect(() => {
         (instance as { projectId: string }).projectId = 'other';
       }).toThrow(TypeError);
+      expect(() => {
+        (
+          instance as unknown as { credentials: { apiKey: string } }
+        ).credentials.apiKey = 'other';
+      }).toThrow(TypeError);
       expect(() => (localeConfig.locales as string[]).push('fr')).toThrow(
         TypeError
       );

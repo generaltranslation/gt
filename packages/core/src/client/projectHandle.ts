@@ -179,7 +179,7 @@ export class ProjectHandle extends GTRuntime {
   private readonly clientSettings: ApiClientSettings;
   private readonly client: ReturnType<typeof createApiClient>;
 
-  /** @throws {Error} If `projectId` is not a non-empty string. */
+  /** @throws {Error} If `projectId` is empty or blank. */
   constructor(params: GTProjectConfig) {
     super(params);
     this.clientSettings = resolveApiClientSettings(params);

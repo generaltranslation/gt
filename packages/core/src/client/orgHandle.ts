@@ -40,7 +40,7 @@ const UPSERT_ASSETS_BATCH_SIZE = 10;
 export class OrgHandle {
   /**
    * @internal
-   * @throws {Error} If `orgId` is not a non-empty string.
+   * @throws {Error} If `orgId` is empty or blank.
    */
   constructor(
     private readonly clientSettings: ApiClientSettings,

@@ -51,15 +51,19 @@ export class GTRuntime {
 
   /**
    * @param params - Credentials, the project, and optionally the locale configuration and base URL.
-   * @throws {Error} If `projectId` is not a non-empty string.
+   * @throws {Error} If `projectId` is empty or blank.
    */
   constructor(params: GTProjectConfig) {
-    const { projectId, baseUrl, localeConfig, ...credentials } = params;
+    const { projectId } = params;
     if (!projectId.trim()) throw new Error(noScopeIdProvidedError('project'));
     this.projectId = projectId;
-    this.baseUrl = baseUrl;
-    this.localeConfig = snapshotLocaleConfig(localeConfig ?? {});
-    this.credentials = credentials;
+    this.baseUrl = params.baseUrl;
+    this.localeConfig = snapshotLocaleConfig(params.localeConfig ?? {});
+    this.credentials = Object.freeze(
+      params.apiKey === undefined
+        ? { userTokenProvider: params.userTokenProvider }
+        : { apiKey: params.apiKey }
+    );
     // Subclasses freeze themselves after assigning their own fields.
     if (new.target === GTRuntime) Object.freeze(this);
   }
