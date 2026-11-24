@@ -1,4 +1,4 @@
-import { getI18nConfig } from 'gt-i18n/internal';
+import { isDevHotReloadEnabled } from 'gt-i18n/internal';
 import { getDictionaryListenerKey } from 'gt-i18n/internal/compat';
 import type { DictionaryLookup, DictionaryObjectSnapshot } from './types';
 import { useCallback, useRef } from 'react';
@@ -14,8 +14,7 @@ type TrackedDictionaryObjResolver = (
 export function useTrackedDictionaryObjResolver(): TrackedDictionaryObjResolver {
   const { dictionariesSnapshot, compatStore } = useDictionaryContext();
   const devHotReloadEnabled =
-    process.env.NODE_ENV !== 'production' &&
-    getI18nConfig().isDevHotReloadEnabled();
+    process.env.NODE_ENV !== 'production' && isDevHotReloadEnabled();
   const onMissingDictionaryObj = useHandleMissingDictionaryObject();
 
   const trackedKeysRef = useRef<Set<string> | null>(null);

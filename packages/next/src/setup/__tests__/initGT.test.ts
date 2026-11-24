@@ -4,6 +4,7 @@ import {
   getReactI18nCache,
   ReactI18nCache,
 } from '@generaltranslation/react-core/pure';
+import { isDevHotReloadEnabled } from 'gt-i18n/internal';
 import { initializeGT } from '../initGT';
 import { initializeGTClient } from '../initGT.client';
 import { initializeGTServer } from '../initGT.server';
@@ -59,7 +60,7 @@ describe('initializeGT', () => {
     initializeGTServer();
 
     expect(getReactI18nCache()).toBeInstanceOf(ReactI18nCache);
-    expect(getI18nConfig().isDevHotReloadEnabled()).toBe(true);
+    expect(isDevHotReloadEnabled(getI18nConfig())).toBe(true);
   });
 
   // Every gt-next entry module initializes GT when it is imported.

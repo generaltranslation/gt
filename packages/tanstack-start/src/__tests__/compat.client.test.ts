@@ -26,15 +26,11 @@ vi.mock('gt-tanstack-start/internal/_config', () => ({
 vi.mock('gt-tanstack-start/internal/_compat-config', () => compatPluginModule);
 vi.mock('gt-tanstack-start/internal/localeRouting', () => ({}));
 vi.mock('../setup/initializeGT.client', () => ({}));
+vi.mock('../setup/translations.client', () => ({}));
 vi.mock('gt-react', () => ({}));
 
 vi.mock('@generaltranslation/react-core/pure', () => ({
   getReadonlyConditionStore: () => mockClientConditionStore,
-}));
-
-vi.mock('gt-i18n/internal', () => ({
-  // The browser translations cache never expires unless configured.
-  getI18nCache: () => ({ getCacheExpiryTime: () => null }),
 }));
 
 vi.mock('gt-i18n/internal/compat', () => ({

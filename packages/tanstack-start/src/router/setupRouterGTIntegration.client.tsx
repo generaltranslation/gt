@@ -6,6 +6,10 @@ import {
   replaceWithLocaleURL,
 } from 'gt-tanstack-start/internal/localeRouting';
 import { ensureInitialized } from '../setup/initializeGT.client';
+import {
+  hydrateClientTranslations,
+  loadClientTranslations,
+} from '../setup/translations.client';
 import { createGTRouterWrap, readGTRouterState } from './createGTRouterWrap';
 import {
   resolveIntegrationOptions,
@@ -32,7 +36,8 @@ export function setupRouterGTIntegration(
 ): void {
   integrateRouter(resolveIntegrationOptions(options), {
     Provider: GTProvider,
-    loadState: readGTRouterState,
+    loadState: (conditionStore) =>
+      readGTRouterState(conditionStore, loadClientTranslations),
   });
 }
 
@@ -80,7 +85,8 @@ export function integrateRouter<State extends GTRouterState>(
         }
         await gt.load().catch(() => undefined);
       } else if (dehydrated?.gt) {
-        const { locale, region, enableI18n } = dehydrated.gt;
+        const { locale, region, enableI18n, translations } = dehydrated.gt;
+        hydrateClientTranslations(translations);
         gt.resolve(dehydrated.gt);
         createOrUpdateBrowserConditionStore({ locale, region, enableI18n });
       }

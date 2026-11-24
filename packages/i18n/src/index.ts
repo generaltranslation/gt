@@ -1,4 +1,5 @@
-export { t, type GT, type GTOptions } from './translation-functions/gt';
+export type { GT, GTOptions } from './translation-functions/gt';
+export { t } from './translation-functions/cachedGT';
 export {
   date,
   derive,
@@ -13,7 +14,8 @@ export {
   type Placeholder,
 } from './translation-functions/placeholders';
 export { msg, type Msg } from './translation-functions/msg';
-export { m, mFallback, type M } from './translation-functions/messages';
+export { mFallback, type M } from './translation-functions/messages';
+export { m } from './translation-functions/cachedMessages';
 export {
   getLocale,
   getRegion,

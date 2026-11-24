@@ -1,4 +1,4 @@
-import { getI18nConfig } from 'gt-i18n/internal';
+import { getI18nConfig, isDevHotReloadEnabled } from 'gt-i18n/internal';
 import type { ReactNode } from 'react';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline.rsc';
@@ -46,10 +46,7 @@ async function RscT({
 
   let targetJsxChildren: JsxChildren | undefined;
   const i18nCache = getReactI18nCache();
-  if (
-    process.env.NODE_ENV !== 'production' &&
-    getI18nConfig().isDevHotReloadEnabled()
-  ) {
+  if (process.env.NODE_ENV !== 'production' && isDevHotReloadEnabled()) {
     targetJsxChildren = await i18nCache.lookupTranslationWithFallback(
       locale,
       prepared.sourceJsxChildren,

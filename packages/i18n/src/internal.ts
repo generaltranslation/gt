@@ -1,11 +1,12 @@
+export { createGT, type CreateGTParams } from './translation-functions/gt';
 export {
-  createGT,
   getGT,
+  loadCreateGTParams,
   lookupCachedTranslation,
   renderCachedMessage,
-  type CreateGTParams,
-} from './translation-functions/gt';
-export { createMessages, getMessages } from './translation-functions/messages';
+} from './translation-functions/cachedGT';
+export { createMessages } from './translation-functions/messages';
+export { getMessages } from './translation-functions/cachedMessages';
 export {
   isPrecomputedMessage,
   type PrecomputedMessage,
@@ -42,6 +43,7 @@ export {
   setI18nConfig,
 } from './i18n-config/singleton-operations';
 export { I18nConfig } from './i18n-config/I18nConfig';
+export { isDevHotReloadEnabled } from './i18n-config/isDevHotReloadEnabled';
 export type { I18nConfigParams } from './i18n-config/I18nConfig';
 export { createConditionStoreSingleton } from './condition-store/createConditionStoreSingleton';
 export { createGlobalSingleton } from './globals/createGlobalSingleton';

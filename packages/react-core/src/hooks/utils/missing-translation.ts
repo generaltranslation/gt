@@ -1,4 +1,7 @@
-import { getI18nConfig, getTranslateListenerKey } from 'gt-i18n/internal';
+import {
+  getTranslateListenerKey,
+  isDevHotReloadEnabled,
+} from 'gt-i18n/internal';
 import { useShouldTranslate } from '../utils';
 import { useI18nStore } from '../../i18n-store/useI18nStore';
 import { TranslateLookup } from '../../i18n-store/storeTypes';
@@ -76,8 +79,7 @@ export function useDevHotReloadQueue<T>(
   // Statically gated so bundlers can drop dev hot-reload work from
   // production builds.
   const devHotReloadEnabled =
-    process.env.NODE_ENV !== 'production' &&
-    getI18nConfig().isDevHotReloadEnabled();
+    process.env.NODE_ENV !== 'production' && isDevHotReloadEnabled();
 
   // Persist the queue across renders so the enqueue callback keeps a stable
   // identity. An unstable callback would change the identity of every

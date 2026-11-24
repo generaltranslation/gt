@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { I18nConfig } from '../I18nConfig';
 import { getTranslationRuntimeParams } from '../createGTRuntime';
+import { isDevHotReloadEnabled } from '../isDevHotReloadEnabled';
 
 describe('I18nConfig', () => {
   beforeEach(() => {
@@ -212,7 +213,7 @@ describe('I18nConfig', () => {
       projectId: 'project-id',
     });
 
-    expect(config.isDevHotReloadEnabled()).toBe(true);
+    expect(isDevHotReloadEnabled(config)).toBe(true);
   });
 
   it('disables dev hot reload when the config switch is set', () => {
@@ -224,7 +225,7 @@ describe('I18nConfig', () => {
       _disableDevHotReload: true,
     });
 
-    expect(config.isDevHotReloadEnabled()).toBe(false);
+    expect(isDevHotReloadEnabled(config)).toBe(false);
   });
 
   it.each([
@@ -262,6 +263,6 @@ describe('I18nConfig', () => {
   ])('disables dev hot reload for $name', ({ config, environment }) => {
     vi.stubEnv('NODE_ENV', environment);
 
-    expect(new I18nConfig(config).isDevHotReloadEnabled()).toBe(false);
+    expect(isDevHotReloadEnabled(new I18nConfig(config))).toBe(false);
   });
 });

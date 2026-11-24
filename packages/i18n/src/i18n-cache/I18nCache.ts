@@ -22,6 +22,7 @@ import type {
 } from './translations-manager/TranslationsCache';
 import { guard, guardAsync, handleCacheError } from './utils/handleCacheError';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
+import { isDevHotReloadEnabled } from '../i18n-config/isDevHotReloadEnabled';
 import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 
 /**
@@ -269,7 +270,7 @@ class I18nCache<TranslationValue extends Content = Content> {
         ) => {
           if (
             process.env.NODE_ENV !== 'production' &&
-            getI18nConfig().isDevHotReloadEnabled()
+            isDevHotReloadEnabled()
           ) {
             // Invariant: all prefetchEntries must be the same locale
             // TODO: investigate why we have made this an invariant, we may be able to drop this requirement

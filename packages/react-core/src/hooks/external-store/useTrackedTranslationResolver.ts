@@ -1,5 +1,8 @@
 import { useCallback, useRef } from 'react';
-import { getI18nConfig, getTranslateListenerKey } from 'gt-i18n/internal';
+import {
+  getTranslateListenerKey,
+  isDevHotReloadEnabled,
+} from 'gt-i18n/internal';
 import type { Content } from '@generaltranslation/format';
 import type {
   TranslateLookup,
@@ -38,8 +41,7 @@ export function useTrackedTranslationResolver(
   const translationsSnapshot = useTranslationsSnapshot();
   const i18nStore = useI18nStore();
   const devHotReloadEnabled =
-    process.env.NODE_ENV !== 'production' &&
-    getI18nConfig().isDevHotReloadEnabled();
+    process.env.NODE_ENV !== 'production' && isDevHotReloadEnabled();
   const onMissingTranslation =
     useHandleMissingTranslationWithConditions(shouldTranslate);
 

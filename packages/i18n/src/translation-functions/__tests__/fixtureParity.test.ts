@@ -1,12 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { isMessageTree, type MessageTree } from '@generaltranslation/icu';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  createGT,
-  lookupCachedTranslation,
-  type GT,
-  type GTOptions,
-} from '../gt';
+import { lookupCachedTranslation } from '../cachedGT';
+import { createGT, type GT, type GTOptions } from '../gt';
 import {
   date,
   derive,

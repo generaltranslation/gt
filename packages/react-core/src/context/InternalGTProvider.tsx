@@ -40,38 +40,56 @@ export function InternalGTProvider({
   setLocale,
   setRegion,
   setEnableI18n,
-  i18nStore,
-  onMissingTranslation,
+  ...devOnly
 }: InternalGTProviderProps) {
+  const devContext = useDevContext(devOnly, translations);
   const value = useMemo(
     () => ({
       translationsSnapshot: translations,
-      i18nStore,
       locale,
       region,
       enableI18n,
       setLocale,
       setRegion,
       setEnableI18n,
-      onMissingTranslation,
+      ...devContext,
     }),
     [
       translations,
-      i18nStore,
       locale,
       region,
       enableI18n,
       setLocale,
       setRegion,
       setEnableI18n,
-      onMissingTranslation,
+      devContext,
     ]
   );
 
+  return <GTContext.Provider value={value}>{children}</GTContext.Provider>;
+}
+
+type DevContext = Pick<
+  InternalGTProviderProps,
+  'i18nStore' | 'onMissingTranslation'
+>;
+
+function useDevContextDev(
+  { i18nStore, onMissingTranslation }: DevContext,
+  translations: InternalGTProviderProps['translations']
+): DevContext {
   // Update cache with data from server, do not emit events
   useEffect(() => {
     i18nStore?.updateTranslations(translations);
   }, [translations, i18nStore]);
-
-  return <GTContext.Provider value={value}>{children}</GTContext.Provider>;
+  return useMemo(
+    () => ({ i18nStore, onMissingTranslation }),
+    [i18nStore, onMissingTranslation]
+  );
 }
+
+const noDevContext: DevContext = {};
+
+// Statically chosen so production bundles leave out dev hot reload.
+const useDevContext: typeof useDevContextDev =
+  process.env.NODE_ENV === 'production' ? () => noDevContext : useDevContextDev;

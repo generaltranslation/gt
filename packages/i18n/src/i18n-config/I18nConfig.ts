@@ -11,7 +11,6 @@ import {
   getTranslationApiType,
   TranslationApiType,
 } from '../i18n-cache/utils/getTranslationApiType';
-import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { validateI18nConfigParams } from './validation';
 
 export type I18nConfigParams = Pick<
@@ -103,21 +102,6 @@ export class I18nConfig extends LocaleIntl {
       throw new Error(createInvalidLocaleError(locale));
     }
     return resolvedLocale;
-  }
-
-  /**
-   * Returns true when development hot reload runtime translation requests can
-   * run: in development, with an API key and a projectId.
-   */
-  isDevHotReloadEnabled(): boolean {
-    return (
-      !this.runtimeConfig._disableDevHotReload &&
-      !!this.runtimeConfig.apiKey &&
-      !!this.runtimeConfig.projectId &&
-      this.runtimeConfig.runtimeUrl !== null &&
-      this.runtimeConfig.runtimeUrl !== '' &&
-      getRuntimeEnvironment() === 'development'
-    );
   }
 
   isGTServicesEnabled(): boolean {

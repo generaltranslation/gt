@@ -1,7 +1,7 @@
 import { formatIcu } from '@generaltranslation/icu/parser';
 import type { FormatVariables } from '../types';
 import type { StringFormat } from '../types-dir/jsx/content';
-import type { LocaleIntl, WithLocales } from './GTIntl';
+import type { LocaleIntl, WithLocales } from './LocaleIntl';
 
 /** formatMessage() options. */
 export type IntlMessageOptions = WithLocales<{

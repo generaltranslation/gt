@@ -1,7 +1,11 @@
 import { getReadonlyConditionStore } from '@generaltranslation/react-core/pure';
+import { loadClientGTParams } from '../setup/translations.client';
 import { createRuntime } from './runtime';
 
-const runtime = createRuntime(getReadonlyConditionStore);
+const runtime = /* @__PURE__ */ createRuntime(
+  getReadonlyConditionStore,
+  loadClientGTParams
+);
 
 /** Return the locale of the current request or browser. */
 export const getLocale = runtime.getLocale;

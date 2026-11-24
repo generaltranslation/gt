@@ -2,6 +2,7 @@ import { hashSource } from 'generaltranslation/id';
 import {
   I18nCache,
   initializeI18nConfig,
+  loadCreateGTParams,
   setI18nCache,
 } from 'gt-i18n/internal';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal';
@@ -37,7 +38,7 @@ describe('createRuntime', () => {
 
   it('returns a GT bound to the store locale at call time', async () => {
     let store = createStore('fr');
-    const { getGT } = createRuntime(() => store);
+    const { getGT } = createRuntime(() => store, loadCreateGTParams);
 
     expect((await getGT())`Save`).toBe('Enregistrer');
 
@@ -47,7 +48,7 @@ describe('createRuntime', () => {
 
   it('returns an m bound to the store locale at call time', async () => {
     let store = createStore('fr');
-    const { getMessages } = createRuntime(() => store);
+    const { getMessages } = createRuntime(() => store, loadCreateGTParams);
 
     expect((await getMessages())(msg('Save'))).toBe('Enregistrer');
 

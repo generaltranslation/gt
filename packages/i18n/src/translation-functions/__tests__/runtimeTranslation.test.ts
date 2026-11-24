@@ -5,7 +5,7 @@ import { I18nCache } from '../../i18n-cache/I18nCache';
 import { setI18nCache } from '../../i18n-cache/singleton-operations';
 import { initializeI18nConfig } from '../../i18n-config/singleton-operations';
 import { t } from '../../index';
-import { getGT } from '../gt';
+import { getGT } from '../cachedGT';
 
 const translateMany = vi.fn();
 vi.mock(

@@ -8,9 +8,8 @@ import {
   _selectRelativeTimeUnit,
   type ZonedDateTimeFormatOptions,
 } from './formatting/format';
-import { formatIcu } from '@generaltranslation/icu/parser';
 import { intlCache } from './cache/IntlCache';
-import { GTIntl } from './intl/GTIntl';
+import { LocaleIntl } from './intl/LocaleIntl';
 import type { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
 import { _getLocaleDirection } from './locales/getLocaleDirection';
 import { _getLocaleEmoji } from './locales/getLocaleEmoji';
@@ -27,8 +26,6 @@ import { _requiresTranslation } from './locales/requiresTranslation';
 import { _resolveAliasLocale } from './locales/resolveAliasLocale';
 import { _resolveCanonicalLocale } from './locales/resolveCanonicalLocale';
 import type { CustomMapping } from './locales/customLocaleMapping';
-import type { FormatVariables } from './types';
-import type { StringFormat } from './types-dir/jsx/content';
 import {
   defaultLocaleMatcher,
   defaultDefaultLocale,
@@ -38,13 +35,6 @@ import {
 // to them. `generaltranslation` resolves what a caller leaves out.
 type LocalesOption = {
   locales: string | string[];
-};
-
-type MessageFormatOptions = LocalesOption & {
-  variables: FormatVariables;
-  dataFormat?: StringFormat;
-  /** The time zone of the dates and times in the message. */
-  timeZone: string;
 };
 
 /**
@@ -103,28 +93,6 @@ export function formatCutoff(
 ) {
   const { locales, ...formatOptions } = options;
   return intlCache.get('CutoffFormat', locales, formatOptions).format(value);
-}
-
-/**
- * Formats a message according to the specified locales and options.
- *
- * @param {string} message - The message to format.
- * @param {Object} [options] - Configuration options for message formatting.
- * @param {string | string[]} [options.locales] - The locales to use for formatting.
- * @param {FormatVariables} [options.variables] - The variables to use for formatting.
- * @param {StringFormat} [options.dataFormat='ICU'] - The format of the message. When STRING, the message is returned as is.
- * @param {string} options.timeZone - The time zone of the dates and times in the message.
- * @returns {string} The formatted message.
- *
- * @example
- * formatMessage('Hello {name}', { variables: { name: 'John' }, timeZone: 'UTC' });
- * // Returns: "Hello John"
- */
-export function formatMessage(message: string, options: MessageFormatOptions) {
-  if (options.dataFormat === 'STRING') return message;
-  return formatIcu(message, options.locales, options.variables, {
-    timeZone: options.timeZone,
-  });
 }
 
 /**
@@ -462,7 +430,7 @@ export function determineLocale(
   customMapping: CustomMapping | undefined = undefined
 ): string | undefined {
   // Matching reads neither the default locale nor the time zone.
-  return new GTIntl({
+  return new LocaleIntl({
     defaultLocale: defaultDefaultLocale,
     timeZone: 'UTC',
     localeMatcher: defaultLocaleMatcher,

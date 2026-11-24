@@ -129,11 +129,11 @@ vi.mock('gt-i18n/internal', async (importOriginal) => {
   const actual = await importOriginal<typeof import('gt-i18n/internal')>();
   return {
     ...actual, // keep the REAL hashContent so we verify a genuine hash
+    isDevHotReloadEnabled: () => false,
     getI18nConfig: () => {
       const c: Record<string, unknown> = {
         getDefaultLocale: () => 'en',
         requiresTranslation: () => false,
-        isDevHotReloadEnabled: () => false,
       };
       // cfg.legacy simulates an OLDER shared-config copy (predating id-tagging, so
       // no isIdTaggingEnabled method) winning the first-writer singleton.

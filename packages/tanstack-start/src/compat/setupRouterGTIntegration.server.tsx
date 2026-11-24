@@ -2,6 +2,7 @@ import {
   GTProvider as ReactGTProvider,
   type GTProviderProps,
 } from 'gt-react/compat';
+import { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 import { readGTRouterState } from '../router/createGTRouterWrap';
 import { integrateRouter } from '../router/setupRouterGTIntegration.server';
 import { resolveIntegrationOptions } from '../router/resolveIntegrationOptions';
@@ -29,7 +30,7 @@ export function setupRouterGTIntegration(
     loadState: async (conditionStore) => {
       ensureDictionaryManager();
       const [state, dictionaries] = await Promise.all([
-        readGTRouterState(conditionStore),
+        readGTRouterState(conditionStore, getTranslationsSnapshot),
         loadDictionaries(conditionStore.getLocale()),
       ]);
       return { ...state, dictionaries };

@@ -1,5 +1,5 @@
 import { useTranslate } from '../../hooks/external-store';
-import { getI18nConfig } from 'gt-i18n/internal';
+import { isDevHotReloadEnabled } from 'gt-i18n/internal';
 import { useRef, type ReactNode } from 'react';
 import { renderPreparedT } from '../../utils/rendering/renderPipeline.rsc';
 import type { TProps } from '../../utils/translation/prepareT.shared';
@@ -50,7 +50,7 @@ function useComputeT_Dev({
   // TODO: account for success vs loading vs failed request states
   const prev = useRef<ReactNode | null>(null);
   if (
-    getI18nConfig().isDevHotReloadEnabled() &&
+    isDevHotReloadEnabled() &&
     targetJsxChildren == null &&
     prev.current != null &&
     shouldTranslate

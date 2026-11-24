@@ -4,7 +4,6 @@ import {
   formatDateTime as _formatDateTime,
   formatList as _formatList,
   formatListToParts as _formatListToParts,
-  formatMessage as _formatMessage,
   formatNum as _formatNum,
   formatRelativeTime as _formatRelativeTime,
   formatRelativeTimeFromDate as _formatRelativeTimeFromDate,
@@ -33,13 +32,13 @@ export type WithOptional<Options, Keys extends keyof Options> = Omit<
 > &
   Partial<Pick<Options, Keys>>;
 
-type Options<
+export type Options<
   Formatter extends (...args: never[]) => unknown,
   Index extends number,
   Keys extends keyof Parameters<Formatter>[Index] = never,
 > = WithOptional<Parameters<Formatter>[Index], Keys | 'locales'>;
 
-const withLocales = <Given extends { locales?: string | string[] }>(
+export const withLocales = <Given extends { locales?: string | string[] }>(
   options: Given | undefined
 ) => ({ ...options, locales: options?.locales ?? defaultDefaultLocale });
 
@@ -213,30 +212,6 @@ export function formatCutoff(
   options?: Options<typeof _formatCutoff, 1>
 ): string {
   return _formatCutoff(value, withLocales(options));
-}
-
-/**
- * Formats an ICU message according to the specified locales and options.
- *
- * @param {string} message - The message to format.
- * @param {Object} [options] - `locales`, `variables` and `dataFormat`; when
- * `dataFormat` is `STRING` the message is returned as is. The `timeZone` of
- * its dates and times defaults to the host's.
- * @returns {string} The formatted message.
- *
- * @example
- * formatMessage('Hello {name}', { variables: { name: 'John' } });
- * // Returns: "Hello John"
- */
-export function formatMessage(
-  message: string,
-  options?: Options<typeof _formatMessage, 1, 'variables' | 'timeZone'>
-): string {
-  return _formatMessage(message, {
-    ...withLocales(options),
-    variables: options?.variables ?? {},
-    timeZone: options?.timeZone ?? hostTimeZone(),
-  });
 }
 
 /**
