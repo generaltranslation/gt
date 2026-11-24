@@ -304,16 +304,19 @@ function resolveMetadataPath(
 }
 
 function isInServedDirectory(filePath: string): boolean {
+  const target = physicalPath(filePath);
   const asWritten = path.relative(process.cwd(), path.resolve(filePath));
-  const resolved = path.relative(
-    physicalPath(process.cwd()),
-    physicalPath(filePath)
-  );
-  return [asWritten, resolved].some((relative) =>
+  const resolved = path.relative(physicalPath(process.cwd()), target);
+  const namesServedDirectory = [asWritten, resolved].some((relative) =>
     relative
       .split(path.sep)
       .some((segment) => SERVED_DIRECTORIES.has(segment.toLowerCase()))
   );
+  const insideServedDirectory = [...SERVED_DIRECTORIES].some((name) => {
+    const relative = path.relative(physicalPath(name), target);
+    return !relative.startsWith('..') && !path.isAbsolute(relative);
+  });
+  return namesServedDirectory || insideServedDirectory;
 }
 
 function assertNotLocaleFile(metadataPath: string, localeFiles: string[]) {
