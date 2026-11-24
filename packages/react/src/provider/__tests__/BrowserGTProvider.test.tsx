@@ -5,9 +5,11 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { hashSource } from 'generaltranslation/id';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  getTranslationsSnapshot,
   initializeI18nConfig,
   setGlobalTranslationsSnapshot,
 } from '@generaltranslation/react-core/pure';
+import { initializeGTSRAClient } from '../../setup/initializeGTSRAClient';
 import {
   useEnableI18n,
   useLocale,
@@ -220,5 +222,33 @@ describe('BrowserGTProvider in a production SPA', () => {
     );
 
     expect(html).toBe('<p>Sauver Ouvrir</p>');
+  });
+
+  it("gives getTranslationsSnapshot() the server's translations once mounted", async () => {
+    initializeGTSRAClient({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      cacheUrl: null,
+    });
+    const translations = { fr: { hash: 'Sauver' } };
+    const root = createRoot(document.createElement('div'));
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+
+    await act(async () => {
+      root.render(
+        <BrowserGTProvider
+          locale='fr'
+          enableI18n
+          _reload={() => undefined}
+          translations={translations}
+        />
+      );
+    });
+
+    const snapshot = await getTranslationsSnapshot('fr');
+    expect(snapshot).toEqual(translations);
+    expect(snapshot.fr).not.toBe(translations.fr);
+    await act(async () => root.unmount());
+    vi.unstubAllGlobals();
   });
 });

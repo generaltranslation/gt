@@ -1,4 +1,8 @@
-import { I18nStore, getI18nConfig } from '@generaltranslation/react-core/pure';
+import {
+  I18nStore,
+  getI18nConfig,
+  updateGlobalTranslationsSnapshot,
+} from '@generaltranslation/react-core/pure';
 import { InternalGTProvider } from '@generaltranslation/react-core/components';
 import { defaultResetLocaleCookieName } from 'gt-i18n/internal/cookies';
 import { useCallback, useEffect, useRef } from 'react';
@@ -80,6 +84,14 @@ export function BrowserGTProvider(props: SharedGTProviderProps) {
     props.translations,
     syncConditions,
   ]);
+
+  // Production lookups and getTranslationsSnapshot() also read the global
+  // snapshot, which the store's cache stands in for in development.
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') {
+      updateGlobalTranslationsSnapshot(props.translations);
+    }
+  }, [props.translations]);
 
   // Only create I18nStore in development on client. Keep the construction
   // inline in the NODE_ENV check (Turbopack-specific; webpack is unaffected):

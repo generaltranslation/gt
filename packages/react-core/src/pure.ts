@@ -48,6 +48,7 @@ export {
   loadTranslationsSnapshot,
   type TranslationsSnapshotLoaderParams,
 } from './translations-snapshot/loadTranslationsSnapshot';
+export { loadGlobalTranslationsSnapshot } from './translations-snapshot/loadGlobalTranslationsSnapshot';
 export { lookupGlobalSnapshotTranslation } from './translations-snapshot/lookupGlobalSnapshotTranslation';
 export { I18nStore } from './i18n-store/I18nStore';
 export { getI18nConfig, initializeI18nConfig } from './setup/i18nConfig';

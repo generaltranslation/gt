@@ -7,11 +7,9 @@ import {
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import {
   getGlobalTranslationsSnapshot,
-  getTranslationsSnapshotLoader,
-  isGlobalTranslationsSnapshotInitialized,
   isTranslationsSnapshotLoaderInitialized,
 } from '../../translations-snapshot/singleton-operations';
-import { loadTranslationsSnapshot } from '../../translations-snapshot/loadTranslationsSnapshot';
+import { loadGlobalTranslationsSnapshot } from '../../translations-snapshot/loadGlobalTranslationsSnapshot';
 
 /**
  * Serializable cached translations for provider hydration; a failed load
@@ -26,12 +24,9 @@ export async function getTranslationsSnapshot(
     process.env.NODE_ENV === 'production' &&
     isTranslationsSnapshotLoaderInitialized()
   ) {
-    const loaded = isGlobalTranslationsSnapshotInitialized()
-      ? getGlobalTranslationsSnapshot()[locale]
-      : undefined;
-    return loaded
-      ? { [locale]: structuredClone(loaded) }
-      : loadTranslationsSnapshot(getTranslationsSnapshotLoader(), locale);
+    await loadGlobalTranslationsSnapshot(locale);
+    const loaded = getGlobalTranslationsSnapshot()[locale];
+    return loaded ? { [locale]: structuredClone(loaded) } : {};
   }
   const i18nCache = getReactI18nCache();
   try {

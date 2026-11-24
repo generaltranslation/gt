@@ -27,6 +27,9 @@ async function loadProductionModules() {
   vi.resetModules();
   const pure = await import('@generaltranslation/react-core/pure');
   pure.initializeI18nConfig(pluginModule.config);
+  pure.setTranslationsSnapshotLoader({
+    loadTranslations: pluginModule.loadTranslations,
+  });
   const internal = await import('gt-i18n/internal');
   return { pure, internal, ...(await import('../translations.client')) };
 }

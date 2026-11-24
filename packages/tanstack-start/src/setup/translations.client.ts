@@ -2,44 +2,12 @@ import {
   getI18nConfig,
   getGlobalTranslationsSnapshot,
   getTranslationsSnapshot,
-  isGlobalTranslationsSnapshotInitialized,
-  loadTranslationsSnapshot,
+  loadGlobalTranslationsSnapshot,
   lookupGlobalSnapshotTranslation,
   updateGlobalTranslationsSnapshot,
   type TranslationsSnapshot,
 } from '@generaltranslation/react-core/pure';
 import { loadCreateGTParams, type CreateGTParams } from 'gt-i18n/internal';
-import {
-  config as pluginConfig,
-  loadTranslations as pluginLoadTranslations,
-} from 'gt-tanstack-start/internal/_config';
-
-const snapshotLoads = new Map<string, Promise<void>>();
-
-/** Loads a locale into the global translations snapshot until a load succeeds. */
-function loadIntoSnapshot(locale: string): Promise<void> {
-  if (
-    isGlobalTranslationsSnapshotInitialized() &&
-    getGlobalTranslationsSnapshot()[locale]
-  ) {
-    return Promise.resolve();
-  }
-  let load = snapshotLoads.get(locale);
-  if (!load) {
-    load = loadTranslationsSnapshot(
-      {
-        ...pluginConfig,
-        loadTranslations: pluginLoadTranslations,
-        projectId: getI18nConfig().getProjectId(),
-      },
-      locale
-    )
-      .then(updateGlobalTranslationsSnapshot)
-      .finally(() => snapshotLoads.delete(locale));
-    snapshotLoads.set(locale, load);
-  }
-  return load;
-}
 
 /**
  * A locale's translations for the router state. Production clients keep them
@@ -52,7 +20,7 @@ export const loadClientTranslations: (
 ) => Promise<TranslationsSnapshot> =
   process.env.NODE_ENV === 'production'
     ? async (locale) => {
-        await loadIntoSnapshot(locale);
+        await loadGlobalTranslationsSnapshot(locale);
         // The live snapshot, so the provider sees a later load that recovers.
         return getGlobalTranslationsSnapshot();
       }
@@ -62,7 +30,7 @@ export const loadClientTranslations: (
 export const loadClientGTParams: typeof loadCreateGTParams =
   process.env.NODE_ENV === 'production'
     ? async ({ locale, enableI18n }): Promise<CreateGTParams> => {
-        await loadIntoSnapshot(
+        await loadGlobalTranslationsSnapshot(
           enableI18n ? locale : getI18nConfig().getDefaultLocale()
         );
         return {

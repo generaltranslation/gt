@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  getGlobalTranslationsSnapshot,
   getReactI18nCache,
   getTranslationsSnapshot,
   t,
@@ -153,5 +154,24 @@ describe('getTranslationsSnapshot() in a production browser', () => {
       es: { [treeHash('Hello')]: 'Hola' },
     });
     expect(loadTranslations.mock.calls).toEqual([['fr'], ['es']]);
+  });
+
+  it('saves a locale the getter loads after a failed startup load', async () => {
+    const errorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+    loadTranslations.mockRejectedValueOnce(new Error('offline'));
+    await initializeGTSPA({ ...browserConfig, loadTranslations });
+    expect(getGlobalTranslationsSnapshot().fr).toBeUndefined();
+
+    await Promise.all([
+      getTranslationsSnapshot('fr'),
+      getTranslationsSnapshot('fr'),
+    ]);
+    await expect(getTranslationsSnapshot('fr')).resolves.toEqual(translations);
+
+    expect(getGlobalTranslationsSnapshot().fr).toEqual(translations.fr);
+    expect(loadTranslations).toHaveBeenCalledTimes(2);
+    errorSpy.mockRestore();
   });
 });
