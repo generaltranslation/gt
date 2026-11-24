@@ -207,9 +207,9 @@ export class AnalysisPool {
   /**
    * Analyzes `files`, which `index` lists, in every thread at once. Gives the
    * usages of each file to `onAnalyzed` as soon as a thread found them, and
-   * resolves once every call it made resolved. If a call fails, no chunk is
-   * started after it, and this rejects with the first failure once every
-   * call settled.
+   * resolves once every call it made resolved. If a call or a thread fails,
+   * no chunk is started after it, and this rejects with the first failure
+   * once every call settled: none is made after.
    */
   async analyze(
     index: AnalysisIndex,
@@ -250,22 +250,27 @@ export class AnalysisPool {
 
     await Promise.all(
       this.workers.map(async (worker, index) => {
-        while (!failure) {
-          const chunk = chunks.take(index);
-          if (!chunk) break;
+        try {
+          while (!failure) {
+            const chunk = chunks.take(index);
+            if (!chunk) break;
 
-          const results = (await worker.request({
-            type: 'analyze',
-            files: chunk,
-          })) as ParaglideUsage[][];
-          chunk.forEach((file, at) =>
-            added.push(
-              // Handled as it starts: a rejection left until the threads are done is unhandled.
-              onAnalyzed(file, results[at]!).catch((error: unknown) => {
-                failure ??= { error };
-              })
-            )
-          );
+            const results = (await worker.request({
+              type: 'analyze',
+              files: chunk,
+            })) as ParaglideUsage[][];
+            chunk.forEach((file, at) =>
+              added.push(
+                // Handled as it starts: a rejection left until the threads are done is unhandled.
+                onAnalyzed(file, results[at]!).catch((error: unknown) => {
+                  failure ??= { error };
+                })
+              )
+            );
+          }
+        } catch (error) {
+          // A thread that exits stops the others too, after their chunk.
+          failure ??= { error };
         }
 
         // No file is left for it: its memory goes back while the last

@@ -161,6 +161,17 @@ export class ContextCollector {
 
   /** Analyzes the files `include` selects. `write()` writes what they use. */
   async scanAll(): Promise<void> {
+    try {
+      await this.scanAndReport();
+    } catch (error) {
+      // Nothing is written: the source code kept for it is deleted, once no
+      // analysis adds to it (see `AnalysisPool.analyze`).
+      this.output.close();
+      throw error;
+    }
+  }
+
+  private async scanAndReport(): Promise<void> {
     const { files, missing, autoImportDeclarations } =
       await this.settings.selection.list();
     this.warnMissingIncludes(missing);
@@ -266,13 +277,18 @@ export class ContextCollector {
     }
   }
 
+  /** Writes the metadata files, once: the source code kept for them is deleted. */
   async write(): Promise<void> {
-    for (const { file, why, fix } of await this.output.write()) {
-      this.warn({
-        whatHappened: `${this.relative(file)} was not updated`,
-        why,
-        fix,
-      });
+    try {
+      for (const { file, why, fix } of await this.output.write()) {
+        this.warn({
+          whatHappened: `${this.relative(file)} was not updated`,
+          why,
+          fix,
+        });
+      }
+    } finally {
+      this.output.close();
     }
   }
 
