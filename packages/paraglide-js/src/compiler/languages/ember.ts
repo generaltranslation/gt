@@ -1,9 +1,8 @@
 import path from 'node:path';
-import { parseSync } from 'oxc-parser';
 import type * as Glint from '@glint/ember-tsc';
 import type * as GlintStandalone from '@glint/ember-tsc/transform/standalone';
 import { walk, type ESTree, type Node } from '../analysis/ast.js';
-
+import { parseCode } from '../utils/parse.js';
 import { applyEdits, type Edit } from './edits.js';
 import type { SourceLanguage } from './language.js';
 import { mappingsFromVolar, type Mapping } from './mapping.js';
@@ -89,7 +88,7 @@ function normalizeGlintCode(
   mappings: readonly Mapping[],
   lang: 'js' | 'ts'
 ): { code: string; mappings: Mapping[] } {
-  const { program } = parseSync(`glint.${lang}`, code, { lang });
+  const { program } = parseCode(`glint.${lang}`, code, { lang });
   const edits: Edit[] = [];
 
   walk(program, {

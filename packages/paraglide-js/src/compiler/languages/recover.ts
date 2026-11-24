@@ -1,6 +1,6 @@
-import { parseSync } from 'oxc-parser';
 import type { ESTree } from '../analysis/ast.js';
 import type { SourceRange } from '../analysis/types.js';
+import { parseCode } from '../utils/parse.js';
 import type { ParseLang } from './language.js';
 import { sourceOffsets, UNMAPPED, type Mapping } from './mapping.js';
 
@@ -41,7 +41,7 @@ export function parseSkippingUnparsable(
 
   for (let skipped = 0; ; skipped++) {
     const current = characters.join('');
-    const parsed = parseSync(file, current, { lang });
+    const parsed = parseCode(file, current, { lang });
 
     const error = parsed.errors.find(
       (candidate) => candidate.severity === 'Error'
