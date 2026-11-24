@@ -1,6 +1,6 @@
 {
   "name": "@generaltranslation/icu",
-  "version": "1.0.0-samsara.9",
+  "version": "1.0.0-samsara.10",
   "description": "Dependency-free ICU MessageFormat parsing and formatting for General Translation",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

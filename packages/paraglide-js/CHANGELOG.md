@@ -1,5 +1,21 @@
 # @generaltranslation/paraglide-js
 
+## 0.2.1-samsara.1
+
+### Patch Changes
+
+- Updated dependencies [8f82244]
+- Updated dependencies [fa6bee9]
+- Updated dependencies [fcf06f1]
+- Updated dependencies [e43db74]
+- Updated dependencies [3a8cb11]
+- Updated dependencies [5b1c74c]
+- Updated dependencies [b05e6d7]
+- Updated dependencies [5b1c74c]
+- Updated dependencies [1a8e58d]
+- Updated dependencies [5b1c74c]
+  - generaltranslation@10.0.0-samsara.12
+
 ## 0.2.1-samsara.0
 
 ### Patch Changes

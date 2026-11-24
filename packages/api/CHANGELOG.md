@@ -1,5 +1,12 @@
 # @generaltranslation/api
 
+## 0.7.0-samsara.4
+
+### Minor Changes
+
+- 8f82244: Sync the `2026-10-08.v1` contract: every route that carries file content takes exactly one of base64 `content` or `upload: { sha256 }`. `overwriteTranslations` takes `translations` entries with `content` or `upload`, in place of `diffs` with `localContent` and `diff`. `createAssetUploads` returns presigned URLs to PUT fonts of up to 20MB to, answering as `createFileUploads` does, and `upsertAssets` then takes `upload` in place of `content`. `createFileUploads` needs `fileFormat` only for PNG, JPEG and MP4. Content that is empty or not base64 fails its own font or translation. `putFileUpload` takes `timeoutMs`, which ends the PUT when it is sooner than the URL's expiry.
+- fcf06f1: Follow the API's one request body limit: every `2026-10-08.v1` request body is at most 4MB. `MAX_REQUEST_BODY_BYTES` is that limit and `jsonByteLength()` measures a value against it. `processBatches()` now closes a batch before its JSON passes the limit; `maxBytes` sets another size, and `byteLength` measures items the request sends in another form. `createBatches()` is exported. In the contract, upload routes no longer have a 4MB limit per inline file and `upsertAssets` results no longer fail with `file_too_large`: a request over the limit is rejected whole with 413.
+
 ## 0.7.0-samsara.3
 
 ### Minor Changes
