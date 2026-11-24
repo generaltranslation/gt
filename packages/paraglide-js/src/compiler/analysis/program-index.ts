@@ -16,9 +16,14 @@ import {
   type ESTree,
   type Node,
 } from './ast.js';
+import {
+  resolveNames,
+  UnsupportedSyntax,
+  type DefinitionType,
+} from './name-resolver.js';
 
 export type Definition = {
-  type: ManagedDefinition['type'];
+  type: DefinitionType;
   /** The import specifier, the function or the declarator. */
   node: Node;
   /** The declared identifier. */
@@ -39,7 +44,7 @@ export type Variable = {
 /** `variable` is undefined for a global. */
 export type Reference = { variable: Variable | undefined; isRead: boolean };
 
-type Variables = {
+export type Variables = {
   /** By name. */
   moduleLevel: ReadonlyMap<string, Variable>;
   /** By identifier. */
@@ -94,7 +99,27 @@ export function indexProgram(program: ESTree.Program): ProgramIndex {
   return index;
 }
 
-function resolveVariables(program: ESTree.Program): Variables {
+/**
+ * Resolves with `resolveNames`, which does what the scope manager does for
+ * what the analysis reads, several times as fast; a module it cannot resolve
+ * falls back to the scope manager.
+ */
+export function resolveVariables(program: ESTree.Program): Variables {
+  try {
+    // Its variables and references are what the analysis reads.
+    const { references, module } = resolveNames(program);
+    return { moduleLevel: module.set, references };
+  } catch (error) {
+    if (error instanceof UnsupportedSyntax)
+      return resolveVariablesWithScopeManager(program);
+    throw error;
+  }
+}
+
+/** What `resolveVariables` gives, from the scope manager: the reference it is checked against. */
+export function resolveVariablesWithScopeManager(
+  program: ESTree.Program
+): Variables {
   const manager = analyze(program as never, {
     sourceType: 'module',
     lib: [],
