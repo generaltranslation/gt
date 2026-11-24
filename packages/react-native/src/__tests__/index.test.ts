@@ -5,13 +5,36 @@ import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 // components. react-native's own entrypoint uses Flow syntax vitest/Vite
 // can't parse, so it must be mocked before importing '../index' at all —
 // same approach as NativeGtReactNative.test.ts.
-vi.mock('react-native', () => ({
-  Platform: { OS: 'ios' },
-  TurboModuleRegistry: { getEnforcing: vi.fn(), get: vi.fn() },
-  ActivityIndicator: 'ActivityIndicator',
-  StyleSheet: { create: (styles: unknown) => styles },
-  View: 'View',
-}));
+const reactNative = vi.hoisted(() => ({ loaded: false }));
+vi.mock('react-native', () => {
+  reactNative.loaded = true;
+  return {
+    Platform: { OS: 'ios' },
+    TurboModuleRegistry: { getEnforcing: vi.fn(), get: vi.fn() },
+    ActivityIndicator: 'ActivityIndicator',
+    StyleSheet: { create: (styles: unknown) => styles },
+    View: 'View',
+  };
+});
+
+// First, while react-native has not been loaded by another test.
+describe('gt-react-native/testing', () => {
+  it('renders source text without loading react-native or any setup', async () => {
+    const testing = await import('../testing');
+    const t = await testing.getGT();
+
+    expect(t`Hello, ${{ name: 'Ada' }}!`).toBe('Hello, Ada!');
+    expect(testing.getLocale()).toBe('en');
+    expect(reactNative.loaded).toBe(false);
+  });
+
+  it('exports every name the main entry exports', async () => {
+    const testing = await import('../testing');
+    const main = await import('../index');
+
+    expect(Object.keys(testing).sort()).toEqual(Object.keys(main).sort());
+  });
+});
 
 describe('gt-react-native package exports', () => {
   it('exports getLocaleProperties, matching the gt-react entrypoint', async () => {

@@ -1,8 +1,9 @@
 import { getCookieValue } from './cookies';
 import { oncePerTask } from './oncePerTask';
 
+// globalThis: Node before 21 has no navigator.
 const navigatorLocales = oncePerTask<readonly string[]>(
-  () => navigator?.languages || []
+  () => globalThis.navigator?.languages ?? []
 );
 
 /** The navigator's locales as this task reads them: one array until they are read again. */

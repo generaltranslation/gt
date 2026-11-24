@@ -28,6 +28,11 @@
       "types": "./dist/module/internal.d.ts",
       "default": "./dist/module/internal.js"
     },
+    "./testing": {
+      "types": "./dist/module/index.d.ts",
+      "source": "./src/testing.ts",
+      "default": "./dist/commonjs/testing.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -51,7 +56,10 @@
   "sideEffects": [
     "./dist/commonjs/NativeGtReactNative.*",
     "./dist/module/NativeGtReactNative.*",
-    "./src/NativeGtReactNative.*"
+    "./src/NativeGtReactNative.*",
+    "./dist/commonjs/testing.*",
+    "./dist/module/testing.*",
+    "./src/testing.*"
   ],
   "scripts": {
     "patch": "pnpm version patch",

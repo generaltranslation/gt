@@ -39,7 +39,11 @@ export function createOrUpdateBrowserConditionStore(
   const region = determineRegion(config);
   const enableI18n = determineEnableI18n(config);
 
-  if (isBrowserConditionStoreInitialized()) {
+  // The slot can hold another kind of store, as gt-react/testing's, which this replaces.
+  if (
+    isBrowserConditionStoreInitialized() &&
+    'updateLocale' in getBrowserConditionStore()
+  ) {
     // This represents an update from server
     const conditionStore = getBrowserConditionStore();
     conditionStore.updateLocale(locale);

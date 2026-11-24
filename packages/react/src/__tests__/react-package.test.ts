@@ -21,6 +21,8 @@ const runtimeArtifactNames = [
   'compat.server.mjs',
   'chunk-translations.cjs',
   'chunk-translations.mjs',
+  'testing.cjs',
+  'testing.mjs',
 ].sort();
 const builtArtifacts = runtimeArtifactNames.map((artifact) =>
   join(packageRoot, 'dist', artifact)
@@ -50,7 +52,7 @@ function isAllowedExternalizedSubpath(
 ): boolean {
   // Entries keep shared React context and singletons external.
   return (
-    (/^(?:index|compat)\./.test(file) &&
+    (/^(?:index|compat|testing)\./.test(file) &&
       (specifier.startsWith('@generaltranslation/react-core/') ||
         specifier.startsWith('gt-i18n/'))) ||
     // chunk-translations shares gt-react's stores, and bundles nothing the
@@ -69,7 +71,7 @@ describe('gt-react package exports', () => {
 
   // One Node process per condition set: CJS is loaded with require() and ESM
   // with import() from the same script.
-  it('loads named exports and server-only guards from built CJS and ESM entrypoints', () => {
+  it('loads named exports and server-only guards, then gt-react/testing, from built CJS and ESM entrypoints', () => {
     node([
       '-e',
       `
@@ -105,12 +107,32 @@ describe('gt-react package exports', () => {
                 format
               );
             }
+            for (const [format, testing] of [
+              ['cjs', require('gt-react/testing')],
+              ['esm', await import('gt-react/testing')],
+            ]) {
+              testing.initializeGT({ defaultLocale: 'fr', locales: ['fr'] });
+              testing.createOrUpdateBrowserConditionStore({});
+              assert.equal(testing.getDefaultLocale(), 'fr', format);
+              assert.equal(testing.t\`Save\`, 'Save', format);
+            }
           })().catch((error) => {
             console.error(error);
             process.exit(1);
           });
         `,
     ]);
+  });
+
+  it('gives gt-react/testing the main entry’s declarations', () => {
+    const { exports } = JSON.parse(
+      readFileSync(join(packageRoot, 'package.json'), 'utf8')
+    );
+    for (const format of ['require', 'import']) {
+      expect(exports['./testing'][format].types).toBe(
+        exports['.'].browser[format].types
+      );
+    }
   });
 
   it('exports the condition-store factory, t and m from the browser entrypoint', () => {
