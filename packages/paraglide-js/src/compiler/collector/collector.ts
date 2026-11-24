@@ -1,4 +1,3 @@
-import fsp from 'node:fs/promises';
 import { isBuiltin } from 'node:module';
 import path from 'node:path';
 import { analyzeModule } from '../analysis/analyze.js';
@@ -29,6 +28,7 @@ import { projectPackages, type ProjectPackages } from '../project/packages.js';
 import { warningMessage, type Diagnostic } from '../utils/diagnostics.js';
 import { parseCode } from '../utils/parse.js';
 import { isDependency, isWithin, relativePath } from '../utils/paths.js';
+import { readTextFile } from '../utils/read-file.js';
 import { isInCatalog, unknownMessagesWarning } from './catalog-check.js';
 import { MetadataFiles } from './metadata-files.js';
 import { MissingTools } from './missing-tools.js';
@@ -192,7 +192,7 @@ export class ContextCollector {
   }
 
   private async readModule(file: string): Promise<ParsedModule | undefined> {
-    const code = await fsp.readFile(file, 'utf8').catch(() => undefined);
+    const code = await readTextFile(file);
     if (code === undefined) return undefined;
 
     const parsed = await parseSource(
