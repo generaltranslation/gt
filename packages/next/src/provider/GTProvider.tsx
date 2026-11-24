@@ -15,7 +15,7 @@ export async function getGTProviderProps(locale: Locale) {
   const enableI18n = await getEnableI18n();
   const translationRequired = i18nConfig.requiresTranslation({ locale });
   const translations = translationRequired
-    ? await i18nCache.loadTranslations(locale)
+    ? getClientTranslations(await i18nCache.loadTranslations(locale))
     : {};
   return {
     supportsLocaleRefresh:
@@ -23,7 +23,7 @@ export async function getGTProviderProps(locale: Locale) {
     locale,
     region,
     enableI18n,
-    translations: { [locale]: getClientTranslations(translations) },
+    translations: { [locale]: translations },
   };
 }
 

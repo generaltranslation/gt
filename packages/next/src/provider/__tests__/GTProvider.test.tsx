@@ -156,6 +156,13 @@ describe('GTProvider', () => {
     mockGetLocale.mockResolvedValue('en');
     mockGetRegion.mockResolvedValue('US');
     mockGetEnableI18n.mockResolvedValue(false);
+    const getClientTranslations = vi.fn();
+    vi.doMock('../serverOnlyHashes', () => ({ getClientTranslations }));
+    vi.resetModules();
+    onTestFinished(() => {
+      vi.doUnmock('../serverOnlyHashes');
+      vi.resetModules();
+    });
 
     const { GTProvider } = await import('../GTProvider');
 
@@ -166,6 +173,7 @@ describe('GTProvider', () => {
     expect(mockGetLocale).toHaveBeenCalled();
     expect(mockGetRegion).toHaveBeenCalled();
     expect(mockLoadTranslations).not.toHaveBeenCalled();
+    expect(getClientTranslations).not.toHaveBeenCalled();
     expect(React.isValidElement(element)).toBe(true);
     expect(element).toMatchObject({
       type: mockClientGTProvider,
