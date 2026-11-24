@@ -52,6 +52,8 @@ export const TranslationView = () => {
     isBusy,
     handleTranslateAll,
     handleSaveLocalEdits,
+    isWriteRunning,
+    hasPendingSelectedTranslations,
     handleUploadExistingTranslations,
     handleImportDocument,
     handleRefreshAll,
@@ -174,7 +176,7 @@ export const TranslationView = () => {
     );
   }
 
-  const otherWriteRunning = isBusy || isImporting || isPublishing;
+  const otherWriteRunning = isWriteRunning || isImporting || isPublishing;
 
   const runLocalAction = async (
     action: 'save' | 'upload',
@@ -416,7 +418,7 @@ export const TranslationView = () => {
         isOpen={isSaveLocalEditsDialogOpen}
         onClose={() => setIsSaveLocalEditsDialogOpen(false)}
         onConfirm={() => runLocalAction('save', handleSaveLocalEdits)}
-        confirmDisabled={otherWriteRunning || isWaitingOnTranslations}
+        confirmDisabled={otherWriteRunning || hasPendingSelectedTranslations}
       />
       <UploadExistingDialog
         isOpen={isUploadExistingDialogOpen}
@@ -497,8 +499,8 @@ export const TranslationView = () => {
                 mode='ghost'
                 onClick={() => setIsSaveLocalEditsDialogOpen(true)}
                 disabled={
-                  isBusy ||
-                  isWaitingOnTranslations ||
+                  otherWriteRunning ||
+                  hasPendingSelectedTranslations ||
                   !availableLocales.length ||
                   !canPreserveLocalEdits
                 }
@@ -648,7 +650,9 @@ export const TranslationView = () => {
                   mode='ghost'
                   onClick={() => setIsUploadExistingDialogOpen(true)}
                   disabled={
-                    isBusy || !availableLocales.length || !canPreserveLocalEdits
+                    otherWriteRunning ||
+                    !availableLocales.length ||
+                    !canPreserveLocalEdits
                   }
                   icon={UploadIcon}
                   text='Upload Existing'

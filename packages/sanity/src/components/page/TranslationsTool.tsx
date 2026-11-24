@@ -79,6 +79,8 @@ const TranslationsToolContent: React.FC = () => {
     setAutoRefresh,
     preserveExistingTranslations,
     setPreserveExistingTranslations,
+    isWriteRunning,
+    hasPendingSelectedTranslations,
     handleRefreshAll,
     handlePatchDocumentReferences,
     handlePublishAllTranslations,
@@ -154,6 +156,8 @@ const TranslationsToolContent: React.FC = () => {
     loadingDocuments ||
     documents.length === 0 ||
     selectedLocaleIds.length === 0;
+  const saveLocalEditsDisabled =
+    actionsDisabled || isWriteRunning || hasPendingSelectedTranslations;
 
   return (
     <Container width={2}>
@@ -304,7 +308,7 @@ const TranslationsToolContent: React.FC = () => {
                     text='Save Local Edits'
                     loading={isBusy && currentOperation === 'Save Local Edits'}
                     icon={UploadIcon}
-                    disabled={actionsDisabled || isWaitingOnTranslations}
+                    disabled={saveLocalEditsDisabled}
                   />
                 </Tooltip>
                 <Tooltip
@@ -321,7 +325,7 @@ const TranslationsToolContent: React.FC = () => {
                     text='Upload Existing'
                     loading={isBusy && currentOperation === 'Upload Existing'}
                     icon={UploadIcon}
-                    disabled={actionsDisabled}
+                    disabled={actionsDisabled || isWriteRunning}
                   />
                 </Tooltip>
                 <Tooltip
@@ -436,12 +440,12 @@ const TranslationsToolContent: React.FC = () => {
       <SaveLocalEditsDialog
         isOpen={isSaveLocalEditsDialogOpen}
         onClose={() => setIsSaveLocalEditsDialogOpen(false)}
-        confirmDisabled={actionsDisabled || isWaitingOnTranslations}
+        confirmDisabled={saveLocalEditsDisabled}
       />
       <UploadExistingDialog
         isOpen={isUploadExistingDialogOpen}
         onClose={() => setIsUploadExistingDialogOpen(false)}
-        confirmDisabled={actionsDisabled}
+        confirmDisabled={actionsDisabled || isWriteRunning}
       />
       <DebugInfoDialog
         isOpen={isDebugInfoDialogOpen}

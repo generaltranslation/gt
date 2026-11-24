@@ -30,6 +30,7 @@ const mocks = vi.hoisted(() => ({
   createJobs: vi.fn(),
   collectExistingTranslations: vi.fn(),
   captureExistingTranslations: vi.fn(),
+  downloadTranslations: vi.fn(),
   resolvePreviewUrls: vi.fn(),
   updateTranslationPreviewUrls: vi.fn(),
 }));
@@ -76,6 +77,9 @@ vi.mock('../../translation/collectExistingTranslations', () => ({
 }));
 vi.mock('../../translation/captureExistingTranslations', () => ({
   captureExistingTranslations: mocks.captureExistingTranslations,
+}));
+vi.mock('../../translation/downloadTranslations', () => ({
+  downloadTranslations: mocks.downloadTranslations,
 }));
 vi.mock('../../translation/previewUrls', () => ({
   resolvePreviewUrls: mocks.resolvePreviewUrls,
@@ -270,6 +274,119 @@ describe('Save Local Edits', () => {
 
     expect(mocks.toastPush).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'error' })
+    );
+  });
+  test('does not save while another write is running, and saves once it finishes', async () => {
+    const { client } = createGroqClient([page('page-en', 'en')]);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+    let finishUpload: (value: { uploadedFiles: [] }) => void = () => {};
+    mocks.uploadFiles.mockReturnValue(
+      new Promise((resolve) => {
+        finishUpload = resolve;
+      })
+    );
+
+    const context = await renderProvider(page('page-en', 'en'));
+    let upload: Promise<void> = Promise.resolve();
+    await act(async () => {
+      upload = context.handleUploadExistingTranslations();
+    });
+    expect(latest!.isWriteRunning).toBe(true);
+
+    await act(() => latest!.handleSaveLocalEdits());
+    expect(mocks.captureExistingTranslations).not.toHaveBeenCalled();
+
+    await act(async () => {
+      finishUpload({ uploadedFiles: [] });
+      await upload;
+    });
+    expect(latest!.isWriteRunning).toBe(false);
+
+    await act(() => latest!.handleSaveLocalEdits());
+    expect(mocks.captureExistingTranslations).toHaveBeenCalledTimes(1);
+  });
+
+  test('does not save while a single locale is being imported', async () => {
+    const { client } = createGroqClient([page('page-en', 'en')]);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+    vi.spyOn(api, 'createBranch').mockResolvedValue({
+      branch: { id: 'b' },
+    } as Awaited<ReturnType<typeof api.createBranch>>);
+    vi.spyOn(api, 'queryFileData').mockResolvedValue({
+      translatedFiles: [
+        {
+          branchId: 'b',
+          fileId: 'page-en',
+          versionId: 'r1',
+          locale: 'fr',
+          completedAt: '2026-01-01T00:00:00Z',
+        },
+      ],
+    } as Awaited<ReturnType<typeof api.queryFileData>>);
+    let finishDownload: (files: []) => void = () => {};
+    mocks.downloadTranslations.mockReturnValue(
+      new Promise((resolve) => {
+        finishDownload = resolve;
+      })
+    );
+
+    const context = await renderProvider(page('page-en', 'en'));
+    let localeImport: Promise<boolean> = Promise.resolve(false);
+    await act(async () => {
+      localeImport = context.handleImportDocument('page-en', 'r1', 'fr');
+    });
+    expect(latest!.isWriteRunning).toBe(true);
+
+    await act(() => latest!.handleSaveLocalEdits());
+    await act(() => latest!.handleUploadExistingTranslations());
+    expect(mocks.captureExistingTranslations).not.toHaveBeenCalled();
+    expect(mocks.uploadFiles).not.toHaveBeenCalled();
+
+    await act(async () => {
+      finishDownload([]);
+      await localeImport;
+    });
+    expect(latest!.isWriteRunning).toBe(false);
+
+    await act(() => latest!.handleSaveLocalEdits());
+    expect(mocks.captureExistingTranslations).toHaveBeenCalledTimes(1);
+  });
+
+  test('does not save a locale whose translation run is pending, but saves the others', async () => {
+    const { client } = createGroqClient([page('page-en', 'en')]);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+    mocks.createJobs.mockResolvedValue({ jobData: {}, locales: ['fr'] });
+
+    const selectOnly = (localeId: string) =>
+      act(async () => {
+        latest!.setLocales(
+          latest!.locales.map((locale) => ({
+            ...locale,
+            enabled: locale.localeId === localeId,
+          }))
+        );
+      });
+
+    await renderProvider(page('page-en', 'en'));
+    await selectOnly('fr');
+    await act(() => latest!.handleTranslateAll());
+    expect(latest!.hasPendingSelectedTranslations).toBe(true);
+
+    await act(() => latest!.handleSaveLocalEdits());
+    expect(mocks.captureExistingTranslations).not.toHaveBeenCalled();
+
+    await selectOnly('en');
+    expect(latest!.hasPendingSelectedTranslations).toBe(false);
+
+    await act(() => latest!.handleSaveLocalEdits());
+    expect(mocks.captureExistingTranslations).toHaveBeenCalledWith(
+      expect.objectContaining({ localeIds: ['en'] })
     );
   });
 });

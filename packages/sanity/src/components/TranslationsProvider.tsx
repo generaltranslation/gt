@@ -4,6 +4,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   ReactNode,
 } from 'react';
@@ -89,6 +90,7 @@ import {
   dedupeDocumentsPreferDraft,
   getDocumentPublishedId,
   getPublishedId,
+  getStatusKeyLocaleId,
 } from '../utils/documentIds';
 import { getDocumentFileName } from '../utils/fileNames';
 import {
@@ -205,6 +207,10 @@ interface TranslationsContextType {
   setAutoPatchReferences: (value: boolean) => void;
   setAutoPublish: (value: boolean) => void;
   setPreserveExistingTranslations: (value: boolean) => void;
+  /** True while any action is writing to Sanity or General Translation, a single locale import included. */
+  isWriteRunning: boolean;
+  /** True while a translation run is outstanding for a selected locale. */
+  hasPendingSelectedTranslations: boolean;
   /** Resolves to the status keys it enqueued, none when the run did not start. */
   handleTranslateAll: (options?: TranslateAllOptions) => Promise<string[]>;
   /** Saves the translations in Sanity onto the source version General Translation already holds. */
@@ -355,6 +361,7 @@ const TranslationsProviderContent: React.FC<
   // Fixed for the Studio's lifetime; see TranslationsProvider.
   const allowNonDefault = allowsNonDefaultSourceLocales();
   const [isBusy, setIsBusy] = useState(false);
+  const [runningLocaleImports, setRunningLocaleImports] = useState(0);
   const [documents, setDocuments] = useState<SanityDocument[]>([]);
   // Originals outside the source locale that Translate All leaves out; each is
   // translated from the Translate dialog on that document.
@@ -1025,8 +1032,19 @@ const TranslationsProviderContent: React.FC<
     ]
   );
 
+  const isWriteRunning = isBusy || runningLocaleImports > 0;
+  const hasPendingSelectedTranslations = useMemo(() => {
+    const selectedLocaleIds = new Set(getSelectedLocaleIds(locales));
+    return [...pendingTranslations].some((key) =>
+      selectedLocaleIds.has(getStatusKeyLocaleId(key))
+    );
+  }, [locales, pendingTranslations]);
+
   const handleSaveLocalEdits = useCallback(async () => {
     if (!secrets || documents.length === 0) return;
+    // A run in progress has already uploaded the new source, and an import in
+    // progress is about to replace the translations this would read.
+    if (isWriteRunning || hasPendingSelectedTranslations) return;
 
     setIsBusy(true);
     try {
@@ -1080,10 +1098,13 @@ const TranslationsProviderContent: React.FC<
     getDefaultSourceDocuments,
     getUploadableSources,
     toast,
+    isWriteRunning,
+    hasPendingSelectedTranslations,
   ]);
 
   const handleUploadExistingTranslations = useCallback(async () => {
     if (!secrets || documents.length === 0) return;
+    if (isWriteRunning) return;
 
     setIsBusy(true);
     try {
@@ -1183,6 +1204,7 @@ const TranslationsProviderContent: React.FC<
     getDefaultSourceDocuments,
     getUploadableSources,
     warnTranslationPreviewUrlFailures,
+    isWriteRunning,
   ]);
 
   const handleImportAll = useCallback(async () => {
@@ -1646,6 +1668,7 @@ const TranslationsProviderContent: React.FC<
         return false;
       }
 
+      setRunningLocaleImports((count) => count + 1);
       try {
         const downloadedFiles = await downloadTranslations(
           [
@@ -1734,6 +1757,8 @@ const TranslationsProviderContent: React.FC<
           status: 'error',
           closable: true,
         });
+      } finally {
+        setRunningLocaleImports((count) => count - 1);
       }
       return false;
     },
@@ -2068,6 +2093,8 @@ const TranslationsProviderContent: React.FC<
     setAutoPublish,
     setPreserveExistingTranslations,
     handleTranslateAll,
+    isWriteRunning,
+    hasPendingSelectedTranslations,
     handleSaveLocalEdits,
     handleUploadExistingTranslations,
     handleImportAll,

@@ -37,6 +37,11 @@ export function createTranslationStatusKey(
     : `${publishedId}:${versionId}:${localeId}`;
 }
 
+/** The locale a key from `createTranslationStatusKey` ends with. */
+export function getStatusKeyLocaleId(statusKey: string): string {
+  return statusKey.slice(statusKey.lastIndexOf(':') + 1);
+}
+
 export function createStableTranslationKey(
   branchId: string | undefined,
   documentId: string,
