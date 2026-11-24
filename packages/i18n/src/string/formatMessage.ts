@@ -1,11 +1,7 @@
 import type { StringFormat } from '@generaltranslation/format';
 import logger from '../logs/logger';
 import { createInterpolationFailureMessage } from './messages';
-import {
-  getI18nConfig,
-  isI18nConfigInitialized,
-} from '../i18n-config/singleton-operations';
-import { formatMessage as formatUnconfiguredMessage } from 'generaltranslation/internal';
+import { getIntl } from '../i18n-config/singleton-operations';
 
 /**
  * Given an encoded message and variables, formats the message.
@@ -21,16 +17,7 @@ export function formatMessage(
   dataFormat?: StringFormat
 ): string {
   try {
-    // Formatting also works before initializeGT(). Once configured, use
-    // its custom mapping so app aliases never reach Intl as language codes.
-    if (!isI18nConfigInitialized()) {
-      return formatUnconfiguredMessage(encodedMsg, {
-        variables,
-        locales,
-        dataFormat,
-      });
-    }
-    return getI18nConfig().formatMessage(encodedMsg, {
+    return getIntl().formatMessage(encodedMsg, {
       variables,
       locales,
       dataFormat,

@@ -1,4 +1,5 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
+import { GTIntl } from 'generaltranslation/internal';
 import { createGlobalSingleton } from '../globals/createGlobalSingleton';
 import { I18nConfig, type I18nConfigParams } from './I18nConfig';
 
@@ -18,6 +19,17 @@ const i18nConfigSingleton = createGlobalSingleton<I18nConfig>({
 export const getI18nConfig = i18nConfigSingleton.get;
 export const setI18nConfig = i18nConfigSingleton.set;
 export const isI18nConfigInitialized = i18nConfigSingleton.isInitialized;
+
+let unconfiguredIntl: GTIntl | undefined;
+
+/**
+ * What formats: the config, or the library's defaults in code paths without
+ * i18n, which may never initialize a config.
+ */
+export function getIntl(): GTIntl {
+  if (isI18nConfigInitialized()) return getI18nConfig();
+  return (unconfiguredIntl ??= new GTIntl());
+}
 
 export function initializeI18nConfig(
   params: I18nConfigParams = {}

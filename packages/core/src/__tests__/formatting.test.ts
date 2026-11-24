@@ -12,7 +12,7 @@ import {
   GTIntl,
 } from '../index';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
-import { formatMessageTree, withDefaultDateStyle } from '../internal';
+import { withDefaultDateStyle } from '../internal';
 import { hostTimeZone } from '../utils/hostTimeZone';
 
 const date = new Date('2020-05-06T14:03:02Z');
@@ -98,20 +98,21 @@ describe('what a caller leaves out', () => {
     );
   });
 
-  it('formats a message tree', () => {
-    expect(formatMessageTree([['n', 'number']], undefined, { n: 1234.5 })).toBe(
-      '1,234.5'
-    );
-    const at = [['at', 'time', 'short']] as const;
+  it('formats a message tree from a GTIntl without a config', () => {
+    const intl = new GTIntl();
+    const formats = {};
     expect(
-      formatMessageTree(
-        [...at],
-        'en-US',
-        { at: date },
-        { timeZone: 'Asia/Tokyo' }
-      )
+      intl.formatMessageTree([['n', 'number']], {
+        values: { n: 1234.5 },
+        formats,
+      })
+    ).toBe('1,234.5');
+    const at = [['at', 'time', 'short']] as const;
+    const options = { locale: 'en-US', values: { at: date }, formats };
+    expect(
+      intl.formatMessageTree([...at], { ...options, timeZone: 'Asia/Tokyo' })
     ).toBe('11:03 PM');
-    expect(formatMessageTree([...at], 'en-US', { at: date })).toBe(
+    expect(intl.formatMessageTree([...at], options)).toBe(
       new Intl.DateTimeFormat('en-US', { timeStyle: 'short' }).format(date)
     );
   });

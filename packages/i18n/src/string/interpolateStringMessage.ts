@@ -1,4 +1,4 @@
-import { formatCutoff } from './formatCutoff';
+import { getIntl } from '../i18n-config/singleton-operations';
 import type { TranslationOptions } from '../translation-functions/types/options';
 
 /**
@@ -8,5 +8,8 @@ export function interpolateStringMessage(
   encodedMsg: string,
   options: TranslationOptions
 ): string {
-  return formatCutoff(encodedMsg, options.$maxChars, options.$locale);
+  return getIntl().formatCutoff(encodedMsg, {
+    locales: options.$locale,
+    maxChars: options.$maxChars,
+  });
 }
