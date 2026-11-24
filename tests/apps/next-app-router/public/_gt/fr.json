@@ -16,5 +16,20 @@
     ],
     "i": 1,
     "t": "p"
+  },
+  "07f79b1e4ceebb32": {
+    "c": "Ce paragraphe est traduit dans un composant client que les deux pages utilisent.",
+    "i": 1,
+    "t": "p"
+  },
+  "229506742cacee12": {
+    "c": "Ce paragraphe est traduit dans un composant client d’une seule page.",
+    "i": 1,
+    "t": "p"
+  },
+  "6862956fa8dc0a94": {
+    "c": "Ce paragraphe est traduit sur le serveur dans la page des commandes.",
+    "i": 1,
+    "t": "p"
   }
 }

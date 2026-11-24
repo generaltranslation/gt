@@ -1,6 +1,8 @@
+import Link from 'next/link';
 import { T, Var } from 'gt-next';
 import { getGT, getLocale } from 'gt-next/server';
 import { ClientDemo } from './client-demo';
+import { SharedClient } from './shared-client';
 
 export default async function Home() {
   const t = await getGT();
@@ -16,6 +18,9 @@ export default async function Home() {
           <span>Server locale: {locale}</span>
           <span>Rendered: {renderedAt}</span>
         </div>
+        <Link id='to-orders' href='/orders'>
+          Orders
+        </Link>
       </section>
 
       <section className='panel'>
@@ -30,6 +35,7 @@ export default async function Home() {
       </section>
 
       <ClientDemo />
+      <SharedClient />
     </main>
   );
 }
