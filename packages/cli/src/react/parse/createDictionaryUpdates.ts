@@ -97,6 +97,7 @@ export async function createDictionaryUpdates(
     const maxChars = props?.$maxChars;
     const metadata: Record<string, unknown> = {
       id,
+      filePaths: [path.relative(process.cwd(), dictionaryPath)],
       ...(context && { context }),
       ...(maxChars != null && { maxChars: Math.abs(maxChars) }),
       // This hash isn't actually used by the GT API, just for consistency sake

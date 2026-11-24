@@ -68,6 +68,11 @@ function validateMetadataStructure(
   return errors;
 }
 
+/** `translations.json` → `translations.metadata.json`; a path without a `.json` extension gets `.metadata.json` appended. */
+export function companionMetadataPath(sourceFilePath: string): string {
+  return `${sourceFilePath.replace(/\.json$/i, '')}.metadata.json`;
+}
+
 /**
  * Detects and parses a companion metadata file for a given source file.
  *
@@ -90,7 +95,7 @@ export function parseKeyedMetadata(
   let parse: ((content: string) => JSONObject) | undefined;
 
   if (ext === '.json') {
-    metadataFilePath = `${baseName}.metadata.json`;
+    metadataFilePath = companionMetadataPath(sourceFilePath);
     parse = JSON.parse;
   } else if (ext === '.yaml' || ext === '.yml') {
     const yamlPath = `${baseName}.metadata.yaml`;

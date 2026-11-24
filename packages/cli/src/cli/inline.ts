@@ -1,12 +1,24 @@
 import { Command } from 'commander';
+import fs from 'node:fs';
+import path from 'node:path';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { BaseCLI } from './base.js';
-import { SupportedLibraries, TranslateFlags, Options } from '../types/index.js';
+import {
+  SupportedLibraries,
+  TranslateFlags,
+  Options,
+  Settings,
+} from '../types/index.js';
 import {
   attachInlineTranslateFlags,
   attachTranslateFlags,
   attachValidateFlags,
 } from './flags.js';
-import { displayHeader, exitSync } from '../console/logging.js';
+import {
+  displayHeader,
+  exitSync,
+  logErrorAndExit,
+} from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import { resolveLocaleFiles } from '../fs/config/parseFilesConfig.js';
 import { noFilesError } from '../console/index.js';
@@ -16,6 +28,46 @@ import { generateSettings } from '../config/generateSettings.js';
 import { aggregateInlineTranslations } from '../translation/stage.js';
 import { validateProject } from '../translation/validate.js';
 import { Libraries, InlineLibrary } from '../types/libraries.js';
+import { collectSourceMetadata } from '../translation/sourceMetadata.js';
+import { companionMetadataPath } from '../formats/parseKeyedMetadata.js';
+
+type GenerateSourceFlags = TranslateFlags & {
+  sourceOnly?: boolean;
+  metadata?: string | true;
+};
+
+const missingSourceOutputError = createDiagnosticMessage({
+  source: 'gt',
+  severity: 'Error',
+  whatHappened: '--source-only and --metadata need a local source file',
+  why: 'files.gt.output is not set in gt.config.json',
+  fix: 'Set files.gt.output to a local path such as "translations/[locale].json"',
+});
+
+const MAX_SYMLINK_DEPTH = 40;
+
+const SERVED_DIRECTORIES = new Set(['public', 'static']);
+
+const publicSourceCodeError = (metadataPath: string) =>
+  createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened:
+      '--metadata without a path would put source code snippets in a publicly served directory',
+    why: 'includeSourceCodeContext is on and the source file is under public/ or static/',
+    fix: 'Pass a --metadata path outside the served directory',
+    details: metadataPath,
+  });
+
+const metadataPathCollisionError = (metadataPath: string) =>
+  createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened: 'The --metadata path is also a locale file',
+    why: "writing metadata there would replace that locale's entries",
+    fix: 'Pass a --metadata path outside files.gt.output',
+    details: metadataPath,
+  });
 
 /**
  * Stand in for a CLI tool that does any sort of inline content translations
@@ -108,9 +160,18 @@ export class InlineCLI extends BaseCLI {
           .description(
             'Generate a translation file for the source locale. This command should be used if you are handling your own translations.'
           )
+          .option(
+            '--source-only',
+            'Write only the source locale file and leave target locale files unchanged',
+            false
+          )
+          .option(
+            '--metadata [path]',
+            "Also write each entry's metadata (dataFormat, id, context, maxChars, requiresReview, filePaths, sourceCode) keyed by the same hashes as the source file, to a companion file next to it (en.json → en.metadata.json) or to the given path"
+          )
       ),
       this.getInlineSourceHelp()
-    ).action(async (initOptions: TranslateFlags) => {
+    ).action(async (initOptions: GenerateSourceFlags) => {
       displayHeader('Generating source templates...');
       await this.handleGenerateSourceCommand(initOptions);
       logger.endCommand('Done!');
@@ -118,11 +179,22 @@ export class InlineCLI extends BaseCLI {
   }
 
   protected async handleGenerateSourceCommand(
-    initOptions: TranslateFlags
+    initOptions: GenerateSourceFlags
   ): Promise<void> {
     const settings = await generateSettings(initOptions, undefined, {
       requireConfig: true,
     });
+
+    const placeholderPaths = settings.files?.placeholderPaths;
+    if (
+      (initOptions.sourceOnly || initOptions.metadata) &&
+      !placeholderPaths?.gt
+    ) {
+      logErrorAndExit(missingSourceOutputError);
+    }
+    const metadataPath = initOptions.metadata
+      ? resolveMetadataPath(initOptions.metadata, settings)
+      : undefined;
 
     const updates = await aggregateInlineTranslations(
       initOptions,
@@ -153,7 +225,8 @@ export class InlineCLI extends BaseCLI {
       await saveJSON(translationFiles.gt, newData);
       logger.step('Source file saved successfully!');
       // Also save translations (after merging with existing translations)
-      for (const locale of settings.locales) {
+      const targetLocales = initOptions.sourceOnly ? [] : settings.locales;
+      for (const locale of targetLocales) {
         const translationsFile = resolveLocaleFiles(
           settings.files.placeholderPaths,
           locale
@@ -173,7 +246,14 @@ export class InlineCLI extends BaseCLI {
         );
         await saveJSON(translationsFile.gt, filteredTranslations);
       }
-      logger.step('Merged translations successfully!');
+      if (!initOptions.sourceOnly) {
+        logger.step('Merged translations successfully!');
+      }
+    }
+
+    if (metadataPath) {
+      await saveJSON(metadataPath, collectSourceMetadata(updates));
+      logger.step(`Entry metadata saved to ${metadataPath}`);
     }
   }
 
@@ -198,6 +278,103 @@ export class InlineCLI extends BaseCLI {
       // Validate whole project as before
       await validateProject(options, pkg);
     }
+  }
+}
+
+function resolveMetadataPath(
+  metadata: string | true,
+  settings: Settings
+): string {
+  const localeFiles = [settings.defaultLocale, ...settings.locales]
+    .map(
+      (locale) => resolveLocaleFiles(settings.files.placeholderPaths, locale).gt
+    )
+    .filter((file): file is string => Boolean(file));
+  const metadataPath =
+    metadata === true ? companionMetadataPath(localeFiles[0]) : metadata;
+  if (
+    metadata === true &&
+    settings.files.gtJson?.parsingFlags?.includeSourceCodeContext &&
+    isInServedDirectory(metadataPath)
+  ) {
+    logErrorAndExit(publicSourceCodeError(path.resolve(metadataPath)));
+  }
+  assertNotLocaleFile(metadataPath, localeFiles);
+  return metadataPath;
+}
+
+function isInServedDirectory(filePath: string): boolean {
+  const target = physicalPath(filePath);
+  const asWritten = path.relative(process.cwd(), path.resolve(filePath));
+  const resolved = path.relative(physicalPath(process.cwd()), target);
+  const namesServedDirectory = [asWritten, resolved].some((relative) =>
+    relative
+      .split(path.sep)
+      .some((segment) => SERVED_DIRECTORIES.has(segment.toLowerCase()))
+  );
+  const insideServedDirectory = [...SERVED_DIRECTORIES].some((name) => {
+    const relative = path.relative(physicalPath(name), target);
+    return (
+      relative !== '..' &&
+      !relative.startsWith(`..${path.sep}`) &&
+      !path.isAbsolute(relative)
+    );
+  });
+  return namesServedDirectory || insideServedDirectory;
+}
+
+function assertNotLocaleFile(metadataPath: string, localeFiles: string[]) {
+  const identity = fileIdentity(metadataPath);
+  const physical = physicalPath(metadataPath);
+  const collides = localeFiles.some(
+    (file) =>
+      physicalPath(file) === physical ||
+      (identity !== undefined && fileIdentity(file) === identity)
+  );
+  if (collides) {
+    logErrorAndExit(metadataPathCollisionError(path.resolve(metadataPath)));
+  }
+}
+
+/** Resolves a possibly missing path through its nearest existing ancestor, following dangling symlinks, with `realpathSync.native` because the JS version collapses `..` before following symlinks. */
+function physicalPath(filePath: string, depth = 0): string {
+  const missing: string[] = [];
+  let current = path.isAbsolute(filePath)
+    ? filePath
+    : `${process.cwd()}${path.sep}${filePath}`;
+  for (;;) {
+    try {
+      return path.join(fs.realpathSync.native(current), ...missing);
+    } catch {
+      const target = danglingLinkTarget(current);
+      if (target !== undefined && depth < MAX_SYMLINK_DEPTH) {
+        const linked = path.isAbsolute(target)
+          ? target
+          : `${path.dirname(current)}${path.sep}${target}`;
+        return physicalPath([linked, ...missing].join(path.sep), depth + 1);
+      }
+      const parent = path.dirname(current);
+      if (parent === current) return path.resolve(filePath);
+      missing.unshift(path.basename(current));
+      current = parent;
+    }
+  }
+}
+
+function danglingLinkTarget(filePath: string): string | undefined {
+  try {
+    return fs.readlinkSync(filePath);
+  } catch {
+    return undefined;
+  }
+}
+
+function fileIdentity(filePath: string): string | undefined {
+  try {
+    const { dev, ino } = fs.statSync(filePath, { bigint: true });
+    return `${dev}:${ino}`;
+  } catch {
+    return undefined;
   }
 }
 
