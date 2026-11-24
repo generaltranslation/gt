@@ -1,27 +1,19 @@
 import v8 from 'node:v8';
-import {
-  parentPort,
-  receiveMessageOnPort,
-  workerData,
-} from 'node:worker_threads';
+import { parentPort, workerData } from 'node:worker_threads';
 import { analyzeModule } from '../analysis/analyze.js';
 import { ModuleGraph } from '../analysis/module-graph.js';
 import { defaultLanguages } from '../languages/index.js';
 import { defaultTargets } from '../paraglide/targets.js';
 import { projectPackages } from '../project/packages.js';
 import { limitConcurrentReads } from '../utils/read-file.js';
+import { spilledReader } from '../utils/spill-file.js';
 import type {
   AnalysisWorkerData,
-  Bridge,
   IndexRequest,
   SharedIndex,
   WorkerRequest,
 } from './analysis-pool.js';
-import {
-  loadIndexedFile,
-  summarizeFile,
-  type GeneratedBytes,
-} from './module-reader.js';
+import { loadIndexedFile, summarizeFile } from './module-reader.js';
 
 const { projectRoot, concurrentReads } = workerData as AnalysisWorkerData;
 limitConcurrentReads(concurrentReads);
@@ -63,12 +55,11 @@ async function handle(request: WorkerRequest): Promise<unknown> {
   }
 }
 
-function indexedGraph({ index, bridge }: IndexRequest): ModuleGraph {
-  const { summaries, outdirs, globals, generatedFiles, budget } =
-    v8.deserialize(Buffer.from(index)) as SharedIndex;
-  const generated = new Set(generatedFiles);
-  const generatedModule = (file: string) =>
-    generated.has(file) ? requestGenerated(bridge, file) : undefined;
+function indexedGraph({ index }: IndexRequest): ModuleGraph {
+  const { summaries, outdirs, globals, generated, budget } = v8.deserialize(
+    Buffer.from(index)
+  ) as SharedIndex;
+  const generatedModule = spilledReader(generated);
 
   return new ModuleGraph({
     targets: defaultTargets,
@@ -80,16 +71,4 @@ function indexedGraph({ index, bridge }: IndexRequest): ModuleGraph {
       load: (file) => loadIndexedFile(file, generatedModule(file)),
     },
   });
-}
-
-/** Waits for the main thread, which holds what languages generated: a module is loaded synchronously. */
-function requestGenerated(
-  { port, flag }: Bridge,
-  file: string
-): GeneratedBytes | undefined {
-  Atomics.store(flag, 0, 0);
-  port.postMessage(file);
-  Atomics.wait(flag, 0, 0);
-
-  return receiveMessageOnPort(port)?.message as GeneratedBytes | undefined;
 }

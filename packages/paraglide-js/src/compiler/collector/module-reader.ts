@@ -20,8 +20,9 @@ import { readTextFile } from '../utils/read-file.js';
 export type GeneratedModule = { language: string; source: GeneratedSource };
 
 /**
- * A `GeneratedModule`, serialized: kept outside the JavaScript heap until its
- * file is loaded again. A large component's is several times its file's size.
+ * A `GeneratedModule`, serialized: kept in a temporary file until its file is
+ * loaded again (see `SpilledBytes`). A large component's is several times its
+ * file's size.
  */
 export type GeneratedBytes = Uint8Array;
 
