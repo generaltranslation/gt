@@ -215,6 +215,29 @@ describe('rendering', () => {
     );
   });
 
+  it.each([
+    ['is empty', async () => ({})],
+    [
+      'failed to load',
+      async () => {
+        throw new Error('Load failed');
+      },
+    ],
+  ])(
+    'picks the plural branches of the source in its own language when the catalog %s',
+    async (_name, loadTranslations) => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] });
+      setI18nCache(new I18nCache({ loadTranslations }));
+      const gt = await getGT({ locale: 'fr', enableI18n: true });
+      // French counts 0 as "one"; the English source does not.
+      expect(
+        gt`${plural({ files: 0 }, { one: part`${n} file`, other: part`${n} files` })}`
+      ).toBe('0 files');
+      error.mockRestore();
+    }
+  );
+
   it('validates a translated tree once', async () => {
     let reads = 0;
     const tree = new Proxy([literal('Bonjour, '), argument('name')], {

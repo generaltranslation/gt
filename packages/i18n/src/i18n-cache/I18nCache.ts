@@ -259,8 +259,6 @@ class I18nCache<TranslationValue extends Content = Content> {
   > {
     return guardAsync<TranslationResolver<TranslationValue>>(
       this.handleError,
-      // A locale that failed to load has no translations: every lookup is a
-      // miss, so the source renders as source and not as its own translation.
       () => undefined,
       async () => {
         const defaultLocale = getI18nConfig().getDefaultLocale();
@@ -270,7 +268,14 @@ class I18nCache<TranslationValue extends Content = Content> {
           return (content) => content;
         }
 
-        const asyncBoundaryTxCache = await this.translations.getOrLoad(locale);
+        // A locale that failed to load has no translations: its lookups are
+        // misses, so the source renders as source and not as its own
+        // translation. Lookups in another `$locale` still resolve.
+        const asyncBoundaryTxCache = await guardAsync(
+          this.handleError,
+          undefined,
+          () => this.translations.getOrLoad(locale)
+        );
 
         // Prefetch any entries during async block (dev hot reload only)
         const prefetchEntries = async (
@@ -292,6 +297,7 @@ class I18nCache<TranslationValue extends Content = Content> {
               );
             }
 
+            if (!asyncBoundaryTxCache) return;
             await Promise.allSettled(
               resolvedPrefetchEntries
                 .filter((entry) => asyncBoundaryTxCache.get(entry) == null)
