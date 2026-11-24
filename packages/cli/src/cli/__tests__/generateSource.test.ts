@@ -142,6 +142,7 @@ describe('gt generate', () => {
         context: 'greeting on the home page',
         maxChars: 20,
         filePaths: ['src/a.tsx', 'src/b.tsx'],
+        sourceCode: { 'src/a.tsx': [] },
       },
       'save-hash': { dataFormat: 'ICU', requiresReview: true },
       'cancel-hash': {
@@ -153,6 +154,14 @@ describe('gt generate', () => {
     });
     expect(Object.keys(read('out/metadata.json'))).toEqual(
       Object.keys(read('translations/en.json'))
+    );
+  });
+
+  it('writes metadata next to the source file when --metadata has no path', async () => {
+    await run('--source-only', '--metadata');
+
+    expect(Object.keys(read('translations/en.metadata.json'))).toEqual(
+      Object.keys(sourceCatalog)
     );
   });
 

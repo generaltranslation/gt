@@ -1,12 +1,11 @@
 import type { Updates } from 'generaltranslation';
+import type { MetadataLeaf } from '../formats/parseKeyedMetadata.js';
 
 type Update = Updates[number];
 
-export type SourceEntryMetadata = Pick<Update, 'dataFormat'> &
-  Pick<
-    Update['metadata'],
-    'id' | 'context' | 'maxChars' | 'requiresReview' | 'filePaths'
-  >;
+export type SourceEntryMetadata = MetadataLeaf &
+  Pick<Update, 'dataFormat'> &
+  Pick<Update['metadata'], 'id' | 'requiresReview' | 'filePaths'>;
 
 /** Returns each hashed entry's translator-facing metadata, keyed by the same hash as the source file. */
 export function collectSourceMetadata(
@@ -15,6 +14,7 @@ export function collectSourceMetadata(
   const result: Record<string, SourceEntryMetadata> = {};
   for (const { dataFormat, metadata } of updates) {
     const { hash, id, context, maxChars, requiresReview, filePaths } = metadata;
+    const sourceCode = metadata.sourceCode as MetadataLeaf['sourceCode'];
     if (!hash) continue;
     const existing = result[hash];
     if (existing) {
@@ -29,6 +29,7 @@ export function collectSourceMetadata(
       ...(maxChars != null && { maxChars }),
       ...(requiresReview !== undefined && { requiresReview }),
       ...(paths && { filePaths: paths }),
+      ...(sourceCode && { sourceCode }),
     };
   }
   return result;

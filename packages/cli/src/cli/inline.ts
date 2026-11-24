@@ -24,10 +24,11 @@ import { aggregateInlineTranslations } from '../translation/stage.js';
 import { validateProject } from '../translation/validate.js';
 import { Libraries, InlineLibrary } from '../types/libraries.js';
 import { collectSourceMetadata } from '../translation/sourceMetadata.js';
+import { companionMetadataPath } from '../formats/parseKeyedMetadata.js';
 
 type GenerateSourceFlags = TranslateFlags & {
   sourceOnly?: boolean;
-  metadata?: string;
+  metadata?: string | true;
 };
 
 const missingSourceOutputError = createDiagnosticMessage({
@@ -145,8 +146,8 @@ export class InlineCLI extends BaseCLI {
             false
           )
           .option(
-            '--metadata <path>',
-            "Also write each entry's metadata (dataFormat, id, context, maxChars, requiresReview, filePaths) to this JSON file, keyed by the same hashes as the source file"
+            '--metadata [path]',
+            "Also write each entry's metadata (dataFormat, id, context, maxChars, requiresReview, filePaths, sourceCode) keyed by the same hashes as the source file, to a companion file next to it (en.json → en.metadata.json) or to the given path"
           )
       ),
       this.getInlineSourceHelp()
@@ -231,9 +232,15 @@ export class InlineCLI extends BaseCLI {
       const localeFiles = [settings.defaultLocale, ...settings.locales]
         .map((locale) => resolveLocaleFiles(placeholderPaths!, locale).gt)
         .filter((file): file is string => Boolean(file));
-      assertNotLocaleFile(initOptions.metadata, localeFiles);
-      await saveJSON(initOptions.metadata, collectSourceMetadata(updates));
-      logger.step(`Entry metadata saved to ${initOptions.metadata}`);
+      const metadataPath =
+        initOptions.metadata === true
+          ? companionMetadataPath(
+              resolveLocaleFiles(placeholderPaths!, settings.defaultLocale).gt!
+            )
+          : initOptions.metadata;
+      assertNotLocaleFile(metadataPath, localeFiles);
+      await saveJSON(metadataPath, collectSourceMetadata(updates));
+      logger.step(`Entry metadata saved to ${metadataPath}`);
     }
   }
 
