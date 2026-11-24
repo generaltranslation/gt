@@ -19,6 +19,9 @@ export function collectSourceMetadata(
     const existing = result[hash];
     if (existing) {
       existing.filePaths = mergePaths(existing.filePaths, filePaths);
+      if (sourceCode) {
+        existing.sourceCode = mergeSourceCode(existing.sourceCode, sourceCode);
+      }
       continue;
     }
     const paths = mergePaths(undefined, filePaths);
@@ -42,4 +45,15 @@ function mergePaths(
   const merged = new Set(current);
   if (Array.isArray(next)) for (const p of next) merged.add(p);
   return merged.size > 0 ? [...merged].sort() : undefined;
+}
+
+function mergeSourceCode(
+  current: MetadataLeaf['sourceCode'],
+  next: NonNullable<MetadataLeaf['sourceCode']>
+): NonNullable<MetadataLeaf['sourceCode']> {
+  const merged = { ...current };
+  for (const [file, entries] of Object.entries(next)) {
+    merged[file] = [...(merged[file] ?? []), ...entries];
+  }
+  return merged;
 }

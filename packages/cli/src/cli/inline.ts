@@ -3,7 +3,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { BaseCLI } from './base.js';
-import { SupportedLibraries, TranslateFlags, Options } from '../types/index.js';
+import {
+  SupportedLibraries,
+  TranslateFlags,
+  Options,
+  Settings,
+} from '../types/index.js';
 import {
   attachInlineTranslateFlags,
   attachTranslateFlags,
@@ -172,6 +177,9 @@ export class InlineCLI extends BaseCLI {
     ) {
       logErrorAndExit(missingSourceOutputError);
     }
+    const metadataPath = initOptions.metadata
+      ? resolveMetadataPath(initOptions.metadata, settings)
+      : undefined;
 
     const updates = await aggregateInlineTranslations(
       initOptions,
@@ -228,17 +236,7 @@ export class InlineCLI extends BaseCLI {
       }
     }
 
-    if (initOptions.metadata) {
-      const localeFiles = [settings.defaultLocale, ...settings.locales]
-        .map((locale) => resolveLocaleFiles(placeholderPaths!, locale).gt)
-        .filter((file): file is string => Boolean(file));
-      const metadataPath =
-        initOptions.metadata === true
-          ? companionMetadataPath(
-              resolveLocaleFiles(placeholderPaths!, settings.defaultLocale).gt!
-            )
-          : initOptions.metadata;
-      assertNotLocaleFile(metadataPath, localeFiles);
+    if (metadataPath) {
       await saveJSON(metadataPath, collectSourceMetadata(updates));
       logger.step(`Entry metadata saved to ${metadataPath}`);
     }
@@ -266,6 +264,21 @@ export class InlineCLI extends BaseCLI {
       await validateProject(options, pkg);
     }
   }
+}
+
+function resolveMetadataPath(
+  metadata: string | true,
+  settings: Settings
+): string {
+  const localeFiles = [settings.defaultLocale, ...settings.locales]
+    .map(
+      (locale) => resolveLocaleFiles(settings.files.placeholderPaths, locale).gt
+    )
+    .filter((file): file is string => Boolean(file));
+  const metadataPath =
+    metadata === true ? companionMetadataPath(localeFiles[0]) : metadata;
+  assertNotLocaleFile(metadataPath, localeFiles);
+  return metadataPath;
 }
 
 function assertNotLocaleFile(metadataPath: string, localeFiles: string[]) {
