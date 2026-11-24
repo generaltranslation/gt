@@ -87,11 +87,12 @@ export function BrowserGTProvider(props: SharedGTProviderProps) {
 
   // Production lookups and getTranslationsSnapshot() also read the global
   // snapshot, which the store's cache stands in for in development.
+  // A prerendered shell's translations may be older than the visitor's.
   useEffect(() => {
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === 'production' && syncConditions) {
       updateGlobalTranslationsSnapshot(props.translations);
     }
-  }, [props.translations]);
+  }, [props.translations, syncConditions]);
 
   // Only create I18nStore in development on client. Keep the construction
   // inline in the NODE_ENV check (Turbopack-specific; webpack is unaffected):

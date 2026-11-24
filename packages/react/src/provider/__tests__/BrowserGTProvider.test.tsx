@@ -252,4 +252,33 @@ describe('BrowserGTProvider in a production SPA', () => {
     await act(async () => root.unmount());
     vi.unstubAllGlobals();
   });
+
+  it("leaves out a prerendered shell's translations", async () => {
+    initializeGTSRAClient({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      cacheUrl: null,
+    });
+    updateGlobalTranslationsSnapshot({ fr: { hash: 'Enregistrer' } });
+    const root = createRoot(document.createElement('div'));
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+
+    await act(async () => {
+      root.render(
+        <BrowserGTProvider
+          locale='fr'
+          enableI18n
+          _reload={() => undefined}
+          _syncConditions={false}
+          translations={{ fr: { hash: 'Sauver' } }}
+        />
+      );
+    });
+
+    await expect(getTranslationsSnapshot('fr')).resolves.toEqual({
+      fr: { hash: 'Enregistrer' },
+    });
+    await act(async () => root.unmount());
+    vi.unstubAllGlobals();
+  });
 });

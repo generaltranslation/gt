@@ -54,7 +54,9 @@ describe.sequential('production client translations', () => {
     });
 
     expect(pluginModule.loadTranslations).toHaveBeenCalledOnce();
-    expect(pure.isGlobalTranslationsSnapshotInitialized()).toBe(true);
+    expect(pure.getGlobalTranslationsSnapshot()).toEqual({
+      fr: { [saveHash()]: 'Enregistrer' },
+    });
     expect(() => pure.getReactI18nCache()).toThrow();
   });
 
