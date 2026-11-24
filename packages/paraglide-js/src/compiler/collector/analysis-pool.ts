@@ -252,7 +252,7 @@ export class AnalysisPool {
       this.workers.map(async (worker, index) => {
         while (!failure) {
           const chunk = chunks.take(index);
-          if (!chunk) return;
+          if (!chunk) break;
 
           const results = (await worker.request({
             type: 'analyze',
@@ -267,6 +267,10 @@ export class AnalysisPool {
             )
           );
         }
+
+        // No file is left for it: its memory goes back while the last
+        // threads finish, e.g. one analyzing a widely imported file.
+        await worker.terminate();
       })
     );
 
