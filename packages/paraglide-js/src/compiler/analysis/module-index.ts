@@ -3,12 +3,13 @@ import type { ModuleGraph, ParsedModule } from './module-graph.js';
 import type { ModuleSummary } from './module-store.js';
 import { forEachNode, type Node } from './ast.js';
 import { exportingStatements, loadedSpecifiers } from './module-syntax.js';
+import { nameList, type NameList } from '../utils/name-list.js';
 
 /** What each module of a file loads and links: the file's module, then its scripts. */
 export type ParsedSummary = Array<{
   specifiers: string[];
   links: SpecifierLinks;
-  untrackedExports: string[];
+  untrackedExports: NameList;
   globalNames: string[];
 }>;
 
@@ -42,7 +43,9 @@ export function summarizeModule(
       specifiers: [...specifiers],
       links: specifierLinks(part.program),
       // Generated code can read a name through an object that stands for the module.
-      untrackedExports: part.scopeObjects ? [] : untrackedExports(part.program),
+      untrackedExports: nameList(
+        part.scopeObjects ? [] : untrackedExports(part.program)
+      ),
       globalNames: namesIn(part.program, globalNames),
     };
   });

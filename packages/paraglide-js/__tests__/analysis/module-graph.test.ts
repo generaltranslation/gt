@@ -5,6 +5,7 @@ import {
   type ModuleGraphOptions,
 } from '../../src/compiler/analysis/module-graph.js';
 import { IndexedRecords } from '../../src/compiler/analysis/module-store.js';
+import { nameList } from '../../src/compiler/utils/name-list.js';
 import { messagesTarget } from '../../src/compiler/paraglide/targets.js';
 
 const greeting = {
@@ -163,7 +164,12 @@ function indexedRecords(budget: number, failing = new Set<string>()) {
     summaries: [a, b, c].map((file) => ({
       file,
       parts: [
-        { resolved: [], links: [], untrackedExports: [], globalNames: [] },
+        {
+          resolved: [],
+          links: [],
+          untrackedExports: nameList([]),
+          globalNames: [],
+        },
       ],
     })),
     budget,

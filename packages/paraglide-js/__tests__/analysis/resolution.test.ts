@@ -119,6 +119,12 @@ describe('following re-exports', () => {
       `export { m } from "./paraglide/messages.js"`,
       `import * as i18n from "./i18n.js"; i18n.m.greeting()`,
     ],
+    [
+      // The index lists `a` and `b` as `\0a\0b\0`: this name between separators.
+      'a quoted name that two function exports run together',
+      `export function a() {}\nexport function b() {}\nexport { greeting as "a\\0b" } from "./paraglide/messages.js"`,
+      `import { "a\\0b" as hi } from "./i18n.js"; hi()`,
+    ],
   ])('%s', async (_name, barrelCode, entry) => {
     const usages = await analyzeProject({
       [ENTRY]: entry,
