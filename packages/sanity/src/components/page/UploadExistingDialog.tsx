@@ -8,12 +8,15 @@ export interface LocalActionDialogProps {
   onClose: () => void;
   /** Runs the action; defaults to the provider's handler. */
   onConfirm?: () => Promise<void>;
+  /** True while another write is running. */
+  confirmDisabled?: boolean;
 }
 
 export const UploadExistingDialog: React.FC<LocalActionDialogProps> = ({
   isOpen,
   onClose,
   onConfirm,
+  confirmDisabled,
 }) => {
   const { documents, handleUploadExistingTranslations } = useTranslations();
 
@@ -33,7 +36,11 @@ export const UploadExistingDialog: React.FC<LocalActionDialogProps> = ({
         <Box padding={3}>
           <Flex gap={2} justify='flex-end'>
             <Button text='Cancel' mode='ghost' onClick={onClose} />
-            <Button text='Upload' onClick={handleConfirm} />
+            <Button
+              text='Upload'
+              onClick={handleConfirm}
+              disabled={confirmDisabled}
+            />
           </Flex>
         </Box>
       }

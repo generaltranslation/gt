@@ -304,7 +304,7 @@ const TranslationsToolContent: React.FC = () => {
                     text='Save Local Edits'
                     loading={isBusy && currentOperation === 'Save Local Edits'}
                     icon={UploadIcon}
-                    disabled={actionsDisabled}
+                    disabled={actionsDisabled || isWaitingOnTranslations}
                   />
                 </Tooltip>
                 <Tooltip
@@ -436,10 +436,12 @@ const TranslationsToolContent: React.FC = () => {
       <SaveLocalEditsDialog
         isOpen={isSaveLocalEditsDialogOpen}
         onClose={() => setIsSaveLocalEditsDialogOpen(false)}
+        confirmDisabled={actionsDisabled || isWaitingOnTranslations}
       />
       <UploadExistingDialog
         isOpen={isUploadExistingDialogOpen}
         onClose={() => setIsUploadExistingDialogOpen(false)}
+        confirmDisabled={actionsDisabled}
       />
       <DebugInfoDialog
         isOpen={isDebugInfoDialogOpen}

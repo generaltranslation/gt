@@ -8,6 +8,7 @@ export const SaveLocalEditsDialog: React.FC<LocalActionDialogProps> = ({
   isOpen,
   onClose,
   onConfirm,
+  confirmDisabled,
 }) => {
   const { documents, handleSaveLocalEdits } = useTranslations();
 
@@ -27,7 +28,11 @@ export const SaveLocalEditsDialog: React.FC<LocalActionDialogProps> = ({
         <Box padding={3}>
           <Flex gap={2} justify='flex-end'>
             <Button text='Cancel' mode='ghost' onClick={onClose} />
-            <Button text='Save Local Edits' onClick={handleConfirm} />
+            <Button
+              text='Save Local Edits'
+              onClick={handleConfirm}
+              disabled={confirmDisabled}
+            />
           </Flex>
         </Box>
       }
@@ -45,7 +50,9 @@ export const SaveLocalEditsDialog: React.FC<LocalActionDialogProps> = ({
             They replace the translation General Translation holds for the
             source it last received, including a finished translation that has
             not been imported yet. Source changes made since then are still
-            translated on the next run. No translation is started.
+            translated on the next run. No translation is started. Documents
+            General Translation has not received yet are skipped; use Upload
+            Existing for those.
           </Text>
         </Stack>
       </Box>

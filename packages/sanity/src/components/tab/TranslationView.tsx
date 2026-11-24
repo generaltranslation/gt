@@ -174,12 +174,14 @@ export const TranslationView = () => {
     );
   }
 
+  const otherWriteRunning = isBusy || isImporting || isPublishing;
+
   const runLocalAction = async (
     action: 'save' | 'upload',
     run: () => Promise<void>
   ) => {
     // Another write may have started while the confirmation was open.
-    if (isBusy || isImporting || isPublishing) return;
+    if (otherWriteRunning) return;
     setLocalAction(action);
     try {
       await run();
@@ -414,6 +416,7 @@ export const TranslationView = () => {
         isOpen={isSaveLocalEditsDialogOpen}
         onClose={() => setIsSaveLocalEditsDialogOpen(false)}
         onConfirm={() => runLocalAction('save', handleSaveLocalEdits)}
+        confirmDisabled={otherWriteRunning || isWaitingOnTranslations}
       />
       <UploadExistingDialog
         isOpen={isUploadExistingDialogOpen}
@@ -421,6 +424,7 @@ export const TranslationView = () => {
         onConfirm={() =>
           runLocalAction('upload', handleUploadExistingTranslations)
         }
+        confirmDisabled={otherWriteRunning}
       />
 
       {/* Translation Status Section */}
@@ -493,7 +497,10 @@ export const TranslationView = () => {
                 mode='ghost'
                 onClick={() => setIsSaveLocalEditsDialogOpen(true)}
                 disabled={
-                  isBusy || !availableLocales.length || !canPreserveLocalEdits
+                  isBusy ||
+                  isWaitingOnTranslations ||
+                  !availableLocales.length ||
+                  !canPreserveLocalEdits
                 }
                 icon={UploadIcon}
                 text='Save Local Edits'
