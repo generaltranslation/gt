@@ -14,6 +14,7 @@ import { fileURLToPath } from 'url';
 import type { NextConfig } from 'next';
 import { BABEL_PLUGIN_SUPPORT, SWC_PLUGIN_SUPPORT } from '../plugin/constants';
 import { nextLocaleCookieName } from '../utils/cookies';
+import { PAGE_ID_PREFIX } from '../provider/splitTranslationsPlaceholders';
 import { getRequireSpecifiers } from './utils/importGraph';
 
 // ---- Mocks ---- //
@@ -35,10 +36,10 @@ const mockVersionInfo = vi.hoisted(() => ({
 
 vi.mock('../plugin/getStableNextVersionInfo', () => mockVersionInfo);
 
-const mockFillServerOnlyHashes = vi.hoisted(() => vi.fn());
+const mockFillSplitTranslations = vi.hoisted(() => vi.fn());
 
-vi.mock('../plugin/fillServerOnlyHashes', () => ({
-  fillServerOnlyHashes: mockFillServerOnlyHashes,
+vi.mock('../plugin/fillSplitTranslations', () => ({
+  fillSplitTranslations: mockFillSplitTranslations,
 }));
 
 // The default render settings are derived from NODE_ENV when the config
@@ -1119,7 +1120,7 @@ describe('withGTConfig', () => {
         await Promise.resolve();
         ran.push('app');
       });
-      mockFillServerOnlyHashes.mockImplementation(() => ran.push('gt-next'));
+      mockFillSplitTranslations.mockImplementation(() => ran.push('gt-next'));
 
       const result = withGTConfig(
         {
@@ -1134,7 +1135,10 @@ describe('withGTConfig', () => {
 
       expect(result.compiler).toHaveProperty('removeConsole', true);
       expect(appHook).toHaveBeenCalledWith(metadata);
-      expect(mockFillServerOnlyHashes).toHaveBeenCalledWith('/app/.next');
+      expect(mockFillSplitTranslations).toHaveBeenCalledWith(
+        '/app/.next',
+        false
+      );
       expect(ran).toEqual(['app', 'gt-next']);
     });
 
@@ -1216,6 +1220,87 @@ describe('withGTConfig', () => {
       expect(
         buildParams({ ...swc, experimentalSplitTranslations: true })
       ).not.toHaveProperty('experimentalSplitTranslations');
+    });
+
+    describe('per page', () => {
+      const on = { ...swc, experimentalSplitTranslations: true } as const;
+      const pageSegmentsOf = (config: NextConfig) =>
+        (
+          config.experimental?.swcPlugins?.[0]?.[1] as {
+            pageSegments?: unknown;
+          }
+        )?.pageSegments;
+
+      beforeEach(() => {
+        vi.stubEnv('TURBOPACK', '1');
+        vi.stubEnv('NODE_ENV', 'production');
+      });
+
+      it.each([
+        ['app', ['app', 'src/app']],
+        ['src/app', ['src/app']],
+      ])(
+        'has the SWC plugin wrap the pages of %s, and the build step place them',
+        async (appDir, directories) => {
+          mockExistingFiles(...directories);
+
+          const result = withGTConfig({}, on);
+          await hookOf(result)!(metadata);
+
+          expect(pageSegmentsOf(result)).toEqual({
+            appDir,
+            pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
+            idPrefix: PAGE_ID_PREFIX,
+          });
+          expect(mockFillSplitTranslations).toHaveBeenCalledWith(
+            '/app/.next',
+            true
+          );
+          expect(warnings()).toEqual([]);
+        }
+      );
+
+      it('passes the pageExtensions of the Next.js config to the SWC plugin', () => {
+        mockExistingFiles('app');
+
+        const result = withGTConfig({ pageExtensions: ['page.tsx'] }, on);
+
+        expect(pageSegmentsOf(result)).toMatchObject({
+          pageExtensions: ['page.tsx'],
+        });
+      });
+
+      it.each([
+        ['under webpack and in next start', undefined, 'production'],
+        ['in next dev', '1', 'development'],
+      ])(
+        'wraps no page and places nothing %s, without a warning',
+        async (_name, turbopack, nodeEnv) => {
+          mockExistingFiles('app');
+          vi.stubEnv('TURBOPACK', turbopack);
+          vi.stubEnv('NODE_ENV', nodeEnv);
+
+          const result = withGTConfig({}, on);
+          await hookOf(result)!(metadata);
+
+          expect(pageSegmentsOf(result)).toBeUndefined();
+          expect(mockFillSplitTranslations).toHaveBeenCalledWith(
+            '/app/.next',
+            false
+          );
+          expect(warnings()).toEqual([]);
+        }
+      );
+
+      it('wraps no page when the option is off', () => {
+        mockExistingFiles('app');
+
+        expect(
+          pageSegmentsOf(
+            withGTConfig({}, { ...swc, experimentalSplitTranslations: false })
+          )
+        ).toBeUndefined();
+      });
     });
   });
 

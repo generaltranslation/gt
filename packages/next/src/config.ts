@@ -41,7 +41,8 @@ import {
   turboConfigStable,
 } from './plugin/getStableNextVersionInfo';
 import { distDir, nodeRequire } from './plugin/nodeCompat';
-import { fillServerOnlyHashes } from './plugin/fillServerOnlyHashes';
+import { fillSplitTranslations } from './plugin/fillSplitTranslations';
+import { PAGE_ID_PREFIX } from './provider/splitTranslationsPlaceholders';
 import { validateCompiler } from './config-dir/utils/validateCompiler';
 import {
   REQUEST_FUNCTION_ALIASES,
@@ -95,7 +96,7 @@ type NextCompilerConfig = NonNullable<NextConfig['compiler']> & {
 };
 
 /**
- * Whether this build runs fillServerOnlyHashes, warning when the option is on
+ * Whether this build runs fillSplitTranslations, warning when the option is on
  * and cannot work.
  */
 function splitsTranslations(
@@ -110,6 +111,18 @@ function splitsTranslations(
     return false;
   }
   return true;
+}
+
+// Placement reads the entries of Turbopack's client reference manifests, which
+// webpack's do not list, after a production compile.
+function getPageSegmentsAppDir(): string | undefined {
+  if (!process.env.TURBOPACK || process.env.NODE_ENV === 'development') {
+    return undefined;
+  }
+  // Next.js reads src/app only when there is no app directory.
+  return ['app', 'src/app'].find((appDir) =>
+    fs.existsSync(path.join(process.cwd(), appDir))
+  );
 }
 
 function isThenable(value: unknown): value is PromiseLike<NextConfig> {
@@ -685,9 +698,30 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   // The SWC plugin reads autoderive only from gt.config.json parsingFlags.
 
+  const splitTranslations = splitsTranslations(
+    props.experimentalSplitTranslations,
+    mergedExperimentalCompilerOptions
+  );
+  const pageSegmentsAppDir = splitTranslations
+    ? getPageSegmentsAppDir()
+    : undefined;
+
   const swcPluginOptions: Record<string, unknown> = {
     ...compilerOptions,
     autoderiveJsx: loadedConfig.files?.gt?.parsingFlags?.autoderive ?? false,
+    ...(pageSegmentsAppDir && {
+      pageSegments: {
+        appDir: pageSegmentsAppDir,
+        pageExtensions:
+          internalNextConfig.pageExtensions ??
+          (
+            nodeRequire(
+              'next/dist/server/config-shared'
+            ) as typeof import('next/dist/server/config-shared')
+          ).defaultConfig.pageExtensions,
+        idPrefix: PAGE_ID_PREFIX,
+      },
+    }),
   };
 
   const swcPluginEntry: [string, Record<string, unknown>] | null =
@@ -720,16 +754,12 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       internalNextConfig.turbopack?.resolveAlias)
   );
 
-  const splitTranslations = splitsTranslations(
-    props.experimentalSplitTranslations,
-    mergedExperimentalCompilerOptions
-  );
   const userCompiler: NextCompilerConfig = internalNextConfig.compiler ?? {};
   const splitTranslationsCompiler: NextCompilerConfig = {
     ...userCompiler,
     runAfterProductionCompile: async (metadata) => {
       await userCompiler.runAfterProductionCompile?.(metadata);
-      fillServerOnlyHashes(metadata.distDir);
+      fillSplitTranslations(metadata.distDir, pageSegmentsAppDir !== undefined);
     },
   };
 

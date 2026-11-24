@@ -11,6 +11,7 @@
 
 export { LocaleSelector as Client_LocaleSelector } from 'gt-react';
 export { RegionSelector as Client_RegionSelector } from 'gt-react';
+export { InternalTranslationsSeed as Client_TranslationsSeed } from '@generaltranslation/react-core/components';
 
 import { getCookieValue } from 'gt-i18n/internal/cookies';
 import { getI18nConfig, I18nConfig } from 'gt-i18n/internal';

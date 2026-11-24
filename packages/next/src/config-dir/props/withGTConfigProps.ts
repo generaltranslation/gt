@@ -45,6 +45,28 @@ export type BaseWithGTConfigProps = MiddlewareConfig &
      * be one the GT compiler hashes, `T` imported directly from `gt-next` and
      * written as JSX; otherwise its translation can be left out when a server
      * component renders the same content.
+     *
+     * A Turbopack production build also sends some translations with the
+     * page that uses them instead of from the root layout's `GTProvider`. The
+     * SWC plugin wraps a server `page` file in a `GtSegment` when its default
+     * export is a function written in that file (a function declaration, an
+     * arrow or function expression, or the name of one declared there with
+     * `function`, `const` or `let`) and it exports no `dynamic` other than the
+     * literal `'auto'` or `'force-dynamic'`; `'use client'` and `'use cache'`
+     * pages are not wrapped. The build then places the translation of a
+     * compiled client `<T>` with a page only when that page's entry alone
+     * loads every client chunk holding it and the page's wrapper is found in
+     * the server files of every route that renders the page; every other
+     * translation stays with the root layout. A component loaded with
+     * `next/dynamic` from a server component of one page can be placed with
+     * that page, while chunks loaded lazily on the client stay with the root
+     * layout. A webpack build and `next dev` place none.
+     *
+     * Known limitations: an unhashed client `<T>` can also lose its
+     * translation when a compiled `<T>` with the same content is placed with
+     * another page, and a page that a layout above it makes static can render
+     * its client `<T>` in the source language after a client-side navigation
+     * when the locale comes from the request.
      */
     experimentalSplitTranslations?: InferInput<
       typeof WithGTConfigPropsSchema
