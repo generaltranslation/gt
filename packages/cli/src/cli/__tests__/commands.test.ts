@@ -53,6 +53,7 @@ vi.mock('../../console/logger.js', () => ({
     message: vi.fn(),
     step: vi.fn(),
     success: vi.fn(),
+    warn: vi.fn(),
     setQuiet: vi.fn(),
     setConsoleOutput: vi.fn(),
   },
@@ -87,7 +88,10 @@ import { login, UserAuthError } from '@generaltranslation/auth';
 import { generateSettings } from '../../config/generateSettings.js';
 import { resolveConfig } from '../../config/resolveConfig.js';
 import { displayTranslateSummary } from '../../console/displayTranslateSummary.js';
-import { outdatedTranslationFilesError } from '../../console/index.js';
+import {
+  outdatedTranslationFilesError,
+  skippedSourceFilesWarning,
+} from '../../console/index.js';
 import { logger } from '../../console/logger.js';
 import {
   clearDownloaded,
@@ -596,12 +600,15 @@ describe('gt generate', () => {
   const read = (locale: string) =>
     JSON.parse(fs.readFileSync(file(locale), 'utf8'));
 
-  function setSource(source: Record<string, unknown>) {
-    vi.mocked(aggregateInlineTranslations).mockResolvedValue(
-      Object.entries(source).map(([hash, content]) => ({
-        source: content,
-        metadata: { hash },
-      })) as never
+  function setSource(source: Record<string, unknown>, skipped: string[] = []) {
+    vi.mocked(aggregateInlineTranslations).mockImplementation(
+      async (_options, _settings, _library, skippedFiles) => {
+        skippedFiles?.push(...skipped);
+        return Object.entries(source).map(([hash, content]) => ({
+          source: content,
+          metadata: { hash },
+        })) as never;
+      }
     );
   }
 
@@ -675,6 +682,28 @@ describe('gt generate', () => {
     await generate();
 
     expect(read('de')).toEqual({ a: 'Speichern', b: 'Leer' });
+  });
+
+  it('keeps the translations of a source file it could not scan, unless told to ignore errors', async () => {
+    const translated = { a: 'Speichern', b: 'Abbrechen' };
+    setSource({ a: 'Save', b: 'Cancel' });
+    await generate();
+    fs.writeFileSync(file('de'), JSON.stringify(translated));
+    // As when the file that holds b has a syntax error.
+    setSource({ a: 'Save' }, ['src/b.ts']);
+
+    await generate();
+
+    expect(read('en')).toEqual({ a: 'Save', b: 'Cancel' });
+    expect(read('de')).toEqual(translated);
+    expect(logger.warn).toHaveBeenCalledExactlyOnceWith(
+      skippedSourceFilesWarning(['src/b.ts'])
+    );
+
+    await generate('--ignore-errors');
+
+    expect(read('en')).toEqual({ a: 'Save' });
+    expect(read('de')).toEqual({ a: 'Speichern' });
   });
 
   it('passes --check after generating content that equals the saved file only as JSON', async () => {

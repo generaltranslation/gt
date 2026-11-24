@@ -1199,8 +1199,10 @@ ${
     vi.mocked(matchFiles).mockReturnValue(
       entries.map((entry) => path.join(dir, entry))
     );
+    const skippedFiles: string[] = [];
     return {
       dir,
+      skippedFiles,
       result: await createInlineUpdates(
         library,
         false,
@@ -1208,7 +1210,8 @@ ${
         parsingFlags as never,
         {
           conditionNames: [],
-        }
+        },
+        skippedFiles
       ),
     };
   }
@@ -2285,9 +2288,9 @@ ${
     expect(result.updates.map((u) => u.source)).toContain('Save');
   });
 
-  it('skips a scanned file whose scopes Babel cannot build, and extracts the rest', async () => {
+  it('skips a scanned file whose scopes Babel cannot build, names it, and extracts the rest', async () => {
     const logged = vi.spyOn(logger, 'error').mockImplementation(() => {});
-    const { result } = await extractProject(
+    const { dir, result, skippedFiles } = await extractProject(
       Libraries.GT_REACT,
       () => ({
         'types.ts': 'export interface State {\n  ready: boolean;\n}\n',
@@ -2301,6 +2304,7 @@ ${
 
     expect(treeUpdates(result).map((u) => u.source)).toEqual(['Save']);
     expect(logged).toHaveBeenCalledWith(expect.stringContaining('state.ts'));
+    expect(skippedFiles).toEqual([path.join(dir, 'state.ts')]);
     logged.mockRestore();
   });
 

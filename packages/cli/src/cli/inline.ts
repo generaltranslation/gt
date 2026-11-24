@@ -15,6 +15,7 @@ import { resolveLocaleFiles } from '../fs/config/parseFilesConfig.js';
 import {
   noFilesError,
   outdatedTranslationFilesError,
+  skippedSourceFilesWarning,
   unreadableTranslationFileError,
 } from '../console/index.js';
 import { saveJSON } from '../fs/saveJSON.js';
@@ -142,11 +143,22 @@ export class InlineCLI extends BaseCLI {
       requireConfig: true,
     });
 
+    const skippedFiles: string[] = [];
     const updates = await aggregateInlineTranslations(
       initOptions,
       settings,
-      this.getInlineLibrary()
+      this.getInlineLibrary(),
+      skippedFiles
     );
+    // A file that could not be parsed may hold the messages this run did not find, so nothing saved is removed.
+    const keepSaved = skippedFiles.length > 0 && !initOptions.ignoreErrors;
+    if (keepSaved) {
+      logger.warn(
+        skippedSourceFilesWarning(
+          skippedFiles.map((file) => path.relative(process.cwd(), file))
+        )
+      );
+    }
 
     // Convert updates to the proper data format
     const newData: Record<string, unknown> = {};
@@ -189,8 +201,9 @@ export class InlineCLI extends BaseCLI {
           exitSync(1);
         }
         // A locale file keeps its translations of the messages still in the source.
-        const data =
-          file === sourceFile
+        const data = {
+          ...(keepSaved && saved),
+          ...(file === sourceFile
             ? newData
             : Object.fromEntries(
                 Object.keys(newData).map((key) => [
@@ -199,7 +212,8 @@ export class InlineCLI extends BaseCLI {
                     ? saved[key]
                     : newData[key],
                 ])
-              );
+              )),
+        };
         // Compared as the JSON that would be saved: an extractor's objects can differ from a parsed file in ways saving removes.
         if (!isDeepStrictEqual(saved, JSON.parse(JSON.stringify(data)))) {
           outdated.push([file, data]);

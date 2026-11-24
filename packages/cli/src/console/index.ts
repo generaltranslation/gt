@@ -477,6 +477,17 @@ export const outdatedTranslationFilesError = (files: string[]): string =>
     fix: 'Run `gt generate` and commit the changes',
     details: files,
   });
+export const skippedSourceFilesWarning = (files: string[]): string =>
+  createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Warning',
+    whatHappened:
+      'Some source files could not be parsed, so their messages were not found',
+    reassurance: 'Every message and translation already saved is kept',
+    fix: 'Fix the files and run `gt generate` again',
+    wayOut: 'Pass `--ignore-errors` to remove what was not found in the source',
+    details: files,
+  });
 export const unreadableTranslationFileError = (file: string): string =>
   createDiagnosticMessage({
     source: 'gt',

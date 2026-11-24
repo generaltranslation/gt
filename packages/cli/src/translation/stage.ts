@@ -12,7 +12,9 @@ import { InlineLibrary } from '../types/libraries.js';
 export async function aggregateInlineTranslations(
   options: TranslateFlags,
   settings: Settings,
-  library: InlineLibrary
+  library: InlineLibrary,
+  /** Receives each source file that could not be parsed. */
+  skippedFiles?: string[]
 ): Promise<Updates> {
   if (!options.dictionary) {
     options.dictionary = findFilepath([
@@ -33,7 +35,8 @@ export async function aggregateInlineTranslations(
     library,
     false,
     settings.files.gtJson.parsingFlags,
-    settings.parsingOptions
+    settings.parsingOptions,
+    skippedFiles
   );
 
   if (warnings.length > 0) {

@@ -37,7 +37,8 @@ export async function createUpdates(
   pkg: InlineLibrary,
   validate: boolean,
   parsingFlags: ResolvedGTParsingFlags,
-  parsingOptions: ParsingConfigOptions
+  parsingOptions: ParsingConfigOptions,
+  skippedFiles?: string[]
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   let updates: Updates = [];
   let errors: string[] = [];
@@ -91,7 +92,8 @@ export async function createUpdates(
                 validate,
                 primaryPatterns,
                 parsingFlags,
-                parsingOptions
+                parsingOptions,
+                skippedFiles
               );
   const {
     updates: newUpdates,
