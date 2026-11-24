@@ -18,7 +18,9 @@ const pendingLoads = new Map<Locale, Promise<void>>();
 export async function loadGlobalTranslationsSnapshot(
   locale: Locale
 ): Promise<void> {
+  // A provider may publish part of a locale while it loads.
   if (
+    !pendingLoads.has(locale) &&
     isGlobalTranslationsSnapshotInitialized() &&
     getGlobalTranslationsSnapshot()[locale]
   ) {

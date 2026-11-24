@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getTranslationsSnapshot,
   initializeI18nConfig,
-  setGlobalTranslationsSnapshot,
+  updateGlobalTranslationsSnapshot,
 } from '@generaltranslation/react-core/pure';
 import { initializeGTSRAClient } from '../../setup/initializeGTSRAClient';
 import {
@@ -193,7 +193,8 @@ describe('BrowserGTProvider in a production SPA', () => {
   });
 
   afterEach(() => {
-    setGlobalTranslationsSnapshot({});
+    const registry = Reflect.get(globalThis, '__generaltranslation');
+    Reflect.deleteProperty(registry.reactCore, 'translationsSnapshot');
     vi.unstubAllEnvs();
     resetI18n();
   });
@@ -201,7 +202,7 @@ describe('BrowserGTProvider in a production SPA', () => {
   it('reads a translation missing from its translations in the global snapshot', () => {
     const hash = (source: string) =>
       hashSource({ source, dataFormat: 'MESSAGE_TREE' });
-    setGlobalTranslationsSnapshot({
+    updateGlobalTranslationsSnapshot({
       fr: { [hash('Save')]: 'Enregistrer', [hash('Open')]: 'Ouvrir' },
     });
 

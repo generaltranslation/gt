@@ -39,7 +39,6 @@ export { setI18nStore } from './i18n-store/singleton-operations';
 export {
   getGlobalTranslationsSnapshot,
   isGlobalTranslationsSnapshotInitialized,
-  setGlobalTranslationsSnapshot,
   setTranslationsSnapshotLoader,
   updateGlobalTranslationsSnapshot,
   type TranslationsSnapshot,

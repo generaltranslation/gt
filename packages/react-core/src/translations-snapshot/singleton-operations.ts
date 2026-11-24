@@ -53,7 +53,8 @@ export function updateGlobalTranslationsSnapshot(
 
 /**
  * Adds translations to the global snapshot in place, keeping entries it
- * already has, for a load that may finish after newer entries arrived.
+ * already has, for a load that may finish after newer entries arrived. Takes
+ * ownership of a locale table the snapshot lacks.
  */
 export function fillGlobalTranslationsSnapshot(
   translations: TranslationsSnapshot
@@ -63,7 +64,11 @@ export function fillGlobalTranslationsSnapshot(
   }
   const snapshot = getGlobalTranslationsSnapshot();
   for (const locale in translations) {
-    const table = (snapshot[locale] ??= {});
+    const table = snapshot[locale];
+    if (!table) {
+      snapshot[locale] = translations[locale];
+      continue;
+    }
     for (const hash in translations[locale]) {
       if (!(hash in table)) table[hash] = translations[locale][hash];
     }

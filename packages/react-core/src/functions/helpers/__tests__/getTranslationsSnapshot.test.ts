@@ -127,6 +127,27 @@ describe('getTranslationsSnapshot', () => {
     await expect(getTranslationsSnapshot('fr')).resolves.toEqual(expected);
   });
 
+  it('production: waits for a pending load when part of the locale has arrived', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
+    let finishLoad!: (translations: Record<string, string>) => void;
+    setTranslationsSnapshotLoader({
+      loadTranslations: () =>
+        new Promise((resolve) => {
+          finishLoad = resolve;
+        }),
+    });
+
+    const first = getTranslationsSnapshot('fr');
+    updateGlobalTranslationsSnapshot({ fr: { shared: 'Sauver' } });
+    const second = getTranslationsSnapshot('fr');
+    finishLoad({ shared: 'Enregistrer', loaded: 'Ouvrir' });
+
+    const expected = { fr: { shared: 'Sauver', loaded: 'Ouvrir' } };
+    await expect(first).resolves.toEqual(expected);
+    await expect(second).resolves.toEqual(expected);
+  });
+
   it('development: omits the locale and warns when the loader fails', async () => {
     // Reproduces gt#1937: a translation file that does not exist yet must not
     // crash the caller (eg a TanStack Start route loader) with a 500
