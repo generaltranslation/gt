@@ -259,7 +259,9 @@ class I18nCache<TranslationValue extends Content = Content> {
   > {
     return guardAsync<TranslationResolver<TranslationValue>>(
       this.handleError,
-      (content) => content,
+      // A locale that failed to load has no translations: every lookup is a
+      // miss, so the source renders as source and not as its own translation.
+      () => undefined,
       async () => {
         const defaultLocale = getI18nConfig().getDefaultLocale();
 

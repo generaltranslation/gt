@@ -1008,6 +1008,10 @@ describe('I18nCache', () => {
       expect(errorSpy).toHaveBeenCalledWith(
         expect.stringContaining('Load failed')
       );
+
+      // A locale that failed to load has no translations: the source is not one
+      const resolver = await cache.getLookupTranslation('fr');
+      expect(resolver(message, lookupOptions)).toBeUndefined();
     });
 
     it('development: a failing translations loader rejects', async () => {
