@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import fs from 'node:fs';
 import path from 'node:path';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { BaseCLI } from './base.js';
@@ -171,11 +172,11 @@ export class InlineCLI extends BaseCLI {
       logErrorAndExit(missingSourceOutputError);
     }
     if (initOptions.metadata && placeholderPaths) {
-      const metadataPath = path.resolve(initOptions.metadata);
+      const metadataPath = realOutputPath(initOptions.metadata);
       const collides = [settings.defaultLocale, ...settings.locales].some(
         (locale) => {
           const localeFile = resolveLocaleFiles(placeholderPaths, locale).gt;
-          return localeFile && path.resolve(localeFile) === metadataPath;
+          return localeFile && realOutputPath(localeFile) === metadataPath;
         }
       );
       if (collides) logErrorAndExit(metadataPathCollisionError(metadataPath));
@@ -260,6 +261,22 @@ export class InlineCLI extends BaseCLI {
     } else {
       // Validate whole project as before
       await validateProject(options, pkg);
+    }
+  }
+}
+
+function realOutputPath(filePath: string): string {
+  const absolute = path.resolve(filePath);
+  try {
+    return fs.realpathSync(absolute);
+  } catch {
+    try {
+      return path.join(
+        fs.realpathSync(path.dirname(absolute)),
+        path.basename(absolute)
+      );
+    } catch {
+      return absolute;
     }
   }
 }

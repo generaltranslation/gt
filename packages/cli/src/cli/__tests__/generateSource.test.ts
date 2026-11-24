@@ -173,6 +173,26 @@ describe('gt generate', () => {
     }
   );
 
+  it('rejects a --metadata path that reaches a locale file through a symlink', async () => {
+    const catalogPath = path.join(projectRoot, 'translations/fr.json');
+    fs.symlinkSync(
+      path.join(projectRoot, 'translations'),
+      path.join(projectRoot, 'linked'),
+      'junction'
+    );
+    const target = fs.readFileSync(catalogPath, 'utf8');
+
+    await expect(
+      run(
+        '--source-only',
+        '--metadata',
+        path.join(projectRoot, 'linked/fr.json')
+      )
+    ).rejects.toThrow('--metadata path is also a locale file');
+
+    expect(fs.readFileSync(catalogPath, 'utf8')).toBe(target);
+  });
+
   it.each([['--source-only'], ['--metadata', 'out/metadata.json']])(
     'fails %s when files.gt.output is not set',
     async (...args) => {
