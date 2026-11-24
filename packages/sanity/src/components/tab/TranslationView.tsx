@@ -539,6 +539,7 @@ export const TranslationView = () => {
                   icon={DownloadIcon}
                   disabled={
                     isImporting ||
+                    isBusy ||
                     statusLocales.every((locale) => {
                       const key = createTranslationStatusKey(
                         branchId,

@@ -112,9 +112,10 @@ export async function captureExistingTranslations({
     secrets
   );
 
-  const replaceable = candidates.flatMap(({ seed, translations }) =>
-    translations
-      .filter(({ locale }) =>
+  const groups = candidates
+    .map(({ seed, translations }) => ({
+      seed,
+      translations: translations.filter(({ locale }) =>
         completed.has(
           createTranslationStatusKey(
             seed.branchId,
@@ -123,62 +124,60 @@ export async function captureExistingTranslations({
             locale
           )
         )
-      )
-      .map((translation) => ({ seed, translation }))
+      ),
+    }))
+    .filter(({ translations }) => translations.length > 0);
+  const replaceableCount = groups.reduce(
+    (total, { translations }) => total + translations.length,
+    0
   );
-  const skippedCount = candidateCount - replaceable.length;
-  if (replaceable.length === 0) {
+  const skippedCount = candidateCount - replaceableCount;
+  if (replaceableCount === 0) {
     return { ...EMPTY_RESULT, skippedCount };
   }
 
-  const files = candidates.flatMap(({ seed }) => {
-    const translations = replaceable.filter((entry) => entry.seed === seed);
-    if (translations.length === 0) {
-      return [];
-    }
-    const reference = {
-      fileName: seed.fileName ?? `sanity/${seed.fileId}`,
-      fileFormat: 'HTML' as const,
-      fileId: seed.fileId,
-      versionId: seed.versionId,
-      branchId: seed.branchId,
-    };
-
-    return [
-      {
+  const response = await api.uploadTranslations(
+    groups.map(({ seed, translations }) => {
+      const reference = {
+        fileName: seed.fileName ?? `sanity/${seed.fileId}`,
+        fileFormat: 'HTML' as const,
+        fileId: seed.fileId,
+        versionId: seed.versionId,
+        branchId: seed.branchId,
+      };
+      return {
         source: { ...reference, content: seed.data, locale: sourceLocale },
-        translations: translations.map(({ translation }) => ({
+        translations: translations.map(({ locale, content }) => ({
           ...reference,
-          content: translation.content,
-          locale: translation.locale,
+          content,
+          locale,
         })),
-      },
-    ];
-  });
-
-  const response = await api.uploadTranslations(files, { sourceLocale });
+      };
+    }),
+    { sourceLocale }
+  );
   const confirmed = new Set(
     response.uploadedFiles.map((file) => `${file.fileId}:${file.locale}`)
   );
-  const saved = replaceable
-    .filter(({ seed, translation }) =>
-      confirmed.has(`${seed.fileId}:${translation.locale}`)
-    )
-    .map(({ seed, translation }) => ({
-      written: translation.document,
-      file: {
-        branchId: seed.branchId,
-        fileId: seed.fileId,
-        versionId: seed.versionId,
-      },
-      language: translation.locale,
-    }));
+  const saved = groups.flatMap(({ seed, translations }) =>
+    translations
+      .filter(({ locale }) => confirmed.has(`${seed.fileId}:${locale}`))
+      .map(({ locale, document }) => ({
+        written: document,
+        file: {
+          branchId: seed.branchId,
+          fileId: seed.fileId,
+          versionId: seed.versionId,
+        },
+        language: locale,
+      }))
+  );
 
   return {
     capturedCount: saved.length,
     documentCount: new Set(saved.map(({ file }) => file.fileId)).size,
     skippedCount,
-    unconfirmedCount: replaceable.length - saved.length,
+    unconfirmedCount: replaceableCount - saved.length,
     saved,
   };
 }

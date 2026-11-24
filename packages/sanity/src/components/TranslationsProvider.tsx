@@ -782,13 +782,14 @@ const TranslationsProviderContent: React.FC<
     [toast]
   );
 
-  // Read by imports, which must not replace a translation while it is being
-  // saved. A ref, so a callback created before the save started still sees it.
-  const savingLocalEditsRef = useRef(false);
+  // Counts the saves and uploads of Sanity translations in progress. Imports
+  // read it so they never replace a translation that is being sent. A ref, so
+  // a callback created before the write started still sees it.
+  const localWritesRef = useRef(0);
   const saveLocalEdits = useCallback(
     async (sourceDocuments: SanityDocument[]) => {
       if (!secrets) throw new Error('Secrets not loaded');
-      savingLocalEditsRef.current = true;
+      localWritesRef.current += 1;
       try {
         const result = await captureExistingTranslations({
           documents: getDefaultSourceDocuments(sourceDocuments),
@@ -802,7 +803,7 @@ const TranslationsProviderContent: React.FC<
         );
         return result;
       } finally {
-        savingLocalEditsRef.current = false;
+        localWritesRef.current -= 1;
       }
     },
     [
@@ -846,6 +847,15 @@ const TranslationsProviderContent: React.FC<
               toast.push({
                 title: `Preserved ${captured.capturedCount} existing translation(s) across ${captured.documentCount} document(s)`,
                 status: 'info',
+                closable: true,
+              });
+            }
+            if (captured.unconfirmedCount > 0) {
+              toast.push({
+                title: `${captured.unconfirmedCount} existing translation(s) could not be confirmed as preserved`,
+                description:
+                  'Translation is continuing, but edits made to those translated documents may be overwritten.',
+                status: 'warning',
                 closable: true,
               });
             }
@@ -1062,6 +1072,7 @@ const TranslationsProviderContent: React.FC<
     if (!secrets || documents.length === 0 || isWriteRunning) return;
 
     setIsBusy(true);
+    localWritesRef.current += 1;
     try {
       const sourceDocuments = allowNonDefault
         ? await getUploadableSources(documents, 'Local edits were not saved')
@@ -1087,7 +1098,9 @@ const TranslationsProviderContent: React.FC<
           : {
               title: 'No local edits were saved',
               description:
-                'Local edits are saved over a translation General Translation already holds for the current source. Translate first, or use Upload Existing for content translated elsewhere.',
+                saved.unconfirmedCount > 0
+                  ? notes.join(' ')
+                  : 'Local edits are saved over a translation General Translation already holds for the current source. Translate first, or use Upload Existing for content translated elsewhere.',
               status: 'warning',
               closable: true,
             }
@@ -1101,6 +1114,7 @@ const TranslationsProviderContent: React.FC<
         closable: true,
       });
     } finally {
+      localWritesRef.current -= 1;
       setIsBusy(false);
     }
   }, [
@@ -1117,6 +1131,7 @@ const TranslationsProviderContent: React.FC<
     if (!secrets || documents.length === 0 || isWriteRunning) return;
 
     setIsBusy(true);
+    localWritesRef.current += 1;
     try {
       const availableLocaleIds = locales
         .filter((locale) => locale.enabled !== false)
@@ -1200,6 +1215,7 @@ const TranslationsProviderContent: React.FC<
         closable: true,
       });
     } finally {
+      localWritesRef.current -= 1;
       setIsBusy(false);
     }
   }, [
@@ -1678,10 +1694,10 @@ const TranslationsProviderContent: React.FC<
         return false;
       }
 
-      if (savingLocalEditsRef.current) {
+      if (localWritesRef.current > 0) {
         toast.push({
-          title: 'Local edits are being saved',
-          description: 'Import again once the save finishes.',
+          title: 'Translations in Sanity are being sent to General Translation',
+          description: 'Import again once that finishes.',
           status: 'warning',
           closable: true,
         });
