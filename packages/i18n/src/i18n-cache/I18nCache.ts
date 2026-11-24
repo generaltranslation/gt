@@ -215,6 +215,24 @@ class I18nCache<TranslationValue extends Content = Content> {
   }
 
   /**
+   * Loads a locale's translations into the cache, and rejects when the load
+   * fails, whatever the environment: for a caller that must not change to a
+   * locale it could not load. A failed load is not kept, so a later call
+   * loads again.
+   * @returns Whether the cache was without them until this call
+   */
+  async ensureTranslations(locale: string): Promise<boolean> {
+    if (
+      locale === getI18nConfig().getDefaultLocale() ||
+      this.translations.get(locale)
+    ) {
+      return false;
+    }
+    await this.translations.getOrLoad(locale);
+    return true;
+  }
+
+  /**
    * Just lookup a translation
    */
   lookupTranslation<T extends TranslationValue = TranslationValue>(
