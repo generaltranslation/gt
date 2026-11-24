@@ -292,21 +292,53 @@ describe('gt generate', () => {
     );
   });
 
-  it('refuses bare --metadata with source code snippets under public/', async () => {
-    vi.mocked(generateSettings).mockResolvedValue({
-      defaultLocale: 'en',
-      locales: ['en', 'fr'],
-      files: {
-        placeholderPaths: { gt: 'public/_gt/[locale].json' },
-        gtJson: { parsingFlags: { includeSourceCodeContext: true } },
+  it.each([
+    ['directly', () => {}],
+    [
+      'through a symlinked directory',
+      () => {
+        fs.mkdirSync(path.join(projectRoot, 'public/_gt'), { recursive: true });
+        fs.symlinkSync(
+          path.join(projectRoot, 'public/_gt'),
+          path.join(projectRoot, 'i18n'),
+          'junction'
+        );
       },
-    } as unknown as Settings);
+    ],
+  ])(
+    'refuses bare --metadata with source code snippets under public/ %s',
+    async (how, setup) => {
+      setup();
+      const output = how === 'directly' ? 'public/_gt' : 'i18n';
+      vi.mocked(generateSettings).mockResolvedValue({
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        files: {
+          placeholderPaths: {
+            gt: path.join(projectRoot, output, '[locale].json'),
+          },
+          gtJson: { parsingFlags: { includeSourceCodeContext: true } },
+        },
+      } as unknown as Settings);
+      const originalCwd = process.cwd();
+      process.chdir(projectRoot);
 
-    await expect(run('--source-only', '--metadata')).rejects.toThrow(
-      'publicly served directory'
-    );
-    expect(aggregateInlineTranslations).not.toHaveBeenCalled();
-  });
+      try {
+        await expect(run('--source-only', '--metadata')).rejects.toThrow(
+          'publicly served directory'
+        );
+      } finally {
+        process.chdir(originalCwd);
+      }
+      expect(aggregateInlineTranslations).not.toHaveBeenCalled();
+      expect(fs.existsSync(path.join(projectRoot, output, 'en.json'))).toBe(
+        false
+      );
+      expect(
+        fs.existsSync(path.join(projectRoot, output, 'en.metadata.json'))
+      ).toBe(false);
+    }
+  );
 
   it.each([
     ['translations/[locale]', 'translations/en.metadata.json'],
