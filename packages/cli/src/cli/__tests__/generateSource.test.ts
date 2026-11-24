@@ -156,41 +156,69 @@ describe('gt generate', () => {
     );
   });
 
-  it.each(['translations/fr.json', 'translations/en.json'])(
-    'rejects a --metadata path that is the locale file %s before writing',
-    async (catalog) => {
-      const catalogPath = path.join(projectRoot, catalog);
-      fs.writeFileSync(catalogPath, '{"kept":"as is"}');
-      const cwd = vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
+  describe('rejects a --metadata path that is a locale file', () => {
+    const originalCwd = process.cwd();
+    beforeEach(() => process.chdir(projectRoot));
+    afterEach(() => process.chdir(originalCwd));
+    const link = (target: string, alias: string) =>
+      fs.symlinkSync(path.resolve(target), path.resolve(alias), 'junction');
+    const french = '{"welcome-hash":"Bon retour","stale":"Ancien"}';
 
-      await expect(run('--source-only', '--metadata', catalog)).rejects.toThrow(
-        '--metadata path is also a locale file'
+    it.each([
+      ['the target file', 'translations/fr.json', () => {}],
+      ['the source file', 'translations/en.json', () => {}],
+      [
+        'a target reached through a symlinked directory',
+        'linked/fr.json',
+        () => link('translations', 'linked'),
+      ],
+      [
+        'a hard link to the target',
+        'hard.json',
+        () => fs.linkSync('translations/fr.json', 'hard.json'),
+      ],
+    ])('%s', async (_name, metadataPath, setup) => {
+      fs.writeFileSync('translations/fr.json', french);
+      setup();
+
+      await expect(
+        run('--source-only', '--metadata', metadataPath)
+      ).rejects.toThrow('--metadata path is also a locale file');
+
+      expect(fs.readFileSync('translations/fr.json', 'utf8')).toBe(french);
+      expect(read('translations/en.json')).toEqual(sourceCatalog);
+    });
+
+    it('but accepts a path that only spells like one before symlinks resolve', async () => {
+      fs.writeFileSync('translations/fr.json', french);
+      fs.mkdirSync('elsewhere/batch', { recursive: true });
+      link('translations', 'linked');
+      link('elsewhere/batch', 'translations/current');
+
+      await run('--source-only', '--metadata', 'linked/current/../fr.json');
+
+      expect(fs.readFileSync('translations/fr.json', 'utf8')).toBe(french);
+      expect(Object.keys(read('elsewhere/fr.json'))).toEqual(
+        Object.keys(sourceCatalog)
       );
-      cwd.mockRestore();
+    });
 
-      expect(fs.readFileSync(catalogPath, 'utf8')).toBe('{"kept":"as is"}');
-      expect(aggregateInlineTranslations).not.toHaveBeenCalled();
-    }
-  );
+    it('a source file in a directory this run creates', async () => {
+      vi.mocked(generateSettings).mockResolvedValue({
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        files: {
+          placeholderPaths: { gt: 'translations/generated/[locale].json' },
+        },
+      } as unknown as Settings);
+      link('translations', 'linked');
 
-  it('rejects a --metadata path that reaches a locale file through a symlink', async () => {
-    const catalogPath = path.join(projectRoot, 'translations/fr.json');
-    fs.symlinkSync(
-      path.join(projectRoot, 'translations'),
-      path.join(projectRoot, 'linked'),
-      'junction'
-    );
-    const target = fs.readFileSync(catalogPath, 'utf8');
+      await expect(
+        run('--source-only', '--metadata', 'linked/generated/en.json')
+      ).rejects.toThrow('--metadata path is also a locale file');
 
-    await expect(
-      run(
-        '--source-only',
-        '--metadata',
-        path.join(projectRoot, 'linked/fr.json')
-      )
-    ).rejects.toThrow('--metadata path is also a locale file');
-
-    expect(fs.readFileSync(catalogPath, 'utf8')).toBe(target);
+      expect(read('translations/generated/en.json')).toEqual(sourceCatalog);
+    });
   });
 
   it.each([['--source-only'], ['--metadata', 'out/metadata.json']])(

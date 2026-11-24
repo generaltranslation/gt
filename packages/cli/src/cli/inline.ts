@@ -171,16 +171,6 @@ export class InlineCLI extends BaseCLI {
     ) {
       logErrorAndExit(missingSourceOutputError);
     }
-    if (initOptions.metadata && placeholderPaths) {
-      const metadataPath = realOutputPath(initOptions.metadata);
-      const collides = [settings.defaultLocale, ...settings.locales].some(
-        (locale) => {
-          const localeFile = resolveLocaleFiles(placeholderPaths, locale).gt;
-          return localeFile && realOutputPath(localeFile) === metadataPath;
-        }
-      );
-      if (collides) logErrorAndExit(metadataPathCollisionError(metadataPath));
-    }
 
     const updates = await aggregateInlineTranslations(
       initOptions,
@@ -198,11 +188,6 @@ export class InlineCLI extends BaseCLI {
       }
     }
 
-    if (initOptions.metadata) {
-      await saveJSON(initOptions.metadata, collectSourceMetadata(updates));
-      logger.step(`Entry metadata saved to ${initOptions.metadata}`);
-    }
-
     // Save source file if files.json is provided
     if (settings.files && settings.files.placeholderPaths.gt) {
       const translationFiles = resolveLocaleFiles(
@@ -215,9 +200,9 @@ export class InlineCLI extends BaseCLI {
       }
       await saveJSON(translationFiles.gt, newData);
       logger.step('Source file saved successfully!');
-      if (initOptions.sourceOnly) return;
       // Also save translations (after merging with existing translations)
-      for (const locale of settings.locales) {
+      const targetLocales = initOptions.sourceOnly ? [] : settings.locales;
+      for (const locale of targetLocales) {
         const translationsFile = resolveLocaleFiles(
           settings.files.placeholderPaths,
           locale
@@ -237,7 +222,18 @@ export class InlineCLI extends BaseCLI {
         );
         await saveJSON(translationsFile.gt, filteredTranslations);
       }
-      logger.step('Merged translations successfully!');
+      if (!initOptions.sourceOnly) {
+        logger.step('Merged translations successfully!');
+      }
+    }
+
+    if (initOptions.metadata) {
+      const localeFiles = [settings.defaultLocale, ...settings.locales]
+        .map((locale) => resolveLocaleFiles(placeholderPaths!, locale).gt)
+        .filter((file): file is string => Boolean(file));
+      assertNotLocaleFile(initOptions.metadata, localeFiles);
+      await saveJSON(initOptions.metadata, collectSourceMetadata(updates));
+      logger.step(`Entry metadata saved to ${initOptions.metadata}`);
     }
   }
 
@@ -265,19 +261,19 @@ export class InlineCLI extends BaseCLI {
   }
 }
 
-function realOutputPath(filePath: string): string {
-  const absolute = path.resolve(filePath);
+function assertNotLocaleFile(metadataPath: string, localeFiles: string[]) {
+  const target = fileIdentity(metadataPath);
+  if (target && localeFiles.some((file) => fileIdentity(file) === target)) {
+    logErrorAndExit(metadataPathCollisionError(path.resolve(metadataPath)));
+  }
+}
+
+function fileIdentity(filePath: string): string | undefined {
   try {
-    return fs.realpathSync(absolute);
+    const { dev, ino } = fs.statSync(filePath, { bigint: true });
+    return `${dev}:${ino}`;
   } catch {
-    try {
-      return path.join(
-        fs.realpathSync(path.dirname(absolute)),
-        path.basename(absolute)
-      );
-    } catch {
-      return absolute;
-    }
+    return undefined;
   }
 }
 
