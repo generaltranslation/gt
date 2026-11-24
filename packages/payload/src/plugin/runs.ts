@@ -6,10 +6,10 @@
 // it at once.
 import type { CollectionConfig, Payload, TaskConfig, User } from 'payload';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
-import { createGtPayloadDiagnostic } from './diagnostics';
-import { listSiteTargets } from './documents';
+import { createGtPayloadDiagnostic } from '../utils/diagnostics';
+import { listSiteTargets } from '../translation/documents';
 import { acquireLock, releaseLock, renewLock } from './locks';
-import { targetKey } from './targets';
+import { targetKey } from '../translation/targets';
 import {
   checkTranslation,
   finishTranslation,
@@ -17,8 +17,8 @@ import {
   startTranslation,
   type DocumentResult,
   type TranslationJob,
-} from './translation';
-import type { GtClient, TranslateTarget } from './types';
+} from '../translation/translation';
+import type { GtClient, TranslateTarget } from '../types/types';
 
 export const RUNS_SLUG = 'gt-translation-runs';
 const RUN_TASK = 'gtTranslationRun';

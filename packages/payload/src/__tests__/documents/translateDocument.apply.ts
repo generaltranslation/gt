@@ -1,7 +1,7 @@
 // What a run leaves in Payload.
 import type { Payload } from 'payload';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { translateDocument } from '../../translation';
+import { translateDocument } from '../../translation/translation';
 import { sharedTestPayload } from '../support/createTestPayload';
 import { FakeGt } from '../support/fakeGt';
 import { createPage, navRows, setFooter, setHeader } from '../support/fixtures';

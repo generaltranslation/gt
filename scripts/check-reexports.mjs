@@ -46,7 +46,7 @@ const facadeReexportTargets = {
 // Non-entry source files that may re-export like an entry file.
 export const entryExceptions = [
   {
-    path: 'packages/tanstack-start/src/index.shared.ts',
+    path: 'packages/tanstack-start/src/shared/exports.ts',
     reason: 'Shared body of the index.client and index.server entries.',
   },
   {

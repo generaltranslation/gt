@@ -10,7 +10,7 @@ import type {
   VueCompilerOptions,
   VueExtractionOptions,
   VueExtractionOutput,
-} from '../types.js';
+} from '../types/types.js';
 import {
   collectVueScriptImports,
   createVueScriptAnalysis,

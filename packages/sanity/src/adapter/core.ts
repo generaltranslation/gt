@@ -1,7 +1,7 @@
 import { GTIntl } from 'generaltranslation/internal';
 import { GeneralTranslation, type ProjectHandle } from 'generaltranslation';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import type { Secrets } from '../types';
+import type { Secrets } from '../types/types';
 import type {
   TranslateDocumentFilter,
   DedupeFields,

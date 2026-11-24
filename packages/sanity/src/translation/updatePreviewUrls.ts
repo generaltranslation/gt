@@ -1,6 +1,6 @@
 import type { SanityClient } from 'sanity';
 import { pluginConfig, projectFor } from '../adapter/core';
-import type { Secrets } from '../types';
+import type { Secrets } from '../types/types';
 import { resolvePreviewUrls } from './previewUrls';
 
 export type ImportedTranslation = {

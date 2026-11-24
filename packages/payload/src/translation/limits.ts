@@ -1,7 +1,7 @@
 // Fitting translated plain text into field character limits.
 import { GTIntl } from 'generaltranslation/internal';
-import type { LengthLimit } from './content/fields';
-import type { GtClient } from './types';
+import type { LengthLimit } from '../content/fields';
+import type { GtClient } from '../types/types';
 
 export type OverLimit = {
   key: string;

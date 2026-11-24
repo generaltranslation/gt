@@ -12,7 +12,7 @@ import type {
   FlattenedField,
   RichTextField,
 } from 'payload';
-import type { Data } from '../types';
+import type { Data } from '../types/types';
 import { isAddress } from './address';
 import {
   encodeElement,

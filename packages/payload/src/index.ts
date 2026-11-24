@@ -1,18 +1,18 @@
-export { gtPlugin } from './plugin';
-export type { GtPluginOptions } from './plugin';
+export { gtPlugin } from './plugin/plugin';
+export type { GtPluginOptions } from './plugin/plugin';
 export {
   saveSiteTranslations,
   saveTranslations,
   translateDocument,
   translateSite,
-} from './translation';
+} from './translation/translation';
 export type {
   DocumentResult,
   SaveTranslationsResult,
   SiteResult,
   TranslateDocumentInput,
   TranslateSiteInput,
-} from './translation';
+} from './translation/translation';
 export type {
   GtClient,
   LocaleResult,
@@ -20,4 +20,4 @@ export type {
   SkippedString,
   TranslateResult,
   TranslateTarget,
-} from './types';
+} from './types/types';

@@ -3,15 +3,15 @@ import {
   formatCutoff,
   formatDateTime,
   formatRelativeTimeFromDate,
-} from '../../core';
-import { formatMessage as publicFormatMessage } from '../../formatMessage';
+} from '../core';
+import { formatMessage as publicFormatMessage } from '../formatMessage';
 import { intlCache } from '../../cache/IntlCache';
 import {
   _formatListToParts,
   _formatRelativeTime,
   _selectRelativeTimeUnit,
 } from '../format';
-import type { FormatVariables } from '../../types';
+import type { FormatVariables } from '../../types-dir/types';
 
 // The host's zone, so a formatted date compares with what Intl gives.
 const timeZone = new Intl.DateTimeFormat().resolvedOptions().timeZone;

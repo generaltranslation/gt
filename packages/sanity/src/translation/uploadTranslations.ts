@@ -1,4 +1,4 @@
-import type { GTFile, Secrets } from '../types';
+import type { GTFile, Secrets } from '../types/types';
 import type { UploadTranslationsResponse } from '@generaltranslation/api';
 import type { BatchWriteResponse } from 'generaltranslation';
 import { projectFor } from '../adapter/core';

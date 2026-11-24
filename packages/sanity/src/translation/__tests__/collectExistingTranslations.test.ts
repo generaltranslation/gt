@@ -5,7 +5,7 @@ import type { SanityClient, SanityDocument } from 'sanity';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { pluginConfig } from '../../adapter/core';
 import { hasLocaleContent } from '../../serialization/internationalizedArray/detect';
-import type { TranslationFunctionContext } from '../../types';
+import type { TranslationFunctionContext } from '../../types/types';
 import { collectExistingTranslations } from '../collectExistingTranslations';
 
 // Minimal stand-ins for the types sanity-plugin-internationalized-array

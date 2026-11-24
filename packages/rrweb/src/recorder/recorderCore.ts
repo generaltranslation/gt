@@ -18,7 +18,7 @@ import {
   type RecorderBundle,
   type RecorderConfig,
   type RecorderStatus,
-} from '../types';
+} from '../types/types';
 
 // The live recorder lives in MODULE state, not React state. rrweb's `record()` is a
 // global side effect on `document`; its lifecycle must survive component remounts

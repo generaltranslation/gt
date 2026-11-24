@@ -7,29 +7,29 @@ import {
   _formatRelativeTime,
   _selectRelativeTimeUnit,
   type ZonedDateTimeFormatOptions,
-} from './formatting/format';
-import { intlCache } from './cache/IntlCache';
-import { LocaleIntl } from './intl/LocaleIntl';
-import type { CutoffFormatOptions } from './formatting/custom-formats/CutoffFormat/types';
-import { _getLocaleDirection } from './locales/getLocaleDirection';
-import { _getLocaleEmoji } from './locales/getLocaleEmoji';
+} from './format';
+import { intlCache } from '../cache/IntlCache';
+import { LocaleIntl } from '../intl/LocaleIntl';
+import type { CutoffFormatOptions } from './custom-formats/CutoffFormat/types';
+import { _getLocaleDirection } from '../locales/getLocaleDirection';
+import { _getLocaleEmoji } from '../locales/getLocaleEmoji';
 import {
   _getLocaleProperties,
   type LocaleProperties,
-} from './locales/getLocaleProperties';
-import { _getLocaleName } from './locales/getLocaleName';
-import { _isSameDialect } from './locales/isSameDialect';
-import { _isSameLanguage } from './locales/isSameLanguage';
-import { _isSupersetLocale } from './locales/isSupersetLocale';
-import { _isValidLocale, _standardizeLocale } from './locales/isValidLocale';
-import { _requiresTranslation } from './locales/requiresTranslation';
-import { _resolveAliasLocale } from './locales/resolveAliasLocale';
-import { _resolveCanonicalLocale } from './locales/resolveCanonicalLocale';
-import type { CustomMapping } from './locales/customLocaleMapping';
+} from '../locales/getLocaleProperties';
+import { _getLocaleName } from '../locales/getLocaleName';
+import { _isSameDialect } from '../locales/isSameDialect';
+import { _isSameLanguage } from '../locales/isSameLanguage';
+import { _isSupersetLocale } from '../locales/isSupersetLocale';
+import { _isValidLocale, _standardizeLocale } from '../locales/isValidLocale';
+import { _requiresTranslation } from '../locales/requiresTranslation';
+import { _resolveAliasLocale } from '../locales/resolveAliasLocale';
+import { _resolveCanonicalLocale } from '../locales/resolveCanonicalLocale';
+import type { CustomMapping } from '../locales/customLocaleMapping';
 import {
   defaultLocaleMatcher,
   defaultDefaultLocale,
-} from './settings/settings';
+} from '../settings/settings';
 
 // Every argument is passed in: these functions apply no defaults of their own
 // to them. `generaltranslation` resolves what a caller leaves out.

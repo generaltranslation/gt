@@ -1,7 +1,7 @@
 // A site whose main language is not English.
 import type { Payload } from 'payload';
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { translateDocument } from '../translation';
+import { translateDocument } from '../translation/translation';
 import { createTestPayload } from './support/createTestPayload';
 import { FakeGt, readKeyedHtml } from './support/fakeGt';
 

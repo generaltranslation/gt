@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { GtReactNative } from '../NativeGtReactNative';
+import { GtReactNative } from '../specs/NativeGtReactNative';
 
 /**
  * Get native device locales in preference order

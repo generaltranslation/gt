@@ -1,4 +1,4 @@
-import type { VueExtractionResult } from '../types.js';
+import type { VueExtractionResult } from '../types/types.js';
 import type { StaticPrimitive } from './utils.js';
 import type { ImplicitSlotWhitespace } from './vueCompiler.js';
 

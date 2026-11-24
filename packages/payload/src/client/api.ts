@@ -1,9 +1,9 @@
 // Calls to the plugin's endpoints from the admin panel.
 import { ApiError } from '@generaltranslation/api';
 import type { ClientConfig } from 'payload';
-import type { CoveragePage } from '../coverage';
-import type { RunKind, RunProgress, StepResult } from '../runs';
-import type { TranslateTarget } from '../types';
+import type { CoveragePage } from '../plugin/coverage';
+import type { RunKind, RunProgress, StepResult } from '../plugin/runs';
+import type { TranslateTarget } from '../types/types';
 
 export type Scope = { targets: TranslateTarget[] } | { site: true };
 

@@ -11,7 +11,7 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
-import type { VueCompilerOptions } from '../../types.js';
+import type { VueCompilerOptions } from '../../types/types.js';
 import {
   NUXT_CONFIG_FILES,
   VITE_CONFIG_EXTENSIONS,

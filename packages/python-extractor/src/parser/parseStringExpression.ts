@@ -2,14 +2,14 @@ import fs from 'node:fs';
 import type { Node as SyntaxNode } from 'web-tree-sitter';
 import { getParser } from './parser.js';
 import type { StringNode } from './stringNode.js';
-import type { ImportAlias } from './extractImports.js';
-import { PYTHON_DERIVE, PYTHON_DECLARE_VAR } from './constants.js';
+import type { ImportAlias } from '../extract/extractImports.js';
+import { PYTHON_DERIVE, PYTHON_DECLARE_VAR } from '../constants.js';
 import {
   resolveFunctionInCurrentFile,
   resolveFunctionInFile,
-} from './resolveFunctionVariants.js';
-import { extractImports } from './extractImports.js';
-import { resolveImportPath } from './resolveImport.js';
+} from '../extract/resolveFunctionVariants.js';
+import { extractImports } from '../extract/extractImports.js';
+import { resolveImportPath } from '../extract/resolveImport.js';
 import { declareVar } from 'generaltranslation/internal';
 
 type ParseContext = {

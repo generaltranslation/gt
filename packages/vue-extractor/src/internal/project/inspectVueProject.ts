@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import fg from 'fast-glob';
-import type { VueProjectInspection } from '../../types.js';
+import type { VueProjectInspection } from '../../types/types.js';
 import {
   discoverVueProject,
   findVueSourceScope,

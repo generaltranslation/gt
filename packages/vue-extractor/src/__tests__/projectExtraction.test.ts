@@ -7,7 +7,7 @@ import {
   extractFromVueProject,
   mergeVueProjectExtraction,
 } from '../project.js';
-import type { VueProjectExtractionResult } from '../types.js';
+import type { VueProjectExtractionResult } from '../types/types.js';
 import {
   createTestProject,
   linkInstalledVue,

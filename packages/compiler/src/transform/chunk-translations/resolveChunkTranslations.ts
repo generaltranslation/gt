@@ -1,7 +1,10 @@
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import type { ChunkImportMapOptions } from './chunkImportMap';
-import type { GTConfig, SplitTranslationsOptions } from '../../config';
+import type {
+  GTConfig,
+  SplitTranslationsOptions,
+} from '../../config/pluginConfig';
 import { DEFAULT_REQUEST_COST } from './assignTranslationsByRegion';
 import {
   MINIFY_HASHES_WITH_TAGGED_IDS_ERROR,

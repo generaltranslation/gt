@@ -1,7 +1,7 @@
 import { SanityClient, SanityDocument } from 'sanity';
 import { pluginConfig } from '../../adapter/core';
 import { mergeInternationalizedArrays } from '../../serialization/internationalizedArray/merge';
-import type { GTFile } from '../../types';
+import type { GTFile } from '../../types/types';
 import { getPublishedId } from '../../utils/documentIds';
 import { findLatestDraft } from '../utils/findLatestDraft';
 

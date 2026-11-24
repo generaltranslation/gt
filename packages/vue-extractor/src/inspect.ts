@@ -11,4 +11,4 @@ export {
   partitionVueSourcePatterns,
   readVueSfcExclusionPatterns,
 } from './internal/project/inspectVueProject.js';
-export type { VueProjectInspection } from './types.js';
+export type { VueProjectInspection } from './types/types.js';

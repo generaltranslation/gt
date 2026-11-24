@@ -1,5 +1,5 @@
 import { isTransientApiError } from '@generaltranslation/api';
-import type { Secrets } from '../types';
+import type { Secrets } from '../types/types';
 import { projectFor } from '../adapter/core';
 import { FileProperties } from '../adapter/types';
 import {

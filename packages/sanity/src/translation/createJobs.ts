@@ -4,7 +4,7 @@ import type {
 } from '@generaltranslation/api';
 import type { BatchWriteResponse } from 'generaltranslation';
 import { gt, projectFor } from '../adapter/core';
-import type { Secrets } from '../types';
+import type { Secrets } from '../types/types';
 import { succeededResults } from '../utils/batchResults';
 
 export async function createJobs(

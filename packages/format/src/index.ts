@@ -27,8 +27,8 @@ export {
   resolveAliasLocale,
   resolveCanonicalLocale,
   standardizeLocale,
-} from './core';
-export { formatMessage } from './formatMessage';
+} from './formatting/core';
+export { formatMessage } from './formatting/formatMessage';
 
 export { getRegionProperties } from './locales/getRegionProperties';
 
@@ -53,4 +53,4 @@ export type {
   StringContent,
   StringFormat,
 } from './types-dir/jsx/content';
-export type { FormatVariables } from './types';
+export type { FormatVariables } from './types-dir/types';

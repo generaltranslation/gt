@@ -6,7 +6,7 @@ import type {
   ChunkTranslations,
   ChunkTranslationsNaming,
   ChunkTranslationsSplit,
-} from './transform/chunk-translations/resolveChunkTranslations';
+} from '../transform/chunk-translations/resolveChunkTranslations';
 import type {
   GTCompilerOptions,
   GTConfig as SharedGTConfig,

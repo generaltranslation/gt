@@ -3,7 +3,7 @@ import { ThemeProvider, Box, Card, Flex, Spinner, Text } from '@sanity/ui';
 import { ToastProvider } from '@sanity/ui/toast';
 import { buildTheme } from '@sanity/ui/theme';
 import { useSecrets } from '../../hooks/useSecrets';
-import { Secrets } from '../../types';
+import { Secrets } from '../../types/types';
 import { pluginConfig } from '../../adapter/core';
 
 // GT's design system rounds nearly every surface to 6px (rounded-md). Bump
