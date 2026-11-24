@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => ({
   initProject: vi.fn(),
   createJobs: vi.fn(),
   collectExistingTranslations: vi.fn(),
+  captureExistingTranslations: vi.fn(),
   resolvePreviewUrls: vi.fn(),
   updateTranslationPreviewUrls: vi.fn(),
 }));
@@ -72,6 +73,9 @@ vi.mock('../../translation/createJobs', () => ({
 }));
 vi.mock('../../translation/collectExistingTranslations', () => ({
   collectExistingTranslations: mocks.collectExistingTranslations,
+}));
+vi.mock('../../translation/captureExistingTranslations', () => ({
+  captureExistingTranslations: mocks.captureExistingTranslations,
 }));
 vi.mock('../../translation/previewUrls', () => ({
   resolvePreviewUrls: mocks.resolvePreviewUrls,
@@ -143,6 +147,10 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
   mocks.uploadFiles.mockResolvedValue({ uploadedFiles: [] });
   mocks.collectExistingTranslations.mockResolvedValue(new Map());
+  mocks.captureExistingTranslations.mockResolvedValue({
+    capturedCount: 0,
+    documentCount: 0,
+  });
   mocks.resolvePreviewUrls.mockResolvedValue({ urls: [], failures: [] });
   mocks.updateTranslationPreviewUrls.mockResolvedValue([]);
   mocks.useDocumentStore.mockReturnValue(mocks.documentStore);
@@ -173,6 +181,100 @@ describe('document role', () => {
 });
 
 describe('Save Local Edits', () => {
+  test('saves the translations in Sanity without uploading the source', async () => {
+    const { client } = createGroqClient([page('page-en', 'en')]);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+    mocks.captureExistingTranslations.mockResolvedValue({
+      capturedCount: 1,
+      documentCount: 1,
+    });
+
+    const context = await renderProvider(page('page-en', 'en'));
+    await act(() => context.handleSaveLocalEdits());
+
+    expect(mocks.captureExistingTranslations).toHaveBeenCalledWith(
+      expect.objectContaining({
+        documents: [expect.objectContaining({ _id: 'page-en' })],
+        localeIds: ['en', 'fr'],
+        secrets: { project: 'p' },
+      })
+    );
+    expect(mocks.uploadFiles).not.toHaveBeenCalled();
+    expect(mocks.uploadTranslations).not.toHaveBeenCalled();
+    expect(mocks.createJobs).not.toHaveBeenCalled();
+    expect(mocks.toastPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Saved 1 translation(s) across 1 document(s)',
+        status: 'success',
+      })
+    );
+  });
+
+  test('warns when there was nothing to save', async () => {
+    const { client } = createGroqClient([page('page-en', 'en')]);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+
+    const context = await renderProvider(page('page-en', 'en'));
+    await act(() => context.handleSaveLocalEdits());
+
+    expect(mocks.uploadFiles).not.toHaveBeenCalled();
+    expect(mocks.toastPush).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'warning' })
+    );
+  });
+
+  test('refuses a source-locale translation of another original', async () => {
+    const { client } = createGroqClient([
+      page('page-fr', 'fr'),
+      page('page-en', 'en'),
+      metadataDoc(
+        'm',
+        [
+          ['fr', 'page-fr'],
+          ['en', 'page-en'],
+        ],
+        { gtSourceLanguage: 'fr' }
+      ),
+    ]);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+
+    const context = await renderProvider(page('page-en', 'en'));
+    await act(() => context.handleSaveLocalEdits());
+
+    expect(mocks.captureExistingTranslations).not.toHaveBeenCalled();
+    expect(mocks.toastPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Local edits were not saved',
+        status: 'error',
+      })
+    );
+  });
+
+  test('reports a failure without throwing', async () => {
+    const { client } = createGroqClient([page('page-en', 'en')]);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+    mocks.captureExistingTranslations.mockRejectedValue(
+      new Error('API unavailable')
+    );
+
+    const context = await renderProvider(page('page-en', 'en'));
+    await act(() => context.handleSaveLocalEdits());
+
+    expect(mocks.toastPush).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'error' })
+    );
+  });
+});
+
+describe('Upload Existing Translations', () => {
   test('refuses a source-locale translation of another original before uploading', async () => {
     // The en page is a translation of a fr original. Its group lookup has
     // not returned, so the dialog still shows it as an original.
@@ -204,7 +306,7 @@ describe('Save Local Edits', () => {
     expect(mocks.uploadTranslations).not.toHaveBeenCalled();
     expect(mocks.toastPush).toHaveBeenCalledWith(
       expect.objectContaining({
-        title: 'Local edits were not saved',
+        title: 'Existing translations were not uploaded',
         description:
           'This document is a translation of fr. Translate from the fr original instead.',
         status: 'error',
