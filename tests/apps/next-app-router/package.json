@@ -7,6 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "check": "node scripts/check.mjs",
     "lint": "oxlint --config ../../../examples/.oxlintrc.next.json .",
     "typecheck": "tsc --noEmit"
   },

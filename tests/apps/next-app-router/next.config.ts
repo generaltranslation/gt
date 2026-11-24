@@ -8,4 +8,12 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withGTConfig(nextConfig);
+// scripts/check.mjs sets CHECK_COMPILER, since experimentalSplitTranslations
+// needs a compiler.
+const compiler = process.env.CHECK_COMPILER;
+
+export default withGTConfig(nextConfig, {
+  ...((compiler === 'swc' || compiler === 'babel') && {
+    experimentalCompilerOptions: { type: compiler },
+  }),
+});
