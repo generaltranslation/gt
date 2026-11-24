@@ -14,7 +14,7 @@ function findJsFiles(directory: string): string[] {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const file = path.join(directory, entry.name);
     if (entry.isDirectory()) return findJsFiles(file);
-    return entry.name.endsWith('.js') ? [file] : [];
+    return /\.[cm]?js$/.test(entry.name) ? [file] : [];
   });
 }
 

@@ -18,7 +18,7 @@ const {
   mockClientGTProvider,
   mockPlaceholder,
 } = vi.hoisted(() => ({
-  mockPlaceholder: { filled: 'gt-next-server-only-hashes[]' },
+  mockPlaceholder: { filled: '__gt_next_server_only_hashes_q7Zk2W__[]' },
   mockGetI18nConfig: vi.fn(),
   mockGetEnableI18n: vi.fn(),
   mockGetLocale: vi.fn(),
@@ -110,10 +110,10 @@ describe('GTProvider', () => {
 
   it('leaves out the translations of the messages the build listed as server-only', async () => {
     mockPlaceholder.filled =
-      'gt-next-server-only-hashes[1111111111111111,3333333333333333]';
+      '__gt_next_server_only_hashes_q7Zk2W__[1111111111111111,3333333333333333]';
     vi.resetModules();
     onTestFinished(() => {
-      mockPlaceholder.filled = 'gt-next-server-only-hashes[]';
+      mockPlaceholder.filled = '__gt_next_server_only_hashes_q7Zk2W__[]';
       vi.resetModules();
     });
     const catalog = {

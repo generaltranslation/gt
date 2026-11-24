@@ -14,7 +14,7 @@ const PROVIDER = 'server/chunks/provider.js';
 const provider = (placeholder: string) =>
   `let a=/x/.exec("${placeholder}"),b='${placeholder}';`;
 const filled = (...hashes: string[]) =>
-  provider(`gt-next-server-only-hashes[${hashes.join(',')}]`);
+  provider(`__gt_next_server_only_hashes_q7Zk2W__[${hashes.join(',')}]`);
 
 let distDir: string;
 
@@ -46,6 +46,13 @@ describe('fillServerOnlyHashes', () => {
     expect(read(PROVIDER)).toBe(filled(SERVER));
   });
 
+  it('reads .mjs and .cjs server files', () => {
+    write('server/chunks/x.mjs', `e(T,{_hash:"${OTHER_SERVER}"})`);
+    write('server/chunks/x.cjs', `e(T,{_hash:"${MESSAGE}"})`);
+    fillServerOnlyHashes(distDir);
+    expect(read(PROVIDER)).toBe(filled(OTHER_SERVER, SERVER, MESSAGE));
+  });
+
   it('fills a placeholder an earlier build filled, and writes no file whose content stays', () => {
     fillServerOnlyHashes(distDir);
     const page = path.join(distDir, 'server/app/page.js');
@@ -71,6 +78,8 @@ describe('fillServerOnlyHashes', () => {
       `eval("e(T,{_hash: \\"${SERVER}\\"})")`,
     ],
     ['outside static/chunks', 'static/other/x.js', `e(T,{_hash:"${SERVER}"})`],
+    ['in a .mjs chunk', 'static/chunks/x.mjs', `e(T,{_hash:"${SERVER}"})`],
+    ['in a .cjs chunk', 'static/chunks/x.cjs', `e(T,{_hash:"${SERVER}"})`],
   ])(
     'leaves out a hash a client file holds %s',
     (_name, clientFile, clientCode) => {
