@@ -469,6 +469,22 @@ export const warnDeriveOptionalChainingSync = (
 export const noLocalesError = `No target locales were found. Add locales to gt.config.json or pass them with the --locales flag.`;
 export const noDefaultLocaleError = `No default locale was found. Add defaultLocale to gt.config.json or pass it with --default-locale.`;
 export const noFilesError = `The files configuration is missing or invalid. Check the files section in gt.config.json and try again.`;
+export const outdatedTranslationFilesError = (files: string[]): string =>
+  createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened: 'Translation files are out of date with the source code',
+    fix: 'Run `gt generate` and commit the changes',
+    details: files,
+  });
+export const unreadableTranslationFileError = (file: string): string =>
+  createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened: `${file} could not be read as JSON`,
+    reassurance: 'Nothing was written',
+    fix: 'Check that the file can be read and holds valid JSON, then run `gt generate` again',
+  });
 export const noSourceFileError = `No source translation file was found. Check your translations directory and default locale configuration.`;
 // TODO: add a CLI command that finds or creates a project for the signed-in
 // user and prints its ID (e.g. `gt project list`), and name it in this error.

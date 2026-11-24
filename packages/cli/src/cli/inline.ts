@@ -1,4 +1,7 @@
 import { Command } from 'commander';
+import fs from 'node:fs';
+import path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import { BaseCLI } from './base.js';
 import { SupportedLibraries, TranslateFlags, Options } from '../types/index.js';
 import {
@@ -9,7 +12,11 @@ import {
 import { displayHeader, exitSync } from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import { resolveLocaleFiles } from '../fs/config/parseFilesConfig.js';
-import { noFilesError } from '../console/index.js';
+import {
+  noFilesError,
+  outdatedTranslationFilesError,
+  unreadableTranslationFileError,
+} from '../console/index.js';
 import { saveJSON } from '../fs/saveJSON.js';
 import { loadJSON } from '../fs/loadJSON.js';
 import { generateSettings } from '../config/generateSettings.js';
@@ -20,6 +27,8 @@ import {
   InlineLibrary,
   isInlineLibrary,
 } from '../types/libraries.js';
+
+type GenerateFlags = TranslateFlags & { check?: boolean };
 
 /**
  * Stand in for a CLI tool that does any sort of inline content translations
@@ -112,9 +121,14 @@ export class InlineCLI extends BaseCLI {
           .description(
             'Generate a translation file for the source locale. This command should be used if you are handling your own translations.'
           )
+          .option(
+            '--check',
+            'Write nothing, and exit with code 1 if a translation file is out of date',
+            false
+          )
       ),
       this.getInlineSourceHelp()
-    ).action(async (initOptions: TranslateFlags) => {
+    ).action(async (initOptions: GenerateFlags) => {
       displayHeader('Generating source templates...');
       await this.handleGenerateSourceCommand(initOptions);
       logger.endCommand('Done!');
@@ -122,7 +136,7 @@ export class InlineCLI extends BaseCLI {
   }
 
   protected async handleGenerateSourceCommand(
-    initOptions: TranslateFlags
+    initOptions: GenerateFlags
   ): Promise<void> {
     const settings = await generateSettings(initOptions, undefined, {
       requireConfig: true,
@@ -154,30 +168,63 @@ export class InlineCLI extends BaseCLI {
         logger.error(noFilesError);
         exitSync(1);
       }
-      await saveJSON(translationFiles.gt, newData);
-      logger.step('Source file saved successfully!');
-      // Also save translations (after merging with existing translations)
-      for (const locale of settings.locales) {
-        const translationsFile = resolveLocaleFiles(
-          settings.files.placeholderPaths,
-          locale
-        );
-
-        if (!translationsFile.gt) {
-          continue;
+      const sourceFile = translationFiles.gt;
+      // A set, since without [locale] in the output path every locale resolves to the source's file.
+      const files = new Set([
+        sourceFile,
+        ...settings.locales.map(
+          (locale) =>
+            resolveLocaleFiles(settings.files.placeholderPaths, locale).gt
+        ),
+      ]);
+      const outdated: [string, Record<string, unknown>][] = [];
+      for (const file of files) {
+        if (!file) continue;
+        const saved = loadJSON(file);
+        if (file !== sourceFile && saved === null && fs.existsSync(file)) {
+          // Generating over it would replace its translations with source text.
+          logger.error(
+            unreadableTranslationFileError(path.relative(process.cwd(), file))
+          );
+          exitSync(1);
         }
-        const existingTranslations = loadJSON(translationsFile.gt);
-        const mergedTranslations = {
-          ...newData,
-          ...existingTranslations,
-        };
-        // Filter out keys that don't exist in newData
-        const filteredTranslations = Object.fromEntries(
-          Object.entries(mergedTranslations).filter(([key]) => newData[key])
-        );
-        await saveJSON(translationsFile.gt, filteredTranslations);
+        // A locale file keeps its translations of the messages still in the source.
+        const data =
+          file === sourceFile
+            ? newData
+            : Object.fromEntries(
+                Object.keys(newData).map((key) => [
+                  key,
+                  saved && Object.hasOwn(saved, key)
+                    ? saved[key]
+                    : newData[key],
+                ])
+              );
+        // Compared as the JSON that would be saved: an extractor's objects can differ from a parsed file in ways saving removes.
+        if (!isDeepStrictEqual(saved, JSON.parse(JSON.stringify(data)))) {
+          outdated.push([file, data]);
+        }
       }
-      logger.step('Merged translations successfully!');
+      const outdatedPaths = outdated.map(([file]) =>
+        path.relative(process.cwd(), file)
+      );
+      if (outdated.length === 0) {
+        logger.step('Translation files are up to date.');
+        return;
+      }
+      if (initOptions.check) {
+        logger.error(outdatedTranslationFilesError(outdatedPaths));
+        exitSync(1);
+      }
+      if (initOptions.dryRun) {
+        logger.step(`Dry run. Would write: ${outdatedPaths.join(', ')}`);
+        return;
+      }
+
+      for (const [file, data] of outdated) {
+        await saveJSON(file, data);
+      }
+      logger.step(`Saved: ${outdatedPaths.join(', ')}`);
     }
   }
 
