@@ -79,6 +79,81 @@ export function walk(root: Node, visitor: Visitor): void {
   visit(root);
 }
 
+/**
+ * The node of `type` parsed at `[start, end]`, as `walk` visits nodes: found
+ * by descending through the nodes whose parsed range holds it, and among
+ * siblings, which are in source order, by a binary search. Generated code
+ * moved to its source can break that order, or put a node outside its
+ * parent's range: then each sibling, or every node, is visited. Undefined if
+ * there is none.
+ */
+export function nodeAt(
+  root: Node,
+  type: Node['type'],
+  start: number,
+  end: number
+): Node | undefined {
+  const isIt = (node: Node) =>
+    node.type === type &&
+    parsedStart(node) === start &&
+    parsedEnd(node) === end;
+  let found: Node | undefined;
+
+  const descend = (node: Node, mode: 'search' | 'prune' | 'all'): boolean => {
+    if (isIt(node)) {
+      found = node;
+      return true;
+    }
+
+    const visit = (child: Node | null | undefined) =>
+      !!child &&
+      (mode === 'all' || holds(child, start, end)) &&
+      descend(child, mode);
+
+    for (const key of childKeysOf(node)) {
+      const value = node[key] as Child;
+
+      if (!Array.isArray(value)) {
+        if (visit(value)) return true;
+      } else if (mode === 'search') {
+        if (visit(value[lastStartingBy(value, start)])) return true;
+      } else {
+        for (const child of value) if (visit(child)) return true;
+      }
+    }
+
+    return false;
+  };
+
+  const isFound =
+    descend(root, 'search') || descend(root, 'prune') || descend(root, 'all');
+
+  return isFound ? found : undefined;
+}
+
+function holds(node: Node, start: number, end: number): boolean {
+  return parsedStart(node) <= start && end <= parsedEnd(node);
+}
+
+/** Of `nodes` in source order, the index of the last that starts by `start`: the only one that can hold a node there. */
+function lastStartingBy(
+  nodes: ReadonlyArray<Node | null>,
+  start: number
+): number {
+  let low = 0;
+  let high = nodes.length;
+
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    const node = nodes[middle];
+
+    if (node && parsedStart(node) > start) high = middle;
+    else low = middle + 1;
+  }
+
+  return low - 1;
+}
+
 /** Unlike `walk`, visits type annotations too. */
 export function forEachNode(
   root: Node,
@@ -105,6 +180,16 @@ function childKeysOf(node: Node): readonly (keyof Node)[] {
 /** Where a node was parsed: generated code moved to its source position keeps it in `range`. */
 export function parsedRange(node: Node): readonly [number, number] {
   return (node as { range?: [number, number] }).range ?? [node.start, node.end];
+}
+
+/** `parsedRange(node)[0]`, without allocating a range. */
+export function parsedStart(node: Node): number {
+  return (node as { range?: [number, number] }).range?.[0] ?? node.start;
+}
+
+/** `parsedRange(node)[1]`, without allocating a range. */
+export function parsedEnd(node: Node): number {
+  return (node as { range?: [number, number] }).range?.[1] ?? node.end;
 }
 
 export function isFunction(node: Node): node is FunctionNode {

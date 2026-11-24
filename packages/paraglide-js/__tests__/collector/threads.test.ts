@@ -629,7 +629,7 @@ describe('stand-in analysis threads', () => {
         id: 0,
         file: '/app/src/show.ts',
         part: 0,
-        read: 0,
+        read: [0, 1],
         referrers: 16,
         chunks: 1,
         claims: new SharedArrayBuffer(4),
@@ -734,8 +734,9 @@ describe("sharing a function's sites in a thread", () => {
       id: 0,
       type: 'index',
       index,
-      // No summaries: no name lists.
+      // No summaries: no name lists or site positions.
       names: new SharedArrayBuffer(0),
+      sites: new SharedArrayBuffer(0),
       channel: { port: port2, flag },
     });
   });
@@ -756,7 +757,7 @@ describe("sharing a function's sites in a thread", () => {
     return {
       file: '/app/src/show.ts',
       part: 0,
-      read: 40,
+      read: [40, 41],
       referrers,
       own: () => [value('own')],
       range: (from, to) => {
@@ -812,7 +813,7 @@ describe("sharing a function's sites in a thread", () => {
       id: 0,
       file: '/app/src/show.ts',
       part: 0,
-      read: 40,
+      read: [40, 41],
       referrers: 40,
       chunks: 3,
       claims,

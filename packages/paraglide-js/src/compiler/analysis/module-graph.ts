@@ -1,8 +1,8 @@
 import path from 'node:path';
 import {
   moduleExportName,
+  nodeAt,
   parsedRange,
-  walk,
   type ESTree,
   type FunctionNode,
   type Node,
@@ -114,8 +114,8 @@ export type SitesJob = {
   /** The file and the module of it whose function it is: see `ModuleGraph.evaluateSharedSites`. */
   file: string;
   part: number;
-  /** Where the identifier being evaluated starts: another thread finds the parameter by it. */
-  read: number;
+  /** Where the identifier being evaluated was parsed: another thread finds the parameter by it. */
+  read: readonly [number, number];
   /** The modules that call the function, besides its own. */
   referrers: number;
   /** The values passed in the function's own module. */
@@ -191,6 +191,7 @@ export class ModuleGraph {
     links: () => this.records.links(),
     mentioning: (names) => this.records.mentioning(names),
     scopeOf: (record) => this.scopeOf(record),
+    sitePositions: (ref) => this.records.sitePositions(ref),
     generation: () => this.generation,
     globalExports: () => this.globalExports,
   });
@@ -614,10 +615,17 @@ export class ModuleGraph {
     const part = fileRecord ? modulesOf(fileRecord).indexOf(record) : -1;
     if (part === -1) return undefined;
 
+    // A helper finds the read by its range, as here: not if another node,
+    // e.g. a shorthand property's key, or moved generated code, comes first.
+    const range = parsedRange(read);
+    if (nodeAt(record.program, 'Identifier', ...range) !== read) {
+      return undefined;
+    }
+
     const value = shared.share({
       file: record.file,
       part,
-      read: parsedRange(read)[0],
+      read: range,
       referrers: sites.referrerCount,
       own: () => evaluatePassed(sites.own, index, path),
       range: (from, to) =>
@@ -644,7 +652,7 @@ export class ModuleGraph {
     if (!record) return undefined;
 
     const scope = this.scopeOf(record);
-    const read = identifierAt(record.program, job.read);
+    const read = nodeAt(record.program, 'Identifier', ...job.read);
     const binding = read && scope.bindingAt(read);
     if (binding?.type !== 'values' || !binding.site) return undefined;
 
@@ -859,31 +867,4 @@ function outdirCandidates(file: string): string[] {
   }
 
   return [];
-}
-
-/** The identifier that starts at `start`. */
-function identifierAt(
-  program: ESTree.Program,
-  start: number
-): Node | undefined {
-  const find = (prune: boolean) => {
-    let found: Node | undefined;
-
-    walk(program, {
-      enter(node) {
-        if (found) return false;
-
-        const [nodeStart, nodeEnd] = parsedRange(node);
-        if (prune && (nodeStart > start || nodeEnd < start)) return false;
-        if (node.type === 'Identifier' && nodeStart === start) found = node;
-
-        return !found;
-      },
-    });
-
-    return found;
-  };
-
-  // A child outside its parent's position, e.g. a decorator, is found without pruning.
-  return find(true) ?? find(false);
 }
