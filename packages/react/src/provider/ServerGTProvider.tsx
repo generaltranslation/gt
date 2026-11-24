@@ -1,13 +1,34 @@
-import { I18nStore } from '@generaltranslation/react-core/pure';
+import { I18nStore, getI18nConfig } from '@generaltranslation/react-core/pure';
 import { InternalGTProvider } from '@generaltranslation/react-core/components';
 import { useRef } from 'react';
-import type { SharedGTProviderProps } from './GTProviderProps';
+import type { GTProviderProps, SharedGTProviderProps } from './GTProviderProps';
 
 /**
  * Consumes snapshot from server
  * Implementation for server-side only
  */
-export function ServerGTProvider({
+export function ServerGTProvider(props: GTProviderProps) {
+  if (props.translations !== undefined) {
+    return <LoadedServerGTProvider {...props} />;
+  }
+  // A provider that loads its own translations has none during a server
+  // render, so it renders what the browser renders first: the fallback.
+  const { locale, region, enableI18n, fallback } = props;
+  return (
+    <LoadedServerGTProvider
+      locale={getI18nConfig().resolveSupportedLocale(
+        typeof locale === 'object' ? [...locale] : locale
+      )}
+      region={region || undefined}
+      enableI18n={enableI18n}
+      translations={I18nStore.sourceOnly}
+    >
+      {fallback}
+    </LoadedServerGTProvider>
+  );
+}
+
+function LoadedServerGTProvider({
   locale,
   region,
   enableI18n,

@@ -19,3 +19,8 @@ export { InternalLocaleSelector } from './components/helpers/InternalLocaleSelec
 export { InternalRegionSelector } from './components/helpers/InternalRegionSelector';
 export { InternalGTProvider } from './context/InternalGTProvider';
 export type { InternalGTProviderProps } from './context/InternalGTProvider';
+export { ClientGTProvider } from './context/ClientGTProvider';
+export type {
+  ClientGTProviderProps,
+  ConditionStorage,
+} from './context/ClientGTProvider';
