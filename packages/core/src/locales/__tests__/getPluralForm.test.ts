@@ -56,6 +56,17 @@ describe('getPluralForm', () => {
     expect(form(count, ['=0', 'other'], 'ru')).toBe('other');
   });
 
+  it('asks Intl for no rules when no branch is a category', () => {
+    const intl = new GTIntl();
+    const options = { locale: 'fr_FR' };
+    expect(() => new Intl.PluralRules('fr_FR')).toThrow(RangeError);
+
+    expect(intl.getPluralForm(0, ['=0', 'one', 'other'], options)).toBe('=0');
+    expect(intl.getPluralForm(5, ['other'], options)).toBe('other');
+    expect(form(0, ['=0', 'one', 'other'], 'fr_FR')).toBe('=0');
+    expect(form(5, ['other'], 'fr_FR')).toBe('other');
+  });
+
   it('prefers an exact key over the category', () => {
     expect(form(1, ['=1', 'one', 'other'], 'en')).toBe('=1');
     expect(form(0, ['=0', 'other'], 'en')).toBe('=0');

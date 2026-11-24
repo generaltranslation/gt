@@ -19,17 +19,20 @@ export function getPluralForm(
   locales: string[] = [defaultDefaultLocale],
   type: Intl.PluralRuleType = 'cardinal'
 ): string {
-  return selectPluralForm(n, forms, getCachedPluralRules(locales, { type }));
+  return selectPluralForm(n, forms, () =>
+    getCachedPluralRules(locales, { type })
+  );
 }
 
 /**
- * `getPluralForm` by the rules given, like those of a `GTIntl`, which reads a
- * locale alias as its code.
+ * `getPluralForm` by the rules `getRules` gives, like those of a `GTIntl`,
+ * which reads a locale alias as its code. It asks for them only when a branch
+ * is a category.
  */
 export function selectPluralForm(
   n: number | bigint,
   forms: readonly string[],
-  rules: Intl.PluralRules
+  getRules: () => Intl.PluralRules
 ): string {
   const exact = `=${n}`;
   if (forms.includes(exact)) return exact;
@@ -39,7 +42,7 @@ export function selectPluralForm(
     (form) => form !== 'other' && form[0] !== '='
   );
   if (categories.length) {
-    const category = rules.select(toPluralRulesNumber(n));
+    const category = getRules().select(toPluralRulesNumber(n));
     if (categories.includes(category)) return category;
   }
   return forms.includes('other') ? 'other' : '';

@@ -78,7 +78,7 @@ export class GTIntl extends ResolvedGTIntl {
     forms: readonly string[],
     options?: PluralRulesOptions
   ): string {
-    return selectPluralForm(n, forms, this.getPluralRules(options));
+    return selectPluralForm(n, forms, () => this.getPluralRules(options));
   }
 
   /** Compares the date with now when no `baseDate` is given. */
