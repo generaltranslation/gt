@@ -321,6 +321,15 @@ describe('Vue CLI', () => {
       }
     });
 
+    it('gives a package that depends only on gt-i18n the inline commands and keeps setup', () => {
+      useProject({ dependencies: { 'gt-i18n': '*' } });
+
+      expect(commandNames(routeMain())).toEqual([
+        ...commandNames(initialize(NodeCLI, 'gt-node')),
+        'setup',
+      ]);
+    });
+
     it('describes Vue source defaults only on Vue inline commands', () => {
       const sourceHelp = (program: Command) =>
         findCommand(program, 'translate').options.find(

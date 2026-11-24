@@ -73,6 +73,17 @@ describe('determineLibraryForCLI Vue adapter', () => {
     });
   });
 
+  it('selects gt-vue over a direct gt-i18n dependency', () => {
+    const root = createFixture({
+      'package.json': JSON.stringify({
+        dependencies: { 'gt-vue': '*', 'gt-i18n': '*' },
+      }),
+    });
+    process.chdir(root);
+
+    expect(determineLibraryForCLI().library).toBe(Libraries.GT_VUE);
+  });
+
   it.each([
     [
       'optional declaration',

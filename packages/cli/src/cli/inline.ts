@@ -15,7 +15,11 @@ import { loadJSON } from '../fs/loadJSON.js';
 import { generateSettings } from '../config/generateSettings.js';
 import { aggregateInlineTranslations } from '../translation/stage.js';
 import { validateProject } from '../translation/validate.js';
-import { Libraries, InlineLibrary } from '../types/libraries.js';
+import {
+  Libraries,
+  InlineLibrary,
+  isInlineLibrary,
+} from '../types/libraries.js';
 
 /**
  * Stand in for a CLI tool that does any sort of inline content translations
@@ -44,7 +48,7 @@ export class InlineCLI extends BaseCLI {
 
   /** Returns the inline parser used by generate and targeted validation. */
   protected getInlineLibrary(): InlineLibrary {
-    return fallbackToGtReact(this.library);
+    return isInlineLibrary(this.library) ? this.library : Libraries.GT_REACT;
   }
 
   protected setupStageCommand(): void {
@@ -199,27 +203,4 @@ export class InlineCLI extends BaseCLI {
       await validateProject(options, pkg);
     }
   }
-}
-
-function fallbackToGtReact(library: SupportedLibraries): InlineLibrary {
-  return [
-    Libraries.GT_NEXT,
-    Libraries.GT_NODE,
-    Libraries.GT_REACT_NATIVE,
-    Libraries.GT_TANSTACK_START,
-    Libraries.GT_FLASK,
-    Libraries.GT_FASTAPI,
-    Libraries.GT_VUE,
-    Libraries.GT_SVELTE,
-  ].includes(library as Libraries)
-    ? (library as
-        | typeof Libraries.GT_NEXT
-        | typeof Libraries.GT_NODE
-        | typeof Libraries.GT_REACT_NATIVE
-        | typeof Libraries.GT_TANSTACK_START
-        | typeof Libraries.GT_FLASK
-        | typeof Libraries.GT_FASTAPI
-        | typeof Libraries.GT_VUE
-        | typeof Libraries.GT_SVELTE)
-    : Libraries.GT_REACT;
 }

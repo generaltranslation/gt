@@ -5,12 +5,12 @@ import { Libraries, NODE_LIBRARIES } from '../types/libraries.js';
 import { checkMonorepoVersionConsistency } from '../utils/monorepoVersionCheck.js';
 
 /**
- * CLI tool for managing translations with gt-node
+ * CLI tool for managing translations with gt-node or gt-i18n alone
  */
 export class NodeCLI extends InlineCLI {
   constructor(
     command: Command,
-    library: typeof Libraries.GT_NODE,
+    library: (typeof NODE_LIBRARIES)[number],
     additionalModules?: SupportedLibraries[]
   ) {
     super(command, library, additionalModules);
@@ -23,5 +23,11 @@ export class NodeCLI extends InlineCLI {
         actionCommand.opts().config
       );
     });
+  }
+
+  public init() {
+    super.init();
+    // A package with gt-i18n alone had setup, from the base CLI, before it was detected.
+    if (this.library === Libraries.GT_I18N) this.setupSetupProjectCommand();
   }
 }

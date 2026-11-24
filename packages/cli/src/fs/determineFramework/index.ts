@@ -17,6 +17,7 @@ export function determineLibraryForCLI(): DeterminedCLILibrary {
   let library: SupportedLibraries = 'base';
   const additionalModules: SupportedLibraries[] = [];
   let directlyDeclaresVue = false;
+  let declaresGTI18n = false;
   try {
     // Get the current working directory (where the CLI is being run)
     const cwd = process.cwd();
@@ -54,6 +55,7 @@ export function determineLibraryForCLI(): DeterminedCLILibrary {
       if (dependencies['i18next-icu']) {
         additionalModules.push('i18next-icu');
       }
+      declaresGTI18n = Boolean(dependencies[Libraries.GT_I18N]);
     }
 
     // If no JS library found, check for Python project files
@@ -68,6 +70,11 @@ export function determineLibraryForCLI(): DeterminedCLILibrary {
     // keeps its historical command surface and priority in mixed projects.
     if (library === 'base' && directlyDeclaresVue) {
       library = Libraries.GT_VUE;
+    }
+
+    // Every GT framework package depends on gt-i18n, so any other match is more specific.
+    if (library === 'base' && declaresGTI18n) {
+      library = Libraries.GT_I18N;
     }
 
     // Fallback to base if neither is found
