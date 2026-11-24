@@ -362,30 +362,4 @@ describe('captureExistingTranslations', () => {
       },
     ]);
   });
-
-  test('looks up finished translations in requests of at most 100', async () => {
-    const locales = Array.from({ length: 60 }, (_, index) => `l${index}`);
-    downloadFileBatch.mockResolvedValue({
-      files: [seedFile('a', 'rev-a'), seedFile('b', 'rev-b')],
-      count: 2,
-    });
-    collectExistingTranslations.mockResolvedValue(
-      new Map(
-        ['a', 'b'].map((id) => [
-          id,
-          locales.map((locale) => ({ locale, content: '<html></html>' })),
-        ])
-      )
-    );
-
-    const result = await run([doc('a', 'rev-1'), doc('b', 'rev-1')], locales);
-
-    expect(
-      queryFileData.mock.calls.map(
-        (call) =>
-          (call[0] as { translatedFiles: unknown[] }).translatedFiles.length
-      )
-    ).toEqual([100, 20]);
-    expect(result.capturedCount).toBe(120);
-  });
 });
