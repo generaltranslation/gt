@@ -3,14 +3,14 @@ import { Box, Button, Dialog, Flex, Stack, Text } from '@sanity/ui';
 import { useTranslations } from '../TranslationsProvider';
 import { SelectedLocalesNote } from './SelectedLocalesNote';
 
-interface UploadExistingDialogProps {
+export interface LocalActionDialogProps {
   isOpen: boolean;
   onClose: () => void;
   /** Runs the action; defaults to the provider's handler. */
   onConfirm?: () => Promise<void>;
 }
 
-export const UploadExistingDialog: React.FC<UploadExistingDialogProps> = ({
+export const UploadExistingDialog: React.FC<LocalActionDialogProps> = ({
   isOpen,
   onClose,
   onConfirm,

@@ -2,15 +2,9 @@ import React from 'react';
 import { Box, Button, Dialog, Flex, Stack, Text } from '@sanity/ui';
 import { useTranslations } from '../TranslationsProvider';
 import { SelectedLocalesNote } from './SelectedLocalesNote';
+import type { LocalActionDialogProps } from './UploadExistingDialog';
 
-interface SaveLocalEditsDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  /** Runs the action; defaults to the provider's handler. */
-  onConfirm?: () => Promise<void>;
-}
-
-export const SaveLocalEditsDialog: React.FC<SaveLocalEditsDialogProps> = ({
+export const SaveLocalEditsDialog: React.FC<LocalActionDialogProps> = ({
   isOpen,
   onClose,
   onConfirm,

@@ -178,6 +178,8 @@ export const TranslationView = () => {
     action: 'save' | 'upload',
     run: () => Promise<void>
   ) => {
+    // Another write may have started while the confirmation was open.
+    if (isBusy || isImporting || isPublishing) return;
     setLocalAction(action);
     try {
       await run();
