@@ -235,7 +235,7 @@ describe('captureExistingTranslations', () => {
     expect(
       files[0].translations.map((t: { locale: string }) => t.locale)
     ).toEqual(['fr']);
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       capturedCount: 1,
       documentCount: 1,
       skippedCount: 1,
@@ -255,7 +255,7 @@ describe('captureExistingTranslations', () => {
     const result = await run([doc('a', 'rev-new')]);
 
     expect(uploadTranslations).not.toHaveBeenCalled();
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       capturedCount: 0,
       documentCount: 0,
       skippedCount: 1,
@@ -311,5 +311,81 @@ describe('captureExistingTranslations', () => {
     const result = await run([doc('a', 'rev-1')], ['es', 'fr']);
 
     expect(result.capturedCount).toBe(1);
+  });
+
+  test('reports only what General Translation confirms, by document', async () => {
+    downloadFileBatch.mockResolvedValue({
+      files: [seedFile('a', 'rev-a'), seedFile('b', 'rev-b')],
+      count: 2,
+    });
+    collectExistingTranslations.mockResolvedValue(
+      new Map([
+        [
+          'a',
+          [
+            {
+              locale: 'es',
+              content: '<html>hola</html>',
+              document: { id: 'a-es', type: 'page' },
+            },
+          ],
+        ],
+        [
+          'b',
+          [
+            {
+              locale: 'es',
+              content: '<html>adios</html>',
+              document: { id: 'b-es', type: 'page' },
+            },
+          ],
+        ],
+      ])
+    );
+    uploadTranslations.mockResolvedValue({
+      uploadedFiles: [{ fileId: 'a', locale: 'es' }],
+    });
+
+    const result = await run([doc('a', 'rev-1'), doc('b', 'rev-1')]);
+
+    expect(result).toMatchObject({
+      capturedCount: 1,
+      documentCount: 1,
+      skippedCount: 0,
+      unconfirmedCount: 1,
+    });
+    expect(result.saved).toEqual([
+      {
+        written: { id: 'a-es', type: 'page' },
+        file: { branchId: 'branch-1', fileId: 'a', versionId: 'rev-a' },
+        language: 'es',
+      },
+    ]);
+  });
+
+  test('looks up finished translations in requests of at most 100', async () => {
+    const locales = Array.from({ length: 60 }, (_, index) => `l${index}`);
+    downloadFileBatch.mockResolvedValue({
+      files: [seedFile('a', 'rev-a'), seedFile('b', 'rev-b')],
+      count: 2,
+    });
+    collectExistingTranslations.mockResolvedValue(
+      new Map(
+        ['a', 'b'].map((id) => [
+          id,
+          locales.map((locale) => ({ locale, content: '<html></html>' })),
+        ])
+      )
+    );
+
+    const result = await run([doc('a', 'rev-1'), doc('b', 'rev-1')], locales);
+
+    expect(
+      queryFileData.mock.calls.map(
+        (call) =>
+          (call[0] as { translatedFiles: unknown[] }).translatedFiles.length
+      )
+    ).toEqual([100, 20]);
+    expect(result.capturedCount).toBe(120);
   });
 });
