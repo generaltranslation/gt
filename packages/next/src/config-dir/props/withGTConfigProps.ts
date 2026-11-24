@@ -39,12 +39,13 @@ export type BaseWithGTConfigProps = MiddlewareConfig &
     /**
      * Experimental: production App Router builds stop sending client
      * components the translations of `<T>` that only server components render.
-     * Needs `experimentalCompilerOptions.type` `'swc'` (next@16.1.0+) or
-     * `'babel'` with webpack (next@15.4.0+); `enabled`, else
-     * `GT_SPLIT_TRANSLATIONS`, else setting the option, turns it on. A `<T>` in
-     * a client component must be one the GT compiler hashes, `T` imported
-     * directly from `gt-next` and written as JSX; otherwise its translation can
-     * be left out when a server component renders the same content.
+     * Needs `experimentalCompilerOptions.type` `'swc'` (next@16.1.0+) with
+     * `compileTimeHash` on; any other compiler warns and sends every
+     * translation. `enabled`, else `GT_SPLIT_TRANSLATIONS`, else setting the
+     * option, turns it on. A `<T>` in a client component must be one the GT
+     * compiler hashes, `T` imported directly from `gt-next` and written as JSX;
+     * otherwise its translation can be left out when a server component
+     * renders the same content.
      */
     experimentalSplitTranslations?: InferInput<typeof SplitTranslationsSchema>;
     headersAndCookies?: HeadersAndCookies;

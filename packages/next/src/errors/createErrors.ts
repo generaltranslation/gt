@@ -4,11 +4,7 @@ import {
   createGtNextDiagnostic,
   createGtNextPluginDiagnostic,
 } from './diagnostics';
-import {
-  AFTER_PRODUCTION_COMPILE_SUPPORT,
-  BABEL_PLUGIN_SUPPORT,
-  SWC_PLUGIN_SUPPORT,
-} from '../plugin/constants';
+import { BABEL_PLUGIN_SUPPORT, SWC_PLUGIN_SUPPORT } from '../plugin/constants';
 
 export const remoteTranslationsError = createGtNextDiagnostic({
   severity: 'Error',
@@ -171,25 +167,13 @@ export const autoJsxInjectionCompilerWarning = createGtNextPluginDiagnostic({
   fix: "Set experimentalCompilerOptions.type to 'babel' in withGTConfig() and build with webpack",
 });
 
-const splitTranslationsWayOut =
-  'Client components are sent every translation, as without the option';
-
 export const splitTranslationsCompilerWarning = createGtNextPluginDiagnostic({
   severity: 'Warning',
   whatHappened:
-    'experimentalSplitTranslations reads the hashes a GT compiler writes, and this build runs no GT compiler',
-  wayOut: splitTranslationsWayOut,
-  fix: `Set experimentalCompilerOptions.type in withGTConfig() to 'swc', which needs next@${SWC_PLUGIN_SUPPORT} or newer, or to 'babel', which needs webpack and react@${BABEL_PLUGIN_SUPPORT} or newer`,
+    'experimentalSplitTranslations reads the hashes the GT SWC plugin writes, and this build does not run it with compileTimeHash',
+  wayOut: 'Client components are sent every translation, as without the option',
+  fix: `Set experimentalCompilerOptions.type in withGTConfig() to 'swc', which needs next@${SWC_PLUGIN_SUPPORT} or newer, and leave compileTimeHash on`,
 });
-
-export const splitTranslationsNextVersionWarning = createGtNextPluginDiagnostic(
-  {
-    severity: 'Warning',
-    whatHappened: `experimentalSplitTranslations requires next@${AFTER_PRODUCTION_COMPILE_SUPPORT} or newer`,
-    wayOut: splitTranslationsWayOut,
-    fix: 'Update Next.js, or turn experimentalSplitTranslations off',
-  }
-);
 
 export const customGetLocaleUnresolvedWarning = createGtNextDiagnostic({
   whatHappened: 'Custom getLocale() could not be resolved',

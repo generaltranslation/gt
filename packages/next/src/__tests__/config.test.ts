@@ -12,10 +12,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import type { NextConfig } from 'next';
-import {
-  AFTER_PRODUCTION_COMPILE_SUPPORT,
-  BABEL_PLUGIN_SUPPORT,
-} from '../plugin/constants';
+import { BABEL_PLUGIN_SUPPORT, SWC_PLUGIN_SUPPORT } from '../plugin/constants';
 import { nextLocaleCookieName } from '../utils/cookies';
 import { getRequireSpecifiers } from './utils/importGraph';
 
@@ -34,7 +31,6 @@ const mockVersionInfo = vi.hoisted(() => ({
   localeRefreshSupported: true,
   swcPluginCompatible: true,
   babelPluginCompatible: true,
-  afterProductionCompileSupported: true,
 }));
 
 vi.mock('../plugin/getStableNextVersionInfo', () => mockVersionInfo);
@@ -176,7 +172,6 @@ beforeEach(() => {
     localeRefreshSupported: true,
     swcPluginCompatible: true,
     babelPluginCompatible: true,
-    afterProductionCompileSupported: true,
   });
   // Restores the fs mocks to "no files exist".
   vi.resetAllMocks();
@@ -1173,34 +1168,35 @@ describe('withGTConfig', () => {
       expect(hookOf(withGTConfig({}, swc))).toBeUndefined();
     });
 
-    const compilerWarning = 'this build runs no GT compiler';
-    const nextVersionWarning = `experimentalSplitTranslations requires next@${AFTER_PRODUCTION_COMPILE_SUPPORT} or newer`;
+    it('ignores the value gt.config.json holds when the props set another', () => {
+      mockConfigFile({ experimentalSplitTranslations: { enabled: false } });
+
+      const result = withGTConfig(
+        {},
+        { ...swc, experimentalSplitTranslations: { enabled: true } }
+      );
+
+      expect(hookOf(result)).toBeTypeOf('function');
+    });
+
     it.each([
-      ['no compiler is set', 'none', true, true, compilerWarning],
+      ['no compiler is set', { type: 'none' }, true],
+      ['the swc compiler needs a newer Next.js', { type: 'swc' }, false],
+      ['the compiler is babel', { type: 'babel' }, true],
       [
-        'the swc compiler needs a newer Next.js',
-        'swc',
+        'the swc compiler writes no hash',
+        { type: 'swc', compileTimeHash: false },
         true,
-        false,
-        compilerWarning,
-      ],
-      [
-        'Next.js has no hook after compilation',
-        'swc',
-        false,
-        false,
-        nextVersionWarning,
       ],
     ] as const)(
       'warns once and leaves the build as it is when %s',
-      (_name, type, supported, swcCompatible, warning) => {
-        mockVersionInfo.afterProductionCompileSupported = supported;
+      (_name, experimentalCompilerOptions, swcCompatible) => {
         mockVersionInfo.swcPluginCompatible = swcCompatible;
 
         const result = withGTConfig(
           {},
           {
-            experimentalCompilerOptions: { type },
+            experimentalCompilerOptions,
             experimentalSplitTranslations: { enabled: true },
           }
         );
@@ -1209,7 +1205,11 @@ describe('withGTConfig', () => {
         expect(result.env?._GENERALTRANSLATION_SPLIT_TRANSLATIONS).toBe(
           'false'
         );
-        expect(warnings()).toEqual([expect.stringContaining(warning)]);
+        expect(warnings()).toEqual([
+          expect.stringContaining(
+            `experimentalCompilerOptions.type in withGTConfig() to 'swc', which needs next@${SWC_PLUGIN_SUPPORT} or newer`
+          ),
+        ]);
       }
     );
 

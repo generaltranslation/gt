@@ -29,7 +29,6 @@ import {
   createProjectIdMismatchError,
   projectIdMissingWarn,
   splitTranslationsCompilerWarning,
-  splitTranslationsNextVersionWarning,
   standardizedCanonicalLocalesWarning,
   unresolvedLoadDictionaryBuildError,
   unresolvedLoadTranslationsBuildError,
@@ -37,7 +36,6 @@ import {
 import { compilePathRegex } from './utils/pathRegex';
 import { isValidLocale, standardizeLocale } from '@generaltranslation/format';
 import {
-  afterProductionCompileSupported,
   localeRefreshSupported,
   rootParamStability,
   turboConfigStable,
@@ -102,7 +100,7 @@ type NextCompilerConfig = NonNullable<NextConfig['compiler']> & {
  */
 function splitsTranslations(
   option: BaseWithGTConfigProps['experimentalSplitTranslations'],
-  compilerType: CompilerOptions['type']
+  compilerOptions: CompilerOptions
 ): boolean {
   // The compiler loads Babel, so a build that sets neither does not load it.
   if (option === undefined && !process.env.GT_SPLIT_TRANSLATIONS) return false;
@@ -110,11 +108,9 @@ function splitsTranslations(
     '@generaltranslation/compiler'
   ) as typeof import('@generaltranslation/compiler');
   if (!isSplitTranslationsEnabled(option)) return false;
-  if (!afterProductionCompileSupported) {
-    console.warn(splitTranslationsNextVersionWarning);
-    return false;
-  }
-  if (compilerType === 'none') {
+  // The Babel compiler leaves a <T> whose hash depends on a runtime value
+  // unhashed, and that hash can equal one only server components render.
+  if (compilerOptions.type !== 'swc' || !compilerOptions.compileTimeHash) {
     console.warn(splitTranslationsCompilerWarning);
     return false;
   }
@@ -262,7 +258,13 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         })
       );
     }
-    loadedConfig = parseGTConfig(GTNextConfigSchema, fileContent, configPath);
+    // A withGTConfig() prop only, so the file's value neither applies nor conflicts.
+    const { experimentalSplitTranslations: _, ...fileConfig } = parseGTConfig(
+      GTNextConfigSchema,
+      fileContent,
+      configPath
+    );
+    loadedConfig = fileConfig;
   }
   // next.config.js is often plain JavaScript, so props are not type-checked.
   parseGTConfig(
@@ -725,7 +727,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   const splitTranslations = splitsTranslations(
     props.experimentalSplitTranslations,
-    mergedExperimentalCompilerOptions.type
+    mergedExperimentalCompilerOptions
   );
   const userCompiler: NextCompilerConfig = internalNextConfig.compiler ?? {};
   const splitTranslationsCompiler: NextCompilerConfig = {
