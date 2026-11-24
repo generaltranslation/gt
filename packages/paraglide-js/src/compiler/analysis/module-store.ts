@@ -93,9 +93,15 @@ type IndexedModule = {
 };
 
 /**
- * The modules of an index, each loaded when it is read. Once `trim()` is
- * called, the least recently read are unloaded until the rest fit the budget:
- * a module read again is parsed again.
+ * The modules of an index, each loaded when it is read. Once they hold more
+ * than the budget, the least recently read are unloaded: an analysis can read
+ * more modules than fit in memory, e.g. every module that renders a component.
+ *
+ * A module read again after it was unloaded is parsed again, while what read
+ * it before may still use the first copy. What the analysis finds does not
+ * depend on which copy it reads: what holds nodes of another module, as a
+ * template does its component's class, holds that module, and a binding is
+ * guarded against cycles by a key that is the same in every copy.
  */
 export class IndexedRecords implements RecordStore {
   private readonly modules = new Map<string, IndexedModule>();
@@ -137,6 +143,7 @@ export class IndexedRecords implements RecordStore {
     const record = toRecord(file, parsed, module!.resolved);
     this.records.set(file, record);
     this.size += sizeOf(record);
+    this.unloadOverBudget();
 
     return record;
   }
@@ -157,19 +164,14 @@ export class IndexedRecords implements RecordStore {
     }
   }
 
-  /** Unloads the least recently read modules over the budget. Returns whether it unloaded any. */
-  trim(): boolean {
-    let unloaded = false;
-
+  /** Keeps the module read last, whatever its size. */
+  private unloadOverBudget(): void {
     for (const [file, record] of this.records) {
-      if (this.size <= this.options.budget) break;
+      if (this.size <= this.options.budget || this.records.size === 1) return;
 
       this.records.delete(file);
       this.size -= sizeOf(record);
-      unloaded = true;
     }
-
-    return unloaded;
   }
 }
 
@@ -179,23 +181,24 @@ function toRecord(
   { scripts = [], ...module }: ParsedModule,
   resolved: IndexedModule['resolved']
 ): ModuleRecord {
-  const record = linkPart(file, module, resolved[0]!);
+  const record = linkPart(file, 0, module, resolved[0]!);
   if (scripts.length === 0) return record;
 
   return {
     ...record,
     scripts: scripts.map((script, index) =>
-      linkPart(file, script, resolved[index + 1] ?? new Map())
+      linkPart(file, index + 1, script, resolved[index + 1] ?? new Map())
     ),
   };
 }
 
 function linkPart(
   file: string,
+  part: number,
   module: Omit<ParsedModule, 'scripts'>,
   resolved: Map<string, string | undefined>
 ): ModuleRecord {
-  return { file, ...module, resolved };
+  return { file, part, ...module, resolved };
 }
 
 /**
