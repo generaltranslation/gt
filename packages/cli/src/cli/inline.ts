@@ -314,7 +314,11 @@ function isInServedDirectory(filePath: string): boolean {
   );
   const insideServedDirectory = [...SERVED_DIRECTORIES].some((name) => {
     const relative = path.relative(physicalPath(name), target);
-    return !relative.startsWith('..') && !path.isAbsolute(relative);
+    return (
+      relative !== '..' &&
+      !relative.startsWith(`..${path.sep}`) &&
+      !path.isAbsolute(relative)
+    );
   });
   return namesServedDirectory || insideServedDirectory;
 }

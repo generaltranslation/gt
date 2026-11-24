@@ -298,7 +298,9 @@ describe('gt generate', () => {
     [
       'through a public symlink to shared assets',
       () => {
-        fs.mkdirSync(path.join(projectRoot, 'shared/_gt'), { recursive: true });
+        fs.mkdirSync(path.join(projectRoot, 'shared/..gt'), {
+          recursive: true,
+        });
         fs.symlinkSync(
           path.join(projectRoot, 'shared'),
           path.join(projectRoot, 'public'),
@@ -325,7 +327,7 @@ describe('gt generate', () => {
         directly: 'public/_gt',
         'with different casing': 'Public/_gt',
         'through a symlinked directory': 'i18n',
-        'through a public symlink to shared assets': 'shared/_gt',
+        'through a public symlink to shared assets': 'shared/..gt',
       }[how]!;
       vi.mocked(generateSettings).mockResolvedValue({
         defaultLocale: 'en',
