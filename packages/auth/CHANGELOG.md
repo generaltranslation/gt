@@ -1,5 +1,25 @@
 # @generaltranslation/auth
 
+## 0.1.0-samsara.1
+
+### Patch Changes
+
+- 082c21a: Declare the Node.js version the package needs: `engines.node` is `>=20.19.0`. Login combines abort signals with `AbortSignal.any`, which Node.js added in 20.3.0, and the `@noble/hashes` dependency of `generaltranslation` requires Node.js 20.19.0. On an older Node.js, login failed at runtime with `AbortSignal.any is not a function` instead of warning at install time.
+- Updated dependencies [8f82244]
+- Updated dependencies [fcf06f1]
+- Updated dependencies [8f82244]
+- Updated dependencies [fa6bee9]
+- Updated dependencies [fcf06f1]
+- Updated dependencies [e43db74]
+- Updated dependencies [3a8cb11]
+- Updated dependencies [5b1c74c]
+- Updated dependencies [b05e6d7]
+- Updated dependencies [5b1c74c]
+- Updated dependencies [1a8e58d]
+- Updated dependencies [5b1c74c]
+  - @generaltranslation/api@0.7.0-samsara.4
+  - generaltranslation@10.0.0-samsara.12
+
 ## 0.1.0-samsara.0
 
 ### Minor Changes
