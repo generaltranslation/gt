@@ -66,6 +66,16 @@ describe('callback page', () => {
     expect(page).not.toContain('<b>x</b>');
   });
 
+  it('inlines the current globe logo at a square size', () => {
+    const page = renderCallbackPage({ ok: true });
+    expect(page).toContain(
+      '<svg class="mark" viewBox="24.3 24.3 207.4 207.4" fill="currentColor" aria-hidden="true"><path d="M128 24.3C185.2718'
+    );
+    expect(page).toContain(
+      '.mark { width: 25px; height: 25px; margin-bottom: 32px; }'
+    );
+  });
+
   it('tells a denied request from a failed exchange, both with the retry command', () => {
     const denied = renderCallbackPage({ ok: false, reason: 'denied' });
     expect(denied).toContain('Request denied');
