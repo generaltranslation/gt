@@ -28,6 +28,7 @@ import { TranslateAllDialog } from './TranslateAllDialog';
 import { ImportAllDialog } from './ImportAllDialog';
 import { ImportMissingDialog } from './ImportMissingDialog';
 import { UploadExistingDialog } from './UploadExistingDialog';
+import { SaveLocalEditsDialog } from './SaveLocalEditsDialog';
 import { SaveLocalTranslationsDialog } from './SaveLocalTranslationsDialog';
 import { DebugInfoDialog } from './DebugInfoDialog';
 import { BatchProgress } from './BatchProgress';
@@ -60,6 +61,8 @@ const TranslationsToolContent: React.FC = () => {
   const [isUploadExistingDialogOpen, setIsUploadExistingDialogOpen] =
     useState(false);
   const [isSaveLocalDialogOpen, setIsSaveLocalDialogOpen] = useState(false);
+  const [isSaveLocalEditsDialogOpen, setIsSaveLocalEditsDialogOpen] =
+    useState(false);
   const [isDebugInfoDialogOpen, setIsDebugInfoDialogOpen] = useState(false);
 
   const {
@@ -95,6 +98,8 @@ const TranslationsToolContent: React.FC = () => {
       case 'Import Missing':
         return 'Importing missing';
       case 'Save Local Edits':
+        return 'Saving local edits';
+      case 'Upload Existing':
         return 'Uploading existing';
       case 'Patch References':
         return 'Patching';
@@ -287,17 +292,34 @@ const TranslationsToolContent: React.FC = () => {
                 </Tooltip>
                 <Tooltip
                   placement='top'
-                  content='Uploads the translations already in Sanity to General Translation, preserving human edits'
+                  content='Saves edits made to translations in Sanity to General Translation. Source changes are still translated on the next run'
                 >
                   <Button
                     mode='ghost'
                     fontSize={1}
                     onClick={() => {
                       setCurrentOperation('Save Local Edits');
-                      setIsUploadExistingDialogOpen(true);
+                      setIsSaveLocalEditsDialogOpen(true);
                     }}
                     text='Save Local Edits'
                     loading={isBusy && currentOperation === 'Save Local Edits'}
+                    icon={UploadIcon}
+                    disabled={actionsDisabled}
+                  />
+                </Tooltip>
+                <Tooltip
+                  placement='top'
+                  content='Uploads the documents and the translations already in Sanity as finished translations. For content translated before General Translation'
+                >
+                  <Button
+                    mode='ghost'
+                    fontSize={1}
+                    onClick={() => {
+                      setCurrentOperation('Upload Existing');
+                      setIsUploadExistingDialogOpen(true);
+                    }}
+                    text='Upload Existing'
+                    loading={isBusy && currentOperation === 'Upload Existing'}
                     icon={UploadIcon}
                     disabled={actionsDisabled}
                   />
@@ -410,6 +432,10 @@ const TranslationsToolContent: React.FC = () => {
           setPreserveExistingTranslations(true);
           setIsSaveLocalDialogOpen(false);
         }}
+      />
+      <SaveLocalEditsDialog
+        isOpen={isSaveLocalEditsDialogOpen}
+        onClose={() => setIsSaveLocalEditsDialogOpen(false)}
       />
       <UploadExistingDialog
         isOpen={isUploadExistingDialogOpen}

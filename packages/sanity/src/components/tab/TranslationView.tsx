@@ -49,7 +49,7 @@ export const TranslationView = () => {
     branchId,
     isBusy,
     handleTranslateAll,
-    handleUploadExistingTranslations,
+    handleSaveLocalEdits,
     handleImportDocument,
     handleRefreshAll,
     isRefreshing,
@@ -460,7 +460,7 @@ export const TranslationView = () => {
                 onClick={async () => {
                   setIsUploadingExisting(true);
                   try {
-                    await handleUploadExistingTranslations();
+                    await handleSaveLocalEdits();
                   } finally {
                     setIsUploadingExisting(false);
                   }

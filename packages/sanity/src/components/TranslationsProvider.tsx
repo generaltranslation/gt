@@ -207,6 +207,9 @@ interface TranslationsContextType {
   setPreserveExistingTranslations: (value: boolean) => void;
   /** Resolves to the status keys it enqueued, none when the run did not start. */
   handleTranslateAll: (options?: TranslateAllOptions) => Promise<string[]>;
+  /** Saves the translations in Sanity onto the source version General Translation already holds. */
+  handleSaveLocalEdits: () => Promise<void>;
+  /** Uploads the current source and the translations in Sanity as a matching pair. */
   handleUploadExistingTranslations: () => Promise<void>;
   handleImportAll: () => Promise<void>;
   handleImportMissing: () => Promise<void>;
@@ -1022,6 +1025,65 @@ const TranslationsProviderContent: React.FC<
     ]
   );
 
+  const handleSaveLocalEdits = useCallback(async () => {
+    if (!secrets || documents.length === 0) return;
+
+    setIsBusy(true);
+    try {
+      const sourceDocuments = allowNonDefault
+        ? await getUploadableSources(documents, 'Local edits were not saved')
+        : documents;
+      if (!sourceDocuments) return;
+
+      const captured = await captureExistingTranslations({
+        documents: getDefaultSourceDocuments(sourceDocuments),
+        localeIds: locales
+          .filter((locale) => locale.enabled !== false)
+          .map((locale) => locale.localeId),
+        secrets,
+        context: translationContext,
+        branchId,
+      });
+
+      toast.push(
+        captured.capturedCount > 0
+          ? {
+              title: `Saved ${captured.capturedCount} translation(s) across ${captured.documentCount} document(s)`,
+              status: 'success',
+              closable: true,
+            }
+          : {
+              title: 'No local edits to save',
+              description:
+                'Only translations of documents already sent to General Translation are saved.',
+              status: 'warning',
+              closable: true,
+            }
+      );
+    } catch (error) {
+      console.error('Error saving local edits:', error);
+      toast.push({
+        title:
+          'Local edits could not be saved. No documents were changed. Try again or check the console for details.',
+        status: 'error',
+        closable: true,
+      });
+    } finally {
+      setIsBusy(false);
+    }
+  }, [
+    secrets,
+    documents,
+    locales,
+    client,
+    schema,
+    branchId,
+    allowNonDefault,
+    getDefaultSourceDocuments,
+    getUploadableSources,
+    toast,
+  ]);
+
   const handleUploadExistingTranslations = useCallback(async () => {
     if (!secrets || documents.length === 0) return;
 
@@ -1038,7 +1100,7 @@ const TranslationsProviderContent: React.FC<
         const defaultSourceDocuments = getDefaultSourceDocuments();
         if (defaultSourceDocuments.length === 0) {
           toast.push({
-            title: `Local edits can only be saved for translations of ${pluginConfig.getSourceLocale()} documents`,
+            title: `Existing translations can only be uploaded for ${pluginConfig.getSourceLocale()} documents`,
             status: 'warning',
             closable: true,
           });
@@ -1046,7 +1108,7 @@ const TranslationsProviderContent: React.FC<
         }
         const uploadable = await getUploadableSources(
           defaultSourceDocuments,
-          'Local edits were not saved'
+          'Existing translations were not uploaded'
         );
         if (!uploadable) return;
         sourceDocuments = uploadable;
@@ -2008,6 +2070,7 @@ const TranslationsProviderContent: React.FC<
     setAutoPublish,
     setPreserveExistingTranslations,
     handleTranslateAll,
+    handleSaveLocalEdits,
     handleUploadExistingTranslations,
     handleImportAll,
     handleImportMissing,
