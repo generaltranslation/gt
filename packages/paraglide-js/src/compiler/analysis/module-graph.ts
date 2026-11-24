@@ -136,6 +136,7 @@ export class ModuleGraph {
       return record && modulesOf(record)[part];
     },
     links: () => this.records.links(),
+    mentioning: (names) => this.records.mentioning(names),
     scopeOf: (record) => this.scopeOf(record),
     generation: () => this.generation,
     globalExports: () => this.globalExports,
@@ -579,7 +580,7 @@ export class ModuleGraph {
       });
 
       if (!isNamespace)
-        this.globalExports.push({ declaration, file, exportName });
+        this.globalExports.push({ name, declaration, file, exportName });
     }
   }
 

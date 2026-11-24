@@ -162,7 +162,9 @@ function indexedRecords(budget: number, failing = new Set<string>()) {
   const records = new IndexedRecords({
     summaries: [a, b, c].map((file) => ({
       file,
-      parts: [{ resolved: [], links: [], untrackedExports: [] }],
+      parts: [
+        { resolved: [], links: [], untrackedExports: [], globalNames: [] },
+      ],
     })),
     budget,
     load: (file) => {
