@@ -1,0 +1,15 @@
+{
+  "4289aa2fe13992f5": "Langue",
+  "b51556b59e9b7c27": [
+    {
+      "t": "h1",
+      "i": 1,
+      "c": "Bonjour depuis le moteur de rendu"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": "Choisissez une langue ici ou dans le menu de l’application. La page et le menu changent ensemble."
+    }
+  ]
+}

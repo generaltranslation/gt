@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["ES2023"],
+    "module": "nodenext",
+    "types": ["node"],
+    "skipLibCheck": true,
+    "moduleDetection": "force",
+    "rootDir": "src/main",
+    "outDir": "dist-electron",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "include": ["src/main", "src/gt.d.ts"]
+}
