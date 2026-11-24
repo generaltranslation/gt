@@ -26,7 +26,6 @@ export {
   GTProvider,
   GtInternalTranslateJsx,
   GtInternalVar,
-  T,
   LocaleSelector,
   N,
   Num,
@@ -36,6 +35,7 @@ export {
   RelativeTime,
   Var,
 } from 'gt-react';
+export { T } from './components/T';
 
 // ===== Hooks ===== //
 export {

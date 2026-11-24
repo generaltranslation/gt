@@ -723,6 +723,10 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       internalNextConfig.turbopack?.resolveAlias)
   );
 
+  const splitTranslations = splitsTranslations(
+    props.experimentalSplitTranslations,
+    mergedExperimentalCompilerOptions.type
+  );
   const userCompiler: NextCompilerConfig = internalNextConfig.compiler ?? {};
   const splitTranslationsCompiler: NextCompilerConfig = {
     ...userCompiler,
@@ -734,10 +738,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
 
   const config: NextConfig = {
     ...internalNextConfig,
-    ...(splitsTranslations(
-      props.experimentalSplitTranslations,
-      mergedExperimentalCompilerOptions.type
-    ) && { compiler: splitTranslationsCompiler }),
+    ...(splitTranslations && { compiler: splitTranslationsCompiler }),
     transpilePackages: Array.from(
       new Set([...(internalNextConfig.transpilePackages || []), 'gt-next'])
     ),
@@ -775,6 +776,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         requestFunctionPaths.getRegion ? 'true' : 'false',
       _GENERALTRANSLATION_DISABLE_INVALID_LOCALE_WARNING:
         mergedConfig.disableInvalidLocaleWarning?.toString() || 'false',
+      _GENERALTRANSLATION_SPLIT_TRANSLATIONS: splitTranslations.toString(),
       // Development only: exposes GT_PROJECT_ID and GT_API_KEY to client code
       // for hot reload. `next build` never sets these, so production bundles
       // get no key.

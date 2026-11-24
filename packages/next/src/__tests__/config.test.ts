@@ -1160,6 +1160,9 @@ describe('withGTConfig', () => {
       );
 
       expect(typeof hookOf(result) === 'function').toBe(expected);
+      expect(result.env?._GENERALTRANSLATION_SPLIT_TRANSLATIONS).toBe(
+        String(expected)
+      );
       if (!expected) expect(result.compiler).toBe(compiler);
       expect(warnings()).toEqual([]);
     });
@@ -1203,6 +1206,9 @@ describe('withGTConfig', () => {
         );
 
         expect(result).not.toHaveProperty('compiler');
+        expect(result.env?._GENERALTRANSLATION_SPLIT_TRANSLATIONS).toBe(
+          'false'
+        );
         expect(warnings()).toEqual([expect.stringContaining(warning)]);
       }
     );
