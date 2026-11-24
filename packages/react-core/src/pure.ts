@@ -9,6 +9,7 @@ export {
 } from './functions/helpers/getTranslationsSnapshot';
 export { t } from './functions/translation/t';
 export { m } from './functions/translation/m';
+export { getGT, getMessages } from './functions/translation/getters';
 export { createRenderPipeline } from './utils/rendering/createRenderPipeline';
 export type { RenderPipeline } from './utils/rendering/createRenderPipeline';
 export type { RenderPreparedT } from './utils/translation/prepareT.shared';

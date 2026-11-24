@@ -107,7 +107,11 @@ export {
   resolveCanonicalLocale,
   getVersionId,
 } from 'gt-i18n';
-export { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
+export {
+  getTranslationsSnapshot,
+  getGT,
+  getMessages,
+} from '@generaltranslation/react-core/pure';
 
 export type {
   GTProviderProps,

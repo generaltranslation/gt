@@ -75,6 +75,8 @@ export {
 } from 'gt-i18n';
 export {
   getTranslationsSnapshot,
+  getGT,
+  getMessages,
   t,
   m,
 } from '@generaltranslation/react-core/pure';

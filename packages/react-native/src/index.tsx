@@ -34,9 +34,14 @@ export {
 export { useLocaleSelector, useRegionSelector } from './hooks/selectors';
 
 // ===== Functions ===== //
-// No t or m: React Native registers no global locale store for them to read
-// (the provider keeps it in context). Use useGT() and useMessages().
-export { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
+// No t or m: they need the locale's translations loaded before any module
+// runs, and React Native loads them while the app starts. Use useGT() and
+// useMessages(), or getGT() and getMessages() where no component is in reach.
+export {
+  getTranslationsSnapshot,
+  getGT,
+  getMessages,
+} from '@generaltranslation/react-core/pure';
 export {
   msg,
   mFallback,

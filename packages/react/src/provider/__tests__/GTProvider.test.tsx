@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { hashSource } from 'generaltranslation/id';
-import { act, useEffect } from 'react';
+import { act, useEffect, type ReactNode } from 'react';
 import { createRoot, hydrateRoot, type Root } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -13,10 +13,13 @@ import {
   useSetRegion,
 } from '@generaltranslation/react-core/hooks';
 import {
+  getGT,
   getI18nConfig,
+  getMessages,
   getReactI18nCache,
 } from '@generaltranslation/react-core/pure';
 import { getCookieValue } from '../../condition-store/cookies';
+import { createOrUpdateBrowserConditionStore } from '../../condition-store/createBrowserConditionStore';
 import { initializeGTSRAClient } from '../../setup/initializeGTSRAClient';
 import { GTProvider } from '../GTProvider';
 import { ServerGTProvider } from '../ServerGTProvider';
@@ -64,11 +67,15 @@ describe('GTProvider without translations', () => {
     vi.waitFor(() => expect(release.has(locale)).toBe(true));
   const finish = (locale: string) => act(async () => release.get(locale)!());
 
-  async function render(props: { locale?: string; region?: string } = {}) {
+  async function render(
+    props: { locale?: string; region?: string } = {},
+    children: ReactNode = null
+  ) {
     await act(async () => {
       root.render(
         <GTProvider {...props} fallback={<Fallback />}>
           <Probe />
+          {children}
         </GTProvider>
       );
     });
@@ -384,5 +391,70 @@ describe('GTProvider without translations', () => {
 
     expect(shown()).toBe('fr:undefined:Enregistrer');
     expect(loadTranslations).not.toHaveBeenCalled();
+  });
+  describe('getGT() and getMessages()', () => {
+    const notified: string[] = [];
+    // As a notification service started by a component would.
+    function Notifier() {
+      const locale = useLocale();
+      useEffect(() => {
+        void getMessages().then((m) => notified.push(m('Save')));
+      }, [locale]);
+      return null;
+    }
+
+    beforeEach(() => {
+      notified.length = 0;
+    });
+
+    it('give a child’s effect the locale on screen, when it mounts and after a change', async () => {
+      await render({}, <Notifier />);
+      expect(notified).toEqual(['Speichern']);
+
+      act(() => setLocale('fr'));
+      await loading('fr');
+      expect((await getGT())`Save`).toBe('Speichern');
+      await finish('fr');
+      expect(notified).toEqual(['Speichern', 'Enregistrer']);
+    });
+
+    it('answer a child’s first effect under a provider that is given its translations', async () => {
+      await act(async () => {
+        root.render(
+          <GTProvider locale='fr' translations={{ fr: catalogs.fr }}>
+            <Probe />
+            <Notifier />
+          </GTProvider>
+        );
+      });
+
+      expect(notified).toEqual(['Enregistrer']);
+      expect((await getGT())`Save`).toBe('Enregistrer');
+      expect(loadTranslations).not.toHaveBeenCalled();
+    });
+
+    it('answer for the outer provider, and for none once it has unmounted', async () => {
+      const nested = (
+        <GTProvider locale='fr' translations={{ fr: catalogs.fr }}>
+          <i />
+        </GTProvider>
+      );
+      await render({}, nested);
+      expect((await getMessages())('Save')).toBe('Speichern');
+
+      await render();
+      expect((await getMessages())('Save')).toBe('Speichern');
+
+      await act(async () => root.render(null));
+      await expect(getGT()).rejects.toThrow('before it has been initialized');
+    });
+
+    it('leave the browser condition store for the browser to create', async () => {
+      await render();
+
+      const conditionStore = createOrUpdateBrowserConditionStore({});
+
+      expect(conditionStore.getLocale()).toBe('de');
+    });
   });
 });
