@@ -4,7 +4,6 @@ import {
   setI18nStore,
   setReactI18nCache,
   getReadonlyConditionStore,
-  getI18nConfig,
   initializeI18nConfig,
   setGlobalTranslationsSnapshot,
   loadTranslationsSnapshot,
