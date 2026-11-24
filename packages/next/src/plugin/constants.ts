@@ -13,3 +13,6 @@ export const ROOT_PARAM_STABILITY = {
 export const STABLE_TURBO_CONFIG_VERSION = '15.3.0';
 
 export const LOCALE_REFRESH_SUPPORT = '16.1.0';
+
+// The first version with compiler.runAfterProductionCompile.
+export const AFTER_PRODUCTION_COMPILE_SUPPORT = '15.4.0';

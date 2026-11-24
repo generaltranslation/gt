@@ -1,17 +1,21 @@
 import path from 'path';
 import fs from 'fs';
 import type { NextConfig } from 'next';
-import { safeParse } from 'valibot';
+import { type GenericSchema, type InferOutput, safeParse } from 'valibot';
 import {
   describeConfigIssues,
   describeConfigParseError,
   gtConfigFilePaths,
 } from 'generaltranslation/config-schema';
-import { GTNextConfigSchema } from './config-dir/schema';
+import {
+  GTNextConfigSchema,
+  WithGTConfigPropsSchema,
+} from './config-dir/schema';
 import { credentialEnvNames } from 'generaltranslation/internal';
 import { defaultWithGTConfigProps } from './config-dir/props/defaultWithGTConfigProps';
 import {
   type BaseWithGTConfigProps,
+  type CompilerOptions,
   type withGTConfigProps,
 } from './config-dir/props/withGTConfigProps';
 import {
@@ -24,6 +28,8 @@ import {
   invalidLocalesError,
   createProjectIdMismatchError,
   projectIdMissingWarn,
+  splitTranslationsCompilerWarning,
+  splitTranslationsNextVersionWarning,
   standardizedCanonicalLocalesWarning,
   unresolvedLoadDictionaryBuildError,
   unresolvedLoadTranslationsBuildError,
@@ -31,11 +37,13 @@ import {
 import { compilePathRegex } from './utils/pathRegex';
 import { isValidLocale, standardizeLocale } from '@generaltranslation/format';
 import {
+  afterProductionCompileSupported,
   localeRefreshSupported,
   rootParamStability,
   turboConfigStable,
 } from './plugin/getStableNextVersionInfo';
 import { distDir, nodeRequire } from './plugin/nodeCompat';
+import { fillServerOnlyHashes } from './plugin/fillServerOnlyHashes';
 import { validateCompiler } from './config-dir/utils/validateCompiler';
 import {
   REQUEST_FUNCTION_ALIASES,
@@ -80,6 +88,39 @@ type WithGTConfigResult<TNextConfig extends object> = TNextConfig extends (
   ? (...args: A) => WithGTConfigValue<R>
   : TNextConfig & NextConfig;
 
+// next@15.2.3, which gt-next is typed against, has no compiler.runAfterProductionCompile.
+type NextCompilerConfig = NonNullable<NextConfig['compiler']> & {
+  runAfterProductionCompile?: (metadata: {
+    projectDir: string;
+    distDir: string;
+  }) => unknown;
+};
+
+/**
+ * Whether this build runs fillServerOnlyHashes, warning when the option is on
+ * and cannot work.
+ */
+function splitsTranslations(
+  option: BaseWithGTConfigProps['experimentalSplitTranslations'],
+  compilerType: CompilerOptions['type']
+): boolean {
+  // The compiler loads Babel, so a build that sets neither does not load it.
+  if (option === undefined && !process.env.GT_SPLIT_TRANSLATIONS) return false;
+  const { isSplitTranslationsEnabled } = nodeRequire(
+    '@generaltranslation/compiler'
+  ) as typeof import('@generaltranslation/compiler');
+  if (!isSplitTranslationsEnabled(option)) return false;
+  if (!afterProductionCompileSupported) {
+    console.warn(splitTranslationsNextVersionWarning);
+    return false;
+  }
+  if (compilerType === 'none') {
+    console.warn(splitTranslationsCompilerWarning);
+    return false;
+  }
+  return true;
+}
+
 function isThenable(value: unknown): value is PromiseLike<NextConfig> {
   return (
     typeof value === 'object' &&
@@ -90,8 +131,12 @@ function isThenable(value: unknown): value is PromiseLike<NextConfig> {
 }
 
 /** Validates the keys gt.config.json shares with withGTConfig() props. */
-function parseGTConfig(config: unknown, configName: string) {
-  const result = safeParse(GTNextConfigSchema, config);
+function parseGTConfig<TSchema extends GenericSchema>(
+  schema: TSchema,
+  config: unknown,
+  configName: string
+): InferOutput<TSchema> {
+  const result = safeParse(schema, config);
   if (result.success) return result.output;
   throw new Error(
     createGtNextPluginDiagnostic({
@@ -217,10 +262,14 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
         })
       );
     }
-    loadedConfig = parseGTConfig(fileContent, configPath);
+    loadedConfig = parseGTConfig(GTNextConfigSchema, fileContent, configPath);
   }
   // next.config.js is often plain JavaScript, so props are not type-checked.
-  parseGTConfig(props, 'The withGTConfig() configuration');
+  parseGTConfig(
+    WithGTConfigPropsSchema,
+    props,
+    'The withGTConfig() configuration'
+  );
 
   // This warning intentionally compares Next.js i18n against explicit values
   // from the GT config file. Inline props use the conflict and merge paths below.
@@ -599,6 +648,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     projectId: _projectId,
     apiKey: _apiKey,
     devApiKey: _devApiKey,
+    experimentalSplitTranslations: _experimentalSplitTranslations,
     ...privateConfigParams
   } = mergedConfig;
   // Middleware options get their own env var instead of the i18n config params.
@@ -673,8 +723,21 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
       internalNextConfig.turbopack?.resolveAlias)
   );
 
+  const userCompiler: NextCompilerConfig = internalNextConfig.compiler ?? {};
+  const splitTranslationsCompiler: NextCompilerConfig = {
+    ...userCompiler,
+    runAfterProductionCompile: async (metadata) => {
+      await userCompiler.runAfterProductionCompile?.(metadata);
+      fillServerOnlyHashes(metadata.distDir);
+    },
+  };
+
   const config: NextConfig = {
     ...internalNextConfig,
+    ...(splitsTranslations(
+      props.experimentalSplitTranslations,
+      mergedExperimentalCompilerOptions.type
+    ) && { compiler: splitTranslationsCompiler }),
     transpilePackages: Array.from(
       new Set([...(internalNextConfig.transpilePackages || []), 'gt-next'])
     ),
@@ -774,6 +837,9 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
                 // Without a file, the compiler warns that there is no config.
                 ...(configFileExists && { gtConfig: loadedConfig }),
                 autoJsxImportSource: 'gt-next',
+                // The compiler would read GT_SPLIT_TRANSLATIONS as its own
+                // split by chunk, which fails every webpack build.
+                experimentalSplitTranslations: { enabled: false },
               })
             );
           } catch (e) {

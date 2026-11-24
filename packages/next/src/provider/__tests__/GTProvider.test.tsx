@@ -1,5 +1,13 @@
 import React from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi,
+} from 'vitest';
 
 const {
   mockGetI18nConfig,
@@ -8,7 +16,9 @@ const {
   mockGetRegion,
   mockLoadTranslations,
   mockClientGTProvider,
+  mockPlaceholder,
 } = vi.hoisted(() => ({
+  mockPlaceholder: { filled: 'gt-next-server-only-hashes[]' },
   mockGetI18nConfig: vi.fn(),
   mockGetEnableI18n: vi.fn(),
   mockGetLocale: vi.fn(),
@@ -41,6 +51,13 @@ vi.mock('@generaltranslation/react-core/pure', () => ({
 
 vi.mock('../../utils/client-boundary', () => ({
   Client_GTProvider: mockClientGTProvider,
+}));
+
+// The literal as a build with experimentalSplitTranslations leaves it.
+vi.mock('../serverOnlyHashesPlaceholder', () => ({
+  get SERVER_ONLY_HASHES_PLACEHOLDER() {
+    return mockPlaceholder.filled;
+  },
 }));
 
 describe('GTProvider', () => {
@@ -80,6 +97,38 @@ describe('GTProvider', () => {
         },
       },
     });
+  });
+
+  it('sends every translation while the build listed no server-only message', async () => {
+    mockLoadTranslations.mockResolvedValue({ hash: 'Salut' });
+    const { getGTProviderProps } = await import('../GTProvider');
+
+    expect((await getGTProviderProps('fr')).translations).toEqual({
+      fr: { hash: 'Salut' },
+    });
+  });
+
+  it('leaves out the translations of the messages the build listed as server-only', async () => {
+    mockPlaceholder.filled =
+      'gt-next-server-only-hashes[1111111111111111,3333333333333333]';
+    vi.resetModules();
+    onTestFinished(() => {
+      mockPlaceholder.filled = 'gt-next-server-only-hashes[]';
+      vi.resetModules();
+    });
+    const catalog = {
+      '1111111111111111': 'Serveur',
+      '2222222222222222': 'Client',
+      '3333333333333333': 'Serveur aussi',
+    };
+    const loaded = { ...catalog };
+    mockLoadTranslations.mockResolvedValue(loaded);
+    const { getGTProviderProps } = await import('../GTProvider');
+
+    expect((await getGTProviderProps('fr')).translations).toEqual({
+      fr: { '2222222222222222': 'Client' },
+    });
+    expect(loaded).toEqual(catalog);
   });
 
   it.each([

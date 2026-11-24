@@ -12,7 +12,10 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import type { NextConfig } from 'next';
-import { BABEL_PLUGIN_SUPPORT } from '../plugin/constants';
+import {
+  AFTER_PRODUCTION_COMPILE_SUPPORT,
+  BABEL_PLUGIN_SUPPORT,
+} from '../plugin/constants';
 import { nextLocaleCookieName } from '../utils/cookies';
 import { getRequireSpecifiers } from './utils/importGraph';
 
@@ -31,9 +34,16 @@ const mockVersionInfo = vi.hoisted(() => ({
   localeRefreshSupported: true,
   swcPluginCompatible: true,
   babelPluginCompatible: true,
+  afterProductionCompileSupported: true,
 }));
 
 vi.mock('../plugin/getStableNextVersionInfo', () => mockVersionInfo);
+
+const mockFillServerOnlyHashes = vi.hoisted(() => vi.fn());
+
+vi.mock('../plugin/fillServerOnlyHashes', () => ({
+  fillServerOnlyHashes: mockFillServerOnlyHashes,
+}));
 
 // The default render settings are derived from NODE_ENV when the config
 // module loads, so it is imported once the development env is in place.
@@ -155,6 +165,7 @@ beforeEach(() => {
     'NEXT_PUBLIC_GT_PROJECT_ID',
     'NEXT_PUBLIC_GT_DEV_API_KEY',
     'TURBOPACK',
+    'GT_SPLIT_TRANSLATIONS',
   ]) {
     vi.stubEnv(name, undefined);
   }
@@ -165,6 +176,7 @@ beforeEach(() => {
     localeRefreshSupported: true,
     swcPluginCompatible: true,
     babelPluginCompatible: true,
+    afterProductionCompileSupported: true,
   });
   // Restores the fs mocks to "no files exist".
   vi.resetAllMocks();
@@ -500,6 +512,11 @@ describe('withGTConfig', () => {
       ],
       ['string locales', { locales: 'fr' }, 'locales: Invalid type'],
       ['a null pathRegex', { pathRegex: null }, 'pathRegex: Invalid type'],
+      [
+        'a string experimentalSplitTranslations.enabled',
+        { experimentalSplitTranslations: { enabled: 'false' } },
+        'experimentalSplitTranslations.enabled: Invalid type',
+      ],
     ])('rejects %s in withGTConfig() props', (_case, props, issue) => {
       expect(() => withGTConfig({}, props as never)).toThrow(
         'gt-next (plugin) Error: The withGTConfig() configuration is invalid'
@@ -1083,6 +1100,120 @@ describe('withGTConfig', () => {
     });
   });
 
+  describe('experimentalSplitTranslations', () => {
+    type AfterProductionCompile = (metadata: {
+      projectDir: string;
+      distDir: string;
+    }) => Promise<void>;
+    // next@15.2.3, which gt-next is typed against, does not type the hook.
+    const hookOf = (config: NextConfig) =>
+      (
+        config.compiler as {
+          runAfterProductionCompile?: AfterProductionCompile;
+        }
+      )?.runAfterProductionCompile;
+    const swc = { experimentalCompilerOptions: { type: 'swc' } } as const;
+    const metadata = { projectDir: '/app', distDir: '/app/.next' };
+    const warnings = () =>
+      warn.mock.calls
+        .map(([message]) => String(message))
+        .filter((message) => message.includes('experimentalSplitTranslations'));
+
+    it('runs its build step after the hook of the app, and keeps the other compiler options', async () => {
+      const ran: string[] = [];
+      const appHook = vi.fn(async () => {
+        await Promise.resolve();
+        ran.push('app');
+      });
+      mockFillServerOnlyHashes.mockImplementation(() => ran.push('gt-next'));
+
+      const result = withGTConfig(
+        {
+          compiler: {
+            removeConsole: true,
+            runAfterProductionCompile: appHook,
+          },
+        } as NextConfig,
+        { ...swc, experimentalSplitTranslations: {} }
+      );
+      await hookOf(result)!(metadata);
+
+      expect(result.compiler).toHaveProperty('removeConsole', true);
+      expect(appHook).toHaveBeenCalledWith(metadata);
+      expect(mockFillServerOnlyHashes).toHaveBeenCalledWith('/app/.next');
+      expect(ran).toEqual(['app', 'gt-next']);
+    });
+
+    it.each([
+      ['the option alone', {}, undefined, true],
+      ['GT_SPLIT_TRANSLATIONS alone', undefined, 'true', true],
+      ['enabled over GT_SPLIT_TRANSLATIONS', { enabled: false }, 'true', false],
+      ['GT_SPLIT_TRANSLATIONS over the option', {}, 'false', false],
+      ['neither', undefined, undefined, false],
+    ])('is decided by %s', (_name, option, env, expected) => {
+      vi.stubEnv('GT_SPLIT_TRANSLATIONS', env);
+      const compiler = { removeConsole: true };
+
+      const result = withGTConfig(
+        { compiler },
+        { ...swc, experimentalSplitTranslations: option }
+      );
+
+      expect(typeof hookOf(result) === 'function').toBe(expected);
+      if (!expected) expect(result.compiler).toBe(compiler);
+      expect(warnings()).toEqual([]);
+    });
+
+    it('is read from withGTConfig() alone, not from gt.config.json', () => {
+      mockConfigFile({ experimentalSplitTranslations: {} });
+
+      expect(hookOf(withGTConfig({}, swc))).toBeUndefined();
+    });
+
+    const compilerWarning = 'this build runs no GT compiler';
+    const nextVersionWarning = `experimentalSplitTranslations requires next@${AFTER_PRODUCTION_COMPILE_SUPPORT} or newer`;
+    it.each([
+      ['no compiler is set', 'none', true, true, compilerWarning],
+      [
+        'the swc compiler needs a newer Next.js',
+        'swc',
+        true,
+        false,
+        compilerWarning,
+      ],
+      [
+        'Next.js has no hook after compilation',
+        'swc',
+        false,
+        false,
+        nextVersionWarning,
+      ],
+    ] as const)(
+      'warns once and leaves the build as it is when %s',
+      (_name, type, supported, swcCompatible, warning) => {
+        mockVersionInfo.afterProductionCompileSupported = supported;
+        mockVersionInfo.swcPluginCompatible = swcCompatible;
+
+        const result = withGTConfig(
+          {},
+          {
+            experimentalCompilerOptions: { type },
+            experimentalSplitTranslations: { enabled: true },
+          }
+        );
+
+        expect(result).not.toHaveProperty('compiler');
+        expect(warnings()).toEqual([expect.stringContaining(warning)]);
+      }
+    );
+
+    it('stays out of the config the runtime reads', () => {
+      expect(
+        buildParams({ ...swc, experimentalSplitTranslations: {} })
+      ).not.toHaveProperty('experimentalSplitTranslations');
+    });
+  });
+
   describe('webpack', () => {
     const dictionary = { dictionary: './my-dict.json' };
 
@@ -1106,6 +1237,27 @@ describe('withGTConfig', () => {
           enableAutoJsxInjection: true,
           autoJsxImportSource: 'gt-next',
         })
+      );
+    });
+
+    it('keeps the webpack compiler from splitting translations by chunk, whatever turns the split of gt-next on', () => {
+      vi.stubEnv('GT_SPLIT_TRANSLATIONS', 'true');
+      const compiler = require('@generaltranslation/compiler');
+      const compilerWebpack = vi.spyOn(compiler, 'webpack').mockReturnValue({});
+
+      runWebpack(
+        withGTConfig(
+          {},
+          {
+            experimentalCompilerOptions: { type: 'babel' },
+            experimentalSplitTranslations: { enabled: true },
+          }
+        )
+      );
+
+      expect(compilerWebpack.mock.calls[0][0]).toHaveProperty(
+        'experimentalSplitTranslations',
+        { enabled: false }
       );
     });
 

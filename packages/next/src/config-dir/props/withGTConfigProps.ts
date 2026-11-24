@@ -1,6 +1,7 @@
 import type { GTCompilerOptions, GTConfig } from 'generaltranslation';
 import type { MiddlewareConfig } from '../../middleware-dir/types';
-import type { GTNextOptions } from '../schema';
+import type { InferInput } from 'valibot';
+import type { GTNextOptions, SplitTranslationsSchema } from '../schema';
 
 type HeadersAndCookies = {
   localeHeaderName?: string;
@@ -35,6 +36,14 @@ export type BaseWithGTConfigProps = MiddlewareConfig &
     dictionary?: string;
     // Other
     experimentalCompilerOptions?: CompilerOptions;
+    /**
+     * Experimental: production App Router builds stop sending client
+     * components the translations of `<T>` that only server components render.
+     * Needs `experimentalCompilerOptions.type` `'swc'` (next@16.1.0+) or
+     * `'babel'` with webpack (next@15.4.0+); `enabled`, else
+     * `GT_SPLIT_TRANSLATIONS`, else setting the option, turns it on.
+     */
+    experimentalSplitTranslations?: InferInput<typeof SplitTranslationsSchema>;
     headersAndCookies?: HeadersAndCookies;
     _usingPlugin?: boolean;
   };

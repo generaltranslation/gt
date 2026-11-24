@@ -3,6 +3,7 @@ import {
   createUnresolvedReactVersionError,
 } from '../errors/createErrors';
 import {
+  AFTER_PRODUCTION_COMPILE_SUPPORT,
   BABEL_PLUGIN_SUPPORT,
   LOCALE_REFRESH_SUPPORT,
   ROOT_PARAM_STABILITY,
@@ -125,4 +126,9 @@ export const babelPluginCompatible = comparePackageVersion(
 export const localeRefreshSupported = comparePackageVersion(
   getNextVersion(),
   LOCALE_REFRESH_SUPPORT
+);
+
+export const afterProductionCompileSupported = comparePackageVersion(
+  getNextVersion(),
+  AFTER_PRODUCTION_COMPILE_SUPPORT
 );

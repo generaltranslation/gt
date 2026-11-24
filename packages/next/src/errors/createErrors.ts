@@ -4,7 +4,11 @@ import {
   createGtNextDiagnostic,
   createGtNextPluginDiagnostic,
 } from './diagnostics';
-import { BABEL_PLUGIN_SUPPORT, SWC_PLUGIN_SUPPORT } from '../plugin/constants';
+import {
+  AFTER_PRODUCTION_COMPILE_SUPPORT,
+  BABEL_PLUGIN_SUPPORT,
+  SWC_PLUGIN_SUPPORT,
+} from '../plugin/constants';
 
 export const remoteTranslationsError = createGtNextDiagnostic({
   severity: 'Error',
@@ -166,6 +170,26 @@ export const autoJsxInjectionCompilerWarning = createGtNextPluginDiagnostic({
   wayOut: 'Automatic JSX injection will be skipped',
   fix: "Set experimentalCompilerOptions.type to 'babel' in withGTConfig() and build with webpack",
 });
+
+const splitTranslationsWayOut =
+  'Client components are sent every translation, as without the option';
+
+export const splitTranslationsCompilerWarning = createGtNextPluginDiagnostic({
+  severity: 'Warning',
+  whatHappened:
+    'experimentalSplitTranslations reads the hashes a GT compiler writes, and this build runs no GT compiler',
+  wayOut: splitTranslationsWayOut,
+  fix: `Set experimentalCompilerOptions.type in withGTConfig() to 'swc', which needs next@${SWC_PLUGIN_SUPPORT} or newer, or to 'babel', which needs webpack and react@${BABEL_PLUGIN_SUPPORT} or newer`,
+});
+
+export const splitTranslationsNextVersionWarning = createGtNextPluginDiagnostic(
+  {
+    severity: 'Warning',
+    whatHappened: `experimentalSplitTranslations requires next@${AFTER_PRODUCTION_COMPILE_SUPPORT} or newer`,
+    wayOut: splitTranslationsWayOut,
+    fix: 'Update Next.js, or turn experimentalSplitTranslations off',
+  }
+);
 
 export const customGetLocaleUnresolvedWarning = createGtNextDiagnostic({
   whatHappened: 'Custom getLocale() could not be resolved',

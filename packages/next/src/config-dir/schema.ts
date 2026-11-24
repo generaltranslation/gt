@@ -5,6 +5,7 @@ import {
   boolean,
   description,
   looseObject,
+  object,
   optional,
   pipe,
   record,
@@ -87,6 +88,14 @@ export const gtNextConfigEntries = {
 export const GTNextConfigSchema = looseObject({
   ...GTConfigSchema.entries,
   ...gtNextConfigEntries,
+});
+
+export const SplitTranslationsSchema = object({ enabled: optional(boolean()) });
+
+/** withGTConfig() props: the file's keys and the props the file cannot set. */
+export const WithGTConfigPropsSchema = looseObject({
+  ...GTNextConfigSchema.entries,
+  experimentalSplitTranslations: optional(SplitTranslationsSchema),
 });
 
 /** Options only gt-next reads, from gt.config.json or withGTConfig(). */
