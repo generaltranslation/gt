@@ -18,6 +18,9 @@ vi.mock('../../console/logging.js', () => ({
   exitSync: vi.fn((code: number) => {
     throw new Error(`exit ${code}`);
   }),
+  logErrorAndExit: vi.fn((message: string) => {
+    throw new Error(message);
+  }),
 }));
 vi.mock('../../console/logger.js', () => ({
   logger: new Proxy({}, { get: () => () => {} }),
@@ -45,11 +48,30 @@ const updates: Updates = [
     source: 'Save',
     metadata: { hash: 'save-hash', requiresReview: true },
   },
+  {
+    dataFormat: 'ICU',
+    source: 'Cancel',
+    metadata: { hash: 'cancel-hash', id: 'nav.cancel', requiresReview: false },
+  },
+  {
+    dataFormat: 'ICU',
+    source: 'Cancel',
+    metadata: {
+      hash: 'cancel-hash',
+      id: 'modal.cancel',
+      filePaths: ['src/modal.tsx'],
+    },
+  },
   { dataFormat: 'ICU', source: 'No hash', metadata: {} },
 ];
 
 describe('gt generate', () => {
   let projectRoot: string;
+  const sourceCatalog = {
+    'welcome-hash': 'Welcome back',
+    'save-hash': 'Save',
+    'cancel-hash': 'Cancel',
+  };
   const read = (file: string) =>
     JSON.parse(fs.readFileSync(path.join(projectRoot, file), 'utf8'));
   const run = (...args: string[]) => {
@@ -87,13 +109,10 @@ describe('gt generate', () => {
   it('fills target locale files with source entries by default', async () => {
     await run();
 
-    expect(read('translations/en.json')).toEqual({
-      'welcome-hash': 'Welcome back',
-      'save-hash': 'Save',
-    });
+    expect(read('translations/en.json')).toEqual(sourceCatalog);
     expect(read('translations/fr.json')).toEqual({
+      ...sourceCatalog,
       'welcome-hash': 'Bon retour',
-      'save-hash': 'Save',
     });
   });
 
@@ -105,10 +124,7 @@ describe('gt generate', () => {
 
     await run('--source-only');
 
-    expect(read('translations/en.json')).toEqual({
-      'welcome-hash': 'Welcome back',
-      'save-hash': 'Save',
-    });
+    expect(read('translations/en.json')).toEqual(sourceCatalog);
     expect(
       fs.readFileSync(path.join(projectRoot, 'translations/fr.json'), 'utf8')
     ).toBe(target);
@@ -128,9 +144,46 @@ describe('gt generate', () => {
         filePaths: ['src/a.tsx', 'src/b.tsx'],
       },
       'save-hash': { dataFormat: 'ICU', requiresReview: true },
+      'cancel-hash': {
+        dataFormat: 'ICU',
+        id: 'nav.cancel',
+        requiresReview: false,
+        filePaths: ['src/modal.tsx'],
+      },
     });
     expect(Object.keys(read('out/metadata.json'))).toEqual(
       Object.keys(read('translations/en.json'))
     );
   });
+
+  it.each(['translations/fr.json', 'translations/en.json'])(
+    'rejects a --metadata path that is the locale file %s before writing',
+    async (catalog) => {
+      const catalogPath = path.join(projectRoot, catalog);
+      fs.writeFileSync(catalogPath, '{"kept":"as is"}');
+      const cwd = vi.spyOn(process, 'cwd').mockReturnValue(projectRoot);
+
+      await expect(run('--source-only', '--metadata', catalog)).rejects.toThrow(
+        '--metadata path is also a locale file'
+      );
+      cwd.mockRestore();
+
+      expect(fs.readFileSync(catalogPath, 'utf8')).toBe('{"kept":"as is"}');
+      expect(aggregateInlineTranslations).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each([['--source-only'], ['--metadata', 'out/metadata.json']])(
+    'fails %s when files.gt.output is not set',
+    async (...args) => {
+      vi.mocked(generateSettings).mockResolvedValue({
+        defaultLocale: 'en',
+        locales: ['en', 'fr'],
+        files: { placeholderPaths: {} },
+      } as unknown as Settings);
+
+      await expect(run(...args)).rejects.toThrow('files.gt.output');
+      expect(aggregateInlineTranslations).not.toHaveBeenCalled();
+    }
+  );
 });

@@ -39,7 +39,10 @@ describe('createDictionaryUpdates', () => {
     expect(updates).toEqual([
       expect.objectContaining({
         source: 'Hello, world',
-        metadata: expect.objectContaining({ id: 'home.title' }),
+        metadata: expect.objectContaining({
+          id: 'home.title',
+          filePaths: ['dictionary.ts'],
+        }),
       }),
     ]);
   });

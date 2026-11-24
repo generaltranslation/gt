@@ -1,4 +1,6 @@
 import { Command } from 'commander';
+import path from 'node:path';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { BaseCLI } from './base.js';
 import { SupportedLibraries, TranslateFlags, Options } from '../types/index.js';
 import {
@@ -6,7 +8,11 @@ import {
   attachTranslateFlags,
   attachValidateFlags,
 } from './flags.js';
-import { displayHeader, exitSync } from '../console/logging.js';
+import {
+  displayHeader,
+  exitSync,
+  logErrorAndExit,
+} from '../console/logging.js';
 import { logger } from '../console/logger.js';
 import { resolveLocaleFiles } from '../fs/config/parseFilesConfig.js';
 import { noFilesError } from '../console/index.js';
@@ -22,6 +28,24 @@ type GenerateSourceFlags = TranslateFlags & {
   sourceOnly?: boolean;
   metadata?: string;
 };
+
+const missingSourceOutputError = createDiagnosticMessage({
+  source: 'gt',
+  severity: 'Error',
+  whatHappened: '--source-only and --metadata need a local source file',
+  why: 'files.gt.output is not set in gt.config.json',
+  fix: 'Set files.gt.output to a local path such as "translations/[locale].json"',
+});
+
+const metadataPathCollisionError = (metadataPath: string) =>
+  createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened: 'The --metadata path is also a locale file',
+    why: "writing metadata there would replace that locale's entries",
+    fix: 'Pass a --metadata path outside files.gt.output',
+    details: metadataPath,
+  });
 
 /**
  * Stand in for a CLI tool that does any sort of inline content translations
@@ -138,6 +162,24 @@ export class InlineCLI extends BaseCLI {
     const settings = await generateSettings(initOptions, undefined, {
       requireConfig: true,
     });
+
+    const placeholderPaths = settings.files?.placeholderPaths;
+    if (
+      (initOptions.sourceOnly || initOptions.metadata) &&
+      !placeholderPaths?.gt
+    ) {
+      logErrorAndExit(missingSourceOutputError);
+    }
+    if (initOptions.metadata && placeholderPaths) {
+      const metadataPath = path.resolve(initOptions.metadata);
+      const collides = [settings.defaultLocale, ...settings.locales].some(
+        (locale) => {
+          const localeFile = resolveLocaleFiles(placeholderPaths, locale).gt;
+          return localeFile && path.resolve(localeFile) === metadataPath;
+        }
+      );
+      if (collides) logErrorAndExit(metadataPathCollisionError(metadataPath));
+    }
 
     const updates = await aggregateInlineTranslations(
       initOptions,
