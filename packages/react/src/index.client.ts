@@ -13,7 +13,7 @@ export { useRegionSelector } from './components/useRegionSelector';
 // ===== Components ===== //
 export { LocaleSelector } from './components/LocaleSelector';
 export { RegionSelector } from './components/RegionSelector';
-export { BrowserGTProvider as GTProvider } from './provider/BrowserGTProvider';
+export { GTProvider } from './provider/GTProvider';
 
 // ===== Components ===== //
 export {
@@ -79,6 +79,9 @@ export {
   m,
 } from '@generaltranslation/react-core/pure';
 
-export type { SharedGTProviderProps } from './provider/GTProviderProps';
+export type {
+  GTProviderProps,
+  SharedGTProviderProps,
+} from './provider/GTProviderProps';
 export { GtInternalRuntimeTranslateJsx } from 'gt-i18n/internal';
 export type { GT, GTOptions, M, Msg, Part, Placeholder } from 'gt-i18n';

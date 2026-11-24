@@ -109,6 +109,9 @@ export {
 } from 'gt-i18n';
 export { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 
-export type { SharedGTProviderProps } from './provider/GTProviderProps';
+export type {
+  GTProviderProps,
+  SharedGTProviderProps,
+} from './provider/GTProviderProps';
 export { GtInternalRuntimeTranslateJsx } from 'gt-i18n/internal';
 export type { GT, GTOptions, M, Msg, Part, Placeholder } from 'gt-i18n';

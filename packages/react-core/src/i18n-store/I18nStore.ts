@@ -22,6 +22,10 @@ import { createRuntimeTranslationErrorLogger } from './utils/runtimeTranslationE
  * in LookupAdapter, not in this store.
  */
 export class I18nStore {
+  /** A snapshot that renders source text: a miss in any other snapshot is looked up in the cache, which a server and a browser fill differently. */
+  static readonly sourceOnly: Record<Locale, Record<Hash, Content>> =
+    Object.freeze({});
+
   // ----- Listener Sets ----- //
 
   private translateListeners = new Set<TranslateEventListener>();
@@ -88,6 +92,7 @@ export class I18nStore {
     lookup: TranslateLookup<T>,
     translationsSnapshot: Record<Locale, Record<Hash, Content>> = {}
   ): TranslateSnapshot<T> => {
+    if (translationsSnapshot === I18nStore.sourceOnly) return undefined;
     return (
       lookupTranslation(translationsSnapshot, lookup) ??
       getReactI18nCache().lookupTranslation<T>(

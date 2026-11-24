@@ -1,4 +1,7 @@
-import type { InternalGTProviderProps } from '@generaltranslation/react-core/components';
+import type {
+  ClientGTProviderProps as CoreClientGTProviderProps,
+  InternalGTProviderProps,
+} from '@generaltranslation/react-core/components';
 import { BrowserConditionStoreParams } from '../condition-store/BrowserConditionStore';
 
 /**
@@ -26,3 +29,13 @@ export type SharedGTProviderProps = Omit<
      */
     _syncConditions?: boolean;
   };
+
+/**
+ * Props of a provider that loads each locale's translations itself, for an
+ * app that renders only in the browser.
+ */
+export type ClientGTProviderProps = CoreClientGTProviderProps & {
+  translations?: undefined;
+};
+
+export type GTProviderProps = SharedGTProviderProps | ClientGTProviderProps;
