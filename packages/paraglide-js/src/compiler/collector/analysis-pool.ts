@@ -111,8 +111,24 @@ export function analysisThreads(codeSize: number, budget: number): number {
   return threads >= 2 ? threads : 0;
 }
 
-/** The memory the process may take: the host's, or less in a container. */
-function availableMemory(): number {
+/**
+ * The memory the process may take, in bytes: the host's, or less in a
+ * container. `PARAGLIDE_CONTEXT_MEMORY_MB` sets it, e.g. for a CI machine
+ * whose other jobs need part of its memory.
+ */
+export function availableMemory(): number {
+  const configured = process.env.PARAGLIDE_CONTEXT_MEMORY_MB;
+  if (configured !== undefined && configured !== '') {
+    const megabytes = Number(configured);
+    if (!Number.isFinite(megabytes) || megabytes <= 0) {
+      throw new Error(
+        `PARAGLIDE_CONTEXT_MEMORY_MB is a number of megabytes, more than 0; it is "${configured}".`
+      );
+    }
+
+    return megabytes * 1024 * 1024;
+  }
+
   const total = os.totalmem();
   // 0 or undefined when there is no limit, or more than the host has.
   const constrained = process.constrainedMemory() as number | undefined;
