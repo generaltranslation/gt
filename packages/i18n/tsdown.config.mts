@@ -9,6 +9,7 @@ export default defineConfig(
       'src/internal-cookies.ts',
       'src/internal-string.ts',
       'src/internal.ts',
+      'src/standalone.ts',
     ]).map((config) => ({
       ...config,
       // Keep decodeOptions out of the shared runtime chunk so importing it from gt-i18n/internal/string stays small (gt-vue).

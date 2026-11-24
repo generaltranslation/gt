@@ -12,7 +12,7 @@ export {
   type Part,
   type Placeholder,
 } from './translation-functions/placeholders';
-export { msg, type Msg } from './translation-functions/msg';
+export { msg, isMsg, type Msg } from './translation-functions/msg';
 export { m, mFallback, type M } from './translation-functions/messages';
 export {
   getLocale,

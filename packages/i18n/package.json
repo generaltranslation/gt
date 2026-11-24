@@ -106,6 +106,16 @@
         "types": "./dist/internal-string.d.mts",
         "default": "./dist/internal-string.mjs"
       }
+    },
+    "./standalone": {
+      "require": {
+        "types": "./dist/standalone.d.cts",
+        "default": "./dist/standalone.cjs"
+      },
+      "import": {
+        "types": "./dist/standalone.d.mts",
+        "default": "./dist/standalone.mjs"
+      }
     }
   }
 }
