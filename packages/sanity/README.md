@@ -135,6 +135,10 @@ with it on, the translations currently in Sanity are uploaded to General
 Translation before a translation run, so content whose source text has not
 changed is reused from the Sanity version instead of being regenerated.
 
+A translation is only saved over a finished translation General Translation
+already holds for the same source. A locale that has not been translated from
+the current source yet is left alone and translated normally.
+
 This is **off by default**; turning it on shows an explanation of the trade-off
 first, and the choice is remembered for that project and dataset. Turning it on means local
 content overwrites whatever General Translation holds for that source version —
@@ -150,10 +154,13 @@ gtPlugin({
 });
 ```
 
-To upload the translations already in Sanity without starting a translation run
-— useful when adopting the plugin on a project that was translated elsewhere —
-use **Save Local Edits**. It uploads the source files it needs, but does not
-enqueue any translation.
+To do the same without starting a translation run, use **Save Local Edits**.
+
+When adopting the plugin on a project that was translated elsewhere, use
+**Upload Existing** instead. It uploads each document as it is now together
+with the translations in Sanity, and stores them as finished translations of
+that version, so they are not translated again. Only use it when the
+translations are up to date with their source.
 
 To regenerate translations and deliberately discard existing ones for a single
 run, use **Retranslate from scratch** in the Translate All dialog. To do the
@@ -193,8 +200,8 @@ marked original that was deleted — cannot be translated.
 **Translate All** only covers originals in `sourceLocale`. It leaves out
 originals in other locales and their translations, and reports how many of
 those originals (already marked by an earlier translation) it skipped.
-**Save Local Edits** only applies to groups whose original is in
-`sourceLocale`, and field-level localization always translates from
+**Save Local Edits** and **Upload Existing** only apply to groups whose
+original is in `sourceLocale`, and field-level localization always translates from
 `sourceLocale`.
 
 Turning `allowNonDefaultSourceLocales` off again once groups have been marked is
