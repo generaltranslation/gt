@@ -156,6 +156,15 @@ impl TransformVisitor {
     }
   }
 
+  /// Imports are hoisted, so a `<T>` above its gt-next import still needs it tracked
+  pub fn track_module_imports(&mut self, module: &Module) {
+    for item in &module.body {
+      if let ModuleItem::ModuleDecl(ModuleDecl::Import(import_decl)) = item {
+        self.process_gt_import_declaration(import_decl);
+      }
+    }
+  }
+
   /// Process GT-Next import declarations to track imports and aliases
   pub fn process_gt_import_declaration(&mut self, import_decl: &ImportDecl) {
     let src_value = import_decl.src.value.to_string_lossy().into_owned();
@@ -1703,6 +1712,138 @@ mod tests {
       assert_ne!(hash1, hash2);
     }
 
+  }
+
+  mod imports_after_use {
+    use super::*;
+    use swc_core::ecma::visit::{FoldWith, VisitMutWith};
+
+    /// function Greeting() { return <tag>Hello</tag>; }
+    fn greeting(mut element: JSXElement) -> ModuleItem {
+      element.children = vec![JSXElementChild::JSXText(JSXText {
+        span: DUMMY_SP,
+        value: Atom::new("Hello"),
+        raw: Atom::new("Hello"),
+      })];
+      ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
+        ident: Ident::new("Greeting".into(), DUMMY_SP, SyntaxContext::empty()),
+        declare: false,
+        function: Box::new(Function {
+          params: vec![],
+          decorators: vec![],
+          span: DUMMY_SP,
+          ctxt: SyntaxContext::empty(),
+          body: Some(BlockStmt {
+            span: DUMMY_SP,
+            ctxt: SyntaxContext::empty(),
+            stmts: vec![Stmt::Return(ReturnStmt {
+              span: DUMMY_SP,
+              arg: Some(Box::new(Expr::JSXElement(Box::new(element)))),
+            })],
+          }),
+          is_generator: false,
+          is_async: false,
+          type_params: None,
+          return_type: None,
+        }),
+      })))
+    }
+
+    fn transform(body: Vec<ModuleItem>) -> Module {
+      let mut module = Module {
+        span: DUMMY_SP,
+        body,
+        shebang: None,
+      };
+      let mut observer = TransformVisitor::new(
+        LogLevel::Silent,
+        true,
+        None,
+        false,
+        false,
+        StringCollector::new(),
+      );
+      module.visit_mut_with(&mut observer);
+      let mut injector = TransformVisitor::new(
+        LogLevel::Silent,
+        true,
+        None,
+        false,
+        false,
+        observer.string_collector,
+      );
+      module.fold_with(&mut injector)
+    }
+
+    fn hash_attr(item: &ModuleItem) -> Option<JSXAttrOrSpread> {
+      let ModuleItem::Stmt(Stmt::Decl(Decl::Fn(fn_decl))) = item else {
+        panic!("expected the Greeting function");
+      };
+      let stmts = &fn_decl.function.body.as_ref()?.stmts;
+      let Some(Stmt::Return(ReturnStmt { arg: Some(arg), .. })) = stmts.first() else {
+        panic!("expected a return statement");
+      };
+      let Expr::JSXElement(element) = arg.as_ref() else {
+        panic!("expected a JSX element");
+      };
+      element
+        .opening
+        .attrs
+        .iter()
+        .find(|attr| {
+          matches!(
+            attr,
+            JSXAttrOrSpread::JSXAttr(JSXAttr { name: JSXAttrName::Ident(name), .. })
+              if name.sym == "_hash"
+          )
+        })
+        .cloned()
+    }
+
+    /// An import below the component that renders <T> still gets the hash it
+    /// gets above it, because import declarations are hoisted
+    #[test]
+    fn hashes_t_rendered_above_its_gt_next_import() {
+      let cases = [
+        (
+          "named",
+          create_jsx_element("T", vec![]),
+          create_named_import("T", None),
+        ),
+        (
+          "aliased",
+          create_jsx_element("Translate", vec![]),
+          create_named_import("Translate", Some("T")),
+        ),
+        (
+          "namespace",
+          create_jsx_member_element("GT", "T"),
+          create_namespace_import("GT"),
+        ),
+      ];
+      let mut missing = vec![];
+      for (kind, element, specifier) in cases {
+        let import = ModuleItem::ModuleDecl(ModuleDecl::Import(create_import_decl(
+          "gt-next",
+          vec![specifier],
+        )));
+        let import_first = transform(vec![import.clone(), greeting(element.clone())]);
+        let import_last = transform(vec![greeting(element), import]);
+
+        let expected = hash_attr(&import_first.body[1]);
+        assert!(
+          expected.is_some(),
+          "expected a _hash with the {kind} import first"
+        );
+        if hash_attr(&import_last.body[0]) != expected {
+          missing.push(kind);
+        }
+      }
+      assert!(
+        missing.is_empty(),
+        "no _hash with the import last: {missing:?}"
+      );
+    }
   }
 
   mod integration_tests {
