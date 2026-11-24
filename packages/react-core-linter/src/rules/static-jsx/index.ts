@@ -27,8 +27,9 @@ import {
 import { generateBranch, generateLogicalAnd } from './branch-fix.js';
 import { ScopeStack } from './ScopeStack.js';
 
-const isEmptyExpression = (node: TSESTree.JSXExpressionContainer) =>
-  node.expression.type === TSESTree.AST_NODE_TYPES.JSXEmptyExpression;
+function isEmptyExpression(node: TSESTree.JSXExpressionContainer): boolean {
+  return node.expression.type === TSESTree.AST_NODE_TYPES.JSXEmptyExpression;
+}
 
 /**
  * Static JSX applies to children of the <T> component
