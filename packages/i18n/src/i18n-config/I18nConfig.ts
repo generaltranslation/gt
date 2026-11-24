@@ -1,7 +1,6 @@
 import type { LocaleConfig, CustomMapping } from '@generaltranslation/format';
-import { GTRuntime } from 'generaltranslation/runtime';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { GTIntl } from 'generaltranslation/internal';
+import { LocaleIntl } from 'generaltranslation/internal';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import type { GTConfig } from 'generaltranslation';
 import {
@@ -12,7 +11,6 @@ import {
   getTranslationApiType,
   TranslationApiType,
 } from '../i18n-cache/utils/getTranslationApiType';
-import { getRuntimeEnvironment } from '../utils/getRuntimeEnvironment';
 import { validateI18nConfigParams } from './validation';
 
 export type I18nConfigParams = Pick<
@@ -28,16 +26,22 @@ export type I18nConfigParams = Pick<
   | 'runtimeUrl'
   | '_disableDevHotReload'
   | '_tagIds'
+  | '_versionId'
 >;
 
 type RuntimeConfig = Pick<
   I18nConfigParams,
-  'projectId' | 'apiKey' | 'runtimeUrl' | '_disableDevHotReload' | '_tagIds'
+  | 'projectId'
+  | 'apiKey'
+  | 'runtimeUrl'
+  | '_disableDevHotReload'
+  | '_tagIds'
+  | '_versionId'
 >;
 
 export type LocaleCandidates = string | string[] | undefined;
 
-export class I18nConfig extends GTIntl {
+export class I18nConfig extends LocaleIntl {
   protected runtimeConfig: RuntimeConfig;
   private gtServicesEnabled: boolean;
 
@@ -50,6 +54,7 @@ export class I18nConfig extends GTIntl {
       runtimeUrl: params.runtimeUrl,
       _disableDevHotReload: params._disableDevHotReload,
       _tagIds: params._tagIds,
+      _versionId: params._versionId,
     };
     this.gtServicesEnabled = gtServicesEnabled;
   }
@@ -71,22 +76,13 @@ export class I18nConfig extends GTIntl {
     return this.runtimeConfig.projectId;
   }
 
-  /**
-   * The runtime for runtime translation. Each framework's initialization
-   * resolves the credentials, from its config and then its environment.
-   *
-   * @throws {Error} Without a projectId or an API key.
-   */
-  getTranslationRuntime(): GTRuntime {
-    const { projectId, apiKey, runtimeUrl } = this.runtimeConfig;
-    if (!projectId) throw new Error(missingRuntimeProjectIdError);
-    if (!apiKey) throw new Error(missingRuntimeApiKeyError);
-    return new GTRuntime({
-      apiKey,
-      projectId,
-      baseUrl: runtimeUrl || undefined,
-      localeConfig: this,
-    });
+  getVersionId(): string | undefined {
+    return this.runtimeConfig._versionId;
+  }
+
+  /** The credentials and endpoint that createGTRuntime() reads. */
+  getRuntimeConfig(): Readonly<RuntimeConfig> {
+    return this.runtimeConfig;
   }
 
   determineLocale(locales: LocaleCandidates): string | undefined {
@@ -106,21 +102,6 @@ export class I18nConfig extends GTIntl {
       throw new Error(createInvalidLocaleError(locale));
     }
     return resolvedLocale;
-  }
-
-  /**
-   * Returns true when development hot reload runtime translation requests can
-   * run: in development, with an API key and a projectId.
-   */
-  isDevHotReloadEnabled(): boolean {
-    return (
-      !this.runtimeConfig._disableDevHotReload &&
-      !!this.runtimeConfig.apiKey &&
-      !!this.runtimeConfig.projectId &&
-      this.runtimeConfig.runtimeUrl !== null &&
-      this.runtimeConfig.runtimeUrl !== '' &&
-      getRuntimeEnvironment() === 'development'
-    );
   }
 
   isGTServicesEnabled(): boolean {
@@ -172,17 +153,3 @@ const createInvalidLocaleError = (locale: string) =>
     whatHappened: `Locale "${locale}" is not valid`,
     fix: 'Use a valid BCP 47 locale code or add a custom mapping',
   });
-
-const missingRuntimeProjectIdError = createDiagnosticMessage({
-  source: 'gt-i18n',
-  severity: 'Error',
-  whatHappened: 'Runtime translation needs a projectId',
-  fix: "Set `projectId` in your framework's GT configuration, or disable runtime translation",
-});
-
-const missingRuntimeApiKeyError = createDiagnosticMessage({
-  source: 'gt-i18n',
-  severity: 'Error',
-  whatHappened: 'Runtime translation needs an API key',
-  fix: "Set `apiKey` in your framework's GT configuration or the GT_API_KEY environment variable, or disable runtime translation",
-});

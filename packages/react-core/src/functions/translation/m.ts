@@ -2,11 +2,13 @@ import type { M, Msg } from 'gt-i18n';
 import { createMessages } from 'gt-i18n/internal';
 import { getReadonlyConditionStore } from '../../condition-store/singleton-operations';
 import { isSpa, reportServerRenderedUse } from './spaOnly';
+import { lookupSpaTranslation } from './lookupSpaTranslation';
 
 const messages = /* @__PURE__ */ createMessages({
   getLocale: () => getReadonlyConditionStore().getLocale(),
   // Outside an SPA, m renders the source once the misuse is reported.
   getEnableI18n: () => isSpa() && getReadonlyConditionStore().getEnableI18n(),
+  lookupTranslation: lookupSpaTranslation,
 });
 
 function sourceOf(message: string | Msg | null | undefined) {

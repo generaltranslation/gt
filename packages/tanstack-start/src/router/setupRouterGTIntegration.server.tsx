@@ -1,4 +1,5 @@
 import { GTProvider } from 'gt-react';
+import { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
 import {
   ensureInitialized,
   getServerConditionStore,
@@ -35,7 +36,8 @@ export function setupRouterGTIntegration(
 ): void {
   integrateRouter(resolveIntegrationOptions(options), {
     Provider: GTProvider,
-    loadState: readGTRouterState,
+    loadState: (conditionStore) =>
+      readGTRouterState(conditionStore, getTranslationsSnapshot),
   });
 }
 

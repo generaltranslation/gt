@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   formatCutoff,
   formatDateTime,
-  formatMessage as publicFormatMessage,
   formatRelativeTimeFromDate,
 } from '../core';
+import { formatMessage as publicFormatMessage } from '../formatMessage';
 import { intlCache } from '../../cache/IntlCache';
 import {
   _formatListToParts,

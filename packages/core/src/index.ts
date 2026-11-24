@@ -38,11 +38,11 @@ export {
   formatDateTime,
   formatList,
   formatListToParts,
-  formatMessage,
   formatNum,
   formatRelativeTime,
   formatRelativeTimeFromDate,
 } from './formatting/formatting';
+export { formatMessage } from './formatting/formatMessage';
 export { HTML_CONTENT_PROPS } from '@generaltranslation/format';
 export type {
   Content,

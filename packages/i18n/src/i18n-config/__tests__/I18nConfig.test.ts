@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { I18nConfig } from '../I18nConfig';
+import { getTranslationRuntimeParams } from '../createGTRuntime';
+import { isDevHotReloadEnabled } from '../isDevHotReloadEnabled';
 
 describe('I18nConfig', () => {
   beforeEach(() => {
@@ -9,7 +11,6 @@ describe('I18nConfig', () => {
 
   afterEach(() => {
     vi.unstubAllEnvs();
-    vi.unstubAllGlobals();
   });
 
   it.each([
@@ -70,6 +71,18 @@ describe('I18nConfig', () => {
     const config = new I18nConfig({ defaultLocale: 'fr' });
 
     expect(config.getLocales()).toEqual(['fr']);
+  });
+
+  it('getVersionId() returns the _versionId passed to the constructor', () => {
+    const config = new I18nConfig({ _versionId: 'version-abc' });
+
+    expect(config.getVersionId()).toBe('version-abc');
+  });
+
+  it('getVersionId() returns undefined when no _versionId was provided', () => {
+    const config = new I18nConfig();
+
+    expect(config.getVersionId()).toBeUndefined();
   });
 
   it('skips locale validation when GT services are disabled', () => {
@@ -154,38 +167,38 @@ describe('I18nConfig', () => {
     ).toBe('en-GB');
   });
 
-  it('does not read the API key from the environment', async () => {
+  it('does not read the API key from the environment', () => {
     vi.stubEnv('GT_API_KEY', 'env-key');
-    const fetchMock = vi.fn<typeof fetch>(async () =>
-      Response.json({ results: [] })
-    );
-    vi.stubGlobal('fetch', fetchMock);
 
     expect(() =>
-      new I18nConfig({ projectId: 'project' }).getTranslationRuntime()
+      getTranslationRuntimeParams(new I18nConfig({ projectId: 'project' }))
     ).toThrow('Runtime translation needs an API key');
-    await new I18nConfig({ projectId: 'project', apiKey: 'key' })
-      .getTranslationRuntime()
-      .translateMany([], 'es');
     expect(
-      new Request(...fetchMock.mock.calls[0]).headers.get('authorization')
-    ).toBe('Bearer key');
+      getTranslationRuntimeParams(
+        new I18nConfig({
+          projectId: 'project',
+          apiKey: 'key',
+        })
+      ).apiKey
+    ).toBe('key');
   });
 
   it('builds a translation runtime only with a projectId and an API key', () => {
     expect(() =>
-      new I18nConfig({ projectId: 'project' }).getTranslationRuntime()
+      getTranslationRuntimeParams(new I18nConfig({ projectId: 'project' }))
     ).toThrow('Runtime translation needs an API key');
     expect(() =>
-      new I18nConfig({ apiKey: 'key' }).getTranslationRuntime()
+      getTranslationRuntimeParams(new I18nConfig({ apiKey: 'key' }))
     ).toThrow('Runtime translation needs a projectId');
     expect(
-      new I18nConfig({
-        projectId: 'project',
-        apiKey: 'key',
-        defaultLocale: 'en',
-        locales: ['es'],
-      }).getTranslationRuntime()
+      getTranslationRuntimeParams(
+        new I18nConfig({
+          projectId: 'project',
+          apiKey: 'key',
+          defaultLocale: 'en',
+          locales: ['es'],
+        })
+      )
     ).toMatchObject({
       projectId: 'project',
       localeConfig: { defaultLocale: 'en', locales: ['en', 'es'] },
@@ -200,7 +213,7 @@ describe('I18nConfig', () => {
       projectId: 'project-id',
     });
 
-    expect(config.isDevHotReloadEnabled()).toBe(true);
+    expect(isDevHotReloadEnabled(config)).toBe(true);
   });
 
   it('disables dev hot reload when the config switch is set', () => {
@@ -212,7 +225,7 @@ describe('I18nConfig', () => {
       _disableDevHotReload: true,
     });
 
-    expect(config.isDevHotReloadEnabled()).toBe(false);
+    expect(isDevHotReloadEnabled(config)).toBe(false);
   });
 
   it.each([
@@ -250,6 +263,6 @@ describe('I18nConfig', () => {
   ])('disables dev hot reload for $name', ({ config, environment }) => {
     vi.stubEnv('NODE_ENV', environment);
 
-    expect(new I18nConfig(config).isDevHotReloadEnabled()).toBe(false);
+    expect(isDevHotReloadEnabled(new I18nConfig(config))).toBe(false);
   });
 });

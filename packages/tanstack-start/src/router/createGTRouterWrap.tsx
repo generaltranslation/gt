@@ -4,7 +4,7 @@ import {
   type ComponentType,
   type ReactNode,
 } from 'react';
-import { getTranslationsSnapshot } from '@generaltranslation/react-core/pure';
+import type { TranslationsSnapshot } from '@generaltranslation/react-core/pure';
 import type { ReadonlyConditionStoreInterface } from 'gt-i18n/internal';
 import type { GTRouterState } from './types';
 
@@ -14,14 +14,15 @@ export type GTConditionSource = Pick<
 >;
 
 export async function readGTRouterState(
-  conditionStore: GTConditionSource
+  conditionStore: GTConditionSource,
+  loadTranslations: (locale: string) => Promise<TranslationsSnapshot>
 ): Promise<GTRouterState> {
   const locale = conditionStore.getLocale();
   return {
     locale,
     region: conditionStore.getRegion(),
     enableI18n: conditionStore.getEnableI18n(),
-    translations: await getTranslationsSnapshot(locale),
+    translations: await loadTranslations(locale),
   };
 }
 

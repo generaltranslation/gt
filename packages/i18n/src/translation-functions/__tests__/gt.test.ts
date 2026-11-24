@@ -13,7 +13,8 @@ import {
 } from '../../i18n-config/singleton-operations';
 import { t } from '../../index';
 import { buildMessage, buildSiteMessage } from '../buildMessage';
-import { createGT, getGT } from '../gt';
+import { getGT } from '../cachedGT';
+import { createGT } from '../gt';
 import type {
   LookupTreeTranslation,
   MessageTreeMetadata,

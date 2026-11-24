@@ -1,10 +1,12 @@
+export { createGT, type CreateGTParams } from './translation-functions/gt';
 export {
-  createGT,
   getGT,
+  loadCreateGTParams,
+  lookupCachedTranslation,
   renderCachedMessage,
-  type CreateGTParams,
-} from './translation-functions/gt';
-export { createMessages, getMessages } from './translation-functions/messages';
+} from './translation-functions/cachedGT';
+export { createMessages } from './translation-functions/messages';
+export { getMessages } from './translation-functions/cachedMessages';
 export {
   isPrecomputedMessage,
   type PrecomputedMessage,
@@ -22,6 +24,10 @@ export {
 export { GtInternalRuntimeTranslateJsx } from './translation-functions/internal/runtime-translate';
 export { createLookupOptions } from './translation-functions/internal/helpers';
 export { I18nCache } from './i18n-cache/I18nCache';
+export { getTranslationRuntimeParams } from './i18n-config/createGTRuntime';
+export { getLoadTranslationsType } from './i18n-cache/utils/getLoadTranslationsType';
+export { dedupePending } from './i18n-cache/translations-manager/utils/dedupePending';
+export { routeCreateTranslationLoader } from './i18n-cache/translations-manager/translations-loaders/routeCreateTranslationLoader';
 export type { TranslationsCacheMissEvent } from './i18n-cache/I18nCache';
 export { ReadonlyConditionStore } from './condition-store/ReadonlyConditionStore';
 export type { ReadonlyConditionStoreParams } from './condition-store/ReadonlyConditionStore';
@@ -39,6 +45,7 @@ export {
   setI18nConfig,
 } from './i18n-config/singleton-operations';
 export { I18nConfig } from './i18n-config/I18nConfig';
+export { isDevHotReloadEnabled } from './i18n-config/isDevHotReloadEnabled';
 export type { I18nConfigParams } from './i18n-config/I18nConfig';
 export { createConditionStoreSingleton } from './condition-store/createConditionStoreSingleton';
 export { createGlobalSingleton } from './globals/createGlobalSingleton';

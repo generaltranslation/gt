@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { GTIntl as FormatGTIntl } from '@generaltranslation/format';
 import { GeneralTranslation, GTAccount, GTIntl } from '../index';
 import { GTRuntime } from '../runtime';
 
@@ -19,6 +20,10 @@ const formatCurrencyWithIntl = (locale: string, currency = 'EUR') =>
   }).format(numberValue);
 
 describe('GTIntl', () => {
+  it("is an instance of @generaltranslation/format's GTIntl", () => {
+    expect(new GTIntl()).toBeInstanceOf(FormatGTIntl);
+  });
+
   it.each(['Mars/Olympus', ''])(
     'rejects the time zone %j, which Intl does not know',
     (timeZone) => {

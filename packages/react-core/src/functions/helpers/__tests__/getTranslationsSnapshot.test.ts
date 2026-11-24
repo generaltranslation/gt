@@ -4,6 +4,11 @@ import { setReactI18nCache } from '../../../i18n-cache/singleton-operations';
 import { initializeI18nConfig } from '../../../setup/i18nConfig';
 import { getReactI18nCache } from '../../../i18n-cache/singleton-operations';
 import {
+  setGlobalTranslationsSnapshot,
+  setTranslationsSnapshotLoader,
+  updateGlobalTranslationsSnapshot,
+} from '../../../translations-snapshot/singleton-operations';
+import {
   getTranslationsSnapshot,
   preloadTranslations,
 } from '../getTranslationsSnapshot';
@@ -79,6 +84,68 @@ describe('getTranslationsSnapshot', () => {
       es: { hash1: 'hola' },
     });
     expect(consoleWarnSpy).not.toHaveBeenCalled();
+  });
+
+  it('production: copies a loaded locale and loads others without a cache', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    initializeI18nConfig(
+      { defaultLocale: 'en', locales: ['en', 'es', 'fr'] },
+      'SPA'
+    );
+    const loadTranslations = vi.fn(async () => ({ hash1: 'bonjour' }));
+    setTranslationsSnapshotLoader({ loadTranslations });
+    const global = { es: { hash1: 'hola' } };
+    setGlobalTranslationsSnapshot(global);
+
+    const snapshot = await getTranslationsSnapshot('es');
+    expect(snapshot).toEqual({ es: { hash1: 'hola' } });
+    expect(snapshot.es).not.toBe(global.es);
+    await expect(getTranslationsSnapshot('fr')).resolves.toEqual({
+      fr: { hash1: 'bonjour' },
+    });
+    expect(loadTranslations.mock.calls).toEqual([['fr']]);
+  });
+
+  it('production: keeps entries that arrive while a locale loads', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
+    let finishLoad!: (translations: Record<string, string>) => void;
+    setTranslationsSnapshotLoader({
+      loadTranslations: () =>
+        new Promise((resolve) => {
+          finishLoad = resolve;
+        }),
+    });
+
+    const pending = getTranslationsSnapshot('fr');
+    await Promise.resolve();
+    updateGlobalTranslationsSnapshot({ fr: { shared: 'Sauver' } });
+    finishLoad({ shared: 'Enregistrer', loaded: 'Ouvrir' });
+
+    const expected = { fr: { shared: 'Sauver', loaded: 'Ouvrir' } };
+    await expect(pending).resolves.toEqual(expected);
+    await expect(getTranslationsSnapshot('fr')).resolves.toEqual(expected);
+  });
+
+  it('production: waits for a pending load when part of the locale has arrived', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
+    let finishLoad!: (translations: Record<string, string>) => void;
+    setTranslationsSnapshotLoader({
+      loadTranslations: () =>
+        new Promise((resolve) => {
+          finishLoad = resolve;
+        }),
+    });
+
+    const first = getTranslationsSnapshot('fr');
+    updateGlobalTranslationsSnapshot({ fr: { shared: 'Sauver' } });
+    const second = getTranslationsSnapshot('fr');
+    finishLoad({ shared: 'Enregistrer', loaded: 'Ouvrir' });
+
+    const expected = { fr: { shared: 'Sauver', loaded: 'Ouvrir' } };
+    await expect(first).resolves.toEqual(expected);
+    await expect(second).resolves.toEqual(expected);
   });
 
   it('development: omits the locale and warns when the loader fails', async () => {

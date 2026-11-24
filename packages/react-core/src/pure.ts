@@ -29,12 +29,21 @@ export {
   internalInitializeGTSRA,
   type ReactInitializeGTParams,
 } from './setup/initializeGTSRA';
+export { initializeReactI18nCache } from './i18n-cache/initializeReactI18nCache';
 
 export {
   ReactI18nCache,
   type ReactI18nCacheParams,
 } from './i18n-cache/ReactI18nCache';
 export { setI18nStore } from './i18n-store/singleton-operations';
+export {
+  getGlobalTranslationsSnapshot,
+  setTranslationsSnapshotLoader,
+  updateGlobalTranslationsSnapshot,
+  type TranslationsSnapshot,
+} from './translations-snapshot/singleton-operations';
+export { loadGlobalTranslationsSnapshot } from './translations-snapshot/loadGlobalTranslationsSnapshot';
+export { lookupGlobalSnapshotTranslation } from './translations-snapshot/lookupGlobalSnapshotTranslation';
 export { I18nStore } from './i18n-store/I18nStore';
 export { getI18nConfig, initializeI18nConfig } from './setup/i18nConfig';
 export { getReadonlyConditionStore } from './condition-store/singleton-operations';

@@ -1439,10 +1439,10 @@ if (manifest.maps) {
 
 // A build whose modules run when they are first imported and not when
 // their chunk loads (Rolldown's strictExecutionOrder), of start.html, which
-// has no top-level await: the bundler then merges chunks. It keeps the
-// module that only the Orders route and the panel it opens import in the
-// route's chunk, so the panel's chunk imports the route's, and it writes the
-// import of the route as import(x).then((n) => (n.init(), n.exports)). The
+// has no top-level await. The build puts the module that only the Orders
+// route and the panel it opens import in the route's chunk, so the panel's
+// chunk imports the route's, and the bundler writes the import of the route
+// as import(x).then((n) => (n.init(), n.exports)). The
 // build has to read the chunk out of that, and what starts the module must
 // still run after its translations. The route is opened first of all, then
 // after another route.

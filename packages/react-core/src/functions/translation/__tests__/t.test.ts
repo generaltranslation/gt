@@ -1,5 +1,5 @@
 import { hashSource } from 'generaltranslation/id';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setReadonlyConditionStore } from '../../../condition-store/singleton-operations';
 import type { ReactI18nCache } from '../../../i18n-cache/ReactI18nCache';
 import {
@@ -159,5 +159,58 @@ describe('react-core t', () => {
       error.mockRestore();
       vi.unstubAllEnvs();
     }
+  });
+});
+
+describe('react-core t in production', () => {
+  beforeEach(() => {
+    Reflect.deleteProperty(globalThis as TestGlobal, '__generaltranslation');
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  async function loadProductionT() {
+    const [{ t: prodT }, conditions, config, snapshot] = await Promise.all([
+      import('../t'),
+      import('../../../condition-store/singleton-operations'),
+      import('../../../setup/i18nConfig'),
+      import('../../../translations-snapshot/singleton-operations'),
+    ]);
+    config.initializeI18nConfig(
+      { defaultLocale: 'en', locales: ['en', 'fr'] },
+      'SPA'
+    );
+    conditions.setReadonlyConditionStore({
+      getLocale: () => 'fr',
+      getRegion: () => undefined,
+      getEnableI18n: () => true,
+      setLocale: () => {},
+      setRegion: () => {},
+      setEnableI18n: () => {},
+    });
+    return { prodT, setSnapshot: snapshot.setGlobalTranslationsSnapshot };
+  }
+
+  it('reads translations from the global snapshot without an i18nCache', async () => {
+    const { prodT, setSnapshot } = await loadProductionT();
+    setSnapshot({ fr: translations as Record<string, string> });
+
+    expect(prodT`Save`).toBe('Enregistrer');
+    expect(prodT({ context: 'button' })`Save`).toBe('Sauvegarder');
+    expect((prodT as unknown as typeof precomputed)(save)).toBe('Enregistrer');
+  });
+
+  it('renders the source for a missing entry or before the snapshot is set', async () => {
+    const { prodT, setSnapshot } = await loadProductionT();
+
+    expect(prodT`Save`).toBe('Save');
+    setSnapshot({ fr: {} });
+    expect(
+      (prodT as unknown as typeof precomputed)(greeting, { name: 'Ada' })
+    ).toBe('Hello, Ada!');
   });
 });

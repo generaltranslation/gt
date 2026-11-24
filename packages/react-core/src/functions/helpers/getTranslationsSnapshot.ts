@@ -5,6 +5,11 @@ import {
   formatDiagnosticErrorDetails,
 } from 'generaltranslation/diagnostics';
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
+import {
+  getGlobalTranslationsSnapshot,
+  isTranslationsSnapshotLoaderInitialized,
+} from '../../translations-snapshot/singleton-operations';
+import { loadGlobalTranslationsSnapshot } from '../../translations-snapshot/loadGlobalTranslationsSnapshot';
 
 /**
  * Serializable cached translations for provider hydration; a failed load
@@ -14,6 +19,15 @@ import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 export async function getTranslationsSnapshot(
   locale: Locale
 ): Promise<Record<Locale, Record<Hash, Content>>> {
+  // Production browser clients create no cache.
+  if (
+    process.env.NODE_ENV === 'production' &&
+    isTranslationsSnapshotLoaderInitialized()
+  ) {
+    await loadGlobalTranslationsSnapshot(locale);
+    const loaded = getGlobalTranslationsSnapshot()[locale];
+    return loaded ? { [locale]: structuredClone(loaded) } : {};
+  }
   const i18nCache = getReactI18nCache();
   try {
     return { [locale]: await i18nCache.loadTranslations(locale) };

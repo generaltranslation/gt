@@ -34,6 +34,10 @@ vi.mock('gt-tanstack-start/internal/localeRouting', () => ({
   getRouterLocaleRewrite: () => undefined,
   replaceWithLocaleURL: vi.fn(),
 }));
+vi.mock('../../setup/translations.client', () => ({
+  hydrateClientTranslations: vi.fn(),
+  loadClientTranslations: async (locale: string) => ({ hello: locale }),
+}));
 vi.mock('../../setup/initializeGT.client', () => ({
   ensureInitialized: vi.fn(),
   getClientReload: vi.fn(),
@@ -43,11 +47,8 @@ vi.mock('gt-react', () => ({
 }));
 vi.mock('@generaltranslation/react-core/pure', () => ({
   getReadonlyConditionStore: () => mockConditionStore,
-  getTranslationsSnapshot: async (locale: string) => ({ hello: locale }),
 }));
 vi.mock('gt-i18n/internal', () => ({
-  // The browser translations cache never expires unless configured.
-  getI18nCache: () => ({ getCacheExpiryTime: () => null }),
   getI18nConfig: () => ({ getDefaultLocale: () => 'en' }),
 }));
 vi.mock('gt-i18n/internal/compat', () => ({

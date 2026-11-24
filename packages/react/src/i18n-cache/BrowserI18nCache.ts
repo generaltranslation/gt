@@ -1,5 +1,6 @@
 import {
   getI18nConfig,
+  isDevHotReloadEnabled,
   I18nCache,
   type I18nCacheConstructorParams,
   type TranslationsLoader,
@@ -41,7 +42,9 @@ export class BrowserI18nCache extends I18nCache<Content> {
     const localStorageCaches: LocalStorageCachePromises = {};
     const i18nConfig = getI18nConfig();
     const devHotReloadEnabled =
-      !!config.loadTranslations && i18nConfig.isDevHotReloadEnabled();
+      process.env.NODE_ENV !== 'production' &&
+      !!config.loadTranslations &&
+      isDevHotReloadEnabled(i18nConfig);
     const projectId = i18nConfig.getProjectId()!;
     const loadTranslations = devHotReloadEnabled
       ? wrapLoaderWithLocalStorage(

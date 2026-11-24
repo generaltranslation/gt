@@ -1,9 +1,10 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { createGlobalSingleton } from '../globals/createGlobalSingleton';
-import { I18nCache } from './I18nCache';
+import type { I18nCache } from './I18nCache';
 import type { Content } from '@generaltranslation/format';
 
-const i18nCacheSingleton = createGlobalSingleton<I18nCache>({
+// Pure so bundlers drop it from production clients that create no cache.
+const i18nCacheSingleton = /* @__PURE__ */ createGlobalSingleton<I18nCache>({
   namespace: 'i18n',
   key: 'i18nCache',
   notInitialized: () =>

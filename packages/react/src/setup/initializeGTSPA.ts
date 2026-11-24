@@ -5,6 +5,8 @@ import {
   setReactI18nCache,
   getReadonlyConditionStore,
   initializeI18nConfig,
+  setTranslationsSnapshotLoader,
+  loadGlobalTranslationsSnapshot,
 } from '@generaltranslation/react-core/pure';
 import type { I18nConfigParams } from '@generaltranslation/react-core/pure';
 import { BrowserI18nCache } from '../i18n-cache/BrowserI18nCache';
@@ -21,30 +23,39 @@ export type InitializeGTSPAParams = I18nConfigParams &
 
 /**
  * Initialize GT for an SPA
- * - i18nCache
  * - conditionStore
- * - i18nStore
+ * - translationsSnapshot (production)
+ * - i18nCache and i18nStore (development only)
  *
  * This is SPA for browser runtime
  *
+ * Call once per page load. Changing locale reloads the page.
  * Translations never expire in the browser, so `cacheExpiryTime` is ignored.
  */
 export async function initializeGTSPA(config: InitializeGTSPAParams) {
   const runtimeConfig = addRuntimeCredentials(config);
   initializeI18nConfig(runtimeConfig, 'SPA');
 
-  const i18nCache = new BrowserI18nCache({
-    ...runtimeConfig,
-    // Lookups are synchronous, so an expired locale would render untranslated.
-    cacheExpiryTime: null,
-  });
-  setReactI18nCache(i18nCache);
-
   createOrUpdateBrowserConditionStore(runtimeConfig);
+  const locale = getReadonlyConditionStore().getLocale();
 
-  const i18nStore = new I18nStore();
-  setI18nStore(i18nStore);
+  // Production lookups read the snapshot, so it skips the cache and store
+  if (process.env.NODE_ENV === 'production') {
+    setTranslationsSnapshotLoader(runtimeConfig);
+    await loadGlobalTranslationsSnapshot(locale);
+    return;
+  }
+
+  // Dev hot reload reads from and updates the cache through the store
+  setReactI18nCache(
+    new BrowserI18nCache({
+      ...runtimeConfig,
+      // Lookups are synchronous, so an expired locale would render untranslated.
+      cacheExpiryTime: null,
+    })
+  );
+  setI18nStore(new I18nStore());
 
   // Block until translations are loaded
-  await preloadTranslations(getReadonlyConditionStore().getLocale());
+  await preloadTranslations(locale);
 }

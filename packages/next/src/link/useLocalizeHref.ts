@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useDefaultLocale, useLocale } from 'gt-react';
+import { useDefaultLocale, useLocale } from 'gt-react/client-entry';
 import { localizeHref, type LinkLocale } from './localize-utils';
 
 /**

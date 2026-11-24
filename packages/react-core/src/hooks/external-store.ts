@@ -8,7 +8,7 @@ import {
   useI18nStore,
   useTranslationsSnapshot,
 } from '../i18n-store/useI18nStore';
-import { getI18nConfig } from 'gt-i18n/internal';
+import { isDevHotReloadEnabled } from 'gt-i18n/internal';
 import { useHandleMissingTranslation } from './utils/missing-translation';
 
 /**
@@ -50,7 +50,7 @@ export function useTranslate<T extends Content>(
   if (
     process.env.NODE_ENV !== 'production' &&
     storeTranslation == null &&
-    getI18nConfig().isDevHotReloadEnabled()
+    isDevHotReloadEnabled()
   ) {
     // TODO: (separate PR): add configuration for a use() + suspense strategy
     // TODO: consider moving this to a useEffect

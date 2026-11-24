@@ -135,12 +135,20 @@ export default defineConfig({
       input: process.env.CHECK_ENTRY ?? 'index.html',
       output: {
         // CHECK_LAZY: a module runs when it is first imported, not when its
-        // chunk loads. In a build without a top-level await, as of
-        // start.html, the bundler then keeps a module that only a route and
-        // a chunk the route imports use in the route's chunk, and writes the
-        // import of that route as import(x).then((n) => (n.init(), n.exports)).
+        // chunk loads. The Orders route shares its chunk with OrderLines,
+        // which the panel the route opens also imports, so the bundler writes
+        // the import of the route as import(x).then((n) => (n.init(), n.exports)).
         ...(process.env.CHECK_LAZY === 'true' && {
           strictExecutionOrder: true,
+          codeSplitting: {
+            includeDependenciesRecursively: false,
+            groups: [
+              {
+                name: 'Orders',
+                test: /\/src\/(routes\/Orders|shared\/OrderLines)\.tsx$/,
+              },
+            ],
+          },
         }),
         // For scripts/check-module.mjs. CHECK_ONE_CHUNK: the app is one
         // chunk, so the bundler writes the import of a route without an

@@ -8,7 +8,7 @@ import { msg as stringMsg } from '../../string/msg';
 import { m as globalM, mFallback, msg, type Msg } from '../../index';
 import { createMessages, getMessages } from '../../internal';
 import { buildMessage } from '../buildMessage';
-import { getGT } from '../gt';
+import { getGT } from '../cachedGT';
 import { date, num, part, plural, select } from '../placeholders';
 import { n } from '../placeholders';
 

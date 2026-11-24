@@ -1,19 +1,26 @@
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { createGlobalSingleton } from 'gt-i18n/internal';
-import { I18nStore } from './I18nStore';
+import type { I18nStore } from './I18nStore';
 import { getI18nConfig } from '../setup/i18nConfig';
 
 // ===== I18n Store ===== //
 
-const i18nStoreSingleton = createGlobalSingleton<I18nStore>({
+// Pure so bundlers drop it from production clients that create no store.
+const i18nStoreSingleton = /* @__PURE__ */ createGlobalSingleton<I18nStore>({
   namespace: 'reactCore',
   key: 'i18nStore',
   notInitialized: () => createI18nStoreNotInitializedError(),
 });
 
-export const getI18nStore = i18nStoreSingleton.get;
-export const setI18nStore = i18nStoreSingleton.set;
-export const isI18nStoreInitialized = i18nStoreSingleton.isInitialized;
+export function getI18nStore(): I18nStore {
+  return i18nStoreSingleton.get();
+}
+export function setI18nStore(i18nStore: I18nStore): void {
+  i18nStoreSingleton.set(i18nStore);
+}
+export function isI18nStoreInitialized(): boolean {
+  return i18nStoreSingleton.isInitialized();
+}
 
 function createI18nStoreNotInitializedError(): Error {
   const renderStrategy = getI18nConfig().getRenderStrategy();

@@ -1,8 +1,15 @@
 // @vitest-environment jsdom
 import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { hashSource } from 'generaltranslation/id';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
+import {
+  getTranslationsSnapshot,
+  initializeI18nConfig,
+  updateGlobalTranslationsSnapshot,
+} from '@generaltranslation/react-core/pure';
+import { initializeGTSRAClient } from '../../setup/initializeGTSRAClient';
 import {
   useEnableI18n,
   useLocale,
@@ -10,6 +17,7 @@ import {
   useSetEnableI18n,
   useSetLocale,
   useSetRegion,
+  useGT,
 } from '@generaltranslation/react-core/hooks';
 import { getCookieValue } from '../../condition-store/cookies';
 import { BrowserGTProvider } from '../BrowserGTProvider';
@@ -174,5 +182,103 @@ describe('BrowserGTProvider server-provided conditions', () => {
     await render({ locale: 'de', region: 'MX', enableI18n: false });
     expect(conditions()).toBe('de:MX:false');
     expect(reload).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('BrowserGTProvider in a production SPA', () => {
+  beforeEach(() => {
+    resetI18n();
+    vi.stubEnv('NODE_ENV', 'production');
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
+  });
+
+  afterEach(() => {
+    const registry = Reflect.get(globalThis, '__generaltranslation');
+    Reflect.deleteProperty(registry.reactCore, 'translationsSnapshot');
+    vi.unstubAllEnvs();
+    resetI18n();
+  });
+
+  it('reads a translation missing from its translations in the global snapshot', () => {
+    const hash = (source: string) =>
+      hashSource({ source, dataFormat: 'MESSAGE_TREE' });
+    updateGlobalTranslationsSnapshot({
+      fr: { [hash('Save')]: 'Enregistrer', [hash('Open')]: 'Ouvrir' },
+    });
+
+    function Buttons() {
+      const t = useGT();
+      return <p>{`${t`Save`} ${t`Open`}`}</p>;
+    }
+
+    const html = renderToStaticMarkup(
+      <BrowserGTProvider
+        locale='fr'
+        enableI18n
+        _reload={() => undefined}
+        translations={{ fr: { [hash('Save')]: 'Sauver' } }}
+      >
+        <Buttons />
+      </BrowserGTProvider>
+    );
+
+    expect(html).toBe('<p>Sauver Ouvrir</p>');
+  });
+
+  it("gives getTranslationsSnapshot() the server's translations once mounted", async () => {
+    initializeGTSRAClient({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      cacheUrl: null,
+    });
+    const translations = { fr: { hash: 'Sauver' } };
+    const root = createRoot(document.createElement('div'));
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+
+    await act(async () => {
+      root.render(
+        <BrowserGTProvider
+          locale='fr'
+          enableI18n
+          _reload={() => undefined}
+          translations={translations}
+        />
+      );
+    });
+
+    const snapshot = await getTranslationsSnapshot('fr');
+    expect(snapshot).toEqual(translations);
+    expect(snapshot.fr).not.toBe(translations.fr);
+    await act(async () => root.unmount());
+    vi.unstubAllGlobals();
+  });
+
+  it("leaves out a prerendered shell's translations", async () => {
+    initializeGTSRAClient({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      cacheUrl: null,
+    });
+    updateGlobalTranslationsSnapshot({ fr: { hash: 'Enregistrer' } });
+    const root = createRoot(document.createElement('div'));
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+
+    await act(async () => {
+      root.render(
+        <BrowserGTProvider
+          locale='fr'
+          enableI18n
+          _reload={() => undefined}
+          _syncConditions={false}
+          translations={{ fr: { hash: 'Sauver' } }}
+        />
+      );
+    });
+
+    await expect(getTranslationsSnapshot('fr')).resolves.toEqual({
+      fr: { hash: 'Enregistrer' },
+    });
+    await act(async () => root.unmount());
+    vi.unstubAllGlobals();
   });
 });

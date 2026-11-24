@@ -45,6 +45,7 @@ function initialize(config: InitializeGTParams): void {
   const reload = createLocaleReload();
 
   initializeReactGT(config);
+
   createOrUpdateBrowserConditionStore({
     ...config,
     _reload: reload,

@@ -1,11 +1,11 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { hashSource } from 'generaltranslation/id';
-import { internalInitializeGTSRA } from '@generaltranslation/react-core/pure';
 import { createConditionStoreSingleton } from 'gt-i18n/internal';
 import type { Content } from '@generaltranslation/format';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ServerGTProvider } from '../provider/ServerGTProvider';
+import { initializeGTSRA } from '../setup/initializeGTSRA';
 import { msg, useGT, useMessages } from '../index.server';
 import { useGT as useRscGT, useMessages as useRscMessages } from '../index.rsc';
 
@@ -56,7 +56,7 @@ describe('gt-react useGT and useMessages', () => {
   afterEach(resetI18nGlobals);
 
   it('renders the source, then the provider translation once it loads', () => {
-    internalInitializeGTSRA({ defaultLocale: 'en', locales: ['en', 'fr'] });
+    initializeGTSRA({ defaultLocale: 'en', locales: ['en', 'fr'] });
 
     expect(renderHello({})).toBe('<span>Hello, Ada!</span>');
     expect(renderHello({ fr: { [helloHash]: frenchHello } })).toBe(
@@ -65,7 +65,7 @@ describe('gt-react useGT and useMessages', () => {
   });
 
   it('renders msg() messages with the provider translation through useMessages()', () => {
-    internalInitializeGTSRA({ defaultLocale: 'en', locales: ['en', 'fr'] });
+    initializeGTSRA({ defaultLocale: 'en', locales: ['en', 'fr'] });
 
     expect(renderHello({}, HelloMessage)).toBe('<span>Hello, Ada!</span>');
     expect(
@@ -74,7 +74,7 @@ describe('gt-react useGT and useMessages', () => {
   });
 
   it('binds the RSC useGT() to the condition store locale', async () => {
-    internalInitializeGTSRA({
+    initializeGTSRA({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
       loadTranslations: async (locale: string) =>

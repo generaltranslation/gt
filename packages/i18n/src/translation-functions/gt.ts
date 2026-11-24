@@ -1,14 +1,11 @@
 import type { MessageTree, MessageFormats } from '@generaltranslation/icu';
 import type { MessageTreeHashMetadata } from 'generaltranslation/id';
-import { getWritableConditionStore } from '../condition-store/singleton-operations';
-import { getI18nCache } from '../i18n-cache/singleton-operations';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { buildSiteMessage } from './buildMessage';
 import type { CheckHoles } from './placeholders';
 import {
   isPrecomputedMessage,
   type LookupTreeTranslation,
-  type MessageTreeLookupOptions,
   type MessageTreeMetadata,
   type PrecomputedMessage,
   renderMessage,
@@ -34,10 +31,11 @@ export type CreateGTParams = {
   getEnableI18n?: () => boolean;
   /**
    * Reads a tree's catalog entry, e.g. from a framework's translations
-   * snapshot. Results are validated like I18nCache entries. Defaults to the
-   * I18nCache, with dev hot reload translating misses.
+   * snapshot or lookupCachedTranslation. Results are validated like I18nCache
+   * entries. Required, so a bundle that never reads the I18nCache leaves it
+   * out.
    */
-  lookupTranslation?: LookupTreeTranslation;
+  lookupTranslation: LookupTreeTranslation;
 };
 
 /** Renders a built tree, as a GT or an m does. */
@@ -55,7 +53,7 @@ export type RenderTree = (
 export function createRenderTree({
   getLocale,
   getEnableI18n,
-  lookupTranslation = defaultLookupTranslation,
+  lookupTranslation,
 }: CreateGTParams): RenderTree {
   return (tree, values, formats, options) => {
     const enabled = getEnableI18n?.() ?? true;
@@ -72,12 +70,8 @@ export function createRenderTree({
  */
 export function createGT(params: CreateGTParams): GT {
   const renderTree = createRenderTree(params);
-  const {
-    getLocale,
-    getEnableI18n,
-    lookupTranslation = defaultLookupTranslation,
-  } = params;
-  const readsCache = lookupTranslation === defaultLookupTranslation;
+  const { getLocale, getEnableI18n, lookupTranslation } = params;
+  const isCacheInitialized = (lookupTranslation as CachedLookup)[CACHED];
   const render = (
     options: GTOptions & Pick<MessageTreeMetadata, '$_hash'>,
     strings: TemplateStringsArray,
@@ -104,7 +98,7 @@ export function createGT(params: CreateGTParams): GT {
         enabled ? getLocale() : getI18nConfig().getDefaultLocale(),
         enabled,
         lookupTranslation,
-        readsCache
+        isCacheInitialized
       );
     }
     return isTemplateStringsArray(first)
@@ -115,105 +109,10 @@ export function createGT(params: CreateGTParams): GT {
   return gt as GT;
 }
 
-/** Loads the locale's translations, then returns a GT bound to that locale. */
-export async function getGT(conditions: {
-  locale: string;
-  enableI18n: boolean;
-}): Promise<GT> {
-  return createGT(await loadCreateGTParams(conditions));
-}
-
-/** Loads the locale's translations, then returns params bound to that locale. */
-export async function loadCreateGTParams({
-  locale,
-  enableI18n,
-}: {
-  locale: string;
-  enableI18n: boolean;
-}): Promise<CreateGTParams> {
-  const cache = getI18nCache();
-  const boundLocale = enableI18n ? locale : getI18nConfig().getDefaultLocale();
-  // Keeps the loaded locale even after its cache entry expires.
-  const lookupTranslation = await cache.getLookupTranslation(boundLocale);
-  return {
-    getLocale: () => locale,
-    getEnableI18n: () => enableI18n,
-    lookupTranslation: withDevHotReload(lookupTranslation, (tree, options) =>
-      // Every lookup is in the bound locale, so a miss goes into the kept
-      // cache that later lookups read, even after the global entry expires.
-      lookupTranslation.prefetchEntries
-        ? lookupTranslation.prefetchEntries([{ content: tree, options }])
-        : translateMiss(tree, options)
-    ),
-  };
-}
-
-function translateMiss(
-  tree: MessageTree,
-  options: MessageTreeLookupOptions
-): Promise<unknown> {
-  return getI18nCache().lookupTranslationWithFallback(
-    options.$locale,
-    tree,
-    options
-  );
-}
-
-/**
- * A miss in dev hot reload is sent for runtime translation, which later
- * lookups read.
- */
-function withDevHotReload(
-  lookupTranslation: LookupTreeTranslation,
-  translate = translateMiss
-): LookupTreeTranslation {
-  return (tree, options) => {
-    const translation = lookupTranslation(tree, options);
-    // Statically gated so bundlers drop it from production builds.
-    if (
-      process.env.NODE_ENV !== 'production' &&
-      translation == null &&
-      getI18nConfig().isDevHotReloadEnabled()
-    ) {
-      void translate(tree, options).catch(() => {});
-    }
-    return translation;
-  };
-}
-
-const defaultLookupTranslation = /* @__PURE__ */ withDevHotReload(
-  (tree, options) =>
-    getI18nCache().lookupTranslation(options.$locale, tree, options)
-);
-
-/**
- * Renders a precomputed message from the I18nCache, as the GT of a createGT()
- * without `lookupTranslation` does once it has read `locale` and `enabled`;
- * a disabled caller passes the default locale.
- */
-export function renderCachedMessage(
-  site: PrecomputedMessage,
-  values: Record<string, unknown> | undefined,
-  formats: MessageFormats | undefined,
-  locale: string,
-  enabled: boolean
-): string {
-  return renderPrecomputedMessage(
-    site,
-    values,
-    formats,
-    locale,
-    enabled,
-    defaultLookupTranslation,
-    true
-  );
-}
-
-/** Global GT reading the current locale from the condition store. */
-export const t: GT = /* @__PURE__ */ createGT({
-  getLocale: () => getWritableConditionStore().getLocale(),
-  getEnableI18n: () => getWritableConditionStore().getEnableI18n(),
-});
+// Marks lookupCachedTranslation, whose default-locale reads skip the lookup
+// once the I18nCache exists.
+export const CACHED = '_gtCacheInitialized';
+export type CachedLookup = { [CACHED]?: () => boolean };
 
 export function isTemplateStringsArray(
   value: unknown

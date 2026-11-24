@@ -7,16 +7,19 @@ import {
 } from 'gt-i18n/internal';
 import { getReadonlyConditionStore } from '../../condition-store/singleton-operations';
 import { getI18nConfig } from '../../setup/i18nConfig';
+import { lookupSpaTranslation } from './lookupSpaTranslation';
 import { isSpa, reportServerRenderedUse } from './spaOnly';
 
 type LooseTag = (strings: TemplateStringsArray, ...holes: unknown[]) => string;
 type PrecomputedValues = Parameters<typeof renderCachedMessage>[1];
 type PrecomputedFormats = Parameters<typeof renderCachedMessage>[2];
+type PrecomputedTag = (site: PrecomputedMessage, ...holes: unknown[]) => string;
 
 const gt = /* @__PURE__ */ createGT({
   getLocale: () => getReadonlyConditionStore().getLocale(),
   // Outside an SPA, t renders the source once the misuse is reported.
   getEnableI18n: () => isSpa() && getReadonlyConditionStore().getEnableI18n(),
+  lookupTranslation: lookupSpaTranslation,
 }) as unknown as LooseTag & ((options: GTOptions) => LooseTag);
 
 function sourceText(tree: PrecomputedMessage['$_tree']): string {
@@ -63,6 +66,9 @@ export const t = ((
         fix: 'In components, use useGT(); on the server, use getGT()',
         message: sourceText(first.$_tree),
       });
+    }
+    if (process.env.NODE_ENV === 'production') {
+      return (gt as unknown as PrecomputedTag)(first, ...holes);
     }
     // Outside an SPA, t renders the source once the misuse is reported.
     const store = spa ? getReadonlyConditionStore() : undefined;

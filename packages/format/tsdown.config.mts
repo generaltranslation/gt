@@ -1,6 +1,22 @@
 import { defineConfig } from 'tsdown';
-import { createTsdownConfig, withPackageChecks } from '../../tsdown.preset.mts';
+import {
+  createTsdownConfig,
+  createTsdownUnbundleConfig,
+  withPackageChecks,
+} from '../../tsdown.preset.mts';
 
-export default defineConfig(
-  withPackageChecks(createTsdownConfig(['src/index.ts', 'src/internal.ts']))
-);
+const entries = ['src/index.ts', 'src/internal.ts'];
+
+const [cjs] = createTsdownConfig(entries);
+
+// ESM is unbundled so bundlers that skip modules by their imports, such as
+// Turbopack, leave out what an app never imports (the ICU message formatter).
+const esm = createTsdownUnbundleConfig({
+  format: 'esm',
+  entry: entries,
+  clean: false,
+  dts: true,
+  outExtensions: () => ({ js: '.mjs', dts: '.d.mts' }),
+});
+
+export default defineConfig(withPackageChecks([cjs, esm]));

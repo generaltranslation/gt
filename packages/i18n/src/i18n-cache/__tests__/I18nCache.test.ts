@@ -185,13 +185,6 @@ describe('I18nCache', () => {
       expect(callsContaining(warnSpy, 'I18nCache:').length).toBe(0);
       expect(callsContaining(errorSpy, 'I18nCache:').length).toBe(0);
     });
-
-    it('getVersionId() returns the _versionId passed to the constructor', () => {
-      expect(createCache({ _versionId: 'version-abc' }).getVersionId()).toBe(
-        'version-abc'
-      );
-      expect(createCache().getVersionId()).toBeUndefined();
-    });
   });
 
   describe('translation loader routing', () => {
@@ -264,7 +257,7 @@ describe('I18nCache', () => {
       [
         'no translation loader is configured',
         {},
-        'No translation loader found',
+        'No translation loader was found',
       ],
     ])('warns once and returns {} when %s', async (_name, params, warning) => {
       const fetchSpy = mockFetchResponse({});

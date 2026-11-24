@@ -50,7 +50,7 @@ function isAllowedExternalizedSubpath(
 ): boolean {
   // Entries keep shared React context and singletons external.
   return (
-    (/^(?:index|compat)\./.test(file) &&
+    (/^(?:index|compat|client-entry)\./.test(file) &&
       (specifier.startsWith('@generaltranslation/react-core/') ||
         specifier.startsWith('gt-i18n/'))) ||
     // chunk-translations shares gt-react's stores, and bundles nothing the

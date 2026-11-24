@@ -2,18 +2,12 @@ import type { MessageTree, MessageFormats } from '@generaltranslation/icu';
 import { forEachPlaceholder } from '@generaltranslation/icu/internal';
 import { formatCutoff, formatMessageTree } from 'generaltranslation/internal';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
-import { getWritableConditionStore } from '../condition-store/singleton-operations';
 import {
   getI18nConfig,
   isI18nConfigInitialized,
 } from '../i18n-config/singleton-operations';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
-import {
-  type CreateGTParams,
-  createRenderTree,
-  getGT,
-  loadCreateGTParams,
-} from './gt';
+import { type CreateGTParams, createRenderTree } from './gt';
 import { isMsg, type Msg } from './msg';
 import type { MessageTreeMetadata } from './renderMessage';
 
@@ -108,19 +102,6 @@ export function createMessages(params: CreateGTParams): M {
     } = toRenderable(message, values);
     return renderTree(tree, merged, formats, metadata);
   }) as M;
-}
-
-/** Global m reading the current locale from the condition store. */
-export const m: M = /* @__PURE__ */ createMessages({
-  getLocale: () => getWritableConditionStore().getLocale(),
-  getEnableI18n: () => getWritableConditionStore().getEnableI18n(),
-});
-
-/** Loads the locale's translations, then returns an m bound to that locale. */
-export async function getMessages(
-  conditions: Parameters<typeof getGT>[0]
-): Promise<M> {
-  return createMessages(await loadCreateGTParams(conditions));
 }
 
 /**

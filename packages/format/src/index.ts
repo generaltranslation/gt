@@ -12,7 +12,6 @@ export {
   formatDateTime,
   formatList,
   formatListToParts,
-  formatMessage,
   formatNum,
   formatRelativeTime,
   formatRelativeTimeFromDate,
@@ -29,6 +28,7 @@ export {
   resolveCanonicalLocale,
   standardizeLocale,
 } from './formatting/core';
+export { formatMessage } from './formatting/formatMessage';
 
 export { getRegionProperties } from './locales/getRegionProperties';
 

@@ -1,23 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockClientConditionStore, mockGetGT, mockGetMessages } = vi.hoisted(
-  () => ({
-    mockClientConditionStore: {
-      getLocale: vi.fn(() => 'es'),
-      getEnableI18n: vi.fn(() => false),
-    },
-    mockGetGT: vi.fn(async () => 'gt'),
-    mockGetMessages: vi.fn(async () => 'messages'),
-  })
-);
+const { mockClientConditionStore, mockLoadClientGTParams } = vi.hoisted(() => ({
+  mockClientConditionStore: {
+    getLocale: vi.fn(() => 'es'),
+    getEnableI18n: vi.fn(() => false),
+  },
+  mockLoadClientGTParams: vi.fn(async () => ({})),
+}));
 
 vi.mock('@generaltranslation/react-core/pure', () => ({
   getReadonlyConditionStore: () => mockClientConditionStore,
 }));
 
+vi.mock('../../setup/translations.client', () => ({
+  loadClientGTParams: mockLoadClientGTParams,
+}));
+
 vi.mock('gt-i18n/internal', () => ({
-  getGT: mockGetGT,
-  getMessages: mockGetMessages,
+  createGT: () => 'gt',
+  createMessages: () => 'messages',
 }));
 
 import {
@@ -29,8 +30,7 @@ import {
 
 describe.sequential('browser translation functions', () => {
   beforeEach(() => {
-    mockGetGT.mockClear();
-    mockGetMessages.mockClear();
+    mockLoadClientGTParams.mockClear();
   });
 
   it('reads conditions from the browser condition store', async () => {
@@ -39,11 +39,8 @@ describe.sequential('browser translation functions', () => {
     await expect(getGT()).resolves.toBe('gt');
     await expect(getMessages()).resolves.toBe('messages');
 
-    expect(mockGetGT).toHaveBeenCalledWith({
-      locale: 'es',
-      enableI18n: false,
-    });
-    expect(mockGetMessages).toHaveBeenCalledWith({
+    expect(mockLoadClientGTParams).toHaveBeenCalledTimes(2);
+    expect(mockLoadClientGTParams).toHaveBeenCalledWith({
       locale: 'es',
       enableI18n: false,
     });

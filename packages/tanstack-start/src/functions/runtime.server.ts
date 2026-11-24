@@ -1,7 +1,8 @@
 import { getServerConditionStore } from 'gt-tanstack-start/internal/initializeGT.server';
+import { loadCreateGTParams } from 'gt-i18n/internal';
 import { createRuntime } from './runtime';
 
-const runtime = createRuntime(getServerConditionStore);
+const runtime = createRuntime(getServerConditionStore, loadCreateGTParams);
 
 /** Return the locale of the current request or browser. */
 export const getLocale = runtime.getLocale;

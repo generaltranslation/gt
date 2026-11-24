@@ -7,6 +7,7 @@ import { integrateRouter } from '../router/setupRouterGTIntegration.client';
 import { resolveIntegrationOptions } from '../router/resolveIntegrationOptions';
 import type { SetupRouterGTIntegrationOptions } from '../router/types';
 import { getClientReload } from '../setup/initializeGT.client';
+import { loadClientTranslations } from '../setup/translations.client';
 import { ensureDictionaryManager } from './dictionaryManager.client';
 import { loadDictionaries } from './dictionaries';
 
@@ -30,7 +31,7 @@ export function setupRouterGTIntegration(
     loadState: async (conditionStore) => {
       ensureDictionaryManager();
       const [state, dictionaries] = await Promise.all([
-        readGTRouterState(conditionStore),
+        readGTRouterState(conditionStore, loadClientTranslations),
         loadDictionaries(conditionStore.getLocale()),
       ]);
       return { ...state, dictionaries };

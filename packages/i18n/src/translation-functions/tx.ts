@@ -1,7 +1,8 @@
 import { getI18nCache } from '../i18n-cache/singleton-operations';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { buildMessage } from './buildMessage';
-import { getGT, isTemplateStringsArray, type GTOptions } from './gt';
+import { getGT } from './cachedGT';
+import { isTemplateStringsArray, type GTOptions } from './gt';
 import type { CheckHoles } from './placeholders';
 import {
   createMessageTreeLookupOptions,

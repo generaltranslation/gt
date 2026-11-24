@@ -60,7 +60,7 @@ export {
   RelativeTime,
   T,
   Var,
-} from 'gt-react';
+} from 'gt-react/client-entry';
 
 // ===== Hooks ===== //
 export {
@@ -74,7 +74,7 @@ export {
   useMessages,
   useRegion,
   useSetLocale,
-} from 'gt-react';
+} from 'gt-react/client-entry';
 
 // ===== Functions ===== //
 export {
