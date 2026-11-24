@@ -6,7 +6,6 @@ import {
   MAX_REQUEST_BODY_BYTES,
   translateContent,
   type ModelProvider,
-  type UserTokenProvider,
   type TranslateContentData,
   type TranslateContentResponse,
 } from '@generaltranslation/api';
@@ -15,6 +14,7 @@ import type { TranslateManyResult } from '../types-dir/api/translateMany';
 import type { TranslationResult } from '../types-dir/api/translate';
 import type { EntryMetadata, TranslateManyEntry } from '../types-dir/api/entry';
 import { apiVersionHeaders } from '../client/apiClient';
+import type { GTCredentials } from '../client/clientConfig';
 import { hashSource } from '../id/hashSource';
 import { unwrapApiResult } from './utils/unwrapApiResult';
 
@@ -37,9 +37,7 @@ function toTranslationResult(
  * One runtime translation call, as `GTRuntime` resolved it from the call's
  * options and its own configuration. The locales are service locales.
  */
-export type RuntimeTranslateCall = {
-  apiKey: string | undefined;
-  userTokenProvider: UserTokenProvider | undefined;
+export type RuntimeTranslateCall = GTCredentials & {
   projectId: string;
   baseUrl: string;
   targetLocale: string;

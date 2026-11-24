@@ -222,7 +222,7 @@ describe.sequential('runtime translation requests', () => {
   });
 
   it.each(['translate', 'translateMany'] as const)(
-    'names %s when the target locale is missing, before any request',
+    '%s rejects an empty target locale, before any request',
     async (method) => {
       const result =
         method === 'translate'
@@ -230,7 +230,7 @@ describe.sequential('runtime translation requests', () => {
           : runtime.translateMany(['Hello'], '');
 
       await expect(result).rejects.toThrow(
-        `GT Error: Cannot call \`${method}\` without a target locale. Pass the target locale to \`${method}()\`.`
+        'GT Error: Cannot translate without a target locale. Pass the target locale to `translate()` or `translateMany()`.'
       );
       expect(fetchMock).not.toHaveBeenCalled();
     }
@@ -543,6 +543,25 @@ describe.sequential('runtime translation requests', () => {
     expect(new Request(input, init).headers.get('authorization')).toBe(
       'Bearer user-token'
     );
+  });
+
+  it('reads a credential that the config defines with a getter, once', async () => {
+    let reads = 0;
+    class Config {
+      projectId = 'test-project';
+      get apiKey() {
+        reads += 1;
+        return 'getter-key';
+      }
+    }
+
+    await new GTRuntime(new Config()).translateMany([], options);
+
+    const [input, init] = fetchMock.mock.calls[0];
+    expect(new Request(input, init).headers.get('authorization')).toBe(
+      'Bearer getter-key'
+    );
+    expect(reads).toBe(1);
   });
 
   it('sends only the model provider in request metadata', async () => {

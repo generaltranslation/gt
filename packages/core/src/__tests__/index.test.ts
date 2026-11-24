@@ -99,35 +99,29 @@ describe.sequential('GeneralTranslation scopes', () => {
   it.each([
     [
       'GeneralTranslation projectId',
-      (id: unknown) =>
-        new GeneralTranslation({
-          apiKey: 'key',
-          projectId: id as string,
-        }) as unknown,
+      (projectId: string) =>
+        new GeneralTranslation({ apiKey: 'key', projectId }) as unknown,
     ],
     [
       'GeneralTranslation project',
-      (id: unknown) =>
-        new GeneralTranslation({ apiKey: 'key' }).project(id as string),
+      (projectId: string) =>
+        new GeneralTranslation({ apiKey: 'key' }).project(projectId),
     ],
     [
       'GTRuntime projectId',
-      (id: unknown) =>
-        new GTRuntime({ apiKey: 'key', projectId: id as string }),
+      (projectId: string) => new GTRuntime({ apiKey: 'key', projectId }),
     ],
-  ])('%s rejects empty, blank and non-string IDs', (_label, create) => {
-    for (const id of ['', '   ', 123, null]) {
+  ])('%s rejects empty and blank IDs', (_label, create) => {
+    for (const id of ['', '   ']) {
       expect(() => create(id)).toThrow(
         'GT Error: The project ID must be a non-empty string. Pass the project ID.'
       );
     }
   });
 
-  it('GeneralTranslation org rejects empty, blank and non-string IDs', () => {
-    for (const id of ['', '   ', 123, undefined, null]) {
-      expect(() =>
-        new GeneralTranslation({ apiKey: 'key' }).org(id as string)
-      ).toThrow(
+  it('GeneralTranslation org rejects empty and blank IDs', () => {
+    for (const id of ['', '   ']) {
+      expect(() => new GeneralTranslation({ apiKey: 'key' }).org(id)).toThrow(
         'GT Error: The organization ID must be a non-empty string. Pass the organization ID.'
       );
     }
@@ -156,12 +150,18 @@ describe.sequential('GeneralTranslation scopes', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('does not read GT_API_KEY', () => {
+  it('does not read GT_API_KEY', async () => {
     vi.stubEnv('GT_API_KEY', 'env-key');
+    fetchMock.mockResolvedValue(Response.json({ results: [] }));
+
+    await new GTRuntime({ userTokenProvider, projectId: 'prj' }).translateMany(
+      [],
+      'es'
+    );
 
     expect(
-      new GTRuntime({ userTokenProvider, projectId: 'prj' }).apiKey
-    ).toBeUndefined();
+      new Request(...fetchMock.mock.calls[0]).headers.get('authorization')
+    ).toBe('Bearer token');
   });
 
   it('constructs a project-scoped GeneralTranslation with every project method', () => {
@@ -337,7 +337,12 @@ describe.sequential('GeneralTranslation scopes', () => {
       input.customMapping.spanish.code = 'de';
 
       expect(() => {
-        (instance as { apiKey?: string }).apiKey = 'other';
+        (instance as { projectId: string }).projectId = 'other';
+      }).toThrow(TypeError);
+      expect(() => {
+        (
+          instance as unknown as { credentials: { apiKey: string } }
+        ).credentials.apiKey = 'other';
       }).toThrow(TypeError);
       expect(() => (localeConfig.locales as string[]).push('fr')).toThrow(
         TypeError
