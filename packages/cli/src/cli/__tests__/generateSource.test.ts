@@ -241,6 +241,19 @@ describe('gt generate', () => {
       }
     );
 
+    it.skipIf(process.platform === 'win32')(
+      'a dangling file symlink to a source file this run would create',
+      async () => {
+        fs.symlinkSync(path.resolve('translations/en.json'), 'meta.json');
+
+        await expectRejectedBeforeWriting(
+          '--source-only',
+          '--metadata',
+          'meta.json'
+        );
+      }
+    );
+
     it('a source file in a directory this run would create', async () => {
       vi.mocked(generateSettings).mockResolvedValue({
         defaultLocale: 'en',

@@ -44,6 +44,8 @@ const missingSourceOutputError = createDiagnosticMessage({
   fix: 'Set files.gt.output to a local path such as "translations/[locale].json"',
 });
 
+const MAX_SYMLINK_DEPTH = 40;
+
 const SERVED_DIRECTORIES = new Set(['public', 'static']);
 
 const publicSourceCodeError = (metadataPath: string) =>
@@ -321,8 +323,8 @@ function assertNotLocaleFile(metadataPath: string, localeFiles: string[]) {
   }
 }
 
-/** Resolves a possibly missing path through its nearest existing ancestor with `realpathSync.native`, because the JS version collapses `..` before following symlinks. */
-function physicalPath(filePath: string): string {
+/** Resolves a possibly missing path through its nearest existing ancestor, following dangling symlinks, with `realpathSync.native` because the JS version collapses `..` before following symlinks. */
+function physicalPath(filePath: string, depth = 0): string {
   const missing: string[] = [];
   let current = path.isAbsolute(filePath)
     ? filePath
@@ -331,11 +333,26 @@ function physicalPath(filePath: string): string {
     try {
       return path.join(fs.realpathSync.native(current), ...missing);
     } catch {
+      const target = danglingLinkTarget(current);
+      if (target !== undefined && depth < MAX_SYMLINK_DEPTH) {
+        const linked = path.isAbsolute(target)
+          ? target
+          : `${path.dirname(current)}${path.sep}${target}`;
+        return physicalPath([linked, ...missing].join(path.sep), depth + 1);
+      }
       const parent = path.dirname(current);
       if (parent === current) return path.resolve(filePath);
       missing.unshift(path.basename(current));
       current = parent;
     }
+  }
+}
+
+function danglingLinkTarget(filePath: string): string | undefined {
+  try {
+    return fs.readlinkSync(filePath);
+  } catch {
+    return undefined;
   }
 }
 
