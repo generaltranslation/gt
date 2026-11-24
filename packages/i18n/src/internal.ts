@@ -26,6 +26,7 @@ export { createLookupOptions } from './translation-functions/internal/helpers';
 export { I18nCache } from './i18n-cache/I18nCache';
 export { getTranslationRuntimeParams } from './i18n-config/createGTRuntime';
 export { getLoadTranslationsType } from './i18n-cache/utils/getLoadTranslationsType';
+export { dedupePending } from './i18n-cache/translations-manager/utils/dedupePending';
 export { routeCreateTranslationLoader } from './i18n-cache/translations-manager/translations-loaders/routeCreateTranslationLoader';
 export type { TranslationsCacheMissEvent } from './i18n-cache/I18nCache';
 export { ReadonlyConditionStore } from './condition-store/ReadonlyConditionStore';

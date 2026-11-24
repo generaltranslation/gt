@@ -1,14 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { setGlobalTranslationsSnapshot } from '@generaltranslation/react-core/pure';
+import {
+  getGlobalTranslationsSnapshot,
+  getTranslationsSnapshot,
+} from '@generaltranslation/react-core/pure';
 import { initializeGTSPA } from '../initializeGTSPA';
-
-vi.mock('@generaltranslation/react-core/pure', async (importOriginal) => ({
-  ...(await importOriginal<
-    typeof import('@generaltranslation/react-core/pure')
-  >()),
-  setGlobalTranslationsSnapshot: vi.fn(),
-}));
 
 type TestGlobal = typeof globalThis & { __generaltranslation?: unknown };
 
@@ -24,7 +20,6 @@ describe('initializeGTSPA in production', () => {
 
   beforeEach(() => {
     resetGTGlobals();
-    vi.mocked(setGlobalTranslationsSnapshot).mockClear();
     process.env.NODE_ENV = 'production';
     warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -59,7 +54,7 @@ describe('initializeGTSPA in production', () => {
       ),
     ]);
     expect(fetchSpy).not.toHaveBeenCalled();
-    expect(setGlobalTranslationsSnapshot).toHaveBeenCalledWith({ fr: {} });
+    expect(getGlobalTranslationsSnapshot()).toEqual({ fr: {} });
   });
 
   it('warns when no translation loader is configured', async () => {
@@ -90,7 +85,7 @@ describe('initializeGTSPA in production', () => {
     expect(warnings()).toEqual([
       expect.stringContaining('No translation loader was found'),
     ]);
-    expect(setGlobalTranslationsSnapshot).toHaveBeenCalledWith({ fr: {} });
+    expect(getGlobalTranslationsSnapshot()).toEqual({ fr: {} });
   });
 
   it('loads a regional locale of the default language', async () => {
@@ -104,7 +99,7 @@ describe('initializeGTSPA in production', () => {
     });
 
     expect(loadTranslations).toHaveBeenCalledWith('en-GB');
-    expect(setGlobalTranslationsSnapshot).toHaveBeenCalledWith({
+    expect(getGlobalTranslationsSnapshot()).toEqual({
       'en-GB': { hash: 'Colour' },
     });
   });
@@ -123,7 +118,7 @@ describe('initializeGTSPA in production', () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(String(fetchSpy.mock.calls[0]?.[0])).toContain('project-id');
-    expect(setGlobalTranslationsSnapshot).toHaveBeenCalledWith({
+    expect(getGlobalTranslationsSnapshot()).toEqual({
       fr: { hash: 'Bonjour' },
     });
     expect(warnSpy).not.toHaveBeenCalled();
@@ -142,5 +137,35 @@ describe('initializeGTSPA in production', () => {
       'Could not load translations for locale "fr"'
     );
     expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it('shares its load with getter calls and keeps other locales they load', async () => {
+    let finishStartup!: (translations: Record<string, string>) => void;
+    const loadTranslations = vi.fn((locale: string) =>
+      locale === 'fr'
+        ? new Promise<Record<string, string>>((resolve) => {
+            finishStartup = resolve;
+          })
+        : Promise.resolve({ hash: 'Hola' })
+    );
+
+    const startup = initializeGTSPA({
+      ...baseConfig,
+      locales: ['en', 'fr', 'es'],
+      loadTranslations,
+    });
+    const french = getTranslationsSnapshot('fr');
+    await expect(getTranslationsSnapshot('es')).resolves.toEqual({
+      es: { hash: 'Hola' },
+    });
+    finishStartup({ hash: 'Bonjour' });
+    await startup;
+
+    await expect(french).resolves.toEqual({ fr: { hash: 'Bonjour' } });
+    expect(getGlobalTranslationsSnapshot()).toEqual({
+      fr: { hash: 'Bonjour' },
+      es: { hash: 'Hola' },
+    });
+    expect(loadTranslations.mock.calls).toEqual([['fr'], ['es']]);
   });
 });

@@ -51,6 +51,25 @@ export function updateGlobalTranslationsSnapshot(
   }
 }
 
+/**
+ * Adds translations to the global snapshot in place, keeping entries it
+ * already has, for a load that may finish after newer entries arrived.
+ */
+export function fillGlobalTranslationsSnapshot(
+  translations: TranslationsSnapshot
+): void {
+  if (!isGlobalTranslationsSnapshotInitialized()) {
+    setGlobalTranslationsSnapshot({});
+  }
+  const snapshot = getGlobalTranslationsSnapshot();
+  for (const locale in translations) {
+    const table = (snapshot[locale] ??= {});
+    for (const hash in translations[locale]) {
+      if (!(hash in table)) table[hash] = translations[locale][hash];
+    }
+  }
+}
+
 // ===== Snapshot loader ===== //
 
 const snapshotLoaderSingleton =

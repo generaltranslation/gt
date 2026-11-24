@@ -6,6 +6,7 @@ import { getReactI18nCache } from '../../../i18n-cache/singleton-operations';
 import {
   setGlobalTranslationsSnapshot,
   setTranslationsSnapshotLoader,
+  updateGlobalTranslationsSnapshot,
 } from '../../../translations-snapshot/singleton-operations';
 import {
   getTranslationsSnapshot,
@@ -103,6 +104,27 @@ describe('getTranslationsSnapshot', () => {
       fr: { hash1: 'bonjour' },
     });
     expect(loadTranslations.mock.calls).toEqual([['fr']]);
+  });
+
+  it('production: keeps entries that arrive while a locale loads', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
+    let finishLoad!: (translations: Record<string, string>) => void;
+    setTranslationsSnapshotLoader({
+      loadTranslations: () =>
+        new Promise((resolve) => {
+          finishLoad = resolve;
+        }),
+    });
+
+    const pending = getTranslationsSnapshot('fr');
+    await Promise.resolve();
+    updateGlobalTranslationsSnapshot({ fr: { shared: 'Sauver' } });
+    finishLoad({ shared: 'Enregistrer', loaded: 'Ouvrir' });
+
+    const expected = { fr: { shared: 'Sauver', loaded: 'Ouvrir' } };
+    await expect(pending).resolves.toEqual(expected);
+    await expect(getTranslationsSnapshot('fr')).resolves.toEqual(expected);
   });
 
   it('development: omits the locale and warns when the loader fails', async () => {
