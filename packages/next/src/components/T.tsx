@@ -1,12 +1,15 @@
 import { isValidElement, type ComponentProps, type ReactNode } from 'react';
 import { T as ReactT } from 'gt-react';
+import type { GTMarker } from '@generaltranslation/react-core/pure';
 import { createUnhashedClientTWarning } from '../errors/client';
 
+/** The static text of a <T>, without the runtime values of its variables. */
 function textOf(node: ReactNode): string {
   if (typeof node === 'string' || typeof node === 'number') return String(node);
   if (Array.isArray(node)) return node.map(textOf).join('');
   if (isValidElement<{ children?: ReactNode }>(node)) {
-    return textOf(node.props.children);
+    const marker = (node.type as { _gtt?: GTMarker })._gtt;
+    return marker?.kind === 'variable' ? '' : textOf(node.props.children);
   }
   return '';
 }

@@ -36,6 +36,33 @@ describe('T', () => {
     ]);
   });
 
+  it('describes and deduplicates a <T> by its text without the values of its variables', async () => {
+    const T = await importT('development', 'true');
+    const Var = Object.assign(() => null, {
+      _gtt: { kind: 'variable', variableType: 'v' },
+    });
+
+    T({
+      children: (
+        <p>
+          Hello, <Var>Ada</Var>
+        </p>
+      ),
+    });
+    T({
+      children: (
+        <p>
+          Hello, <Var>Grace</Var>
+        </p>
+      ),
+    });
+
+    expect(warn.mock.calls).toEqual([
+      [createUnhashedClientTWarning('Hello, ')],
+    ]);
+    expect(String(warn.mock.calls[0][0])).not.toContain('Ada');
+  });
+
   it.each([
     ['a hashed <T>', 'development', 'true', 'abcdef0123456789'],
     ['experimentalSplitTranslations off', 'development', 'false', undefined],
