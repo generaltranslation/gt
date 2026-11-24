@@ -56,7 +56,7 @@ export function analyzeModule(
 
 class UsageCollector {
   private readonly usages: ParaglideUsage[] = [];
-  private readonly lineStarts: number[];
+  private lineStarts: number[] | undefined;
 
   /** Alias initializers and assignment targets, which are not usages. */
   private readonly skipped = new Set<Node>();
@@ -66,9 +66,7 @@ class UsageCollector {
   constructor(
     private readonly record: ModuleRecord,
     private readonly scope: Scope
-  ) {
-    this.lineStarts = computeLineStarts(record.code);
-  }
+  ) {}
 
   collect(): ParaglideUsage[] {
     walk(this.record.program, {
@@ -192,8 +190,11 @@ class UsageCollector {
     // Code a language tool generated is not in the file.
     if (node.start < 0) return;
 
-    const start = toLineColumn(this.lineStarts, node.start);
-    const lastLine = toLineColumn(this.lineStarts, node.end - 1).line;
+    const lineStarts = (this.lineStarts ??= computeLineStarts(
+      this.record.code
+    ));
+    const start = toLineColumn(lineStarts, node.start);
+    const lastLine = toLineColumn(lineStarts, node.end - 1).line;
 
     this.usages.push({
       target: value.target,
