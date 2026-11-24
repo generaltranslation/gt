@@ -114,8 +114,11 @@
     "@types/babel__core": "^7.20.5",
     "@types/node": "catalog:",
     "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
     "del-cli": "^6.0.0",
+    "jsdom": "^26.1.0",
     "react": "19.1.0",
+    "react-dom": "19.1.0",
     "react-native": "0.81.1",
     "tsdown": "catalog:",
     "typescript": "catalog:"
