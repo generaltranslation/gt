@@ -6,13 +6,13 @@ import type { Binding, ImplicitNames } from './scope.js';
 import type { SourceRange } from './types.js';
 import type { ComponentFields } from '../languages/language.js';
 
-type Modules = Pick<ModuleGraph, 'getRecord' | 'moduleScope'>;
+type Modules = Pick<ModuleGraph, 'getRecord' | 'scopeOf'>;
 
 type ComponentField = {
   name: string;
   value: ESTree.Expression;
-  /** The module that declares the field's class. */
-  declaredIn: string;
+  /** The module that declares the field's class: held, as `value` is one of its nodes. */
+  declaredIn: ModuleRecord;
 };
 
 /** The fields of the classes one `ComponentFields` names, and where they are readable. */
@@ -97,7 +97,7 @@ function fieldsOf(
   );
 
   return classes.flatMap((classNode) =>
-    initializedFields(classNode, declaringFile)
+    initializedFields(classNode, declaringModule)
   );
 }
 
@@ -106,13 +106,13 @@ function fieldBinding(field: ComponentField, modules: Modules): Binding {
     type: 'alias',
     init: field.value,
     path: [],
-    scope: () => modules.moduleScope(field.declaredIn),
+    scope: () => modules.scopeOf(field.declaredIn),
   };
 }
 
 function initializedFields(
   classNode: ESTree.Class,
-  declaredIn: string
+  declaredIn: ModuleRecord
 ): ComponentField[] {
   const fields: ComponentField[] = [];
 

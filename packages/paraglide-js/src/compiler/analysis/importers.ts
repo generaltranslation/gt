@@ -94,7 +94,6 @@ type Cache = {
   generation: number;
   callSites: Map<FunctionNode, CallSite[]>;
   componentProps: Map<ModuleRecord, Candidate[]>;
-  dependents?: Dependents;
 };
 
 type IndexSites = (program: ESTree.Program, scope: Scope) => CallSiteIndex;
@@ -108,8 +107,17 @@ const linksOfRecords = new WeakMap<ModuleRecord, Links>();
  */
 export class ImporterIndex {
   private cache: Cache | undefined;
+  /** Kept by `clear()`: it holds no module, only files. */
+  private dependentsCache:
+    | { generation: number; dependents: Dependents }
+    | undefined;
 
   constructor(private readonly modules: LoadedModules) {}
+
+  /** Forgets the call sites and props it found, e.g. once modules they are in were unloaded. */
+  clear(): void {
+    this.cache = undefined;
+  }
 
   callSitesOf(record: ModuleRecord, fn: FunctionNode): CallSite[] {
     const { callSites } = this.currentCache();
@@ -227,10 +235,16 @@ export class ImporterIndex {
   }
 
   private dependents(): Dependents {
-    const cache = this.currentCache();
-    cache.dependents ??= dependentsOf(this.modules.links());
+    const generation = this.modules.generation();
 
-    return cache.dependents;
+    if (this.dependentsCache?.generation !== generation) {
+      this.dependentsCache = {
+        generation,
+        dependents: dependentsOf(this.modules.links()),
+      };
+    }
+
+    return this.dependentsCache.dependents;
   }
 
   private referrersOf(exported: ExportedNames): Referrers {
