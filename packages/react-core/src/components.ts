@@ -19,3 +19,4 @@ export { InternalLocaleSelector } from './components/helpers/InternalLocaleSelec
 export { InternalRegionSelector } from './components/helpers/InternalRegionSelector';
 export { InternalGTProvider } from './context/InternalGTProvider';
 export type { InternalGTProviderProps } from './context/InternalGTProvider';
+export { InternalTranslationsSeed } from './context/InternalTranslationsSeed';
