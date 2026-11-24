@@ -30,7 +30,7 @@ import { _getLocaleDirection } from '../locales/getLocaleDirection';
 import { defaultDefaultLocale } from '../settings/settings';
 import { _isSameDialect } from '../locales/isSameDialect';
 import { _isSupersetLocale } from '../locales/isSupersetLocale';
-import type { FormatVariables } from '../types';
+import type { FormatVariables } from '../types-dir/types';
 import {
   snapshotLocaleConfig,
   type LocaleConfig,

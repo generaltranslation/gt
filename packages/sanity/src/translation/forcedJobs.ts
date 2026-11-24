@@ -1,4 +1,4 @@
-import type { Secrets } from '../types';
+import type { Secrets } from '../types/types';
 import type { QueryJobsResponse } from '@generaltranslation/api';
 import { projectFor } from '../adapter/core';
 import { createTranslationStatusKey } from '../utils/documentIds';

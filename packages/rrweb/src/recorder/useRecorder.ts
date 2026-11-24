@@ -8,7 +8,11 @@ import {
   stop as coreStop,
   subscribe,
 } from './recorderCore';
-import type { RecorderBundle, RecorderConfig, RecorderStatus } from '../types';
+import type {
+  RecorderBundle,
+  RecorderConfig,
+  RecorderStatus,
+} from '../types/types';
 
 // The recorder lives in module state; there is no recording during SSR.
 const getServerStatus = (): RecorderStatus => 'idle';

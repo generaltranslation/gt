@@ -6,7 +6,7 @@ import type {
   SerializedDocument,
   TranslationLevel,
 } from '../serialization/types';
-import type { GTFile } from '../types';
+import type { GTFile } from '../types/types';
 import { serializeDocument } from '../utils/serialize';
 
 /**

@@ -11,5 +11,5 @@ export type {
   VueProjectExtractionOptions,
   VueProjectExtractionOutput,
   VueProjectExtractionResult,
-} from './types.js';
+} from './types/types.js';
 export type { InlineExtractionOutput } from './internal/project/mergeVueProjectExtraction.js';

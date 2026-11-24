@@ -5,10 +5,10 @@ import type { Payload, User } from 'payload';
 import { createPayloadRequest } from 'payload';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { hasTranslatableFields } from '../content/fields';
-import { canUpdate, editableTargets } from '../documents';
-import type { CoveragePage } from '../coverage';
-import { gtPlugin } from '../plugin';
-import type { RunProgress, StepResult } from '../runs';
+import { canUpdate, editableTargets } from '../translation/documents';
+import type { CoveragePage } from '../plugin/coverage';
+import { gtPlugin } from '../plugin/plugin';
+import type { RunProgress, StepResult } from '../plugin/runs';
 import {
   CANNOT_READ,
   createTestPayload,

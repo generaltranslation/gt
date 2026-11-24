@@ -41,7 +41,7 @@ import type {
   VueProjectExtractionOutput,
   VueProjectExtractionResult,
   VueSourceCode,
-} from '../../types.js';
+} from '../../types/types.js';
 
 const SCRIPT_EXTENSIONS = new Set([
   '.js',

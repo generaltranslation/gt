@@ -10,7 +10,7 @@ import {
   initSync as initModuleLexer,
   parse as parseModuleImports,
 } from 'es-module-lexer';
-import type { VueExtractionOptions } from '../../types.js';
+import type { VueExtractionOptions } from '../../types/types.js';
 import { parseScriptAst } from './parser.js';
 import { isKnownNonVueGTRuntime } from './runtimeModules.js';
 

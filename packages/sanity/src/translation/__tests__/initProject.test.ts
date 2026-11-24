@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProjectHandle } from 'generaltranslation';
 import { pluginConfig, projectFor } from '../../adapter/core';
-import type { Secrets } from '../../types';
+import type { Secrets } from '../../types/types';
 import { initProject } from '../initProject';
 
 const api = vi.hoisted(() => ({

@@ -49,9 +49,9 @@
     "!**/.*"
   ],
   "sideEffects": [
-    "./dist/commonjs/NativeGtReactNative.*",
-    "./dist/module/NativeGtReactNative.*",
-    "./src/NativeGtReactNative.*"
+    "./dist/commonjs/specs/NativeGtReactNative.*",
+    "./dist/module/specs/NativeGtReactNative.*",
+    "./src/specs/NativeGtReactNative.*"
   ],
   "scripts": {
     "patch": "pnpm version patch",
@@ -123,7 +123,7 @@
   "codegenConfig": {
     "name": "GtReactNativeSpec",
     "type": "modules",
-    "jsSrcsDir": "./src",
+    "jsSrcsDir": "./src/specs",
     "android": {
       "javaPackageName": "com.gtreactnative"
     }

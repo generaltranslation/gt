@@ -6,7 +6,7 @@ import type {
   VueExtractionMetadata,
   VueExtractionResult,
   VueSourceCode,
-} from '../types.js';
+} from '../types/types.js';
 import type {
   ExtractionLocation,
   GTComponentName,

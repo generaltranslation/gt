@@ -2,7 +2,7 @@ import { afterAll, describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { disposeParser } from '../parser.js';
+import { disposeParser } from '../parser/parser.js';
 import { extractFromPythonSource } from '../index.js';
 import {
   PYTHON_GT_PACKAGES,
@@ -12,7 +12,7 @@ import {
   PYTHON_DECLARE_VAR,
   PYTHON_METADATA_KWARGS,
 } from '../constants.js';
-import { nodeToStrings } from '../stringNode.js';
+import { nodeToStrings } from '../parser/stringNode.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const fixture = (name: string) =>

@@ -12,4 +12,4 @@ export type {
   VueJsxChildren,
   VueJsxElement,
   VueSourceCode,
-} from './types.js';
+} from './types/types.js';

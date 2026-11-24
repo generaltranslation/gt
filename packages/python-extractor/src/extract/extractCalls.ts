@@ -4,12 +4,12 @@ import {
   PYTHON_METADATA_KWARGS,
   PYTHON_DERIVE,
   PYTHON_DECLARE_VAR,
-} from './constants.js';
+} from '../constants.js';
 import {
   containsStaticCalls,
   parseStringExpression,
-} from './parseStringExpression.js';
-import { nodeToStrings } from './stringNode.js';
+} from '../parser/parseStringExpression.js';
+import { nodeToStrings } from '../parser/stringNode.js';
 import { indexVars } from 'generaltranslation/internal';
 import { randomUUID } from 'node:crypto';
 

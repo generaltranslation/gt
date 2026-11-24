@@ -1,6 +1,6 @@
 import { pluginConfig } from '../adapter/core';
 import { version as PACKAGE_VERSION } from '../../package.json';
-import type { Secrets } from '../types';
+import type { Secrets } from '../types/types';
 import type { TranslationPreferences } from '../adapter/types';
 import type { TranslationSummary } from './translationSummary';
 

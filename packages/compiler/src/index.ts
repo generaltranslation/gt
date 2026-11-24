@@ -12,7 +12,7 @@ import {
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 
 // Core modules
-import { GTConfig, PluginConfig } from './config';
+import { GTConfig, PluginConfig } from './config/pluginConfig';
 
 // Import passes
 import { collectionPass } from './passes/collectionPass';

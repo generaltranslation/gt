@@ -46,7 +46,7 @@ describe('NativeGtReactNative resolution', () => {
     rn.os = 'web';
     rn.getEnforcing.mockImplementation(nativeModuleMissing);
 
-    const mod = await import('../NativeGtReactNative');
+    const mod = await import('../specs/NativeGtReactNative');
 
     expect(mod.GtReactNative).toBeNull();
     expect(rn.getEnforcing).not.toHaveBeenCalled();
@@ -62,7 +62,7 @@ describe('NativeGtReactNative resolution', () => {
     rn.os = 'ios';
     rn.getEnforcing.mockReturnValue(nativeModule);
 
-    const mod = await import('../NativeGtReactNative');
+    const mod = await import('../specs/NativeGtReactNative');
 
     expect(mod.GtReactNative).toBe(nativeModule);
     expect(rn.getEnforcing).toHaveBeenCalledWith('GtReactNative');
@@ -72,7 +72,7 @@ describe('NativeGtReactNative resolution', () => {
     rn.os = 'android';
     rn.getEnforcing.mockImplementation(nativeModuleMissing);
 
-    await expect(import('../NativeGtReactNative')).rejects.toThrow(
+    await expect(import('../specs/NativeGtReactNative')).rejects.toThrow(
       /could not be found/
     );
   });

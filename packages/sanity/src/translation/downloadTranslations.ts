@@ -1,6 +1,6 @@
 import { projectFor } from '../adapter/core';
 import { FileProperties } from '../adapter/types';
-import type { Secrets } from '../types';
+import type { Secrets } from '../types/types';
 
 /**
  * Downloads multiple translation files in a single batch request

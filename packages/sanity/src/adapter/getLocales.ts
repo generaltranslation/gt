@@ -1,4 +1,4 @@
-import type { TranslationLocale } from '../types';
+import type { TranslationLocale } from '../types/types';
 import { pluginConfig } from './core';
 import { allowsNonDefaultSourceLocales } from '../utils/translationSource';
 

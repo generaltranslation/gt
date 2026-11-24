@@ -3,13 +3,13 @@
 // which languages hold text for each document, read from Payload alone.
 import type { Payload } from 'payload';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { siteCoverage } from '../coverage';
+import { siteCoverage } from '../plugin/coverage';
 import {
   saveSiteTranslations,
   translateDocument,
   translateSite,
-} from '../translation';
-import type { TranslateTarget } from '../types';
+} from '../translation/translation';
+import type { TranslateTarget } from '../types/types';
 import { createTestPayload } from './support/createTestPayload';
 import { FakeGt } from './support/fakeGt';
 import { createPage, navRows, setFooter, setHeader } from './support/fixtures';

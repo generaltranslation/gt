@@ -2,7 +2,7 @@ import { Replayer as RRWebReplayer } from '@rrweb/replay';
 import type { eventWithTime } from '@rrweb/types';
 import morphdomDefault from 'morphdom';
 
-import type { LocaleTextOverlay } from '../types';
+import type { LocaleTextOverlay } from '../types/types';
 import { GT_REPLAYER_CLASS, REPLAYER_CSS, REPLAYER_HTML } from './styles';
 
 /**

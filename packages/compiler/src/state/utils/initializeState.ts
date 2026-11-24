@@ -1,6 +1,6 @@
 import { GTUnpluginOptions } from '../..';
 import { TransformState } from '../types';
-import { PluginSettings, resolveDevHotReload } from '../../config';
+import { PluginSettings, resolveDevHotReload } from '../../config/pluginConfig';
 import { StringCollector } from '../StringCollector';
 import { ScopeTracker } from '../ScopeTracker';
 import { Logger } from '../Logger';

@@ -4,7 +4,10 @@ import path from 'node:path';
 import type { JsxChildren } from '@generaltranslation/format';
 import { hashSource } from 'generaltranslation/id';
 import { describe, expect, it } from 'vitest';
-import type { VueCompilerOptions, VueExtractionOutput } from '../../types.js';
+import type {
+  VueCompilerOptions,
+  VueExtractionOutput,
+} from '../../types/types.js';
 import {
   assertVueCompiles,
   extractFromVueSource,

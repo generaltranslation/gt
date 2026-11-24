@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import type { Node as SyntaxNode } from 'web-tree-sitter';
-import { getParser } from './parser.js';
-import type { StringNode } from './stringNode.js';
+import { getParser } from '../parser/parser.js';
+import type { StringNode } from '../parser/stringNode.js';
 import { resolveImportPath } from './resolveImport.js';
 
 /**

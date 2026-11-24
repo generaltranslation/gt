@@ -3,7 +3,7 @@
 // limit is translated again with the limit; only a maxLength is ever cut.
 import type { Payload } from 'payload';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { translateDocument } from '../../translation';
+import { translateDocument } from '../../translation/translation';
 import { sharedTestPayload } from '../support/createTestPayload';
 import { FakeGt } from '../support/fakeGt';
 

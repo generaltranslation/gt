@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { intlCache } from '../../cache/IntlCache';
-import { getLocaleName } from '../../core';
+import { getLocaleName } from '../../formatting/core';
 import { defaultDefaultLocale } from '../../settings/settings';
 import type { CustomMapping } from '../customLocaleMapping';
 import { _determineLocale, type MatchLocale } from '../determineLocale';

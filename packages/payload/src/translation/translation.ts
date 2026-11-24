@@ -12,11 +12,11 @@ import {
   sourceFile,
   targetFile,
   type Unit,
-} from './content/file';
-import { walkFields } from './content/fields';
-import { readPlainText } from './content/html';
-import { decodeElement, encodeElement, hasInlineText } from './content/inline';
-import { createGtPayloadDiagnostic } from './diagnostics';
+} from '../content/file';
+import { walkFields } from '../content/fields';
+import { readPlainText } from '../content/html';
+import { decodeElement, encodeElement, hasInlineText } from '../content/inline';
+import { createGtPayloadDiagnostic } from '../utils/diagnostics';
 import { fitToLimits, type OverLimit } from './limits';
 import { targetKey } from './targets';
 import {
@@ -38,7 +38,7 @@ import {
   type SkippedString,
   type TranslateResult,
   type TranslateTarget,
-} from './types';
+} from '../types/types';
 
 export type TranslateDocumentInput = {
   payload: Payload;

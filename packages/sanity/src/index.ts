@@ -65,7 +65,7 @@ export {
 } from './serialization/BaseSerializationConfig';
 export { attachGTData, detachGTData } from './serialization/data';
 export { translateAction };
-export type { Secrets, TranslationFunctionContext } from './types';
+export type { Secrets, TranslationFunctionContext } from './types/types';
 export type { SerializedDocument } from './serialization/types';
 export type { PreviewUrlConfig } from './translation/previewUrls';
 

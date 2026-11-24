@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { Button, ButtonMode, Checkbox, Flex } from '@sanity/ui';
-import { TranslationLocale } from '../../types';
+import { TranslationLocale } from '../../types/types';
 import { LocaleLabel } from './LocaleLabel';
 
 type LocaleCheckboxProps = {

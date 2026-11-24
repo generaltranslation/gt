@@ -6,10 +6,10 @@ import {
 } from '@generaltranslation/api';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
 import { useState } from 'react';
-import { createGtPayloadDiagnostic } from '../diagnostics';
-import type { RunProgress } from '../runs';
+import { createGtPayloadDiagnostic } from '../utils/diagnostics';
+import type { RunProgress } from '../plugin/runs';
 import { followRun, startRun, type Scope } from './api';
-import type { LocaleOption } from '../locales';
+import type { LocaleOption } from '../utils/locales';
 import { localeNames } from './locales';
 
 const documents = (count: number) =>

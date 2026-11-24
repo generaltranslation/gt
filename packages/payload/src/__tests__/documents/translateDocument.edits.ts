@@ -3,7 +3,10 @@
 // used as context when their source changes. Without it, nothing is sent.
 import type { Payload } from 'payload';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { saveTranslations, translateDocument } from '../../translation';
+import {
+  saveTranslations,
+  translateDocument,
+} from '../../translation/translation';
 import { sharedTestPayload } from '../support/createTestPayload';
 import { FakeGt, readKeyedHtml } from '../support/fakeGt';
 import { createPage } from '../support/fixtures';

@@ -4,7 +4,7 @@ import {
   parse as parseTemplate,
 } from '@vue/compiler-dom';
 import { expect } from 'vitest';
-import type { VueExtractionOptions } from '../../types.js';
+import type { VueExtractionOptions } from '../../types/types.js';
 import { extractFromVueSource as extract } from '../extractFromVueSource.js';
 
 /** Exact consumer Vue compiler version selected by the compatibility matrix. */

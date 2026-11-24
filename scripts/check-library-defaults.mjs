@@ -51,7 +51,7 @@ export const defaultGroups = [
     declarations: ['packages/format/src/settings/settings.ts'],
     exceptions: [
       {
-        path: 'packages/supported-locales/src/supportedLocales.ts',
+        path: 'packages/supported-locales/src/locales/supportedLocales.ts',
         reason: 'The locale is supported-locale data, not a fallback.',
         matches: isWithinVariableDeclaration('supportedLocales'),
         expectedMatches: 1,

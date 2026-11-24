@@ -3,8 +3,8 @@
 import type { Payload, User } from 'payload';
 import { createPayloadRequest } from 'payload';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { gtPlugin } from '../../plugin';
-import { RUNS_SLUG, startRun, type RunProgress } from '../../runs';
+import { gtPlugin } from '../../plugin/plugin';
+import { RUNS_SLUG, startRun, type RunProgress } from '../../plugin/runs';
 import { createTestPayload } from './createTestPayload';
 import { createPage } from './fixtures';
 

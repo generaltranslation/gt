@@ -17,14 +17,14 @@ import { resolveCredentials } from 'generaltranslation/internal';
 import { APIError } from 'payload';
 import { ApiError } from '@generaltranslation/api';
 import { siteCoverage } from './coverage';
-import { createGtPayloadDiagnostic } from './diagnostics';
-import { canUpdate } from './documents';
+import { createGtPayloadDiagnostic } from '../utils/diagnostics';
+import { canUpdate } from '../translation/documents';
 import { locksCollection } from './locks';
 import {
   ADMIN_CUSTOM_KEY,
   targetLocaleOptions,
   type AdminSettings,
-} from './locales';
+} from '../utils/locales';
 import {
   runsCollection,
   runTask,
@@ -33,8 +33,8 @@ import {
   stepRun,
   type RunKind,
 } from './runs';
-import { targetKey } from './targets';
-import type { GtClient, TranslateTarget } from './types';
+import { targetKey } from '../translation/targets';
+import type { GtClient, TranslateTarget } from '../types/types';
 
 // customMapping maps Payload locale codes GT does not know to ones it does.
 export type GtPluginOptions = Pick<GTConfig, 'customMapping'> & {

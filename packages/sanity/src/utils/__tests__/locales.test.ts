@@ -6,7 +6,7 @@ import {
   setLocaleSelected,
   toggleAllLocales,
 } from '../locales';
-import type { TranslationLocale } from '../../types';
+import type { TranslationLocale } from '../../types/types';
 
 describe('resolveTargetLocales', () => {
   test('passes through a clean target list', () => {

@@ -1,5 +1,5 @@
 import type { SanityDocument } from 'sanity';
-import type { GTFile } from '../types';
+import type { GTFile } from '../types/types';
 import { getDocumentPublishedId } from './documentIds';
 
 /**

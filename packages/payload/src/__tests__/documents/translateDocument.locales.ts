@@ -3,7 +3,10 @@
 import { GeneralTranslation } from 'generaltranslation';
 import type { Payload } from 'payload';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { startTranslation, translateDocument } from '../../translation';
+import {
+  startTranslation,
+  translateDocument,
+} from '../../translation/translation';
 import { sharedTestPayload } from '../support/createTestPayload';
 import { fakeTranslate } from '../support/fakeGt';
 import { createPage } from '../support/fixtures';

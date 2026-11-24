@@ -17,7 +17,7 @@ import {
   Secrets,
   TranslationLocale,
   TranslationFunctionContext,
-} from '../types';
+} from '../types/types';
 import { pluginConfig, projectFor } from '../adapter/core';
 import { getDefaultBranchId } from '../adapter/getDefaultBranchId';
 import { getTranslationStrategy } from '../translation/strategy';
