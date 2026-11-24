@@ -49,7 +49,11 @@ describe('gt-react-native package exports', () => {
       'GtInternalVar',
       'GtInternalRuntimeTranslateJsx',
     ];
-    const reactNativeOnly = ['getLocale', 'getLocaleFromNativeStore'];
+    const reactNativeOnly = [
+      'getLocale',
+      'getLocaleFromNativeStore',
+      'getNativeLocales',
+    ];
 
     const reactNative = await import('../index');
     const react = await import('../../../react/src/index.client');
