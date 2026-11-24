@@ -54,6 +54,10 @@ ruleTester.run('static-jsx: scope', staticJsx, {
       code: t('{`Hello ${name}`}'),
     },
     {
+      name: 'JSX comments and empty braces',
+      code: t('{/* Hero */}<h1>Hello</h1>{\n// note\n}{}'),
+    },
+    {
       name: 'self-closing T',
       code: component("import { T } from 'gt-react';", '<T />'),
     },
@@ -136,6 +140,16 @@ ruleTester.run('static-jsx: scope', staticJsx, {
       ['identifier', '{name}', '<Var>{name}</Var>'],
       ['call expression', '{getLabel()}', '<Var>{getLabel()}</Var>'],
       [
+        'identifier after a JSX comment',
+        '{/* Hero */}{name}',
+        '{/* Hero */}<Var>{name}</Var>',
+      ],
+      [
+        'identifier with a leading comment',
+        '{/* c */ name}',
+        '<Var>{/* c */ name}</Var>',
+      ],
+      [
         'inside a nested element',
         '<div>{name}</div>',
         '<div><Var>{name}</Var></div>',
@@ -192,6 +206,18 @@ ruleTester.run('static-jsx: scope', staticJsx, {
       code: t('<Branch branch={x} a={label}>fallback</Branch>', 'T, Branch'),
       output: t(
         '<Branch branch={x} a=<Var>{label}</Var>>fallback</Branch>',
+        'T, Branch, Var'
+      ),
+      errors: errors(),
+    },
+    {
+      name: 'nested Branch prop after a JSX comment in a Branch prop fragment',
+      code: t(
+        '<Branch branch={x} a={<>{/* note */}<Branch branch={y} b={label}>c</Branch></>}>fallback</Branch>',
+        'T, Branch'
+      ),
+      output: t(
+        '<Branch branch={x} a={<>{/* note */}<Branch branch={y} b=<Var>{label}</Var>>c</Branch></>}>fallback</Branch>',
         'T, Branch, Var'
       ),
       errors: errors(),
