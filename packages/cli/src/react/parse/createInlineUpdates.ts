@@ -43,7 +43,9 @@ export async function createInlineUpdates(
   validate: boolean,
   filePatterns: string[] | undefined,
   parsingFlags: ResolvedGTParsingFlags,
-  parsingOptions: ParsingConfigOptions
+  parsingOptions: ParsingConfigOptions,
+  /** Receives each file that could not be parsed: its messages are missing from the updates. */
+  skippedFiles: string[] = []
 ): Promise<{ updates: Updates; errors: string[]; warnings: string[] }> {
   resetTypeCheckers();
   const updates: Updates = [];
@@ -71,6 +73,7 @@ export async function createInlineUpdates(
       pathsAndAliases = getPathsAndAliases(ast, pkgs);
     } catch (error) {
       logger.error(`Error parsing file ${file}: ${error}`);
+      skippedFiles.push(file);
       continue;
     }
     const { importAliases, translationComponentPaths } = pathsAndAliases;

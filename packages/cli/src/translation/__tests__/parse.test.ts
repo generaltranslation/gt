@@ -111,6 +111,7 @@ describe('createUpdates', () => {
       errors: [],
       warnings: [],
     });
+    const skippedFiles: string[] = [];
 
     await createUpdates(
       {} as TranslateFlags,
@@ -119,7 +120,8 @@ describe('createUpdates', () => {
       library,
       true,
       parsingFlags,
-      parsingOptions
+      parsingOptions,
+      skippedFiles
     );
 
     expect(createInlineUpdates).toHaveBeenCalledOnce();
@@ -128,7 +130,8 @@ describe('createUpdates', () => {
       true,
       patterns,
       parsingFlags,
-      parsingOptions
+      parsingOptions,
+      skippedFiles
     );
     expect(createPythonInlineUpdates).not.toHaveBeenCalled();
   });
