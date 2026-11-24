@@ -3,6 +3,7 @@ import { ReactI18nCache } from '../../../i18n-cache/ReactI18nCache';
 import { setReactI18nCache } from '../../../i18n-cache/singleton-operations';
 import { initializeI18nConfig } from '../../../setup/i18nConfig';
 import { getReactI18nCache } from '../../../i18n-cache/singleton-operations';
+import { setGlobalTranslationsSnapshot } from '../../../translations-snapshot/singleton-operations';
 import {
   getTranslationsSnapshot,
   preloadTranslations,
@@ -79,6 +80,17 @@ describe('getTranslationsSnapshot', () => {
       es: { hash1: 'hola' },
     });
     expect(consoleWarnSpy).not.toHaveBeenCalled();
+  });
+
+  it('production: reads the global snapshot when no cache exists', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'es'] }, 'SPA');
+    setGlobalTranslationsSnapshot({ es: { hash1: 'hola' } });
+
+    await expect(getTranslationsSnapshot('es')).resolves.toEqual({
+      es: { hash1: 'hola' },
+    });
+    await expect(getTranslationsSnapshot('fr')).resolves.toEqual({});
   });
 
   it('development: omits the locale and warns when the loader fails', async () => {

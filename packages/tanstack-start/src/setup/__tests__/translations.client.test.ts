@@ -11,6 +11,10 @@ const { pluginModule } = vi.hoisted(() => ({
 }));
 
 vi.mock('gt-tanstack-start/internal/_config', () => pluginModule);
+vi.mock('gt-tanstack-start/internal/_compat-config', () => ({
+  dictionary: {},
+  loadDictionary: async () => ({}),
+}));
 
 function saveHash() {
   return hashSource({ source: 'Save', dataFormat: 'MESSAGE_TREE' });
@@ -31,6 +35,7 @@ describe.sequential('production client translations', () => {
   afterEach(() => {
     pluginModule.loadTranslations.mockClear();
     vi.unstubAllEnvs();
+    vi.restoreAllMocks();
   });
 
   it('loads a locale into the snapshot once and translates from it without an i18nCache', async () => {
@@ -61,5 +66,32 @@ describe.sequential('production client translations', () => {
 
     expect(t`Save`).toBe('Sauver');
     expect(pluginModule.loadTranslations).not.toHaveBeenCalled();
+  });
+
+  it('loads a locale again after a failed load', async () => {
+    const { loadClientTranslations } = await loadProductionModules();
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    pluginModule.loadTranslations.mockRejectedValueOnce(new Error('offline'));
+
+    await expect(loadClientTranslations('fr')).resolves.toEqual({});
+    await expect(loadClientTranslations('fr')).resolves.toEqual({
+      fr: { [saveHash()]: 'Enregistrer' },
+    });
+    expect(pluginModule.loadTranslations).toHaveBeenCalledTimes(2);
+  });
+
+  it('shares loads with the /compat i18nCache', async () => {
+    const { pure, loadClientTranslations } = await loadProductionModules();
+    const { ensureDictionaryManager } =
+      await import('../../compat/dictionaryManager.client');
+
+    ensureDictionaryManager();
+    const [cached] = await Promise.all([
+      pure.getReactI18nCache().loadTranslations('fr'),
+      loadClientTranslations('fr'),
+    ]);
+
+    expect(cached).toEqual({ [saveHash()]: 'Enregistrer' });
+    expect(pluginModule.loadTranslations).toHaveBeenCalledOnce();
   });
 });

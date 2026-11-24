@@ -11,7 +11,7 @@ import {
 import { useLocale } from '../hooks/condition-store';
 import { useDefaultLocale } from '../hooks/i18n-config';
 import { useShouldTranslate } from '../hooks/utils';
-import { useTrackedTranslationResolver } from '../hooks/external-store/useTrackedTranslationResolver';
+import { useTranslationResolver } from '../hooks/lookup';
 import { useTrackedDictionaryResolver } from './useTrackedDictionaryResolver';
 import { useTrackedDictionaryObjResolver } from './useTrackedDictionaryObjResolver';
 
@@ -120,7 +120,7 @@ function useRenderDictionaryEntry() {
   const locale = useLocale();
   const defaultLocale = useDefaultLocale();
   const shouldTranslate = useShouldTranslate();
-  const resolveTranslation = useTrackedTranslationResolver(shouldTranslate);
+  const resolveTranslation = useTranslationResolver(shouldTranslate);
 
   return useCallback(
     (

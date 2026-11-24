@@ -30,8 +30,7 @@ export type InitializeGTSPAParams = I18nConfigParams &
  *
  * This is SPA for browser runtime
  *
- * Call once per page load. The snapshot keeps its first value, so calling
- * this again does not reload translations; changing locale reloads the page.
+ * Call once per page load. Changing locale reloads the page.
  * Translations never expire in the browser, so `cacheExpiryTime` is ignored.
  */
 export async function initializeGTSPA(config: InitializeGTSPAParams) {

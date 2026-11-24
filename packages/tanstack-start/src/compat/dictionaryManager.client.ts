@@ -1,22 +1,14 @@
-import {
-  getGlobalTranslationsSnapshot,
-  getI18nConfig,
-  initializeReactI18nCache,
-  isGlobalTranslationsSnapshotInitialized,
-  getReactI18nCache,
-} from '@generaltranslation/react-core/pure';
+import { initializeReactI18nCache } from '@generaltranslation/react-core/pure';
+import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import {
   initializeDictionaryManager,
   isDictionaryManagerInitialized,
 } from 'gt-i18n/internal/compat';
 import {
-  config as pluginConfig,
-  loadTranslations as pluginLoadTranslations,
-} from 'gt-tanstack-start/internal/_config';
-import {
   dictionary,
   loadDictionary,
 } from 'gt-tanstack-start/internal/_compat-config';
+import { loadClientTranslations } from '../setup/translations.client';
 
 /**
  * Initialize the DictionaryManager from the Vite plugin's dictionary and
@@ -38,13 +30,19 @@ export function ensureDictionaryManager(): void {
 
 function initializeCompatI18nCache(): void {
   initializeReactI18nCache({
-    ...pluginConfig,
-    loadTranslations: pluginLoadTranslations,
-    projectId: getI18nConfig().getProjectId(),
+    // Shares the snapshot's loads, so each catalog loads once.
+    loadTranslations: async (locale) => {
+      const translations = (await loadClientTranslations(locale))[locale];
+      if (!translations) throw new Error(createSnapshotLoadError(locale));
+      return translations;
+    },
     cacheExpiryTime: null,
   });
-  // Seeded so dictionary lookups skip reloading the page's translations.
-  if (isGlobalTranslationsSnapshotInitialized()) {
-    getReactI18nCache().updateTranslations(getGlobalTranslationsSnapshot());
-  }
 }
+
+const createSnapshotLoadError = (locale: string) =>
+  createDiagnosticMessage({
+    source: 'gt-tanstack-start',
+    severity: 'Error',
+    whatHappened: `Translations for locale "${locale}" did not load`,
+  });

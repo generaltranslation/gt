@@ -76,6 +76,39 @@ describe('initializeGTSPA in production', () => {
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
+  it('does not request translations with an empty cacheUrl', async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+
+    await initializeGTSPA({
+      ...baseConfig,
+      projectId: 'project-id',
+      cacheUrl: '',
+    });
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(warnings()).toEqual([
+      expect.stringContaining('No translation loader was found'),
+    ]);
+    expect(setGlobalTranslationsSnapshot).toHaveBeenCalledWith({ fr: {} });
+  });
+
+  it('loads a regional locale of the default language', async () => {
+    const loadTranslations = vi.fn(async () => ({ hash: 'Colour' }));
+
+    await initializeGTSPA({
+      ...baseConfig,
+      locales: ['en', 'en-GB'],
+      locale: 'en-GB',
+      loadTranslations,
+    });
+
+    expect(loadTranslations).toHaveBeenCalledWith('en-GB');
+    expect(setGlobalTranslationsSnapshot).toHaveBeenCalledWith({
+      'en-GB': { hash: 'Colour' },
+    });
+  });
+
   it('does not warn for the default locale', async () => {
     await initializeGTSPA({ ...baseConfig, locale: 'en' });
 

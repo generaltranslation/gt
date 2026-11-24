@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { hashSource } from 'generaltranslation/id';
 import { useTranslations } from '@generaltranslation/react-core/compat';
 import {
@@ -114,6 +114,36 @@ describe.each([
     );
 
     expect(html).toBe('<p>Hello</p>');
+  });
+});
+
+describe('compat BrowserGTProvider in production', () => {
+  beforeEach(() => {
+    resetGTGlobals();
+    vi.stubEnv('NODE_ENV', 'production');
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    resetGTGlobals();
+  });
+
+  it('renders translations without an I18nStore', () => {
+    initialize();
+    const source = 'Hello';
+
+    const html = renderToStaticMarkup(
+      <BrowserGTProvider
+        locale='fr'
+        translations={{
+          fr: { [hashSource({ source, dataFormat: 'ICU' })]: 'Bonjour' },
+        }}
+        dictionaries={{ en: { greeting: source } }}
+      >
+        <Greeting />
+      </BrowserGTProvider>
+    );
+
+    expect(html).toBe('<p>Bonjour</p>');
   });
 });
 

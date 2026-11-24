@@ -26,6 +26,10 @@ export { createLookupOptions } from './translation-functions/internal/helpers';
 export { I18nCache } from './i18n-cache/I18nCache';
 export { getTranslationRuntimeParams } from './i18n-config/createGTRuntime';
 export { createRemoteTranslationLoader } from './i18n-cache/translations-manager/translations-loaders/createRemoteTranslationLoader';
+export {
+  getLoadTranslationsType,
+  LoadTranslationsType,
+} from './i18n-cache/utils/getLoadTranslationsType';
 export type { TranslationsCacheMissEvent } from './i18n-cache/I18nCache';
 export { ReadonlyConditionStore } from './condition-store/ReadonlyConditionStore';
 export type { ReadonlyConditionStoreParams } from './condition-store/ReadonlyConditionStore';

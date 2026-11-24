@@ -16,7 +16,7 @@ import {
 
 const snapshotLoads = new Map<string, Promise<void>>();
 
-/** Loads a locale into the global translations snapshot once. */
+/** Loads a locale into the global translations snapshot until a load succeeds. */
 function loadIntoSnapshot(locale: string): Promise<void> {
   if (
     isGlobalTranslationsSnapshotInitialized() &&
@@ -33,7 +33,9 @@ function loadIntoSnapshot(locale: string): Promise<void> {
         projectId: getI18nConfig().getProjectId(),
       },
       locale
-    ).then(updateGlobalTranslationsSnapshot);
+    )
+      .then(updateGlobalTranslationsSnapshot)
+      .finally(() => snapshotLoads.delete(locale));
     snapshotLoads.set(locale, load);
   }
   return load;
@@ -51,7 +53,8 @@ export const loadClientTranslations: (
   process.env.NODE_ENV === 'production'
     ? async (locale) => {
         await loadIntoSnapshot(locale);
-        return { [locale]: getGlobalTranslationsSnapshot()[locale] };
+        const translations = getGlobalTranslationsSnapshot()[locale];
+        return translations ? { [locale]: translations } : {};
       }
     : getTranslationsSnapshot;
 
