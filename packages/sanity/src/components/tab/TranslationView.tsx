@@ -11,6 +11,7 @@ import { useToast } from '@sanity/ui/toast';
 import { pluginConfig } from '../../adapter/core';
 import { SaveLocalTranslationsDialog } from '../page/SaveLocalTranslationsDialog';
 import { RetranslateDocumentDialog } from '../page/RetranslateDocumentDialog';
+import { UploadExistingDialog } from '../page/UploadExistingDialog';
 import { DebugInfoDialog } from '../page/DebugInfoDialog';
 import { version as PACKAGE_VERSION } from '../../../package.json';
 import {
@@ -74,6 +75,8 @@ export const TranslationView = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isUploadingExisting, setIsUploadingExisting] = useState(false);
   const [isSaveLocalDialogOpen, setIsSaveLocalDialogOpen] = useState(false);
+  const [isUploadExistingDialogOpen, setIsUploadExistingDialogOpen] =
+    useState(false);
   const [isRetranslateDialogOpen, setIsRetranslateDialogOpen] = useState(false);
   const [isDebugInfoDialogOpen, setIsDebugInfoDialogOpen] = useState(false);
 
@@ -389,6 +392,11 @@ export const TranslationView = () => {
         }}
       />
 
+      <UploadExistingDialog
+        isOpen={isUploadExistingDialogOpen}
+        onClose={() => setIsUploadExistingDialogOpen(false)}
+      />
+
       {/* Translation Status Section */}
       {documentId && versionId && statusLocales.length > 0 && (
         <Stack gap={4}>
@@ -492,6 +500,19 @@ export const TranslationView = () => {
                 />
                 <Text size={1}>Save local edits before translating</Text>
               </Flex>
+            </Flex>
+            <Flex gap={2} align='center' justify='flex-start'>
+              <Button
+                mode='ghost'
+                onClick={() => setIsUploadExistingDialogOpen(true)}
+                disabled={
+                  isBusy || !availableLocales.length || !canPreserveLocalEdits
+                }
+                icon={UploadIcon}
+                text='Upload Existing'
+                style={{ minWidth: '180px' }}
+              />
+              <Text size={1}>Store the translations in Sanity as finished</Text>
             </Flex>
             {!canPreserveLocalEdits && (
               <Text size={1} muted>

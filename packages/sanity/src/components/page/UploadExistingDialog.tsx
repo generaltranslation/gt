@@ -38,7 +38,9 @@ export const UploadExistingDialog: React.FC<UploadExistingDialogProps> = ({
       <Box padding={4}>
         <Stack gap={3}>
           <Text>
-            Upload all {documents.length} documents and the translations
+            {documents.length === 1
+              ? 'Upload this document and the translations'
+              : `Upload all ${documents.length} documents and the translations`}{' '}
             currently in Sanity to General Translation?
           </Text>
           <SelectedLocalesNote />
