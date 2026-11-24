@@ -314,7 +314,7 @@ function propsOf(scope: Scope): TrackedSymbol[] {
  * called from thousands of modules has that many, too many to hold at once.
  */
 function* evaluateCandidates(
-  candidates: readonly Candidate[]
+  candidates: Iterable<Candidate>
 ): Generator<TrackedSymbol> {
   for (const candidate of candidates) yield* evaluateCandidate(candidate);
 }
