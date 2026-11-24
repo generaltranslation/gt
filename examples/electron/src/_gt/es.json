@@ -1,0 +1,15 @@
+{
+  "4289aa2fe13992f5": "Idioma",
+  "b51556b59e9b7c27": [
+    {
+      "t": "h1",
+      "i": 1,
+      "c": "Hola desde el renderizador"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": "Elige un idioma aquí o en el menú de la aplicación. La página y el menú cambian a la vez."
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "4289aa2fe13992f5": "Language",
+  "b51556b59e9b7c27": [
+    {
+      "t": "h1",
+      "i": 1,
+      "c": "Hello from the renderer"
+    },
+    {
+      "t": "p",
+      "i": 2,
+      "c": "Choose a language here or in the application menu. The page and the menu change together."
+    }
+  ]
+}

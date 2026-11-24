@@ -1,0 +1,32 @@
+{
+  "name": "electron-example",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.20.0",
+  "type": "module",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.main.json && vite build",
+    "start": "pnpm run build && electron .",
+    "generate": "gt generate",
+    "lint": "oxlint --config ../.oxlintrc.react.json .",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.main.json --noEmit"
+  },
+  "dependencies": {
+    "gt-i18n": "workspace:*",
+    "gt-react": "workspace:*",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "electron": "^45.0.0",
+    "gt": "workspace:*",
+    "oxlint": "^1.86.0",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.1"
+  }
+}
