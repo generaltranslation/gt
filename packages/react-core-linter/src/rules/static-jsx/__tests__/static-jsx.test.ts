@@ -58,13 +58,6 @@ ruleTester.run('static-jsx: scope', staticJsx, {
       code: t('{/* Hero */}<h1>Hello</h1>{\n// note\n}{}'),
     },
     {
-      name: 'JSX comment inside a Branch prop fragment',
-      code: t(
-        '<Branch branch={x} a={<>{/* note */}hello</>}>fallback</Branch>',
-        'T, Branch'
-      ),
-    },
-    {
       name: 'self-closing T',
       code: component("import { T } from 'gt-react';", '<T />'),
     },
@@ -213,6 +206,18 @@ ruleTester.run('static-jsx: scope', staticJsx, {
       code: t('<Branch branch={x} a={label}>fallback</Branch>', 'T, Branch'),
       output: t(
         '<Branch branch={x} a=<Var>{label}</Var>>fallback</Branch>',
+        'T, Branch, Var'
+      ),
+      errors: errors(),
+    },
+    {
+      name: 'nested Branch prop after a JSX comment in a Branch prop fragment',
+      code: t(
+        '<Branch branch={x} a={<>{/* note */}<Branch branch={y} b={label}>c</Branch></>}>fallback</Branch>',
+        'T, Branch'
+      ),
+      output: t(
+        '<Branch branch={x} a={<>{/* note */}<Branch branch={y} b=<Var>{label}</Var>>c</Branch></>}>fallback</Branch>',
         'T, Branch, Var'
       ),
       errors: errors(),
