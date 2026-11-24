@@ -53,8 +53,8 @@ export const loadClientTranslations: (
   process.env.NODE_ENV === 'production'
     ? async (locale) => {
         await loadIntoSnapshot(locale);
-        const translations = getGlobalTranslationsSnapshot()[locale];
-        return translations ? { [locale]: translations } : {};
+        // The live snapshot, so the provider sees a later load that recovers.
+        return getGlobalTranslationsSnapshot();
       }
     : getTranslationsSnapshot;
 

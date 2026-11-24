@@ -68,13 +68,17 @@ describe.sequential('production client translations', () => {
     expect(pluginModule.loadTranslations).not.toHaveBeenCalled();
   });
 
-  it('loads a locale again after a failed load', async () => {
-    const { loadClientTranslations } = await loadProductionModules();
+  it('loads a locale again after a failed load, into the translations the provider holds', async () => {
+    const { loadClientGTParams, loadClientTranslations } =
+      await loadProductionModules();
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     pluginModule.loadTranslations.mockRejectedValueOnce(new Error('offline'));
 
-    await expect(loadClientTranslations('fr')).resolves.toEqual({});
-    await expect(loadClientTranslations('fr')).resolves.toEqual({
+    const providerTranslations = await loadClientTranslations('fr');
+    expect(providerTranslations).toEqual({});
+    await loadClientGTParams({ locale: 'fr', enableI18n: true });
+
+    expect(providerTranslations).toEqual({
       fr: { [saveHash()]: 'Enregistrer' },
     });
     expect(pluginModule.loadTranslations).toHaveBeenCalledTimes(2);

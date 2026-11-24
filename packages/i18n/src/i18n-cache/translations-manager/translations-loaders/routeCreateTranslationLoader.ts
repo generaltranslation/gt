@@ -38,13 +38,7 @@ export function routeCreateTranslationLoader({
     case LoadTranslationsType.GT_REMOTE:
       // Only reachable for REMOTE: GT_REMOTE requires a projectId
       if (!projectId) {
-        return createWarnOnceTranslationLoader(
-          createDiagnosticMessage({
-            whatHappened:
-              'Loading translations from a remote store needs a projectId. No translations will be loaded.',
-            fix: 'Add projectId to the I18nCache config, or set cacheUrl to null to disable translation loading',
-          })
-        );
+        return createWarnOnceTranslationLoader(noRemoteStoreProjectIdWarning);
       }
       return createRemoteTranslationLoader({
         cacheUrl: cacheUrl as string | undefined,
@@ -60,13 +54,7 @@ export function routeCreateTranslationLoader({
       if (cacheUrl === null) {
         return async () => ({});
       }
-      return createWarnOnceTranslationLoader(
-        createDiagnosticMessage({
-          whatHappened:
-            'No translation loader found. No translations will be loaded.',
-          fix: 'Add projectId to the I18nCache config (to load from the GT remote store), provide a loadTranslations function, or set cacheUrl to null to disable translation loading',
-        })
-      );
+      return createWarnOnceTranslationLoader(noTranslationLoaderWarning);
   }
 }
 
@@ -78,8 +66,24 @@ function createWarnOnceTranslationLoader(warning: string): TranslationsLoader {
   return async (_locale: string) => {
     if (!warned) {
       warned = true;
-      logger.warn('I18nCache: ' + warning);
+      logger.warn(warning);
     }
     return {};
   };
 }
+
+const noRemoteStoreProjectIdWarning = createDiagnosticMessage({
+  source: 'gt-i18n',
+  severity: 'Warning',
+  whatHappened:
+    'Loading translations from a remote store needs a projectId, so no translations will be loaded',
+  fix: 'Add projectId to your GT config, or set cacheUrl to null to disable translation loading.',
+});
+
+const noTranslationLoaderWarning = createDiagnosticMessage({
+  source: 'gt-i18n',
+  severity: 'Warning',
+  whatHappened:
+    'No translation loader was found, so no translations will be loaded',
+  fix: 'Add projectId to your GT config (to load from the GT remote store), provide a loadTranslations function, or set cacheUrl to null to disable translation loading.',
+});

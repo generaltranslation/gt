@@ -24,7 +24,7 @@ export async function getTranslationsSnapshot(
     isGlobalTranslationsSnapshotInitialized()
   ) {
     const translations = getGlobalTranslationsSnapshot()[locale];
-    return translations ? { [locale]: translations } : {};
+    return translations ? { [locale]: structuredClone(translations) } : {};
   }
   const i18nCache = getReactI18nCache();
   try {

@@ -257,7 +257,7 @@ describe('I18nCache', () => {
       [
         'no translation loader is configured',
         {},
-        'No translation loader found',
+        'No translation loader was found',
       ],
     ])('warns once and returns {} when %s', async (_name, params, warning) => {
       const fetchSpy = mockFetchResponse({});

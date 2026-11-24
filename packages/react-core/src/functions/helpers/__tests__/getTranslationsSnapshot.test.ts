@@ -85,11 +85,12 @@ describe('getTranslationsSnapshot', () => {
   it('production: reads the global snapshot when no cache exists', async () => {
     vi.stubEnv('NODE_ENV', 'production');
     initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'es'] }, 'SPA');
-    setGlobalTranslationsSnapshot({ es: { hash1: 'hola' } });
+    const global = { es: { hash1: 'hola' } };
+    setGlobalTranslationsSnapshot(global);
 
-    await expect(getTranslationsSnapshot('es')).resolves.toEqual({
-      es: { hash1: 'hola' },
-    });
+    const snapshot = await getTranslationsSnapshot('es');
+    expect(snapshot).toEqual({ es: { hash1: 'hola' } });
+    expect(snapshot.es).not.toBe(global.es);
     await expect(getTranslationsSnapshot('fr')).resolves.toEqual({});
   });
 

@@ -1,11 +1,9 @@
 import {
-  createRemoteTranslationLoader,
   getI18nConfig,
   getLoadTranslationsType,
-  LoadTranslationsType,
+  routeCreateTranslationLoader,
   type I18nCacheConstructorParams,
   type Locale,
-  type TranslationsLoader,
 } from 'gt-i18n/internal';
 import {
   createDiagnosticMessage,
@@ -32,10 +30,11 @@ export async function loadTranslationsSnapshot(
     return { [locale]: {} };
   }
 
-  const loadTranslations = getTranslationsLoader(config);
-  if (!loadTranslations) {
-    return { [locale]: {} };
-  }
+  const loadTranslations = routeCreateTranslationLoader({
+    loadTranslations: config.loadTranslations,
+    type: getLoadTranslationsType(config),
+    remoteTranslationLoaderParams: config,
+  });
 
   try {
     // Lookups validate each entry, as they do the cache's.
@@ -50,39 +49,6 @@ export async function loadTranslationsSnapshot(
   }
 }
 
-/**
- * Picks the translation loader with the i18nCache's rule, warning when the
- * config cannot load translations. Returns undefined when nothing should be
- * loaded.
- */
-function getTranslationsLoader(
-  config: TranslationsSnapshotLoaderParams
-): TranslationsLoader | undefined {
-  const { loadTranslations, cacheUrl, projectId, _versionId, _branchId } =
-    config;
-  switch (getLoadTranslationsType(config)) {
-    case LoadTranslationsType.CUSTOM:
-      return loadTranslations;
-    case LoadTranslationsType.GT_REMOTE:
-    case LoadTranslationsType.REMOTE:
-      if (!projectId) {
-        console.warn(noRemoteStoreProjectIdWarning);
-        return undefined;
-      }
-      return createRemoteTranslationLoader({
-        cacheUrl: cacheUrl ?? undefined,
-        projectId,
-        _versionId,
-        _branchId,
-        customMapping: getI18nConfig().getCustomMapping(),
-      });
-    case LoadTranslationsType.DISABLED:
-      // cacheUrl: null is an explicit opt-out of translation loading
-      if (cacheUrl !== null) console.warn(noTranslationLoaderWarning);
-      return undefined;
-  }
-}
-
 const createLoadError = (locale: Locale, error: unknown) =>
   createDiagnosticMessage({
     source: '@generaltranslation/react-core',
@@ -92,19 +58,3 @@ const createLoadError = (locale: Locale, error: unknown) =>
     fix: 'Generate translations for this locale, or check your loadTranslations configuration.',
     details: formatDiagnosticErrorDetails(error),
   });
-
-const noRemoteStoreProjectIdWarning = createDiagnosticMessage({
-  source: '@generaltranslation/react-core',
-  severity: 'Warning',
-  whatHappened:
-    'Loading translations from a remote store needs a projectId, so no translations will be loaded',
-  fix: 'Add projectId to your GT config, or set cacheUrl to null to disable translation loading.',
-});
-
-const noTranslationLoaderWarning = createDiagnosticMessage({
-  source: '@generaltranslation/react-core',
-  severity: 'Warning',
-  whatHappened:
-    'No translation loader was found, so no translations will be loaded',
-  fix: 'Add projectId to your GT config (to load from the GT remote store), provide a loadTranslations function, or set cacheUrl to null to disable translation loading.',
-});
