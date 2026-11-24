@@ -1,136 +1,59 @@
-import type { InternalGTProviderProps } from '@generaltranslation/react-core/components';
-import { Suspense, use, useCallback, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
+import {
+  ClientGTProvider,
+  type ClientGTProviderProps,
+  type ConditionStorage,
+} from '@generaltranslation/react-core/components';
+import { getI18nConfig } from '@generaltranslation/react-core/pure';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import type { LocaleCandidates, Locale } from 'gt-i18n/internal';
-import type {
-  NativeConditionStoreParams,
-  NativeConditionStoreState,
-} from '../condition-store/NativeConditionStore';
-import { getLocale } from '../utils/getLocale';
-import {
-  getInitialEnableI18n,
-  getInitialRegion,
-} from '../utils/getInitialNativeConditions';
-import { resolveLocale } from '../utils/resolveLocale';
-import { loadTranslations, type LocaleTranslations } from './loadTranslations';
-import {
-  NativeGTProvider,
-  type NativeGTProviderProps,
-} from './NativeGTProvider';
+import { readNativeLocales } from '../utils/getLocale';
+import { nativeStoreGet, nativeStoreSet } from '../utils/nativeStore';
 
-export type GTProviderProps = Omit<
-  InternalGTProviderProps,
-  | 'i18nStore'
-  | 'translations'
-  | 'locale'
-  | 'region'
-  | 'enableI18n'
-  | 'setLocale'
-  | 'setRegion'
-  | 'setEnableI18n'
-> &
-  Omit<NativeConditionStoreParams, 'locale' | '_reload'> & {
-    children?: ReactNode;
-    locale?: LocaleCandidates;
-    fallback?: ReactNode;
-  };
-
-type LoadedGTProviderProps = Omit<NativeGTProviderProps, 'translations'>;
-type TranslationSnapshot = Record<Locale, LocaleTranslations>;
-
-export function GTProvider(props: GTProviderProps) {
-  return <LoadableGTProvider {...props} />;
-}
+export type GTProviderProps = ClientGTProviderProps;
 
 /**
- * This wrapper takes the place of a loader that would be present in
- * SSR style applications.
+ * Provides GT to the components below it. It loads each locale's translations
+ * itself and changes locale in place, as gt-react's provider does without
+ * `translations`: both are react-core's ClientGTProvider.
  */
-function LoadableGTProvider(props: GTProviderProps) {
-  const { fallback, ...providerProps } = props;
-  const renderedFallback = fallback ?? <DefaultLoadingFallback />;
-  const { locale, region, enableI18n } = providerProps;
-  // Keep native conditions in React state so condition-store writes trigger rerenders.
-  const [nativeConditions, setNativeConditions] =
-    useState<NativeConditionStoreState>(() => ({
-      locale: getLocale(),
-      region: getInitialRegion({ region }),
-      enableI18n: getInitialEnableI18n({ enableI18n }),
-    }));
-  const activeLocale = resolveLocale(locale ?? nativeConditions.locale);
-  // An empty region is no region, as it is when read back from storage.
-  const activeRegion = (region ?? nativeConditions.region) || undefined;
-  const activeEnableI18n = enableI18n ?? nativeConditions.enableI18n;
-  const fallbackTranslations = useMemo<TranslationSnapshot>(
-    () => ({ [activeLocale]: {} }),
-    [activeLocale]
-  );
-  // A setter reports the one condition it changed, so a setter kept from an
-  // earlier render cannot bring the other two back. A prop takes the place of
-  // the matching condition, so a change to it is not kept.
-  const reload = useCallback(
-    (change: Partial<NativeConditionStoreState>) => {
-      setNativeConditions((previousState) => ({
-        locale:
-          locale === undefined && change.locale !== undefined
-            ? change.locale
-            : previousState.locale,
-        region:
-          region === undefined && 'region' in change
-            ? change.region
-            : previousState.region,
-        enableI18n:
-          enableI18n === undefined && change.enableI18n !== undefined
-            ? change.enableI18n
-            : previousState.enableI18n,
-      }));
-    },
-    [enableI18n, locale, region]
-  );
-
+export function GTProvider({ fallback, ...props }: GTProviderProps) {
   return (
-    <Suspense
-      fallback={
-        <NativeGTProvider
-          {...providerProps}
-          locale={activeLocale}
-          region={activeRegion}
-          enableI18n={activeEnableI18n}
-          translations={fallbackTranslations}
-          _reload={reload}
-        >
-          {renderedFallback}
-        </NativeGTProvider>
-      }
-    >
-      <LoadedGTProvider
-        {...providerProps}
-        locale={activeLocale}
-        region={activeRegion}
-        enableI18n={activeEnableI18n}
-        _reload={reload}
-      />
-    </Suspense>
-  );
-}
-
-function LoadedGTProvider(props: LoadedGTProviderProps) {
-  const activeLocale = resolveLocale(props.locale);
-  const localeTranslations = use(loadTranslations(activeLocale));
-  const translations = useMemo<TranslationSnapshot>(
-    () => ({ [activeLocale]: localeTranslations }),
-    [activeLocale, localeTranslations]
-  );
-
-  return (
-    <NativeGTProvider
+    <ClientGTProvider
       {...props}
-      locale={activeLocale}
-      translations={translations}
+      fallback={fallback ?? <DefaultLoadingFallback />}
+      storage={nativeStorage}
     />
   );
 }
+
+/** What the user chose is kept in native storage, under the names the web's cookies have. */
+const nativeStorage: ConditionStorage = {
+  read() {
+    const i18nConfig = getI18nConfig();
+    return {
+      locale: readNativeLocales(i18nConfig.getLocaleCookieName()),
+      region: nativeStoreGet(i18nConfig.getRegionCookieName()) || undefined,
+      // Read as the web reads its cookie: on unless the stored value says otherwise.
+      enableI18n:
+        (nativeStoreGet(i18nConfig.getEnableI18nCookieName()) ?? 'true') ===
+        'true',
+    };
+  },
+  save(conditions) {
+    const i18nConfig = getI18nConfig();
+    if (conditions.locale !== undefined) {
+      nativeStoreSet(i18nConfig.getLocaleCookieName(), conditions.locale);
+    }
+    if ('region' in conditions) {
+      nativeStoreSet(i18nConfig.getRegionCookieName(), conditions.region ?? '');
+    }
+    if (conditions.enableI18n !== undefined) {
+      nativeStoreSet(
+        i18nConfig.getEnableI18nCookieName(),
+        conditions.enableI18n ? 'true' : 'false'
+      );
+    }
+  },
+};
 
 function DefaultLoadingFallback() {
   return (

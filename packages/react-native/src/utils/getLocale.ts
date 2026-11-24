@@ -1,11 +1,17 @@
 import { getI18nConfig } from '@generaltranslation/react-core/pure';
+import { getI18nConfig as getBaseI18nConfig } from 'gt-i18n/internal';
 import { getNativeLocales } from './getNativeLocales';
 import { nativeStoreGet } from './nativeStore';
-import { resolveLocale } from './resolveLocale';
 
 export type GetLocaleParams = {
   localeStoreKey?: string;
 };
+
+/** The saved locale, then the device's languages. */
+export function readNativeLocales(localeStoreKey: string): string[] {
+  const savedLocale = nativeStoreGet(localeStoreKey);
+  return [...(savedLocale ? [savedLocale] : []), ...getNativeLocales()];
+}
 
 /**
  * @internal
@@ -13,10 +19,7 @@ export type GetLocaleParams = {
 export function getLocale({
   localeStoreKey = getI18nConfig().getLocaleCookieName(),
 }: GetLocaleParams = {}): string {
-  const candidates: string[] = [];
-  const storedLocale = nativeStoreGet(localeStoreKey);
-  if (storedLocale) candidates.push(storedLocale);
-  candidates.push(...getNativeLocales());
-
-  return resolveLocale(candidates);
+  return getBaseI18nConfig().resolveSupportedLocale(
+    readNativeLocales(localeStoreKey)
+  );
 }

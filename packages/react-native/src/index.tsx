@@ -57,6 +57,7 @@ export {
 } from 'gt-i18n';
 export { getLocaleFromNativeStore } from './utils/nativeStore';
 export { getLocale } from './utils/getLocale';
+export { getNativeLocales } from './utils/getNativeLocales';
 export { initializeGT } from './setup/initializeGT';
 
 // ===== Types ===== //
