@@ -310,7 +310,9 @@ function isInServedDirectory(filePath: string): boolean {
     physicalPath(filePath)
   );
   return [asWritten, resolved].some((relative) =>
-    relative.split(path.sep).some((segment) => SERVED_DIRECTORIES.has(segment))
+    relative
+      .split(path.sep)
+      .some((segment) => SERVED_DIRECTORIES.has(segment.toLowerCase()))
   );
 }
 

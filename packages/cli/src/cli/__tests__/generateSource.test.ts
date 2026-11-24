@@ -294,6 +294,7 @@ describe('gt generate', () => {
 
   it.each([
     ['directly', () => {}],
+    ['with different casing', () => {}],
     [
       'through a symlinked directory',
       () => {
@@ -309,7 +310,11 @@ describe('gt generate', () => {
     'refuses bare --metadata with source code snippets under public/ %s',
     async (how, setup) => {
       setup();
-      const output = how === 'directly' ? 'public/_gt' : 'i18n';
+      const output = {
+        directly: 'public/_gt',
+        'with different casing': 'Public/_gt',
+        'through a symlinked directory': 'i18n',
+      }[how]!;
       vi.mocked(generateSettings).mockResolvedValue({
         defaultLocale: 'en',
         locales: ['en', 'fr'],
