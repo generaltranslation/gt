@@ -157,11 +157,18 @@ export class AnalysisPool {
     });
   }
 
-  /** The usages of each of `files`, which `index` lists, analyzed by every thread at once. */
+  /**
+   * Analyzes `files`, which `index` lists, in every thread at once. Gives the
+   * usages of each file to `onAnalyzed` as soon as a thread found them, and
+   * resolves once every call it made resolved. If a call fails, no chunk is
+   * started after it, and this rejects with the first failure once every
+   * call settled.
+   */
   async analyze(
     index: AnalysisIndex,
-    files: readonly string[]
-  ): Promise<Map<string, ParaglideUsage[]>> {
+    files: readonly string[],
+    onAnalyzed: (file: string, usages: ParaglideUsage[]) => Promise<void>
+  ): Promise<void> {
     const shared: SharedIndex = {
       ...index,
       generatedFiles: [...this.generated.keys()],
@@ -179,26 +186,34 @@ export class AnalysisPool {
       })
     );
 
-    const usages = new Map<string, ParaglideUsage[]>();
+    const added: Promise<void>[] = [];
+    let failure: { error: unknown } | undefined;
     const chunks = new ChunkQueue(files, this.workers.length);
 
     await Promise.all(
       this.workers.map(async (worker, index) => {
-        for (
-          let chunk = chunks.take(index);
-          chunk;
-          chunk = chunks.take(index)
-        ) {
+        while (!failure) {
+          const chunk = chunks.take(index);
+          if (!chunk) return;
+
           const results = (await worker.request({
             type: 'analyze',
             files: chunk,
           })) as ParaglideUsage[][];
-          chunk.forEach((file, at) => usages.set(file, results[at]!));
+          chunk.forEach((file, at) =>
+            added.push(
+              // Handled as it starts: a rejection left until the threads are done is unhandled.
+              onAnalyzed(file, results[at]!).catch((error: unknown) => {
+                failure ??= { error };
+              })
+            )
+          );
         }
       })
     );
 
-    return usages;
+    await Promise.all(added);
+    if (failure) throw failure.error;
   }
 
   async close(): Promise<void> {

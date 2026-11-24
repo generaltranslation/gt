@@ -5,7 +5,7 @@ import type { MessageFile } from '../inlang/message-file.js';
 import { messageIds, type InlangProject } from '../inlang/project.js';
 import { metadataPath, renderMetadataFile } from '../output/metadata.js';
 import {
-  sourceCodeByMessage,
+  SourceCodeCollector,
   type SourceCodeByFile,
 } from '../output/source-code.js';
 import { jsonChunks, parseJsonBytes } from '../utils/json.js';
@@ -24,15 +24,15 @@ const NO_METADATA = Buffer.from('{}\n');
 const WRITE_SIZE = 1024 * 1024;
 
 /**
- * The metadata files of a project's messages: holds the usages of each
- * analyzed source file and writes them next to the message files. Writes are
- * atomic for readers.
+ * The metadata files of a project's messages: holds the source code around
+ * the usages of each analyzed source file and writes it next to the message
+ * files. Writes are atomic for readers.
  */
 export class MetadataFiles {
-  /** The source files with usages, by absolute path. */
-  private readonly entries = new Map<string, FileUsages>();
   /** By absolute directory. */
   private readonly projects = new Map<string, InlangProject>();
+  /** The snippets of each project's messages, by absolute directory. */
+  private readonly snippets = new Map<string, SourceCodeCollector>();
 
   constructor(
     private readonly projectRoot: string,
@@ -41,14 +41,24 @@ export class MetadataFiles {
     private readonly maxParsedBytes?: number
   ) {}
 
-  /** Each message file of `project` gets a metadata file. */
+  /** Each message file of `project` gets a metadata file. Projects are added before any usages. */
   addProject(project: InlangProject): void {
     this.projects.set(project.directory, project);
+    if (this.snippets.has(project.directory)) return;
+
+    this.snippets.set(
+      project.directory,
+      new SourceCodeCollector({
+        ids: messageIds(project),
+        inlangProject: relativePath(this.projectRoot, project.directory),
+        radius: this.radius,
+      })
+    );
   }
 
-  /** Records the usages of `file` (absolute). */
-  add(file: string, usages: FileUsages): void {
-    this.entries.set(file, usages);
+  /** Records the source code around the usages of a source file; its code is not held. */
+  add(usages: FileUsages): void {
+    for (const snippets of this.snippets.values()) snippets.add(usages);
   }
 
   /** Writes the files whose content changed. Resolves with those it had to skip. */
@@ -67,11 +77,7 @@ export class MetadataFiles {
   private writeProject(
     project: InlangProject
   ): Promise<SkippedFile | undefined>[] {
-    const sourceCode = sourceCodeByMessage([...this.entries.values()], {
-      ids: messageIds(project),
-      inlangProject: relativePath(this.projectRoot, project.directory),
-      radius: this.radius,
-    });
+    const sourceCode = this.snippets.get(project.directory)!.byMessage();
 
     return project.messageFiles.map((messageFile) =>
       writeMetadata(messageFile, sourceCode, this.maxParsedBytes)
