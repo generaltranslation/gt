@@ -8,7 +8,6 @@ import {
   type MessageTreeHashMetadata,
 } from 'generaltranslation/id';
 import { formatDiagnosticErrorDetails } from 'generaltranslation/diagnostics';
-import { formatCutoff } from 'generaltranslation/internal';
 import { isI18nCacheInitialized } from '../i18n-cache/singleton-operations';
 import { getI18nConfig } from '../i18n-config/singleton-operations';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
@@ -95,10 +94,7 @@ export function renderMessage(
 
   return maxChars == null
     ? output
-    : formatCutoff(output, {
-        locales: getI18nConfig().resolveCanonicalLocale(outputLocale),
-        maxChars,
-      });
+    : getI18nConfig().formatCutoff(output, { locale: outputLocale, maxChars });
 }
 
 /**
@@ -176,10 +172,7 @@ export function renderPrecomputedMessage(
   output ??= formatTree(tree, defaultLocale, values, formats);
   return maxChars == null
     ? output
-    : formatCutoff(output, {
-        locales: config.resolveCanonicalLocale(outputLocale),
-        maxChars,
-      });
+    : config.formatCutoff(output, { locale: outputLocale, maxChars });
 }
 
 /** The lookup options of a tree in `locale`, hashing it unless `$_hash` is set. */
