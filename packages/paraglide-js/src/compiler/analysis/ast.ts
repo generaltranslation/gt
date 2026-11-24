@@ -1,4 +1,5 @@
 import type * as ESTree from '@oxc-project/types';
+import { visitorKeys } from 'oxc-parser';
 
 export type { ESTree };
 export type Node = ESTree.Node;
@@ -7,6 +8,9 @@ export type Pattern =
   | ESTree.BindingPattern
   | ESTree.ParamPattern
   | ESTree.BindingRestElement;
+
+/** What a node holds at one of oxc's visitor keys, which name only keys that hold nodes. */
+export type Child = Node | (Node | null)[] | null | undefined;
 
 export type Visitor = {
   /** Return `false` to skip the node's children. */
@@ -30,6 +34,13 @@ const TYPE_ANNOTATION_KEYS = new Set([
   'implements',
 ]);
 
+const CHILD_KEYS: ReadonlyMap<string, readonly (keyof Node)[]> = new Map(
+  Object.entries(visitorKeys).map(([type, keys]) => [
+    type,
+    keys.filter((key) => !TYPE_ANNOTATION_KEYS.has(key)) as (keyof Node)[],
+  ])
+);
+
 /** Expressions that wrap another without changing what it is: `(m as any)!`. */
 export const TRANSPARENT_WRAPPERS: ReadonlySet<Node['type']> = new Set<
   Node['type']
@@ -52,29 +63,39 @@ export function walk(root: Node, visitor: Visitor): void {
 
     ancestors.push(node);
 
-    for (const [key, value] of Object.entries(node)) {
-      if (TYPE_ANNOTATION_KEYS.has(key)) continue;
+    for (const key of childKeysOf(node)) {
+      const value = node[key] as Child;
 
-      if (Array.isArray(value)) value.forEach(visitIfNode);
-      else visitIfNode(value);
+      if (Array.isArray(value)) {
+        for (const item of value) if (item) visit(item);
+      } else if (value) {
+        visit(value);
+      }
     }
 
     ancestors.pop();
   };
 
-  const visitIfNode = (value: unknown) => {
-    if (isNode(value)) visit(value);
-  };
-
   visit(root);
 }
 
-function isNode(value: unknown): value is Node {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as { type?: unknown }).type === 'string'
-  );
+/** Unlike `walk`, visits type annotations too. */
+export function forEachNode(root: Node, visit: (node: Node) => void): void {
+  visit(root);
+
+  for (const key of (visitorKeys[root.type] ?? []) as (keyof Node)[]) {
+    const value = root[key] as Child;
+
+    if (Array.isArray(value)) {
+      for (const item of value) if (item) forEachNode(item, visit);
+    } else if (value) {
+      forEachNode(value, visit);
+    }
+  }
+}
+
+function childKeysOf(node: Node): readonly (keyof Node)[] {
+  return CHILD_KEYS.get(node.type) ?? [];
 }
 
 export function isFunction(node: Node): node is FunctionNode {
