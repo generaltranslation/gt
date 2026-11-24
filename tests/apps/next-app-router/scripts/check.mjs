@@ -1,12 +1,13 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { readFileSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:net';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const distDir = join(root, '.next');
 const next = createRequire(import.meta.url).resolve('next/dist/bin/next');
 const catalog = JSON.parse(
   readFileSync(join(root, 'public/_gt/fr.json'), 'utf8')
@@ -18,7 +19,7 @@ const CLIENT_TEXT = catalog[CLIENT_T]?.c;
 const READY_MS = 30_000;
 
 function build(bundler, split) {
-  rmSync(join(root, '.next'), { recursive: true, force: true });
+  rmSync(distDir, { recursive: true, force: true });
   execFileSync(
     process.execPath,
     [next, 'build', ...(bundler === 'webpack' ? ['--webpack'] : [])],
@@ -67,6 +68,15 @@ async function fetchFrenchPage() {
   }
 }
 
+function removeScripts(html) {
+  let previous;
+  do {
+    previous = html;
+    html = html.replace(/<script\b[\s\S]*?<\/script[^>]*>/gi, '');
+  } while (html !== previous);
+  return html;
+}
+
 function readPage(html) {
   const payload = [
     ...html.matchAll(/self\.__next_f\.push\(\[1,("(?:[^"\\]|\\.)*")\]\)/g),
@@ -74,7 +84,7 @@ function readPage(html) {
     .map((match) => JSON.parse(match[1]))
     .join('');
   return {
-    markup: html.replace(/<script\b[\s\S]*?<\/script>/g, ''),
+    markup: removeScripts(html),
     sent: Object.keys(catalog).filter((hash) => payload.includes(`"${hash}":`)),
   };
 }
@@ -88,6 +98,13 @@ function check(name, passed, detail = '') {
 }
 
 const same = (a, b) => [...a].sort().join() === [...b].sort().join();
+
+if (existsSync(distDir)) {
+  console.error(
+    `${distDir} exists, and this check builds into it. Stop any next dev or next start of this app and remove it first.`
+  );
+  process.exit(1);
+}
 
 check(
   'the catalog holds the server and the client <T>',
@@ -130,7 +147,7 @@ try {
     }
   }
 } finally {
-  rmSync(join(root, '.next'), { recursive: true, force: true });
+  rmSync(distDir, { recursive: true, force: true });
 }
 
 console.log(`\n${summary.join('\n')}`);
