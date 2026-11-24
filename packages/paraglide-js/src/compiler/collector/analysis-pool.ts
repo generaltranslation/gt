@@ -7,7 +7,7 @@ import type { GlobalBinding } from '../analysis/module-graph.js';
 import type { ModuleSummary } from '../analysis/module-store.js';
 import type { ParaglideUsage } from '../analysis/types.js';
 import { MAX_CONCURRENT_READS } from '../utils/read-file.js';
-import type { GeneratedModule, SummaryResult } from './module-reader.js';
+import type { GeneratedBytes, SummaryResult } from './module-reader.js';
 
 export type AnalysisWorkerData = {
   projectRoot: string;
@@ -108,7 +108,7 @@ function availableMemory(): number {
 export class AnalysisPool {
   private readonly workers: PoolWorker[] = [];
   /** By file, kept from indexing: a thread that loads the file again asks for it. */
-  private readonly generated = new Map<string, GeneratedModule>();
+  private readonly generated = new Map<string, GeneratedBytes>();
   private readonly queue: Array<{
     file: string;
     settle: (result: Promise<SummaryResult>) => void;
