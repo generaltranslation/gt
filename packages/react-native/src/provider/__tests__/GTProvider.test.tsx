@@ -45,6 +45,7 @@ vi.mock('../../utils/nativeStore', () => ({
 
 const { GTProvider } = await import('../GTProvider');
 const { initializeGT } = await import('../../setup/initializeGT');
+const { getMessages } = await import('@generaltranslation/react-core/pure');
 
 const key = hashSource({ source: 'Save', dataFormat: 'MESSAGE_TREE' });
 const catalogs: Record<string, Record<string, string>> = {
@@ -206,6 +207,16 @@ describe('GTProvider', () => {
 
     native.pending.forEach((write) => write());
     expect(native.store.get(regionStoreKey)).toBe('');
+  });
+  it('gives getMessages() the locale on screen, and none once it has unmounted', async () => {
+    await render();
+    await act(async () => setLocale('fr'));
+    expect((await getMessages())('Save')).toBe('Enregistrer');
+
+    await act(async () => root.render(null));
+    await expect(getMessages()).rejects.toThrow(
+      'before it has been initialized'
+    );
   });
 
   it('saves that translation is off, and starts that way the next time', async () => {
