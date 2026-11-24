@@ -279,6 +279,22 @@ describe('gt generate', () => {
     );
   });
 
+  it('refuses bare --metadata with source code snippets under public/', async () => {
+    vi.mocked(generateSettings).mockResolvedValue({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+      files: {
+        placeholderPaths: { gt: 'public/_gt/[locale].json' },
+        gtJson: { parsingFlags: { includeSourceCodeContext: true } },
+      },
+    } as unknown as Settings);
+
+    await expect(run('--source-only', '--metadata')).rejects.toThrow(
+      'publicly served directory'
+    );
+    expect(aggregateInlineTranslations).not.toHaveBeenCalled();
+  });
+
   it.each([
     ['translations/[locale]', 'translations/en.metadata.json'],
     ['translations/[locale].JSON', 'translations/en.metadata.json'],

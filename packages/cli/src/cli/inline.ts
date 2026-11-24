@@ -44,6 +44,19 @@ const missingSourceOutputError = createDiagnosticMessage({
   fix: 'Set files.gt.output to a local path such as "translations/[locale].json"',
 });
 
+const SERVED_DIRECTORIES = new Set(['public', 'static']);
+
+const publicSourceCodeError = (metadataPath: string) =>
+  createDiagnosticMessage({
+    source: 'gt',
+    severity: 'Error',
+    whatHappened:
+      '--metadata without a path would put source code snippets in a publicly served directory',
+    why: 'includeSourceCodeContext is on and the source file is under public/ or static/',
+    fix: 'Pass a --metadata path outside the served directory',
+    details: metadataPath,
+  });
+
 const metadataPathCollisionError = (metadataPath: string) =>
   createDiagnosticMessage({
     source: 'gt',
@@ -277,8 +290,22 @@ function resolveMetadataPath(
     .filter((file): file is string => Boolean(file));
   const metadataPath =
     metadata === true ? companionMetadataPath(localeFiles[0]) : metadata;
+  if (
+    metadata === true &&
+    settings.files.gtJson?.parsingFlags?.includeSourceCodeContext &&
+    isInServedDirectory(metadataPath)
+  ) {
+    logErrorAndExit(publicSourceCodeError(path.resolve(metadataPath)));
+  }
   assertNotLocaleFile(metadataPath, localeFiles);
   return metadataPath;
+}
+
+function isInServedDirectory(filePath: string): boolean {
+  return path
+    .relative(process.cwd(), path.resolve(filePath))
+    .split(path.sep)
+    .some((segment) => SERVED_DIRECTORIES.has(segment));
 }
 
 function assertNotLocaleFile(metadataPath: string, localeFiles: string[]) {
