@@ -1,0 +1,92 @@
+{
+  "source": "A private dashboard catalog of 1,522 English messages. Only these aggregates are published: no message text.",
+  "n": 1522,
+  "counts": { "var": 108, "plain": 1385, "vars": 12, "plural": 17 },
+  "shares": { "plain": 0.91, "var": 0.071, "vars": 0.0079, "plural": 0.0112 },
+  "pluralWithVariable": 0.235,
+  "folded": { "two plurals in one message (generated as one plural)": 2 },
+  "startsUpper": 0.901,
+  "endsPeriod": 0.171,
+  "wordsPerMessage": {
+    "plain": {
+      "1": 249,
+      "2": 398,
+      "3": 216,
+      "4": 146,
+      "5": 67,
+      "6": 67,
+      "7": 38,
+      "8": 33,
+      "9": 28,
+      "10": 33,
+      "11": 16,
+      "12": 12,
+      "13": 7,
+      "14": 8,
+      "15": 12,
+      "16": 10,
+      "17": 3,
+      "18": 9,
+      "19": 7,
+      "20": 10,
+      "21": 2,
+      "22": 1,
+      "23": 4,
+      "24": 3,
+      "25": 2,
+      "27": 1,
+      "29": 1,
+      "37": 2
+    },
+    "structured": {
+      "1": 28,
+      "2": 30,
+      "3": 14,
+      "4": 20,
+      "5": 7,
+      "7": 7,
+      "8": 7,
+      "9": 4,
+      "10": 7,
+      "11": 1,
+      "12": 2,
+      "13": 1,
+      "16": 3,
+      "18": 1,
+      "19": 1,
+      "22": 2,
+      "27": 1,
+      "29": 1
+    }
+  },
+  "real": {
+    "meanValueBytes": 28.15,
+    "valuesGzipRatio": 0.3215,
+    "words": 6836,
+    "distinctWords": 1320,
+    "valueBytesQuantiles": {
+      "0": 2,
+      "1": 238,
+      "0.1": 7,
+      "0.25": 12,
+      "0.5": 19,
+      "0.75": 33,
+      "0.9": 60,
+      "0.99": 134
+    },
+    "meanWordLength": 5.25,
+    "nonAsciiMessages": 23
+  },
+  "vocab": {
+    "list": "data/words.txt: 3,000 words of web2 (Webster's Second International, 1934, public domain), lowercase a-z, 2-12 letters, short words first",
+    "V": 3000,
+    "s": 1.2,
+    "chain": 0.4,
+    "syntheticAt1522": {
+      "meanValueBytes": 28.84,
+      "valuesGzipRatio": 0.3231,
+      "words": 6623,
+      "distinctWords": 1204
+    }
+  }
+}
