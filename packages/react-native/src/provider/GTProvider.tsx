@@ -59,20 +59,30 @@ function LoadableGTProvider(props: GTProviderProps) {
       enableI18n: getInitialEnableI18n({ enableI18n }),
     }));
   const activeLocale = resolveLocale(locale ?? nativeConditions.locale);
-  const activeRegion = region ?? nativeConditions.region;
+  // An empty region is no region, as it is when read back from storage.
+  const activeRegion = (region ?? nativeConditions.region) || undefined;
   const activeEnableI18n = enableI18n ?? nativeConditions.enableI18n;
   const fallbackTranslations = useMemo<TranslationSnapshot>(
     () => ({ [activeLocale]: {} }),
     [activeLocale]
   );
+  // A setter reports the one condition it changed, so a setter kept from an
+  // earlier render cannot bring the other two back. A prop takes the place of
+  // the matching condition, so a change to it is not kept.
   const reload = useCallback(
-    (state: NativeConditionStoreState) => {
+    (change: Partial<NativeConditionStoreState>) => {
       setNativeConditions((previousState) => ({
-        locale: locale === undefined ? state.locale : previousState.locale,
-        region: region === undefined ? state.region : previousState.region,
+        locale:
+          locale === undefined && change.locale !== undefined
+            ? change.locale
+            : previousState.locale,
+        region:
+          region === undefined && 'region' in change
+            ? change.region
+            : previousState.region,
         enableI18n:
-          enableI18n === undefined
-            ? state.enableI18n
+          enableI18n === undefined && change.enableI18n !== undefined
+            ? change.enableI18n
             : previousState.enableI18n,
       }));
     },

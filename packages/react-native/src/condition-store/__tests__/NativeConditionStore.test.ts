@@ -73,15 +73,27 @@ describe('NativeConditionStore', () => {
     });
 
     conditionStore.setLocale('fr');
+    conditionStore.setRegion(undefined);
+    conditionStore.setEnableI18n(false);
 
-    expect(reload).toHaveBeenCalledWith({
-      locale: 'fr',
-      region: undefined,
-      enableI18n: true,
-    });
+    // Each reports only what it changed, for the provider to merge.
+    expect(reload.mock.calls).toEqual([
+      [{ locale: 'fr' }],
+      [{ region: undefined }],
+      [{ enableI18n: false }],
+    ]);
   });
 
-  it('reloads with the selected locale even when native storage reads stale', () => {
+  it('reads an explicit locale before native storage has written it', () => {
+    nativeStore.set(defaultLocaleStoreKey, 'es');
+    nativeStoreMock.skipWrites = true;
+
+    const conditionStore = new NativeConditionStore({ locale: 'fr' });
+
+    expect(conditionStore.getLocale()).toBe('fr');
+  });
+
+  it('reads each condition it was set to before native storage has written it', () => {
     nativeStore.set(defaultLocaleStoreKey, 'es');
     nativeStoreMock.skipWrites = true;
     const reload = vi.fn();
@@ -90,13 +102,21 @@ describe('NativeConditionStore', () => {
     });
 
     conditionStore.setLocale('fr');
+    conditionStore.setRegion('CA');
+    conditionStore.setEnableI18n(false);
 
-    expect(conditionStore.getLocale()).toBe('es');
-    expect(reload).toHaveBeenCalledWith({
-      locale: 'fr',
-      region: undefined,
-      enableI18n: true,
-    });
+    expect(conditionStore.getLocale()).toBe('fr');
+    expect(conditionStore.getRegion()).toBe('CA');
+    expect(conditionStore.getEnableI18n()).toBe(false);
+  });
+
+  it('takes an explicit undefined region as cleared and saves it', () => {
+    nativeStore.set(defaultRegionStoreKey, 'US');
+
+    const conditionStore = new NativeConditionStore({ region: undefined });
+
+    expect(conditionStore.getRegion()).toBeUndefined();
+    expect(new NativeConditionStore({}).getRegion()).toBeUndefined();
   });
 
   it('persists explicit region and enableI18n through the native store', () => {

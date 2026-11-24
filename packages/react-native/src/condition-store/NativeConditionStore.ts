@@ -9,7 +9,7 @@ import {
   getInitialEnableI18n,
   getInitialRegion,
 } from '../utils/getInitialNativeConditions';
-import { nativeStoreGet, nativeStoreSet } from '../utils/nativeStore';
+import { nativeStoreSet } from '../utils/nativeStore';
 import { resolveLocale } from '../utils/resolveLocale';
 
 export type NativeConditionStoreParams = WritableConditionStoreParams & {
@@ -22,77 +22,76 @@ export type NativeConditionStoreState = {
   enableI18n: boolean;
 };
 
-export type ReloadType = (state: NativeConditionStoreState) => void;
+/** Receives the one condition a setter changed. */
+export type ReloadType = (change: Partial<NativeConditionStoreState>) => void;
 
 /**
  * Condition store implementation for React Native.
  */
 export class NativeConditionStore implements WritableConditionStoreInterface {
   private customReload: ReloadType;
+  // Android writes native storage asynchronously, so a read that follows a write can return the old value.
+  private locale: string;
+  private region: string | undefined;
+  private enableI18n: boolean;
 
   constructor(config: NativeConditionStoreParams) {
     this.customReload = config._reload ?? (() => undefined);
 
-    this.updateLocale(config.locale ?? getLocale());
-    const region = getInitialRegion({
-      region: config.region,
-    });
-    if (region !== undefined) {
-      this.updateRegion(region);
+    this.locale = resolveLocale(config.locale ?? getLocale());
+    nativeStoreSet(getLocaleStoreKey(), this.locale);
+    // An explicit undefined is a cleared region. It is saved like any other, so that storage does not keep the region it replaced.
+    if ('region' in config) {
+      this.updateRegion(config.region);
+    } else {
+      this.region = getInitialRegion({});
     }
-    this.updateEnableI18n(
-      getInitialEnableI18n({
-        enableI18n: config.enableI18n,
-      })
-    );
+    this.enableI18n = getInitialEnableI18n({
+      enableI18n: config.enableI18n,
+    });
+    this.updateEnableI18n(this.enableI18n);
   }
 
   getLocale = (): string => {
-    return getLocale();
+    return this.locale;
   };
 
   setLocale = (locale: LocaleCandidates): void => {
-    const nextLocale = resolveLocale(locale);
-    nativeStoreSet(getLocaleStoreKey(), nextLocale);
-    this.reload({ locale: nextLocale });
+    this.updateLocale(locale);
+    this.customReload({ locale: this.locale });
   };
 
   getRegion = (): string | undefined => {
-    return nativeStoreGet(getRegionStoreKey()) || undefined;
+    return this.region || undefined;
   };
 
   setRegion = (region: string | undefined): void => {
     this.updateRegion(region);
-    this.reload({ region });
+    this.customReload({ region });
   };
 
   getEnableI18n = (): boolean => {
-    return nativeStoreGet(getEnableI18nStoreKey()) !== 'false';
+    return this.enableI18n;
   };
 
   setEnableI18n = (enableI18n: boolean): void => {
     this.updateEnableI18n(enableI18n);
-    this.reload({ enableI18n });
+    this.customReload({ enableI18n });
   };
 
   updateLocale = (locale: LocaleCandidates): void => {
-    nativeStoreSet(getLocaleStoreKey(), resolveLocale(locale));
+    this.locale = resolveLocale(locale);
+    nativeStoreSet(getLocaleStoreKey(), this.locale);
   };
 
   updateRegion = (region: string | undefined): void => {
+    this.region = region;
     nativeStoreSet(getRegionStoreKey(), region ?? '');
   };
 
   updateEnableI18n = (enableI18n: boolean): void => {
+    this.enableI18n = enableI18n;
     nativeStoreSet(getEnableI18nStoreKey(), enableI18n ? 'true' : 'false');
-  };
-
-  reload = (state: Partial<NativeConditionStoreState> = {}): void => {
-    this.customReload({
-      locale: state.locale ?? this.getLocale(),
-      region: 'region' in state ? state.region : this.getRegion(),
-      enableI18n: state.enableI18n ?? this.getEnableI18n(),
-    });
   };
 }
 

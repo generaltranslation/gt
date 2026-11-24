@@ -7,6 +7,7 @@ import { useMemo, useRef } from 'react';
 import type { LocaleCandidates } from 'gt-i18n/internal';
 import type { NativeConditionStoreParams } from '../condition-store/NativeConditionStore';
 import { NativeConditionStore } from '../condition-store/NativeConditionStore';
+import { resolveLocale } from '../utils/resolveLocale';
 
 export type NativeGTProviderProps = Omit<
   InternalGTProviderProps,
@@ -29,9 +30,8 @@ export function NativeGTProvider(props: NativeGTProviderProps) {
   return (
     <InternalGTProvider
       {...props}
-      locale={conditionStore.getLocale()}
-      region={conditionStore.getRegion()}
-      enableI18n={conditionStore.getEnableI18n()}
+      // The conditions the translations were loaded for, not the store's: a setter changes the store before the provider renders again.
+      locale={resolveLocale(props.locale)}
       setLocale={conditionStore.setLocale}
       setRegion={conditionStore.setRegion}
       setEnableI18n={conditionStore.setEnableI18n}
