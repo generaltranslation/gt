@@ -6,17 +6,20 @@ import { SelectedLocalesNote } from './SelectedLocalesNote';
 interface UploadExistingDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Runs the action; defaults to the provider's handler. */
+  onConfirm?: () => Promise<void>;
 }
 
 export const UploadExistingDialog: React.FC<UploadExistingDialogProps> = ({
   isOpen,
   onClose,
+  onConfirm,
 }) => {
   const { documents, handleUploadExistingTranslations } = useTranslations();
 
   const handleConfirm = async () => {
     onClose();
-    await handleUploadExistingTranslations();
+    await (onConfirm ?? handleUploadExistingTranslations)();
   };
 
   if (!isOpen) return null;
@@ -46,9 +49,10 @@ export const UploadExistingDialog: React.FC<UploadExistingDialogProps> = ({
           <SelectedLocalesNote />
           <Text size={1} muted>
             Each translation is stored as the finished translation of the
-            document as it is now, so later runs do not translate it again. Use
-            this only when the translations in Sanity are up to date with their
-            source. No translation is started.
+            document as it is now, so later runs do not translate it again. This
+            replaces any translation General Translation already holds for that
+            version. Use this only when the translations in Sanity are up to
+            date with their source. No translation is started.
           </Text>
         </Stack>
       </Box>

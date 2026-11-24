@@ -6,17 +6,20 @@ import { SelectedLocalesNote } from './SelectedLocalesNote';
 interface SaveLocalEditsDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Runs the action; defaults to the provider's handler. */
+  onConfirm?: () => Promise<void>;
 }
 
 export const SaveLocalEditsDialog: React.FC<SaveLocalEditsDialogProps> = ({
   isOpen,
   onClose,
+  onConfirm,
 }) => {
   const { documents, handleSaveLocalEdits } = useTranslations();
 
   const handleConfirm = async () => {
     onClose();
-    await handleSaveLocalEdits();
+    await (onConfirm ?? handleSaveLocalEdits)();
   };
 
   if (!isOpen) return null;
@@ -38,13 +41,16 @@ export const SaveLocalEditsDialog: React.FC<SaveLocalEditsDialogProps> = ({
       <Box padding={4}>
         <Stack gap={3}>
           <Text>
-            Save the translations currently in Sanity for all {documents.length}{' '}
-            documents to General Translation?
+            {documents.length === 1
+              ? 'Save the translations currently in Sanity for this document'
+              : `Save the translations currently in Sanity for all ${documents.length} documents`}{' '}
+            to General Translation?
           </Text>
           <SelectedLocalesNote />
           <Text size={1} muted>
             They replace the translation General Translation holds for the
-            source it last received. Source changes made since then are still
+            source it last received, including a finished translation that has
+            not been imported yet. Source changes made since then are still
             translated on the next run. No translation is started.
           </Text>
         </Stack>

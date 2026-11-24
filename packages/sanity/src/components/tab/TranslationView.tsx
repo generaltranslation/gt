@@ -12,6 +12,7 @@ import { pluginConfig } from '../../adapter/core';
 import { SaveLocalTranslationsDialog } from '../page/SaveLocalTranslationsDialog';
 import { RetranslateDocumentDialog } from '../page/RetranslateDocumentDialog';
 import { UploadExistingDialog } from '../page/UploadExistingDialog';
+import { SaveLocalEditsDialog } from '../page/SaveLocalEditsDialog';
 import { DebugInfoDialog } from '../page/DebugInfoDialog';
 import { version as PACKAGE_VERSION } from '../../../package.json';
 import {
@@ -51,6 +52,7 @@ export const TranslationView = () => {
     isBusy,
     handleTranslateAll,
     handleSaveLocalEdits,
+    handleUploadExistingTranslations,
     handleImportDocument,
     handleRefreshAll,
     isRefreshing,
@@ -73,7 +75,11 @@ export const TranslationView = () => {
 
   const [isImporting, setIsImporting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [isUploadingExisting, setIsUploadingExisting] = useState(false);
+  const [localAction, setLocalAction] = useState<'save' | 'upload' | null>(
+    null
+  );
+  const [isSaveLocalEditsDialogOpen, setIsSaveLocalEditsDialogOpen] =
+    useState(false);
   const [isSaveLocalDialogOpen, setIsSaveLocalDialogOpen] = useState(false);
   const [isUploadExistingDialogOpen, setIsUploadExistingDialogOpen] =
     useState(false);
@@ -167,6 +173,18 @@ export const TranslationView = () => {
         .filter((key) => translationStatuses.get(key)?.isReady)
     );
   }
+
+  const runLocalAction = async (
+    action: 'save' | 'upload',
+    run: () => Promise<void>
+  ) => {
+    setLocalAction(action);
+    try {
+      await run();
+    } finally {
+      setLocalAction(null);
+    }
+  };
 
   const handleStartRun = async (options?: TranslateAllOptions) => {
     const enqueuedKeys = await handleTranslateAll(options);
@@ -352,9 +370,7 @@ export const TranslationView = () => {
             }
             icon={TranslateIcon}
             text={isWaitingOnTranslations ? 'Translating…' : 'Translate'}
-            loading={
-              (isBusy && !isUploadingExisting) || isWaitingOnTranslations
-            }
+            loading={(isBusy && !localAction) || isWaitingOnTranslations}
             style={{ flex: 1 }}
           />
           <Button
@@ -392,9 +408,17 @@ export const TranslationView = () => {
         }}
       />
 
+      <SaveLocalEditsDialog
+        isOpen={isSaveLocalEditsDialogOpen}
+        onClose={() => setIsSaveLocalEditsDialogOpen(false)}
+        onConfirm={() => runLocalAction('save', handleSaveLocalEdits)}
+      />
       <UploadExistingDialog
         isOpen={isUploadExistingDialogOpen}
         onClose={() => setIsUploadExistingDialogOpen(false)}
+        onConfirm={() =>
+          runLocalAction('upload', handleUploadExistingTranslations)
+        }
       />
 
       {/* Translation Status Section */}
@@ -465,20 +489,13 @@ export const TranslationView = () => {
             <Flex gap={2} align='center' justify='flex-start'>
               <Button
                 mode='ghost'
-                onClick={async () => {
-                  setIsUploadingExisting(true);
-                  try {
-                    await handleSaveLocalEdits();
-                  } finally {
-                    setIsUploadingExisting(false);
-                  }
-                }}
+                onClick={() => setIsSaveLocalEditsDialogOpen(true)}
                 disabled={
                   isBusy || !availableLocales.length || !canPreserveLocalEdits
                 }
                 icon={UploadIcon}
                 text='Save Local Edits'
-                loading={isUploadingExisting}
+                loading={localAction === 'save'}
                 style={{ minWidth: '180px' }}
               />
               <Flex gap={2} align='center'>
@@ -500,19 +517,6 @@ export const TranslationView = () => {
                 />
                 <Text size={1}>Save local edits before translating</Text>
               </Flex>
-            </Flex>
-            <Flex gap={2} align='center' justify='flex-start'>
-              <Button
-                mode='ghost'
-                onClick={() => setIsUploadExistingDialogOpen(true)}
-                disabled={
-                  isBusy || !availableLocales.length || !canPreserveLocalEdits
-                }
-                icon={UploadIcon}
-                text='Upload Existing'
-                style={{ minWidth: '180px' }}
-              />
-              <Text size={1}>Store the translations in Sanity as finished</Text>
             </Flex>
             {!canPreserveLocalEdits && (
               <Text size={1} muted>
@@ -625,6 +629,24 @@ export const TranslationView = () => {
                 />
                 <Text size={1}>Auto-publish after import</Text>
               </Flex>
+            </Flex>
+            <Flex gap={2} align='center' justify='flex-start'>
+              <Tooltip
+                placement='top'
+                content='Uploads this document and the translations already in Sanity as finished translations. For content translated before General Translation'
+              >
+                <Button
+                  mode='ghost'
+                  onClick={() => setIsUploadExistingDialogOpen(true)}
+                  disabled={
+                    isBusy || !availableLocales.length || !canPreserveLocalEdits
+                  }
+                  icon={UploadIcon}
+                  text='Upload Existing'
+                  loading={localAction === 'upload'}
+                  style={{ minWidth: '180px' }}
+                />
+              </Tooltip>
             </Flex>
           </Stack>
         </Stack>

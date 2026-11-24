@@ -1037,9 +1037,7 @@ const TranslationsProviderContent: React.FC<
 
       const captured = await captureExistingTranslations({
         documents: getDefaultSourceDocuments(sourceDocuments),
-        localeIds: locales
-          .filter((locale) => locale.enabled !== false)
-          .map((locale) => locale.localeId),
+        localeIds: getSelectedLocaleIds(locales),
         secrets,
         context: translationContext,
         branchId,
@@ -1064,7 +1062,7 @@ const TranslationsProviderContent: React.FC<
       console.error('Error saving local edits:', error);
       toast.push({
         title:
-          'Local edits could not be saved. No documents were changed. Try again or check the console for details.',
+          'Local edits could not all be saved. Some may already have been saved. Try again or check the console for details.',
         status: 'error',
         closable: true,
       });
