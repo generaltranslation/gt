@@ -51,10 +51,14 @@ vi.mock('../../console/logger.js', () => ({
     error: vi.fn(),
     info: vi.fn(),
     message: vi.fn(),
+    step: vi.fn(),
     success: vi.fn(),
     setQuiet: vi.fn(),
     setConsoleOutput: vi.fn(),
   },
+}));
+vi.mock('../../translation/stage.js', () => ({
+  aggregateInlineTranslations: vi.fn(),
 }));
 vi.mock('../commands/download.js', () => ({
   handleDownload: vi.fn(),
@@ -83,6 +87,7 @@ import { login, UserAuthError } from '@generaltranslation/auth';
 import { generateSettings } from '../../config/generateSettings.js';
 import { resolveConfig } from '../../config/resolveConfig.js';
 import { displayTranslateSummary } from '../../console/displayTranslateSummary.js';
+import { outdatedTranslationFilesError } from '../../console/index.js';
 import { logger } from '../../console/logger.js';
 import {
   clearDownloaded,
@@ -90,7 +95,9 @@ import {
 } from '../../state/recentDownloads.js';
 import { mirrorAssetsToLocales } from '../../utils/sharedStaticAssets.js';
 import { splitMintlifyLanguageRefs } from '../../utils/splitMintlifyLanguageRefs.js';
+import { aggregateInlineTranslations } from '../../translation/stage.js';
 import { BaseCLI } from '../base.js';
+import { InlineCLI } from '../inline.js';
 import { handleDownload } from '../commands/download.js';
 import { postProcessTranslations } from '../commands/translate.js';
 
@@ -579,5 +586,145 @@ describe('gt download', () => {
     expect(handleDownload).toHaveBeenCalledOnce();
     expect(postProcessTranslations).not.toHaveBeenCalled();
     expect(mirrorAssetsToLocales).toHaveBeenCalledWith(settings);
+  });
+});
+
+describe('gt generate', () => {
+  const upToDate = 'Translation files are up to date.';
+  let root: string;
+  const file = (locale: string) => path.join(root, `${locale}.json`);
+  const read = (locale: string) =>
+    JSON.parse(fs.readFileSync(file(locale), 'utf8'));
+
+  function setSource(source: Record<string, unknown>) {
+    vi.mocked(aggregateInlineTranslations).mockResolvedValue(
+      Object.entries(source).map(([hash, content]) => ({
+        source: content,
+        metadata: { hash },
+      })) as never
+    );
+  }
+
+  function useOutput(output: string) {
+    vi.mocked(generateSettings).mockResolvedValue({
+      defaultLocale: 'en',
+      locales: ['de'],
+      files: { placeholderPaths: { gt: path.join(root, output) } },
+    } as never);
+  }
+
+  function generate(...flags: string[]) {
+    const program = new Command();
+    new InlineCLI(program, 'gt-react').init();
+    return program.parseAsync(['generate', ...flags], { from: 'user' });
+  }
+
+  beforeEach(async () => {
+    root = fs.mkdtempSync(path.join(tmpdir(), 'gt-generate-'));
+    useOutput('[locale].json');
+    setSource({ a: 'Save' });
+    await generate();
+    fs.writeFileSync(file('de'), JSON.stringify({ a: 'Speichern' }));
+    vi.mocked(logger.step).mockClear();
+  });
+
+  afterEach(() => {
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it('passes --check when no translation file would change', async () => {
+    await generate('--check');
+
+    expect(logger.step).toHaveBeenCalledExactlyOnceWith(upToDate);
+    expect(logger.error).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['--check', 'exit 1'],
+    ['--dry-run', undefined],
+  ])(
+    'writes nothing with %s when the source has changed',
+    async (flag, exit) => {
+      setSource({ a: 'Save', b: 'Cancel' });
+
+      const paths = ['en', 'de'].map((locale) =>
+        path.relative(process.cwd(), file(locale))
+      );
+
+      if (exit) {
+        await expect(generate(flag)).rejects.toThrow(exit);
+        expect(logger.error).toHaveBeenCalledExactlyOnceWith(
+          outdatedTranslationFilesError(paths)
+        );
+      } else {
+        await generate(flag);
+        expect(logger.step).toHaveBeenCalledExactlyOnceWith(
+          `Dry run. Would write: ${paths.join(', ')}`
+        );
+      }
+      expect(read('en')).toEqual({ a: 'Save' });
+      expect(read('de')).toEqual({ a: 'Speichern' });
+    }
+  );
+
+  it('keeps the translation of a message whose source is empty', async () => {
+    setSource({ a: 'Save', b: '' });
+    await generate();
+    fs.writeFileSync(file('de'), JSON.stringify({ a: 'Speichern', b: 'Leer' }));
+
+    await generate();
+
+    expect(read('de')).toEqual({ a: 'Speichern', b: 'Leer' });
+  });
+
+  it('passes --check after generating content that equals the saved file only as JSON', async () => {
+    // As the Svelte extractor builds a branch map: no prototype, an undefined entry.
+    const branches = Object.assign(Object.create(null), {
+      one: 'One item',
+      other: undefined,
+    });
+    setSource({ a: 'Save', b: [{ b: branches }] });
+    await generate();
+    vi.mocked(logger.step).mockClear();
+
+    await generate('--check');
+
+    expect(logger.step).toHaveBeenCalledExactlyOnceWith(upToDate);
+  });
+
+  it('leaves alone a file whose content is current, and says so under --dry-run', async () => {
+    const compact = fs.readFileSync(file('de'), 'utf8');
+
+    await generate('--dry-run');
+    expect(logger.step).toHaveBeenCalledExactlyOnceWith(upToDate);
+    await generate();
+
+    expect(fs.readFileSync(file('de'), 'utf8')).toBe(compact);
+  });
+
+  it('refuses to generate over a locale file that is not valid JSON', async () => {
+    const broken = '{ "a": "Speichern", }';
+    fs.writeFileSync(file('de'), broken);
+
+    await expect(generate()).rejects.toThrow('exit 1');
+
+    expect(fs.readFileSync(file('de'), 'utf8')).toBe(broken);
+    expect(vi.mocked(logger.error).mock.calls.flat().join('\n')).toContain(
+      path.relative(process.cwd(), file('de'))
+    );
+  });
+
+  it('writes the source once when every locale resolves to its file', async () => {
+    useOutput('shared.json');
+    fs.writeFileSync(path.join(root, 'shared.json'), '{"a":"Old"}');
+
+    await generate();
+
+    expect(
+      JSON.parse(fs.readFileSync(path.join(root, 'shared.json'), 'utf8'))
+    ).toEqual({ a: 'Save' });
+    vi.mocked(logger.step).mockClear();
+    await generate('--check');
+    expect(logger.step).toHaveBeenCalledExactlyOnceWith(upToDate);
   });
 });
