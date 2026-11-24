@@ -212,6 +212,20 @@ describe('gt generate', () => {
       );
     });
 
+    it.each(['translations/fr.json', 'linked/fr.json'])(
+      'a target file %s that --source-only leaves uncreated',
+      async (metadataPath) => {
+        fs.rmSync('translations/fr.json');
+        link('translations', 'linked');
+
+        await expect(
+          run('--source-only', '--metadata', metadataPath)
+        ).rejects.toThrow('--metadata path is also a locale file');
+
+        expect(fs.existsSync('translations/fr.json')).toBe(false);
+      }
+    );
+
     it('a source file in a directory this run creates', async () => {
       vi.mocked(generateSettings).mockResolvedValue({
         defaultLocale: 'en',

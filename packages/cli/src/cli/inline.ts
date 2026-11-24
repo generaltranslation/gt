@@ -269,9 +269,33 @@ export class InlineCLI extends BaseCLI {
 }
 
 function assertNotLocaleFile(metadataPath: string, localeFiles: string[]) {
-  const target = fileIdentity(metadataPath);
-  if (target && localeFiles.some((file) => fileIdentity(file) === target)) {
+  const identity = fileIdentity(metadataPath);
+  const physical = physicalPath(metadataPath);
+  const collides = localeFiles.some(
+    (file) =>
+      physicalPath(file) === physical ||
+      (identity !== undefined && fileIdentity(file) === identity)
+  );
+  if (collides) {
     logErrorAndExit(metadataPathCollisionError(path.resolve(metadataPath)));
+  }
+}
+
+/** Resolves a possibly missing path through its nearest existing ancestor with `realpathSync.native`, because the JS version collapses `..` before following symlinks. */
+function physicalPath(filePath: string): string {
+  const missing: string[] = [];
+  let current = path.isAbsolute(filePath)
+    ? filePath
+    : `${process.cwd()}${path.sep}${filePath}`;
+  for (;;) {
+    try {
+      return path.join(fs.realpathSync.native(current), ...missing);
+    } catch {
+      const parent = path.dirname(current);
+      if (parent === current) return path.resolve(filePath);
+      missing.unshift(path.basename(current));
+      current = parent;
+    }
   }
 }
 
