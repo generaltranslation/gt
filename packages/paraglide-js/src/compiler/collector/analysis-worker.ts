@@ -18,7 +18,6 @@ import type {
   WorkerRequest,
 } from './analysis-pool.js';
 import {
-  analysisBudget,
   loadIndexedFile,
   summarizeFile,
   type GeneratedBytes,
@@ -65,9 +64,8 @@ async function handle(request: WorkerRequest): Promise<unknown> {
 }
 
 function indexedGraph({ index, bridge }: IndexRequest): ModuleGraph {
-  const { summaries, outdirs, globals, generatedFiles } = v8.deserialize(
-    Buffer.from(index)
-  ) as SharedIndex;
+  const { summaries, outdirs, globals, generatedFiles, budget } =
+    v8.deserialize(Buffer.from(index)) as SharedIndex;
   const generated = new Set(generatedFiles);
   const generatedModule = (file: string) =>
     generated.has(file) ? requestGenerated(bridge, file) : undefined;
@@ -78,7 +76,7 @@ function indexedGraph({ index, bridge }: IndexRequest): ModuleGraph {
     globals,
     index: {
       summaries,
-      budget: analysisBudget(),
+      budget,
       load: (file) => loadIndexedFile(file, generatedModule(file)),
     },
   });
