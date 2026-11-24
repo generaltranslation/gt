@@ -18,7 +18,11 @@ import {
 } from 'vitest';
 import MagicString from 'magic-string';
 import type { UnpluginContextMeta, UnpluginOptions } from 'unplugin';
-import gtUnplugin from '../index';
+import gtUnplugin, {
+  findHashTokens,
+  findJsxHashes,
+  isSplitTranslationsEnabled,
+} from '../index';
 import type { GTUnpluginOptions } from '../index';
 import { locate, trace } from './sourcePositions';
 import {
@@ -267,6 +271,20 @@ describe('experimentalSplitTranslations', () => {
       expect(getChunkTranslations({ enabled: true })).toBe(true);
       expect(getChunkTranslations({ enabled: false })).toBe(false);
     });
+
+    it.each([
+      [{}, undefined, true],
+      [undefined, 'true', true],
+      [{ enabled: false }, 'true', false],
+      [{}, 'false', false],
+      [undefined, undefined, false],
+    ] as const)(
+      'is %j with GT_SPLIT_TRANSLATIONS=%j for other packages, from the entry: %s',
+      (option, env, expected) => {
+        vi.stubEnv('GT_SPLIT_TRANSLATIONS', env as never);
+        expect(isSplitTranslationsEnabled(option)).toBe(expected);
+      }
+    );
 
     const BUILD = {
       framework: 'vite',
@@ -546,6 +564,22 @@ export const { a } = await import(\`./a.js\`);`,
         findChunkHashes(
           `t({$_hash:\`${HELLO}\`})\`Hello, \${{name:n}}!\`;e(T,{children:"Save",_hash:'${SAVE}'})`,
           HASHES
+        )
+      ).toEqual([SAVE, HELLO]);
+    });
+
+    it('finds the hashes of <T> call sites alone, for the entry', () => {
+      expect(
+        findJsxHashes(
+          `t({$_hash:"${HELLO}"})\`Hello\`;m({$_hash:'${HELLO}',$_tree:"Hello"});e(T,{children:"Save",_hash:"${SAVE}"});e(T,{_hash:'${SAVE}'})`
+        )
+      ).toEqual([SAVE]);
+    });
+
+    it('finds every token as long as a hash, in any syntax, for the entry', () => {
+      expect(
+        findHashTokens(
+          `eval("e(T,{_hash: \\"${SAVE}\\"})");x=[${HELLO}];y="${HELLO}0";z="0${SAVE}"`
         )
       ).toEqual([SAVE, HELLO]);
     });

@@ -62,8 +62,12 @@ export const MIN_SHARED_CHUNK_MESSAGES = 20;
 // and the `_hash` prop of a <T>. Any other compiled shape (such as a
 // precomputed <T>) must extend this pattern, or those messages leave the
 // files.
-const HASH_ARGUMENT =
-  /[{,]\s*["']?\$?_hash["']?\s*:\s*(["'`])([0-9a-f]{16})\1/g;
+const HASH = '[0-9a-f]{16}';
+const HASH_ARGUMENT = new RegExp(
+  `[{,]\\s*["']?\\$?_hash["']?\\s*:\\s*(["'\`])(${HASH})\\1`,
+  'g'
+);
+const HASH_TOKEN = new RegExp(`(?<![0-9a-f])${HASH}(?![0-9a-f])`, 'g');
 
 const CHUNK_EXTENSION = /\.[cm]?js$/;
 
@@ -92,6 +96,23 @@ export function findChunkHashes(
     if (hash !== undefined && hashes.has(hash)) found.add(hash);
   }
   return [...found].sort();
+}
+
+/**
+ * The hashes of the <T> call sites in code a bundler wrote, sorted: the
+ * `_hash` props, without the `$_hash` of `t` and `msg` templates.
+ */
+export function findJsxHashes(code: string): string[] {
+  const found = new Set<string>();
+  for (const match of code.matchAll(HASH_ARGUMENT)) {
+    if (!match[0].includes('$')) found.add(match[2]);
+  }
+  return [...found].sort();
+}
+
+/** Every run of exactly as many hex characters as a hash in code, whatever surrounds it. */
+export function findHashTokens(code: string): string[] {
+  return code.match(HASH_TOKEN) ?? [];
 }
 
 /**
