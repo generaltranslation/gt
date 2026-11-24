@@ -16,6 +16,12 @@ import { generateSettings } from '../config/generateSettings.js';
 import { aggregateInlineTranslations } from '../translation/stage.js';
 import { validateProject } from '../translation/validate.js';
 import { Libraries, InlineLibrary } from '../types/libraries.js';
+import { collectSourceMetadata } from '../translation/sourceMetadata.js';
+
+type GenerateSourceFlags = TranslateFlags & {
+  sourceOnly?: boolean;
+  metadata?: string;
+};
 
 /**
  * Stand in for a CLI tool that does any sort of inline content translations
@@ -108,9 +114,18 @@ export class InlineCLI extends BaseCLI {
           .description(
             'Generate a translation file for the source locale. This command should be used if you are handling your own translations.'
           )
+          .option(
+            '--source-only',
+            'Write only the source locale file and leave target locale files unchanged',
+            false
+          )
+          .option(
+            '--metadata <path>',
+            "Also write each entry's metadata (dataFormat, id, context, maxChars, requiresReview, filePaths) to this JSON file, keyed by the same hashes as the source file"
+          )
       ),
       this.getInlineSourceHelp()
-    ).action(async (initOptions: TranslateFlags) => {
+    ).action(async (initOptions: GenerateSourceFlags) => {
       displayHeader('Generating source templates...');
       await this.handleGenerateSourceCommand(initOptions);
       logger.endCommand('Done!');
@@ -118,7 +133,7 @@ export class InlineCLI extends BaseCLI {
   }
 
   protected async handleGenerateSourceCommand(
-    initOptions: TranslateFlags
+    initOptions: GenerateSourceFlags
   ): Promise<void> {
     const settings = await generateSettings(initOptions, undefined, {
       requireConfig: true,
@@ -140,6 +155,11 @@ export class InlineCLI extends BaseCLI {
       }
     }
 
+    if (initOptions.metadata) {
+      await saveJSON(initOptions.metadata, collectSourceMetadata(updates));
+      logger.step(`Entry metadata saved to ${initOptions.metadata}`);
+    }
+
     // Save source file if files.json is provided
     if (settings.files && settings.files.placeholderPaths.gt) {
       const translationFiles = resolveLocaleFiles(
@@ -152,6 +172,7 @@ export class InlineCLI extends BaseCLI {
       }
       await saveJSON(translationFiles.gt, newData);
       logger.step('Source file saved successfully!');
+      if (initOptions.sourceOnly) return;
       // Also save translations (after merging with existing translations)
       for (const locale of settings.locales) {
         const translationsFile = resolveLocaleFiles(
