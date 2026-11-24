@@ -41,6 +41,7 @@ const entries = [
   'src/compat.server.ts',
   'src/vite.ts',
   'src/chunk-translations.ts',
+  'src/testing.ts',
 ];
 
 // src/index.types.ts only backs the exports map's "types" conditions; its
@@ -56,7 +57,7 @@ export default defineConfig(
       const entryDeps =
         entry === 'src/chunk-translations.ts'
           ? chunkTranslationsDeps
-          : /^src\/(?:index|compat)\./.test(entry)
+          : /^src\/(?:index|compat|testing)\./.test(entry)
             ? contextDeps
             : deps;
       const [cjsConfig, esmConfig] = createTsdownConfig([entry], entryDeps);

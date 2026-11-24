@@ -10,7 +10,10 @@
     "dist",
     "CHANGELOG.md"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/testing.cjs",
+    "./dist/testing.mjs"
+  ],
   "peerDependencies": {
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0",
@@ -179,6 +182,16 @@
       "import": {
         "types": "./dist/vite.d.mts",
         "default": "./dist/vite.mjs"
+      }
+    },
+    "./testing": {
+      "require": {
+        "types": "./dist/index.types.d.cts",
+        "default": "./dist/testing.cjs"
+      },
+      "import": {
+        "types": "./dist/index.types.d.mts",
+        "default": "./dist/testing.mjs"
       }
     },
     "./chunk-translations": {

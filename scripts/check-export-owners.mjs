@@ -39,6 +39,20 @@ export const duplicateExceptions = [
       'Server-safe components are part of both the client and the RSC component entries.',
   },
   {
+    packageName: 'gt-react',
+    subpaths: ['.', './testing'],
+    names: '*',
+    reason:
+      'The testing entry mirrors the main entry, so a test runner can map the package to it.',
+  },
+  {
+    packageName: 'gt-react-native',
+    subpaths: ['.', './testing'],
+    names: '*',
+    reason:
+      'The testing entry mirrors the main entry, so a test runner can map the package to it.',
+  },
+  {
     packageName: 'gt-rrweb',
     subpaths: ['.', './harvest'],
     names: ['HarvestOptions', 'LocaleTextOverlay', 'TranslationsLoader'],

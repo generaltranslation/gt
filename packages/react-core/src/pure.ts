@@ -30,6 +30,7 @@ export {
   internalInitializeGTSRA,
   type ReactInitializeGTParams,
 } from './setup/initializeGTSRA';
+export { initializeGTForTesting } from './setup/initializeGTForTesting';
 
 export {
   ReactI18nCache,

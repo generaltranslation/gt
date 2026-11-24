@@ -41,6 +41,16 @@ import type { InitializeGTParams } from 'gt-react-native';
 export function init(config: InitializeGTParams): void {
   internalInitializeGTSRA(config);
 }
+
+// The testing entry takes what the main entry takes, and has its types.
+import {
+  getLocale,
+  initializeGT,
+  type GTProviderProps,
+} from 'gt-react-native/testing';
+initializeGT({ defaultLocale: 'fr', locales: ['fr'] });
+getLocale({ localeStoreKey: 'app:locale' });
+export const props: GTProviderProps = { locale: 'fr' };
 `;
 
 let fixture: string;
