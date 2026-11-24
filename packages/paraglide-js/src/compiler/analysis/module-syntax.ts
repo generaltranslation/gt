@@ -124,6 +124,21 @@ export function hasEsmExports(program: ESTree.Program): boolean {
   );
 }
 
+/** The specifiers of `export * from "./a"`; not of `export * as ns`, nor of `export type *`. */
+export function starExportSpecifiers(program: ESTree.Program): string[] {
+  const specifiers: string[] = [];
+
+  for (const statement of program.body) {
+    const isStarExport =
+      statement.type === 'ExportAllDeclaration' &&
+      statement.exportKind !== 'type' &&
+      !statement.exported;
+    if (isStarExport) specifiers.push(statement.source.value);
+  }
+
+  return specifiers;
+}
+
 /** By exported name. The names of `export *` are not among them. */
 export function exportingStatements(
   program: ESTree.Program
