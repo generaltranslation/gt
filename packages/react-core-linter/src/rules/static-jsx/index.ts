@@ -27,6 +27,9 @@ import {
 import { generateBranch, generateLogicalAnd } from './branch-fix.js';
 import { ScopeStack } from './ScopeStack.js';
 
+const isEmptyExpression = (node: TSESTree.JSXExpressionContainer) =>
+  node.expression.type === TSESTree.AST_NODE_TYPES.JSXEmptyExpression;
+
 /**
  * Static JSX applies to children of the <T> component
  */
@@ -133,7 +136,7 @@ export const staticJsx = createRule({
        * When we are inside of a branching attribute, mark it as Branch-T
        */
       JSXExpressionContainer(node: TSESTree.JSXExpressionContainer) {
-        if (!node.expression) return;
+        if (isEmptyExpression(node)) return;
         // Handle T component and branching attribute cases
         if (scopeStack.inTranslatableContent()) {
           if (!ALLOWED_JSX_EXPRESSIONS.includes(node.expression.type)) {
@@ -165,7 +168,7 @@ export const staticJsx = createRule({
         }
       },
       'JSXExpressionContainer:exit'(node) {
-        if (!node.expression || !scopeStack.inBranchT()) return;
+        if (isEmptyExpression(node) || !scopeStack.inBranchT()) return;
         scopeStack.pop();
       },
       /**

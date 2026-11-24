@@ -54,6 +54,17 @@ ruleTester.run('static-jsx: scope', staticJsx, {
       code: t('{`Hello ${name}`}'),
     },
     {
+      name: 'JSX comments and empty braces',
+      code: t('{/* Hero */}<h1>Hello</h1>{\n// note\n}{}'),
+    },
+    {
+      name: 'JSX comment inside a Branch prop fragment',
+      code: t(
+        '<Branch branch={x} a={<>{/* note */}hello</>}>fallback</Branch>',
+        'T, Branch'
+      ),
+    },
+    {
       name: 'self-closing T',
       code: component("import { T } from 'gt-react';", '<T />'),
     },
@@ -135,6 +146,16 @@ ruleTester.run('static-jsx: scope', staticJsx, {
     ...fixes('T, Var', [
       ['identifier', '{name}', '<Var>{name}</Var>'],
       ['call expression', '{getLabel()}', '<Var>{getLabel()}</Var>'],
+      [
+        'identifier after a JSX comment',
+        '{/* Hero */}{name}',
+        '{/* Hero */}<Var>{name}</Var>',
+      ],
+      [
+        'identifier with a leading comment',
+        '{/* c */ name}',
+        '<Var>{/* c */ name}</Var>',
+      ],
       [
         'inside a nested element',
         '<div>{name}</div>',
