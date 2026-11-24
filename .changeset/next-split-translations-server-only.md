@@ -9,8 +9,8 @@ With the option on, a `<T>` in a client component must be one the GT compiler ha
 ```ts
 export default withGTConfig(nextConfig, {
   experimentalCompilerOptions: { type: 'swc' },
-  experimentalSplitTranslations: { enabled: true },
+  experimentalSplitTranslations: true,
 });
 ```
 
-`enabled` turns it on or off. Left out, the `GT_SPLIT_TRANSLATIONS` environment variable (`true` or `false`) decides, and with neither set it is on when the option is set. Translations of `t` and `msg` templates are all still sent. The webpack compiler (`type: 'babel'`) no longer reads `GT_SPLIT_TRANSLATIONS` as its own split by chunk, which failed every Next.js build.
+Only `true` turns it on. Translations of `t` and `msg` templates are all still sent.

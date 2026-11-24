@@ -102,12 +102,7 @@ function splitsTranslations(
   option: BaseWithGTConfigProps['experimentalSplitTranslations'],
   compilerOptions: CompilerOptions
 ): boolean {
-  // The compiler loads Babel, so a build that sets neither does not load it.
-  if (option === undefined && !process.env.GT_SPLIT_TRANSLATIONS) return false;
-  const { isSplitTranslationsEnabled } = nodeRequire(
-    '@generaltranslation/compiler'
-  ) as typeof import('@generaltranslation/compiler');
-  if (!isSplitTranslationsEnabled(option)) return false;
+  if (option !== true) return false;
   // The Babel compiler leaves a <T> whose hash depends on a runtime value
   // unhashed, and that hash can equal one only server components render.
   if (compilerOptions.type !== 'swc' || !compilerOptions.compileTimeHash) {
@@ -841,9 +836,6 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
                 // Without a file, the compiler warns that there is no config.
                 ...(configFileExists && { gtConfig: loadedConfig }),
                 autoJsxImportSource: 'gt-next',
-                // The compiler would read GT_SPLIT_TRANSLATIONS as its own
-                // split by chunk, which fails every webpack build.
-                experimentalSplitTranslations: { enabled: false },
               })
             );
           } catch (e) {

@@ -29,7 +29,7 @@ function build(bundler, split) {
       env: {
         ...process.env,
         CHECK_COMPILER: 'swc',
-        GT_SPLIT_TRANSLATIONS: String(split),
+        CHECK_SPLIT: String(split),
       },
     }
   );

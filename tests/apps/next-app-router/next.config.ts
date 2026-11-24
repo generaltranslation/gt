@@ -8,12 +8,13 @@ const nextConfig: NextConfig = {
   },
 };
 
-// scripts/check.mjs sets CHECK_COMPILER, since experimentalSplitTranslations
-// needs a compiler.
+// scripts/check.mjs sets CHECK_COMPILER and CHECK_SPLIT to build with
+// experimentalSplitTranslations, which needs a compiler.
 const compiler = process.env.CHECK_COMPILER;
 
 export default withGTConfig(nextConfig, {
   ...((compiler === 'swc' || compiler === 'babel') && {
     experimentalCompilerOptions: { type: compiler },
   }),
+  experimentalSplitTranslations: process.env.CHECK_SPLIT === 'true',
 });

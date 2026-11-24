@@ -161,7 +161,6 @@ beforeEach(() => {
     'NEXT_PUBLIC_GT_PROJECT_ID',
     'NEXT_PUBLIC_GT_DEV_API_KEY',
     'TURBOPACK',
-    'GT_SPLIT_TRANSLATIONS',
   ]) {
     vi.stubEnv(name, undefined);
   }
@@ -508,9 +507,9 @@ describe('withGTConfig', () => {
       ['string locales', { locales: 'fr' }, 'locales: Invalid type'],
       ['a null pathRegex', { pathRegex: null }, 'pathRegex: Invalid type'],
       [
-        'a string experimentalSplitTranslations.enabled',
-        { experimentalSplitTranslations: { enabled: 'false' } },
-        'experimentalSplitTranslations.enabled: Invalid type',
+        'a non-boolean experimentalSplitTranslations',
+        { experimentalSplitTranslations: { enabled: true } },
+        'experimentalSplitTranslations: Invalid type',
       ],
     ])('rejects %s in withGTConfig() props', (_case, props, issue) => {
       expect(() => withGTConfig({}, props as never)).toThrow(
@@ -1129,7 +1128,7 @@ describe('withGTConfig', () => {
             runAfterProductionCompile: appHook,
           },
         } as NextConfig,
-        { ...swc, experimentalSplitTranslations: {} }
+        { ...swc, experimentalSplitTranslations: true }
       );
       await hookOf(result)!(metadata);
 
@@ -1140,12 +1139,12 @@ describe('withGTConfig', () => {
     });
 
     it.each([
-      ['the option alone', {}, undefined, true],
-      ['GT_SPLIT_TRANSLATIONS alone', undefined, 'true', true],
-      ['enabled over GT_SPLIT_TRANSLATIONS', { enabled: false }, 'true', false],
-      ['GT_SPLIT_TRANSLATIONS over the option', {}, 'false', false],
-      ['neither', undefined, undefined, false],
-    ])('is decided by %s', (_name, option, env, expected) => {
+      ['on with true', true, undefined, true],
+      ['off with false', false, undefined, false],
+      ['off when left out', undefined, undefined, false],
+      ['off with GT_SPLIT_TRANSLATIONS=true alone', undefined, 'true', false],
+      ['off with false and GT_SPLIT_TRANSLATIONS=true', false, 'true', false],
+    ])('is %s', (_name, option, env, expected) => {
       vi.stubEnv('GT_SPLIT_TRANSLATIONS', env);
       const compiler = { removeConsole: true };
 
@@ -1163,17 +1162,17 @@ describe('withGTConfig', () => {
     });
 
     it('is read from withGTConfig() alone, not from gt.config.json', () => {
-      mockConfigFile({ experimentalSplitTranslations: {} });
+      mockConfigFile({ experimentalSplitTranslations: true });
 
       expect(hookOf(withGTConfig({}, swc))).toBeUndefined();
     });
 
     it('ignores the value gt.config.json holds when the props set another', () => {
-      mockConfigFile({ experimentalSplitTranslations: { enabled: false } });
+      mockConfigFile({ experimentalSplitTranslations: false });
 
       const result = withGTConfig(
         {},
-        { ...swc, experimentalSplitTranslations: { enabled: true } }
+        { ...swc, experimentalSplitTranslations: true }
       );
 
       expect(hookOf(result)).toBeTypeOf('function');
@@ -1197,7 +1196,7 @@ describe('withGTConfig', () => {
           {},
           {
             experimentalCompilerOptions,
-            experimentalSplitTranslations: { enabled: true },
+            experimentalSplitTranslations: true,
           }
         );
 
@@ -1215,7 +1214,7 @@ describe('withGTConfig', () => {
 
     it('stays out of the config the runtime reads', () => {
       expect(
-        buildParams({ ...swc, experimentalSplitTranslations: {} })
+        buildParams({ ...swc, experimentalSplitTranslations: true })
       ).not.toHaveProperty('experimentalSplitTranslations');
     });
   });
@@ -1243,27 +1242,6 @@ describe('withGTConfig', () => {
           enableAutoJsxInjection: true,
           autoJsxImportSource: 'gt-next',
         })
-      );
-    });
-
-    it('keeps the webpack compiler from splitting translations by chunk, whatever turns the split of gt-next on', () => {
-      vi.stubEnv('GT_SPLIT_TRANSLATIONS', 'true');
-      const compiler = require('@generaltranslation/compiler');
-      const compilerWebpack = vi.spyOn(compiler, 'webpack').mockReturnValue({});
-
-      runWebpack(
-        withGTConfig(
-          {},
-          {
-            experimentalCompilerOptions: { type: 'babel' },
-            experimentalSplitTranslations: { enabled: true },
-          }
-        )
-      );
-
-      expect(compilerWebpack.mock.calls[0][0]).toHaveProperty(
-        'experimentalSplitTranslations',
-        { enabled: false }
       );
     });
 

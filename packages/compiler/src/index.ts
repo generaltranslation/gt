@@ -822,4 +822,3 @@ export {
   findHashTokens,
   findJsxHashes,
 } from './transform/chunk-translations/assignTranslations';
-export { getChunkTranslations as isSplitTranslationsEnabled } from './transform/chunk-translations/resolveChunkTranslations';

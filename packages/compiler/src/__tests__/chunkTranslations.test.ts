@@ -18,11 +18,7 @@ import {
 } from 'vitest';
 import MagicString from 'magic-string';
 import type { UnpluginContextMeta, UnpluginOptions } from 'unplugin';
-import gtUnplugin, {
-  findHashTokens,
-  findJsxHashes,
-  isSplitTranslationsEnabled,
-} from '../index';
+import gtUnplugin, { findHashTokens, findJsxHashes } from '../index';
 import type { GTUnpluginOptions } from '../index';
 import { locate, trace } from './sourcePositions';
 import {
@@ -271,20 +267,6 @@ describe('experimentalSplitTranslations', () => {
       expect(getChunkTranslations({ enabled: true })).toBe(true);
       expect(getChunkTranslations({ enabled: false })).toBe(false);
     });
-
-    it.each([
-      [{}, undefined, true],
-      [undefined, 'true', true],
-      [{ enabled: false }, 'true', false],
-      [{}, 'false', false],
-      [undefined, undefined, false],
-    ] as const)(
-      'is %j with GT_SPLIT_TRANSLATIONS=%j for other packages, from the entry: %s',
-      (option, env, expected) => {
-        vi.stubEnv('GT_SPLIT_TRANSLATIONS', env as never);
-        expect(isSplitTranslationsEnabled(option)).toBe(expected);
-      }
-    );
 
     const BUILD = {
       framework: 'vite',
