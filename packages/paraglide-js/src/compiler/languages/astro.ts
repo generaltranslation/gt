@@ -29,6 +29,7 @@ export const astroLanguage: SourceLanguage = {
   name: 'astro',
   extensions: ['.astro'],
   requires: ['@astrojs/astro2tsx'],
+  uses: ['@astrojs/compiler'],
   installedWith: { '@astrojs/astro2tsx': '@astrojs/check' },
   async generate(source, file, context) {
     const tsx =

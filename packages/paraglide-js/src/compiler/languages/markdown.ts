@@ -8,6 +8,7 @@ import {
   hasVueTools,
   VUE_INSTALLED_WITH,
   VUE_REQUIRES,
+  VUE_USES,
 } from './vue/generate.js';
 
 type MarkdownNode = { type: string; value?: string; children?: MarkdownNode[] };
@@ -23,6 +24,7 @@ export const markdownLanguage: SourceLanguage = {
   name: 'markdown',
   extensions: ['.md'],
   requires: VUE_REQUIRES,
+  uses: VUE_USES,
   installedWith: VUE_INSTALLED_WITH,
   async generate(source, file, context) {
     // Without the tools, Markdown without a script (a README) is not reported.

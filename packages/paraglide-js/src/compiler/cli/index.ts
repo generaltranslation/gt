@@ -31,7 +31,9 @@ Options:
   --alias <a=path>    import alias, e.g. ~=./src; repeatable
   --no-bundler-config do not read aliases from a bundler config
   --radius <lines>    lines of context around each usage (default: 10)
-  --verbose           print a summary
+  --cache             keep what a run found in gt-lock.json, so that the next
+                      run skips the files that did not change
+  --verbose          print a summary
   -h, --help          show this help`;
 
 type Arguments = ReturnType<typeof parseArguments>['values'];
@@ -89,6 +91,7 @@ function parseArguments(argv: string[]) {
       alias: { type: 'string', multiple: true },
       'no-bundler-config': { type: 'boolean' },
       radius: { type: 'string' },
+      cache: { type: 'boolean' },
       verbose: { type: 'boolean' },
       help: { type: 'boolean', short: 'h' },
     },
@@ -111,6 +114,7 @@ function contextOptions(
     radius: values.radius === undefined ? undefined : Number(values.radius),
     alias: aliases(values.alias ?? [], projectRoot),
     bundlerConfigs: values['no-bundler-config'] ? [] : undefined,
+    cache: values.cache,
     logger: {
       warn: (message) => console.warn(message),
       info: (message) => (values.verbose ? print(message) : undefined),

@@ -1,7 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { resolvePackage } from '../utils/resolve-package.js';
+import {
+  packageManifest,
+  resolvePackage,
+  versionOf,
+} from '../utils/resolve-package.js';
 import { virtualModulePrefix } from './virtual-modules.js';
 
 export type OutdirVerdict =
@@ -353,22 +357,9 @@ function isParaglide1Module(file: string): Promise<boolean> {
 
 /** The version in the package.json of `@inlang/paraglide-js`, at or above its entry file; "?" if unknown. */
 async function packageVersion(entry: string): Promise<string> {
-  for (
-    let directory = path.dirname(entry);
-    ;
-    directory = path.dirname(directory)
-  ) {
-    const manifest = await fs
-      .readFile(path.join(directory, 'package.json'), 'utf8')
-      .then((json) => JSON.parse(json) as { name?: string; version?: string })
-      .catch(() => undefined);
+  const found = await packageManifest(entry, '@inlang/paraglide-js');
 
-    if (manifest?.name === '@inlang/paraglide-js')
-      return manifest.version ?? '?';
-
-    const isFilesystemRoot = path.dirname(directory) === directory;
-    if (isFilesystemRoot) return '?';
-  }
+  return found ? versionOf(found.manifest) : '?';
 }
 
 function withoutEslintLine(code: string): string {

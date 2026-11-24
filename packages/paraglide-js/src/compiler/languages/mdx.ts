@@ -32,6 +32,7 @@ export const mdxLanguage: SourceLanguage = {
   name: 'mdx',
   extensions: ['.mdx'],
   requires: ['@mdx-js/language-service', 'typescript'],
+  uses: REMARK_PLUGINS,
   async generate(source, file, context) {
     const tools = await toolsFor(context);
     if (!tools) return undefined;

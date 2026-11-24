@@ -34,4 +34,11 @@ export type ParaglideContextOptions = {
    * unplugin-auto-import and Nuxt auto-imports are detected; `false` disables both.
    */
   autoImports?: false | AutoImportOptions;
+  /**
+   * Keep what a run found of each file for the next run, which then skips
+   * the files that did not change: in the `paraglide-usage-context` section
+   * of the project's `gt-lock.json`, else in
+   * `node_modules/.cache/paraglide-usage-context.json`. Default: `false`.
+   */
+  cache?: boolean;
 };
