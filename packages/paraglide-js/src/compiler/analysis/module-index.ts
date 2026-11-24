@@ -1,12 +1,13 @@
 import { specifierLinks, type SpecifierLinks } from './importers.js';
 import type { ModuleGraph, ParsedModule } from './module-graph.js';
 import type { ModuleSummary } from './module-store.js';
-import { loadedSpecifiers } from './module-syntax.js';
+import { exportingStatements, loadedSpecifiers } from './module-syntax.js';
 
 /** What each module of a file loads and links: the file's module, then its scripts. */
 export type ParsedSummary = Array<{
   specifiers: string[];
   links: SpecifierLinks;
+  untrackedExports: string[];
 }>;
 
 export type ModuleIndexerOptions = {
@@ -27,8 +28,38 @@ export function summarizeModule(parsed: ParsedModule): ParsedSummary {
       if (specifier !== '') specifiers.add(specifier);
     }
 
-    return { specifiers: [...specifiers], links: specifierLinks(part.program) };
+    return {
+      specifiers: [...specifiers],
+      links: specifierLinks(part.program),
+      // Generated code can read a name through an object that stands for the module.
+      untrackedExports: part.scopeObjects ? [] : untrackedExports(part.program),
+    };
   });
+}
+
+/**
+ * Exports that never hold a tracked value: the first statement that exports
+ * the name declares a function or a class, which `ModuleGraph.exportOf`
+ * evaluates to nothing.
+ */
+function untrackedExports(program: ParsedModule['program']): string[] {
+  const names: string[] = [];
+
+  for (const [name, [first]] of exportingStatements(program)) {
+    const declaration =
+      first?.type === 'ExportNamedDeclaration' && first.exportKind !== 'type'
+        ? first.declaration
+        : first?.type === 'ExportDefaultDeclaration'
+          ? first.declaration
+          : undefined;
+
+    const isFunctionOrClass =
+      declaration?.type === 'FunctionDeclaration' ||
+      declaration?.type === 'ClassDeclaration';
+    if (isFunctionOrClass) names.push(name);
+  }
+
+  return names;
 }
 
 /**
@@ -99,7 +130,7 @@ export class ModuleIndexer {
     if (!parsed) return undefined;
 
     const parts = await Promise.all(
-      parsed.map(async ({ specifiers, links }) => {
+      parsed.map(async ({ specifiers, links, untrackedExports }) => {
         const files = await Promise.all(
           specifiers.map((specifier) => resolve(specifier, file))
         );
@@ -107,7 +138,7 @@ export class ModuleIndexer {
           (specifier, index) => [specifier, files[index]] as const
         );
 
-        return { resolved, links };
+        return { resolved, links, untrackedExports };
       })
     );
 
