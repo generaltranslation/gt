@@ -76,19 +76,35 @@ function setOwnProperty(object: JsonObject, key: string, value: unknown): void {
 
 const INDENT = '  ';
 
+/**
+ * A value that writes its own JSON, as `JSON.stringify(value, null, 2)` would
+ * at `indent`: for values too large to hold as objects, e.g. kept as bytes.
+ */
+export class StreamedJson {
+  constructor(readonly chunks: (indent: string) => Iterable<string | Buffer>) {}
+}
+
 /** Bytes of JSON parsed at once; longer objects and arrays are parsed member by member. */
 const MAX_PARSED_BYTES = 64 * 1024 * 1024;
 
 /**
- * The text of `JSON.stringify(value, null, 2)` for plain JSON data, in
- * pieces: the JSON of a large project's metadata is longer than the longest
- * string V8 holds.
+ * The text of `JSON.stringify(value, null, 2)` for plain JSON data and
+ * `StreamedJson`, in pieces: the JSON of a large project's metadata is longer
+ * than the longest string V8 holds.
  */
-export function* jsonChunks(value: unknown): Generator<string> {
+export function* jsonChunks(value: unknown): Generator<string | Buffer> {
   yield* valueChunks(value, '');
 }
 
-function* valueChunks(value: unknown, indent: string): Generator<string> {
+function* valueChunks(
+  value: unknown,
+  indent: string
+): Generator<string | Buffer> {
+  if (value instanceof StreamedJson) {
+    yield* value.chunks(indent);
+    return;
+  }
+
   if (typeof value !== 'object' || value === null) {
     yield JSON.stringify(value);
     return;

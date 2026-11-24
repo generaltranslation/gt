@@ -4,6 +4,7 @@ import {
   setAtPath,
   valueAtPath,
   type JsonObject,
+  type StreamedJson,
 } from '../utils/json.js';
 import type { SourceCodeByFile } from './source-code.js';
 
@@ -11,7 +12,7 @@ export type MetadataFileInput = {
   /** The keys of the message file the metadata is for. */
   keys: readonly MessageKey[];
   /** The source code around the usages of each message id: see `sourceCodeByMessage`. */
-  sourceCode: ReadonlyMap<string, SourceCodeByFile>;
+  sourceCode: ReadonlyMap<string, SourceCodeByFile | StreamedJson>;
   /** The metadata file's current content. Fields other than `sourceCode` are kept. */
   existing: JsonObject;
 };
