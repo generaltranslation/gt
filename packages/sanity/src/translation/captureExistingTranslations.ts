@@ -9,6 +9,7 @@ import { getCompletedResults } from './checkTranslationStatus';
 import { collectExistingTranslations } from './collectExistingTranslations';
 
 import type { Secrets, TranslationFunctionContext } from '../types';
+import type { ImportedTranslation } from './updatePreviewUrls';
 
 export type CaptureExistingTranslationsInput = {
   documents: SanityDocument[];
@@ -25,12 +26,18 @@ export type CaptureExistingTranslationsResult = {
   documentCount: number;
   /** Translations in Sanity left alone because General Translation holds no finished translation of that source version for their locale. */
   skippedCount: number;
+  /** Translations sent that General Translation did not confirm it saved. */
+  unconfirmedCount: number;
+  /** Each confirmed save, with the document it was read from and the file it now belongs to. */
+  saved: ImportedTranslation[];
 };
 
 const EMPTY_RESULT: CaptureExistingTranslationsResult = {
   capturedCount: 0,
   documentCount: 0,
   skippedCount: 0,
+  unconfirmedCount: 0,
+  saved: [],
 };
 
 /**
@@ -105,18 +112,28 @@ export async function captureExistingTranslations({
     secrets
   );
 
-  const files = candidates.flatMap(({ seed, translations }) => {
-    const replaceable = translations.filter(({ locale }) =>
-      completed.has(
-        createTranslationStatusKey(
-          seed.branchId,
-          seed.fileId,
-          seed.versionId,
-          locale
+  const replaceable = candidates.flatMap(({ seed, translations }) =>
+    translations
+      .filter(({ locale }) =>
+        completed.has(
+          createTranslationStatusKey(
+            seed.branchId,
+            seed.fileId,
+            seed.versionId,
+            locale
+          )
         )
       )
-    );
-    if (replaceable.length === 0) {
+      .map((translation) => ({ seed, translation }))
+  );
+  const skippedCount = candidateCount - replaceable.length;
+  if (replaceable.length === 0) {
+    return { ...EMPTY_RESULT, skippedCount };
+  }
+
+  const files = candidates.flatMap(({ seed }) => {
+    const translations = replaceable.filter((entry) => entry.seed === seed);
+    if (translations.length === 0) {
       return [];
     }
     const reference = {
@@ -130,29 +147,38 @@ export async function captureExistingTranslations({
     return [
       {
         source: { ...reference, content: seed.data, locale: sourceLocale },
-        translations: replaceable.map(({ locale, content }) => ({
+        translations: translations.map(({ translation }) => ({
           ...reference,
-          content,
-          locale,
+          content: translation.content,
+          locale: translation.locale,
         })),
       },
     ];
   });
-  const replaceableCount = files.reduce(
-    (total, file) => total + file.translations.length,
-    0
-  );
-  const skippedCount = candidateCount - replaceableCount;
-
-  if (files.length === 0) {
-    return { ...EMPTY_RESULT, skippedCount };
-  }
 
   const response = await api.uploadTranslations(files, { sourceLocale });
+  const confirmed = new Set(
+    response.uploadedFiles.map((file) => `${file.fileId}:${file.locale}`)
+  );
+  const saved = replaceable
+    .filter(({ seed, translation }) =>
+      confirmed.has(`${seed.fileId}:${translation.locale}`)
+    )
+    .map(({ seed, translation }) => ({
+      written: translation.document,
+      file: {
+        branchId: seed.branchId,
+        fileId: seed.fileId,
+        versionId: seed.versionId,
+      },
+      language: translation.locale,
+    }));
 
   return {
-    capturedCount: response.uploadedFiles.length,
-    documentCount: files.length,
+    capturedCount: saved.length,
+    documentCount: new Set(saved.map(({ file }) => file.fileId)).size,
     skippedCount,
+    unconfirmedCount: replaceable.length - saved.length,
+    saved,
   };
 }

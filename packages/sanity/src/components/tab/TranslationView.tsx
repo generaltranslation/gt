@@ -223,7 +223,9 @@ export const TranslationView = () => {
       const { autoOnly = false } = options;
 
       // Check preconditions
-      if (isImporting || !documentId || !versionId) return;
+      // Another write, such as saving local edits, must finish first. Auto
+      // import runs again once it does.
+      if (isImporting || isBusy || !documentId || !versionId) return;
       if (autoOnly && !autoImport) return;
       // A document that stopped being its group's original must not import,
       // nor publish what its group now treats as the source.
@@ -297,6 +299,7 @@ export const TranslationView = () => {
       autoImport,
       isVerifiedOriginal,
       isImporting,
+      isBusy,
       documentId,
       versionId,
       statusLocales,

@@ -63,27 +63,36 @@ export async function checkTranslationStatus(
   }
 }
 
+// The file info endpoint rejects a request for more files than this.
+const MAX_FILES_PER_QUERY = 100;
+
 /** When GT completed the result it currently holds for each file, by status key. Files without a completed result are left out. */
 export async function getCompletedResults(
   fileQueryData: FileProperties[],
   secrets: Secrets
 ): Promise<Map<string, string>> {
   overrideConfig(secrets);
-  const responseData = await api.queryFileData({
-    translatedFiles: fileQueryData,
-  });
   const completed = new Map<string, string>();
-  for (const translation of responseData.translatedFiles || []) {
-    if (!translation.completedAt) continue;
-    completed.set(
-      createTranslationStatusKey(
-        translation.branchId,
-        translation.fileId,
-        translation.versionId,
-        translation.locale
-      ),
-      translation.completedAt
-    );
+  for (
+    let start = 0;
+    start < fileQueryData.length;
+    start += MAX_FILES_PER_QUERY
+  ) {
+    const responseData = await api.queryFileData({
+      translatedFiles: fileQueryData.slice(start, start + MAX_FILES_PER_QUERY),
+    });
+    for (const translation of responseData.translatedFiles || []) {
+      if (!translation.completedAt) continue;
+      completed.set(
+        createTranslationStatusKey(
+          translation.branchId,
+          translation.fileId,
+          translation.versionId,
+          translation.locale
+        ),
+        translation.completedAt
+      );
+    }
   }
   return completed;
 }

@@ -782,6 +782,40 @@ const TranslationsProviderContent: React.FC<
     [toast]
   );
 
+  // Read by imports, which must not replace a translation while it is being
+  // saved. A ref, so a callback created before the save started still sees it.
+  const savingLocalEditsRef = useRef(false);
+  const saveLocalEdits = useCallback(
+    async (sourceDocuments: SanityDocument[]) => {
+      if (!secrets) throw new Error('Secrets not loaded');
+      savingLocalEditsRef.current = true;
+      try {
+        const result = await captureExistingTranslations({
+          documents: getDefaultSourceDocuments(sourceDocuments),
+          localeIds: getSelectedLocaleIds(locales),
+          secrets,
+          context: translationContext,
+          branchId,
+        });
+        warnTranslationPreviewUrlFailures(
+          await updateTranslationPreviewUrls(result.saved, client, secrets)
+        );
+        return result;
+      } finally {
+        savingLocalEditsRef.current = false;
+      }
+    },
+    [
+      secrets,
+      locales,
+      client,
+      schema,
+      branchId,
+      getDefaultSourceDocuments,
+      warnTranslationPreviewUrlFailures,
+    ]
+  );
+
   const handleTranslateAll = useCallback(
     async ({ force = false }: TranslateAllOptions = {}) => {
       if (!secrets || documents.length === 0) return [];
@@ -807,13 +841,7 @@ const TranslationsProviderContent: React.FC<
         // costs edit preservation, and must not block the translation itself.
         if (preserveExistingTranslations && !force) {
           try {
-            const captured = await captureExistingTranslations({
-              documents: getDefaultSourceDocuments(sourceDocuments),
-              localeIds: availableLocaleIds,
-              secrets,
-              context: translationContext,
-              branchId,
-            });
+            const captured = await saveLocalEdits(sourceDocuments);
             if (captured.capturedCount > 0) {
               toast.push({
                 title: `Preserved ${captured.capturedCount} existing translation(s) across ${captured.documentCount} document(s)`,
@@ -1009,6 +1037,7 @@ const TranslationsProviderContent: React.FC<
       }
     },
     [
+      saveLocalEdits,
       secrets,
       documents,
       locales,
@@ -1039,24 +1068,20 @@ const TranslationsProviderContent: React.FC<
         : documents;
       if (!sourceDocuments) return;
 
-      const saved = await captureExistingTranslations({
-        documents: getDefaultSourceDocuments(sourceDocuments),
-        localeIds: getSelectedLocaleIds(locales),
-        secrets,
-        context: translationContext,
-        branchId,
-      });
-      const skipped =
-        saved.skippedCount > 0
-          ? `${saved.skippedCount} skipped: not translated from the current source yet.`
-          : undefined;
+      const saved = await saveLocalEdits(sourceDocuments);
+      const notes = [
+        saved.unconfirmedCount > 0 &&
+          `${saved.unconfirmedCount} could not be confirmed as saved. Try again.`,
+        saved.skippedCount > 0 &&
+          `${saved.skippedCount} skipped: not translated from the current source yet.`,
+      ].filter(Boolean);
 
       toast.push(
         saved.capturedCount > 0
           ? {
               title: `Saved ${saved.capturedCount} translation(s) across ${saved.documentCount} document(s)`,
-              description: skipped,
-              status: 'success',
+              description: notes.length > 0 ? notes.join(' ') : undefined,
+              status: saved.unconfirmedCount > 0 ? 'warning' : 'success',
               closable: true,
             }
           : {
@@ -1081,12 +1106,8 @@ const TranslationsProviderContent: React.FC<
   }, [
     secrets,
     documents,
-    locales,
-    client,
-    schema,
-    branchId,
     allowNonDefault,
-    getDefaultSourceDocuments,
+    saveLocalEdits,
     getUploadableSources,
     toast,
     isWriteRunning,
@@ -1652,6 +1673,16 @@ const TranslationsProviderContent: React.FC<
         toast.push({
           title: `Document ${documentId} not found`,
           status: 'error',
+          closable: true,
+        });
+        return false;
+      }
+
+      if (savingLocalEditsRef.current) {
+        toast.push({
+          title: 'Local edits are being saved',
+          description: 'Import again once the save finishes.',
+          status: 'warning',
           closable: true,
         });
         return false;
