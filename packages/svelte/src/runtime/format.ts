@@ -11,11 +11,3 @@ export function getFormatLocales(locale: string): string[] {
   }
   return [locale];
 }
-
-/**
- * The locale a plural is selected in. A custom alias reaches Intl as its
- * code, never by name.
- */
-export function getPluralLocales(locale: string): string[] {
-  return [getI18nConfig().resolveCanonicalLocale(locale)];
-}

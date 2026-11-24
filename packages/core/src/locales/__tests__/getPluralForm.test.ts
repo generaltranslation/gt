@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { getPluralForm } from '../getPluralForm';
+import { GTIntl } from '../../intl/GTIntl';
 import {
   getPluralBranchKey,
   isAcceptedPluralForm,
@@ -10,6 +11,18 @@ const form = (n: number | bigint, forms: string[], locale: string) =>
   getPluralForm(n, forms, [locale]);
 
 describe('getPluralForm', () => {
+  it('picks by the rules of a GTIntl, which reads an alias as its code', () => {
+    const intl = new GTIntl({ customMapping: { portal_fr: { code: 'fr' } } });
+    const options = { locale: 'portal_fr' };
+    // French counts 0 as "one" and has no ordinal "two".
+    expect(intl.getPluralForm(0, ['one', 'other'], options)).toBe('one');
+    expect(
+      intl.getPluralForm(2, ['two', 'other'], { ...options, type: 'ordinal' })
+    ).toBe('other');
+    expect(intl.getPluralForm(0, ['=0', 'one', 'other'], options)).toBe('=0');
+    expect(intl.getPluralForm(0, ['one', 'other'])).toBe('other');
+  });
+
   it.each([
     ['lv', 0, 'zero'],
     ['ar', 0, 'zero'],

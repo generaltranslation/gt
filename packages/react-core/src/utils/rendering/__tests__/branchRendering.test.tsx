@@ -373,8 +373,8 @@ describe('a plural in a locale alias Intl cannot read', () => {
   beforeEach(() => {
     resetGTGlobals();
     initializeI18nConfig({
-      defaultLocale: 'en',
-      locales: ['en', 'portal_uk', 'portal_fr'],
+      defaultLocale: 'portal_uk',
+      locales: ['portal_uk', 'portal_fr'],
       customMapping: {
         portal_uk: { code: 'en-GB' },
         portal_fr: { code: 'fr' },
@@ -384,7 +384,7 @@ describe('a plural in a locale alias Intl cannot read', () => {
 
   afterEach(resetGTGlobals);
 
-  it('selects in the code of an alias of the default language', () => {
+  it('selects in the code of an alias that is the default locale', () => {
     expect(
       renderPlural({
         _enableI18n: true,
@@ -402,7 +402,7 @@ describe('a plural in a locale alias Intl cannot read', () => {
         }),
         targetJsxChildren: undefined,
         locale: 'portal_uk',
-        defaultLocale: 'en',
+        defaultLocale: 'portal_uk',
         enableI18n: true,
         shouldTranslate: false,
       })

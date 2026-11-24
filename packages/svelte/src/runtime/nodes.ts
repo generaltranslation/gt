@@ -3,7 +3,8 @@ import type {
   JsxChildren,
   JsxElement,
 } from '@generaltranslation/format';
-import { getPluralForm, isVariable } from 'generaltranslation/internal';
+import { isVariable } from 'generaltranslation/internal';
+import { getI18nConfig } from 'gt-i18n/internal';
 import type { GTRuntimeMetadata } from '@generaltranslation/svelte-extractor';
 import type { Snippet } from 'svelte';
 
@@ -254,7 +255,10 @@ function pickPluralForm(
     return pickBranch(undefined, branches);
   }
   const type = ordinal ? 'ordinal' : 'cardinal';
-  return getPluralForm(n, branches, locales, type) || undefined;
+  // The config reads a locale alias as its code, like its formatters.
+  return (
+    getI18nConfig().getPluralForm(n, branches, { locales, type }) || undefined
+  );
 }
 
 /** The branch named by the value, then `other`. */

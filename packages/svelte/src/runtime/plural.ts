@@ -1,5 +1,5 @@
-import { getPluralBranchKey, getPluralForm } from 'generaltranslation/internal';
-import { getPluralLocales } from './format';
+import { getPluralBranchKey } from 'generaltranslation/internal';
+import { getI18nConfig } from 'gt-i18n/internal';
 
 /**
  * The branch of a `<Plural>` or an `<Ordinal>` for `n`, picked as ICU does:
@@ -22,7 +22,8 @@ export function selectPluralBranch(
   const keys = names.map(getPluralBranchKey);
   const key =
     typeof n === 'number' || typeof n === 'bigint'
-      ? getPluralForm(n, [...keys, 'other'], getPluralLocales(locale), type)
+      ? // The config reads a locale alias as its code, like its formatters.
+        getI18nConfig().getPluralForm(n, [...keys, 'other'], { locale, type })
       : 'other';
   return key === 'other' ? children : branches[names[keys.indexOf(key)]];
 }

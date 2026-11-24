@@ -1,4 +1,3 @@
-import { getPluralForm } from 'generaltranslation/internal';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { getI18nConfig, getRuntimeEnvironment } from 'gt-i18n/internal';
 
@@ -28,10 +27,11 @@ export function selectPluralKey(
   const keys = Object.keys(branches).filter(
     (key) => branches[key] !== undefined
   );
-  // A custom alias reaches Intl as its code, never by name.
-  const config = getI18nConfig();
-  const codes = locales.map((locale) => config.resolveCanonicalLocale(locale));
-  return getPluralForm(n, keys, codes, ordinal ? 'ordinal' : 'cardinal');
+  // The config reads a locale alias as its code, like its formatters.
+  return getI18nConfig().getPluralForm(n, keys, {
+    locales,
+    type: ordinal ? 'ordinal' : 'cardinal',
+  });
 }
 
 /** The key of the branch named by the value, then `other`. */
