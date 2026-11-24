@@ -1,6 +1,7 @@
 import {
   initializeReactI18nCache,
   internalInitializeGTSRA,
+  setTranslationsSnapshotLoader,
   type I18nConfigParams,
   type ReactI18nCacheParams,
 } from '@generaltranslation/react-core/pure';
@@ -38,5 +39,7 @@ export function initializeGTClient(
   // snapshots, so no client i18nCache is needed
   if (process.env.NODE_ENV !== 'production') {
     initializeReactI18nCache(config);
+  } else {
+    setTranslationsSnapshotLoader(config);
   }
 }

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   getI18nConfig,
   getReactI18nCache,
+  getTranslationsSnapshot,
   ReactI18nCache,
 } from '@generaltranslation/react-core/pure';
 import { isDevHotReloadEnabled } from 'gt-i18n/internal';
@@ -141,6 +142,21 @@ describe('initializeGTClient', () => {
 
     const cache = getReactI18nCache();
     expect(cache).toBeInstanceOf(ReactI18nCache);
+  });
+
+  it('loads translations snapshots without a cache in production', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const loadTranslations = vi.fn(async () => ({ hash: 'Bonjour' }));
+    initializeGTClient({
+      i18nConfigParams: { defaultLocale: 'en', locales: ['en', 'fr'] },
+      i18nCacheParams: { loadTranslations },
+    });
+
+    await expect(getTranslationsSnapshot('fr')).resolves.toEqual({
+      fr: { hash: 'Bonjour' },
+    });
+    expect(() => getReactI18nCache()).toThrow();
+    vi.unstubAllEnvs();
   });
 });
 

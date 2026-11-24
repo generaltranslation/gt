@@ -6,6 +6,7 @@ import {
   getReadonlyConditionStore,
   initializeI18nConfig,
   setGlobalTranslationsSnapshot,
+  setTranslationsSnapshotLoader,
   loadTranslationsSnapshot,
 } from '@generaltranslation/react-core/pure';
 import type { I18nConfigParams } from '@generaltranslation/react-core/pure';
@@ -41,6 +42,7 @@ export async function initializeGTSPA(config: InitializeGTSPAParams) {
 
   // Production lookups read the snapshot, so it skips the cache and store
   if (process.env.NODE_ENV === 'production') {
+    setTranslationsSnapshotLoader(runtimeConfig);
     setGlobalTranslationsSnapshot(
       await loadTranslationsSnapshot(runtimeConfig, locale)
     );

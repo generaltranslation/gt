@@ -2,6 +2,7 @@ import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
 import { createGlobalSingleton } from 'gt-i18n/internal';
 import type { Hash, Locale } from 'gt-i18n/internal';
 import type { Content } from '@generaltranslation/format';
+import type { TranslationsSnapshotLoaderParams } from './loadTranslationsSnapshot';
 
 export type TranslationsSnapshot = Record<Locale, Record<Hash, Content>>;
 
@@ -48,4 +49,33 @@ export function updateGlobalTranslationsSnapshot(
       translations[locale]
     );
   }
+}
+
+// ===== Snapshot loader ===== //
+
+const snapshotLoaderSingleton =
+  /* @__PURE__ */ createGlobalSingleton<TranslationsSnapshotLoaderParams>({
+    namespace: 'reactCore',
+    key: 'translationsSnapshotLoader',
+    notInitialized: () =>
+      createDiagnosticMessage({
+        source: '@generaltranslation/react-core',
+        severity: 'Error',
+        whatHappened:
+          'Cannot load a translations snapshot before GT is initialized',
+        fix: 'Initialize GT before loading translations.',
+      }),
+  });
+
+/** The loader settings of a production client, which creates no i18nCache. */
+export function getTranslationsSnapshotLoader(): TranslationsSnapshotLoaderParams {
+  return snapshotLoaderSingleton.get();
+}
+export function setTranslationsSnapshotLoader(
+  params: TranslationsSnapshotLoaderParams
+): void {
+  snapshotLoaderSingleton.set(params);
+}
+export function isTranslationsSnapshotLoaderInitialized(): boolean {
+  return snapshotLoaderSingleton.isInitialized();
 }

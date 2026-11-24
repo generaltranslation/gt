@@ -37,11 +37,12 @@ export async function loadTranslationsSnapshot(
   });
 
   try {
-    // Lookups validate each entry, as they do the cache's.
+    // A copy, as the cache keeps, so later updates leave the loader's object
+    // alone. Lookups validate each entry, as they do the cache's.
     return {
-      [locale]: (await loadTranslations(
-        locale
-      )) as TranslationsSnapshot[Locale],
+      [locale]: structuredClone(
+        await loadTranslations(locale)
+      ) as TranslationsSnapshot[Locale],
     };
   } catch (error) {
     console.error(createLoadError(locale, error));

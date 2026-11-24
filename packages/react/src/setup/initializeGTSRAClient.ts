@@ -1,6 +1,7 @@
 import {
   initializeReactI18nCache,
   internalInitializeGTSRA,
+  setTranslationsSnapshotLoader,
   type ReactInitializeGTParams,
 } from '@generaltranslation/react-core/pure';
 import { addRuntimeCredentials } from './runtimeCredentials';
@@ -22,5 +23,7 @@ export function initializeGTSRAClient(config: ReactInitializeGTParams): void {
   // snapshots, so no client i18nCache is needed
   if (process.env.NODE_ENV !== 'production') {
     initializeReactI18nCache(runtimeConfig);
+  } else {
+    setTranslationsSnapshotLoader(runtimeConfig);
   }
 }

@@ -3,7 +3,10 @@ import { ReactI18nCache } from '../../../i18n-cache/ReactI18nCache';
 import { setReactI18nCache } from '../../../i18n-cache/singleton-operations';
 import { initializeI18nConfig } from '../../../setup/i18nConfig';
 import { getReactI18nCache } from '../../../i18n-cache/singleton-operations';
-import { setGlobalTranslationsSnapshot } from '../../../translations-snapshot/singleton-operations';
+import {
+  setGlobalTranslationsSnapshot,
+  setTranslationsSnapshotLoader,
+} from '../../../translations-snapshot/singleton-operations';
 import {
   getTranslationsSnapshot,
   preloadTranslations,
@@ -82,16 +85,24 @@ describe('getTranslationsSnapshot', () => {
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 
-  it('production: reads the global snapshot when no cache exists', async () => {
+  it('production: copies a loaded locale and loads others without a cache', async () => {
     vi.stubEnv('NODE_ENV', 'production');
-    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'es'] }, 'SPA');
+    initializeI18nConfig(
+      { defaultLocale: 'en', locales: ['en', 'es', 'fr'] },
+      'SPA'
+    );
+    const loadTranslations = vi.fn(async () => ({ hash1: 'bonjour' }));
+    setTranslationsSnapshotLoader({ loadTranslations });
     const global = { es: { hash1: 'hola' } };
     setGlobalTranslationsSnapshot(global);
 
     const snapshot = await getTranslationsSnapshot('es');
     expect(snapshot).toEqual({ es: { hash1: 'hola' } });
     expect(snapshot.es).not.toBe(global.es);
-    await expect(getTranslationsSnapshot('fr')).resolves.toEqual({});
+    await expect(getTranslationsSnapshot('fr')).resolves.toEqual({
+      fr: { hash1: 'bonjour' },
+    });
+    expect(loadTranslations.mock.calls).toEqual([['fr']]);
   });
 
   it('development: omits the locale and warns when the loader fails', async () => {

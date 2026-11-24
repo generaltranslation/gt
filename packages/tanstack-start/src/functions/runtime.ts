@@ -2,11 +2,12 @@ import {
   createGT,
   createMessages,
   type CreateGTParams,
+  type loadCreateGTParams,
   type ReadonlyConditionStoreInterface,
 } from 'gt-i18n/internal';
 import type { GT, M } from 'gt-i18n';
 
-type Conditions = { locale: string; enableI18n: boolean };
+type Conditions = Parameters<typeof loadCreateGTParams>[0];
 
 /**
  * The translation functions, bound to where an entry reads the locale (the

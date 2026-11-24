@@ -7,6 +7,11 @@ import type {
 import { useTranslationsSnapshot } from '../i18n-store/useI18nStore';
 import { lookupTranslation } from '../i18n-store/utils/translations';
 import {
+  getGlobalTranslationsSnapshot,
+  isGlobalTranslationsSnapshotInitialized,
+  type TranslationsSnapshot,
+} from '../translations-snapshot/singleton-operations';
+import {
   type TrackedTranslationResolver,
   useTrackedTranslationResolver,
 } from './external-store/useTrackedTranslationResolver';
@@ -14,16 +19,31 @@ import {
 export function useLookup<T extends Content>(
   lookup: TranslateLookup<T>
 ): TranslateSnapshot<T> {
-  return lookupTranslation(useTranslationsSnapshot(), lookup);
+  return lookupSnapshots(useTranslationsSnapshot(), lookup);
 }
 
 export function useGetLookupCb(): TrackedTranslationResolver {
   const translationsSnapshot = useTranslationsSnapshot();
   return useCallback(
     <T extends Content>(lookup: TranslateLookup<T>) =>
-      lookupTranslation(translationsSnapshot, lookup),
+      lookupSnapshots(translationsSnapshot, lookup),
     [translationsSnapshot]
   );
+}
+
+/** Reads the provider's translations, then the browser's global snapshot. */
+function lookupSnapshots<T extends Content>(
+  translationsSnapshot: TranslationsSnapshot,
+  lookup: TranslateLookup<T>
+): TranslateSnapshot<T> {
+  const translation = lookupTranslation(translationsSnapshot, lookup);
+  if (translation != null || !isGlobalTranslationsSnapshotInitialized()) {
+    return translation;
+  }
+  const globalSnapshot = getGlobalTranslationsSnapshot();
+  return globalSnapshot === translationsSnapshot
+    ? translation
+    : lookupTranslation(globalSnapshot, lookup);
 }
 
 /**

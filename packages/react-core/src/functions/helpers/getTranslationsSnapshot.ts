@@ -7,8 +7,11 @@ import {
 import { getReactI18nCache } from '../../i18n-cache/singleton-operations';
 import {
   getGlobalTranslationsSnapshot,
+  getTranslationsSnapshotLoader,
   isGlobalTranslationsSnapshotInitialized,
+  isTranslationsSnapshotLoaderInitialized,
 } from '../../translations-snapshot/singleton-operations';
+import { loadTranslationsSnapshot } from '../../translations-snapshot/loadTranslationsSnapshot';
 
 /**
  * Serializable cached translations for provider hydration; a failed load
@@ -18,13 +21,17 @@ import {
 export async function getTranslationsSnapshot(
   locale: Locale
 ): Promise<Record<Locale, Record<Hash, Content>>> {
-  // Production SPAs load the global snapshot and create no cache.
+  // Production browser clients create no cache.
   if (
     process.env.NODE_ENV === 'production' &&
-    isGlobalTranslationsSnapshotInitialized()
+    isTranslationsSnapshotLoaderInitialized()
   ) {
-    const translations = getGlobalTranslationsSnapshot()[locale];
-    return translations ? { [locale]: structuredClone(translations) } : {};
+    const loaded = isGlobalTranslationsSnapshotInitialized()
+      ? getGlobalTranslationsSnapshot()[locale]
+      : undefined;
+    return loaded
+      ? { [locale]: structuredClone(loaded) }
+      : loadTranslationsSnapshot(getTranslationsSnapshotLoader(), locale);
   }
   const i18nCache = getReactI18nCache();
   try {

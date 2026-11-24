@@ -1,8 +1,13 @@
 // @vitest-environment jsdom
 import { act, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { hashSource } from 'generaltranslation/id';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
+import {
+  initializeI18nConfig,
+  setGlobalTranslationsSnapshot,
+} from '@generaltranslation/react-core/pure';
 import {
   useEnableI18n,
   useLocale,
@@ -10,6 +15,7 @@ import {
   useSetEnableI18n,
   useSetLocale,
   useSetRegion,
+  useGT,
 } from '@generaltranslation/react-core/hooks';
 import { getCookieValue } from '../../condition-store/cookies';
 import { BrowserGTProvider } from '../BrowserGTProvider';
@@ -174,5 +180,45 @@ describe('BrowserGTProvider server-provided conditions', () => {
     await render({ locale: 'de', region: 'MX', enableI18n: false });
     expect(conditions()).toBe('de:MX:false');
     expect(reload).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('BrowserGTProvider in a production SPA', () => {
+  beforeEach(() => {
+    resetI18n();
+    vi.stubEnv('NODE_ENV', 'production');
+    initializeI18nConfig({ defaultLocale: 'en', locales: ['en', 'fr'] }, 'SPA');
+  });
+
+  afterEach(() => {
+    setGlobalTranslationsSnapshot({});
+    vi.unstubAllEnvs();
+    resetI18n();
+  });
+
+  it('reads a translation missing from its translations in the global snapshot', () => {
+    const hash = (source: string) =>
+      hashSource({ source, dataFormat: 'MESSAGE_TREE' });
+    setGlobalTranslationsSnapshot({
+      fr: { [hash('Save')]: 'Enregistrer', [hash('Open')]: 'Ouvrir' },
+    });
+
+    function Buttons() {
+      const t = useGT();
+      return <p>{`${t`Save`} ${t`Open`}`}</p>;
+    }
+
+    const html = renderToStaticMarkup(
+      <BrowserGTProvider
+        locale='fr'
+        enableI18n
+        _reload={() => undefined}
+        translations={{ fr: { [hash('Save')]: 'Sauver' } }}
+      >
+        <Buttons />
+      </BrowserGTProvider>
+    );
+
+    expect(html).toBe('<p>Sauver Ouvrir</p>');
   });
 });

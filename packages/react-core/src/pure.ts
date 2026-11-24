@@ -40,6 +40,7 @@ export {
   getGlobalTranslationsSnapshot,
   isGlobalTranslationsSnapshotInitialized,
   setGlobalTranslationsSnapshot,
+  setTranslationsSnapshotLoader,
   updateGlobalTranslationsSnapshot,
   type TranslationsSnapshot,
 } from './translations-snapshot/singleton-operations';

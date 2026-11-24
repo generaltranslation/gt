@@ -1,4 +1,7 @@
-import type { LocaleConfig } from '@generaltranslation/format';
+import type {
+  LocaleConfig,
+  ResolvedLocaleConfig,
+} from '@generaltranslation/format';
 import {
   defaultDefaultLocale,
   defaultLocaleMatcher,
@@ -44,6 +47,28 @@ function checkTimeZone(timeZone: string): string {
   return timeZone;
 }
 
+/** Fills in what a LocaleConfig leaves out. */
+export function resolveLocaleConfig(
+  localeConfig: LocaleConfig
+): ResolvedLocaleConfig {
+  return {
+    ...localeConfig,
+    defaultLocale: localeConfig.defaultLocale ?? defaultDefaultLocale,
+    localeMatcher: localeConfig.localeMatcher ?? defaultLocaleMatcher,
+    timeZone:
+      localeConfig.timeZone === undefined
+        ? hostTimeZone()
+        : checkTimeZone(localeConfig.timeZone),
+  };
+}
+
+/** Compares a date with now when no `baseDate` is given. */
+export function withBaseDate(
+  options?: WithOptional<RelativeTimeFromDateOptions, 'baseDate'>
+): RelativeTimeFromDateOptions {
+  return { ...options, baseDate: options?.baseDate ?? new Date() };
+}
+
 /**
  * The locale and formatting helpers of `@generaltranslation/format`, with
  * what a caller leaves out resolved: that package takes every argument.
@@ -51,18 +76,7 @@ function checkTimeZone(timeZone: string): string {
  */
 export class LocaleIntl extends ResolvedLocaleIntl {
   constructor(localeConfig: LocaleConfig = {}, options?: LocaleOption) {
-    super(
-      {
-        ...localeConfig,
-        defaultLocale: localeConfig.defaultLocale ?? defaultDefaultLocale,
-        localeMatcher: localeConfig.localeMatcher ?? defaultLocaleMatcher,
-        timeZone:
-          localeConfig.timeZone === undefined
-            ? hostTimeZone()
-            : checkTimeZone(localeConfig.timeZone),
-      },
-      options
-    );
+    super(resolveLocaleConfig(localeConfig), options);
   }
 
   /** Compares the date with now when no `baseDate` is given. */
@@ -70,9 +84,6 @@ export class LocaleIntl extends ResolvedLocaleIntl {
     date: Date,
     options?: WithOptional<RelativeTimeFromDateOptions, 'baseDate'>
   ): string {
-    return super.formatRelativeTimeFromDate(date, {
-      ...options,
-      baseDate: options?.baseDate ?? new Date(),
-    });
+    return super.formatRelativeTimeFromDate(date, withBaseDate(options));
   }
 }

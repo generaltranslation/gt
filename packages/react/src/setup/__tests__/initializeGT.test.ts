@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getReactI18nCache, t } from '@generaltranslation/react-core/pure';
+import {
+  getReactI18nCache,
+  getTranslationsSnapshot,
+  t,
+  updateGlobalTranslationsSnapshot,
+} from '@generaltranslation/react-core/pure';
 import { hashSource } from 'generaltranslation/id';
 import { createLookupOptions, hashContent } from 'gt-i18n/internal';
 import { initializeGTSPA } from '../initializeGTSPA';
@@ -98,5 +103,55 @@ describe('translation cache expiry', () => {
     initializeGTSRA({ ...config, cacheExpiryTime: 1000 });
 
     expect(getReactI18nCache().getCacheExpiryTime()).toBe(1000);
+  });
+});
+
+describe('getTranslationsSnapshot() in a production browser', () => {
+  const browserConfig = { defaultLocale: 'en', locales: ['en', 'fr', 'es'] };
+  const translations = { fr: { [treeHash('Hello')]: 'Bonjour' } };
+  const loadTranslations = vi.fn(async (locale: string) =>
+    locale === 'fr' ? translations.fr : { [treeHash('Hello')]: 'Hola' }
+  );
+
+  beforeEach(() => {
+    Reflect.deleteProperty(globalThis, '__generaltranslation');
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubGlobal('navigator', { languages: ['fr'] });
+    loadTranslations.mockClear();
+  });
+
+  afterEach(() => {
+    Reflect.deleteProperty(globalThis, '__generaltranslation');
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it('loads a locale for the browser initializeGT(), which creates no cache', async () => {
+    initializeGTSRAClient({ ...browserConfig, loadTranslations });
+
+    await expect(getTranslationsSnapshot('fr')).resolves.toEqual(translations);
+    expect(() => getReactI18nCache()).toThrow();
+  });
+
+  it('copies the loaded locale and loads others after initializeGTSPA()', async () => {
+    await initializeGTSPA({ ...browserConfig, loadTranslations });
+
+    const snapshot = await getTranslationsSnapshot('fr');
+    snapshot.fr[treeHash('Hello')] = 'Salut';
+    updateGlobalTranslationsSnapshot({
+      fr: { [treeHash('Goodbye')]: 'Au revoir' },
+    });
+
+    await expect(getTranslationsSnapshot('fr')).resolves.toEqual({
+      fr: {
+        [treeHash('Hello')]: 'Bonjour',
+        [treeHash('Goodbye')]: 'Au revoir',
+      },
+    });
+    expect(translations.fr).toEqual({ [treeHash('Hello')]: 'Bonjour' });
+    await expect(getTranslationsSnapshot('es')).resolves.toEqual({
+      es: { [treeHash('Hello')]: 'Hola' },
+    });
+    expect(loadTranslations.mock.calls).toEqual([['fr'], ['es']]);
   });
 });
