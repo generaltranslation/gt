@@ -5,7 +5,6 @@
 
 import type { LocaleConfig } from '@generaltranslation/format';
 import { snapshotLocaleConfig } from '@generaltranslation/format/internal';
-import type { UserTokenProvider } from '@generaltranslation/api';
 import type { TranslateManyResult } from './types-dir/api/translateMany';
 import type { TranslationResult } from './types-dir/api/translate';
 import type {
@@ -14,7 +13,7 @@ import type {
 } from './types-dir/api/entry';
 import { DEFAULT_TIMEOUT_MS } from '@generaltranslation/api';
 import { resolveServiceLocale } from './client/apiClient';
-import type { GTProjectConfig } from './client/clientConfig';
+import type { GTCredentials, GTProjectConfig } from './client/clientConfig';
 import {
   noScopeIdProvidedError,
   noTargetLocaleProvidedError,
@@ -45,25 +44,24 @@ export type { GTCredentials, GTProjectConfig } from './client/clientConfig';
  */
 export class GTRuntime {
   readonly projectId: string;
-  readonly apiKey?: string;
-  readonly userTokenProvider?: UserTokenProvider;
   readonly baseUrl?: string;
   /** A frozen copy of the locale configuration this instance was created with. */
   readonly localeConfig: Readonly<LocaleConfig>;
+  private readonly credentials: GTCredentials;
 
   /**
    * @param params - Credentials, the project, and optionally the locale configuration and base URL.
-   * @throws {Error} If `projectId` is not a non-empty string.
+   * @throws {Error} If `projectId` is empty or blank.
    */
   constructor(params: GTProjectConfig) {
-    const { projectId } = params;
-    if (typeof projectId !== 'string' || !projectId.trim())
-      throw new Error(noScopeIdProvidedError('project'));
+    const { projectId, apiKey, userTokenProvider } = params;
+    if (!projectId.trim()) throw new Error(noScopeIdProvidedError('project'));
     this.projectId = projectId;
-    this.apiKey = params.apiKey;
-    this.userTokenProvider = params.userTokenProvider;
     this.baseUrl = params.baseUrl;
     this.localeConfig = snapshotLocaleConfig(params.localeConfig ?? {});
+    this.credentials = Object.freeze(
+      apiKey === undefined ? { userTokenProvider } : { apiKey }
+    );
     // Subclasses freeze themselves after assigning their own fields.
     if (new.target === GTRuntime) Object.freeze(this);
   }
@@ -94,7 +92,7 @@ export class GTRuntime {
     timeout?: number
   ): Promise<TranslationResult> {
     const [result] = await translateEntries(
-      this.resolveTranslateCall('translate', options, timeout),
+      this.resolveTranslateCall(options, timeout),
       [source]
     );
     return result;
@@ -134,26 +132,24 @@ export class GTRuntime {
     timeout?: number
   ): Promise<TranslateManyResult | Record<string, TranslationResult>> {
     return translateEntries(
-      this.resolveTranslateCall('translateMany', options, timeout),
+      this.resolveTranslateCall(options, timeout),
       sources
     );
   }
 
   /** Resolves a call's options against this runtime's configuration. */
   private resolveTranslateCall(
-    functionName: 'translate' | 'translateMany',
     options: string | TranslateOptions,
     timeout: number | undefined
   ): RuntimeTranslateCall {
     const callOptions =
       typeof options === 'string' ? { targetLocale: options } : options;
-    if (!callOptions?.targetLocale) {
-      throw new Error(noTargetLocaleProvidedError(functionName));
+    if (!callOptions.targetLocale) {
+      throw new Error(noTargetLocaleProvidedError);
     }
     const { customMapping, defaultLocale } = this.localeConfig;
     return {
-      apiKey: this.apiKey,
-      userTokenProvider: this.userTokenProvider,
+      ...this.credentials,
       projectId: this.projectId,
       baseUrl: this.baseUrl || defaultRuntimeApiUrl,
       targetLocale: resolveServiceLocale(

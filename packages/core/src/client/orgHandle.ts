@@ -21,6 +21,7 @@ import {
   type BatchWriteResponse,
 } from './apiClient';
 import type { CustomMapping } from '@generaltranslation/format';
+import { noScopeIdProvidedError } from '../logging/errors';
 import {
   base64Content,
   contentBytes,
@@ -37,12 +38,18 @@ const UPSERT_ASSETS_BATCH_SIZE = 10;
  * Operations on one organization. Created by `account.org()`.
  */
 export class OrgHandle {
-  /** @internal */
+  /**
+   * @internal
+   * @throws {Error} If `orgId` is empty or blank.
+   */
   constructor(
     private readonly clientSettings: ApiClientSettings,
     private readonly customMapping: CustomMapping | undefined,
     private readonly orgId: string
-  ) {}
+  ) {
+    if (!orgId.trim()) throw new Error(noScopeIdProvidedError('org'));
+    Object.freeze(this);
+  }
 
   /**
    * Uploads fonts used when translating formats that need the source font.

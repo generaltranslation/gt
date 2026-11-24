@@ -211,6 +211,10 @@ intl.locales.push('fr');
 // @ts-expect-error the GTIntl mapping is readonly.
 intl.customMapping!.brand = 'Brand';
 // @ts-expect-error instance fields are readonly.
-runtime.apiKey = 'other';
+runtime.projectId = 'other';
+// @ts-expect-error an instance does not expose its credentials.
+void runtime.apiKey;
+// @ts-expect-error an instance does not expose its credentials.
+void gt.userTokenProvider;
 // A snapshot can configure another instance.
 new GTIntl(runtime.localeConfig);

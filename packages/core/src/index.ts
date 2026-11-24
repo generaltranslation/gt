@@ -23,10 +23,7 @@ import {
   type GTAccountConfig,
   type GTProjectConfig,
 } from './client/clientConfig';
-import {
-  noScopeIdProvidedError,
-  projectKeyWithoutProjectIdError,
-} from './logging/errors';
+import { projectKeyWithoutProjectIdError } from './logging/errors';
 
 export type { LocaleConfig } from '@generaltranslation/format';
 export type { GTAccountConfig } from './client/clientConfig';
@@ -128,7 +125,7 @@ class GTAccount {
    * Scopes project operations and runtime translation to a project. Sends no request.
    *
    * @param projectId - The project to work on.
-   * @throws {Error} If `projectId` is not a non-empty string.
+   * @throws {Error} If `projectId` is empty or blank.
    */
   project(projectId: string): ProjectHandle {
     return new ProjectHandle({ ...this.params, projectId });
@@ -140,18 +137,14 @@ class GTAccount {
    * `account.org((await account.project(projectId).get()).orgId)`.
    *
    * @param orgId - The organization to work on.
-   * @throws {Error} If `orgId` is not a non-empty string.
+   * @throws {Error} If `orgId` is empty or blank.
    */
   org(orgId: string): OrgHandle {
-    if (typeof orgId !== 'string' || !orgId.trim())
-      throw new Error(noScopeIdProvidedError('org'));
-    const org = new OrgHandle(
+    return new OrgHandle(
       this.clientSettings,
       this.params.localeConfig?.customMapping,
       orgId
     );
-    Object.freeze(org);
-    return org;
   }
 
   /**
@@ -183,7 +176,7 @@ type GTConstructor = {
   /**
    * A project-scoped client: every project operation, plus runtime translation.
    *
-   * @throws {Error} If `projectId` is not a non-empty string.
+   * @throws {Error} If `projectId` is empty or blank.
    */
   new (params: GTProjectConfig): ProjectHandle;
   /**
