@@ -73,20 +73,41 @@ function segmentPattern(encodedId: string, entry: string): RegExp | undefined {
   return new RegExp(`\\bid:\\s*(["'])${id}\\1,\\s*file:\\s*(["'])${file}\\2`);
 }
 
+const MANIFEST_INIT =
+  'globalThis.__RSC_MANIFEST = globalThis.__RSC_MANIFEST || {};';
+const MANIFEST_ENTRY =
+  /^globalThis\.__RSC_MANIFEST\[("(?:[^"\\]|\\.)*")\] = (\{.*\});$/;
+
+/**
+ * The manifests of a client reference manifest file in the shape Turbopack
+ * writes it, read as data: none when the file has any other shape.
+ */
+function parseClientReferenceManifests(
+  code: string
+): Record<string, ClientReferenceManifest> {
+  const [init, ...entries] = code.trimEnd().split('\n');
+  if (init !== MANIFEST_INIT) return {};
+  const manifests: Record<string, ClientReferenceManifest> = {};
+  for (const entry of entries) {
+    const [, route, manifest] = MANIFEST_ENTRY.exec(entry) ?? [];
+    if (!route) return {};
+    try {
+      manifests[JSON.parse(route) as string] = JSON.parse(manifest);
+    } catch {
+      return {};
+    }
+  }
+  return manifests;
+}
+
 function readRouteManifests(distDir: string): RouteManifest[] {
   return findJsFiles(path.join(distDir, 'server', 'app'))
     .filter((file) => file.endsWith('_client-reference-manifest.js'))
-    .flatMap((file) => {
-      const manifests: Record<string, ClientReferenceManifest> = {};
-      new Function('globalThis', fs.readFileSync(file, 'utf8'))({
-        __RSC_MANIFEST: manifests,
-      });
-      return Object.entries(manifests).map(([route, manifest]) => ({
-        file,
-        route,
-        manifest,
-      }));
-    });
+    .flatMap((file) =>
+      Object.entries(
+        parseClientReferenceManifests(fs.readFileSync(file, 'utf8'))
+      ).map(([route, manifest]) => ({ file, route, manifest }))
+    );
 }
 
 /**

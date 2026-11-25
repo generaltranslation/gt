@@ -488,6 +488,46 @@ describe('fillSplitTranslations by page', () => {
     expect(read(PAGE_HASHES)).toBe(placed());
   });
 
+  const ORDERS_MANIFEST = 'server/app/orders/page_client-reference-manifest.js';
+
+  it.each([
+    [
+      'without its first line',
+      (code: string) => code.split('\n').slice(1).join('\n'),
+    ],
+    [
+      'with a statement after the manifest',
+      (code: string) => `${code}\nthrow new Error('executed');`,
+    ],
+    [
+      'with an object that is not JSON',
+      (code: string) => code.replace('{"clientModules"', '{clientModules'),
+    ],
+  ])(
+    'reads nothing from a client reference manifest %s, without running it',
+    (_name, edit) => {
+      write(ORDERS_MANIFEST, edit(read(ORDERS_MANIFEST)));
+      fillSplitTranslations(distDir, true);
+      expect(read(PAGE_HASHES)).toBe(WITHOUT_ORDERS);
+    }
+  );
+
+  it('reads every route of a client reference manifest that holds two', () => {
+    const cartManifest =
+      'server/app/(shop)/cart/page_client-reference-manifest.js';
+    write(
+      ORDERS_MANIFEST,
+      `${read(ORDERS_MANIFEST)}\n${read(cartManifest).split('\n')[1]}\n`
+    );
+    fs.rmSync(path.join(distDir, cartManifest));
+    write(
+      ORDERS_SERVER,
+      segment('app/orders/page') + segment('app/%28shop%29/cart/page')
+    );
+    fillSplitTranslations(distDir, true);
+    expect(read(PAGE_HASHES)).toBe(expected);
+  });
+
   it.each(pageIdEncodings)(
     'encodes the page id %s as the SWC plugin does',
     (id, encoded) => {
