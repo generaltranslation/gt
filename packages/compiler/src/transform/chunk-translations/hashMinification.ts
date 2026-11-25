@@ -159,7 +159,7 @@ export const MINIFY_HASHES_WITH_TAGGED_IDS_ERROR = createDiagnosticMessage({
   whatHappened:
     'experimentalSplitTranslations.minifyHashes cannot be used with _tagIds',
   why: 'a <T> then writes what its call site passes into data-_gt-hash, where tools read the hash of the message',
-  fix: 'Remove _tagIds from gt.config.json, or turn experimentalSplitTranslations.minifyHashes off',
+  fix: 'Remove _tagIds from gt.config.json and from the plugin options, or turn experimentalSplitTranslations.minifyHashes off',
 });
 
 export const createRuntimeHashesWarning = (files: string[]) =>

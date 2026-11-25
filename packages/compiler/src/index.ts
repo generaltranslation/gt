@@ -138,10 +138,20 @@ import {
  * - namespaces and and modules
  */
 
+const inlineGTConfigKeys = [
+  'defaultLocale',
+  'locales',
+  'projectId',
+  '_versionId',
+  '_tagIds',
+  'files',
+] as const satisfies readonly (keyof GTConfig)[];
+
 /**
  * GT Universal Plugin Options
  */
-export interface GTUnpluginOptions extends PluginConfig, GTConfig {}
+export interface GTUnpluginOptions
+  extends PluginConfig, Pick<GTConfig, (typeof inlineGTConfigKeys)[number]> {}
 
 export const MISSING_GT_CONFIG_WARNING =
   '[@generaltranslation/compiler] No gtConfig found. Auto JSX injection and parsingFlags features require a gt.config.json. See https://generaltranslation.com/en/docs/react/concepts/compiler.';
@@ -188,32 +198,13 @@ function loadGTConfigFromCwd(): GTConfigLoadResult {
   return { diagnostic: result.diagnostic, status: 'invalid' };
 }
 
-function hasInlineGTConfig(options: GTUnpluginOptions): boolean {
-  return (
-    options.defaultLocale !== undefined ||
-    options.locales !== undefined ||
-    options.projectId !== undefined ||
-    options._versionId !== undefined ||
-    options.files !== undefined
-  );
-}
-
 function getInlineGTConfig(options: GTUnpluginOptions): GTConfig | undefined {
-  if (!hasInlineGTConfig(options)) return undefined;
-
-  return {
-    ...(options.defaultLocale !== undefined
-      ? { defaultLocale: options.defaultLocale }
-      : {}),
-    ...(options.locales !== undefined ? { locales: options.locales } : {}),
-    ...(options.projectId !== undefined
-      ? { projectId: options.projectId }
-      : {}),
-    ...(options._versionId !== undefined
-      ? { _versionId: options._versionId }
-      : {}),
-    ...(options.files !== undefined ? { files: options.files } : {}),
+  const inlineGTConfig: GTConfig = {};
+  const copy = <K extends (typeof inlineGTConfigKeys)[number]>(key: K) => {
+    if (options[key] !== undefined) inlineGTConfig[key] = options[key];
   };
+  inlineGTConfigKeys.forEach(copy);
+  return Object.keys(inlineGTConfig).length ? inlineGTConfig : undefined;
 }
 
 function mergeGTConfigs(base: GTConfig, override: GTConfig): GTConfig {
