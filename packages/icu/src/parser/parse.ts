@@ -40,7 +40,7 @@ class IcuParser {
   private positions?: PositionIndex;
 
   constructor(
-    private readonly message: string,
+    private readonly icu: string,
     private readonly options: ParserOptions
   ) {}
 
@@ -163,7 +163,7 @@ class IcuParser {
 
     if (this.consume('/>')) {
       return this.withLocation(
-        { type: TYPE.literal, value: this.message.slice(start, this.index) },
+        { type: TYPE.literal, value: this.icu.slice(start, this.index) },
         start,
         this.index
       );
@@ -201,7 +201,7 @@ class IcuParser {
     while (!this.atEnd() && isTagNameCharacter(this.current())) {
       this.index += this.current().length;
     }
-    return this.message.slice(start, this.index);
+    return this.icu.slice(start, this.index);
   }
 
   private parseArgument(expectingCloseTag: boolean): MessageFormatElement {
@@ -367,7 +367,7 @@ class IcuParser {
       }
     }
 
-    return this.message.slice(start, this.index);
+    return this.icu.slice(start, this.index);
   }
 
   private parseChoiceArgument(
@@ -502,7 +502,7 @@ class IcuParser {
     const digitStart = this.index;
     while (/\d/u.test(this.current())) this.index += 1;
     if (digitStart === this.index) this.fail(expectedErrorCode, start);
-    const token = this.message.slice(start, this.index);
+    const token = this.icu.slice(start, this.index);
     if (Math.abs(Number(token)) > 0x1fffffffffffff) {
       this.fail(invalidErrorCode, start);
     }
@@ -514,7 +514,7 @@ class IcuParser {
     while (!this.atEnd() && !IDENTIFIER_BOUNDARY.test(this.current())) {
       this.index += this.current().length;
     }
-    return this.message.slice(start, this.index);
+    return this.icu.slice(start, this.index);
   }
 
   private skipSpace(): void {
@@ -524,7 +524,7 @@ class IcuParser {
   }
 
   private consume(value: string): boolean {
-    if (this.message.slice(this.index, this.index + value.length) !== value) {
+    if (this.icu.slice(this.index, this.index + value.length) !== value) {
       return false;
     }
     this.index += value.length;
@@ -532,16 +532,16 @@ class IcuParser {
   }
 
   private current(): string {
-    return characterAt(this.message, this.index);
+    return characterAt(this.icu, this.index);
   }
 
   private peek(): string {
     const current = this.current();
-    return characterAt(this.message, this.index + current.length);
+    return characterAt(this.icu, this.index + current.length);
   }
 
   private atEnd(): boolean {
-    return this.index >= this.message.length;
+    return this.index >= this.icu.length;
   }
 
   private withLocation<T extends MessageFormatElement>(
@@ -559,7 +559,7 @@ class IcuParser {
   }
 
   private position(offset: number): LocationDetails {
-    const positions = (this.positions ??= buildPositionIndex(this.message));
+    const positions = (this.positions ??= buildPositionIndex(this.icu));
     return {
       offset,
       line: positions[0][offset],
@@ -591,20 +591,20 @@ class IcuParser {
       start: this.position(start),
       end: this.position(end),
     };
-    error.originalMessage = this.message;
+    error.originalMessage = this.icu;
     throw error;
   }
 }
 
-function buildPositionIndex(message: string): PositionIndex {
-  const lines = new Uint32Array(message.length + 1);
-  const columns = new Uint32Array(message.length + 1);
+function buildPositionIndex(icu: string): PositionIndex {
+  const lines = new Uint32Array(icu.length + 1);
+  const columns = new Uint32Array(icu.length + 1);
   let offset = 0;
   let line = 1;
   let column = 1;
 
-  while (offset < message.length) {
-    const character = characterAt(message, offset);
+  while (offset < icu.length) {
+    const character = characterAt(icu, offset);
     lines[offset] = line;
     columns[offset] = column;
     if (character.length === 2) {
