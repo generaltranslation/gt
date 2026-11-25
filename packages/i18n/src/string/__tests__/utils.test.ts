@@ -79,6 +79,20 @@ describe('interpolateMessage', () => {
     warn.mockRestore();
   });
 
+  it('keeps the translation when the source cannot be formatted either', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const render = ($maxChars?: number) =>
+      interpolateMessage({
+        source: 'Hello {name}',
+        target: 'Bonjour {name}',
+        options: { $format: 'ICU', $locale: 'fr', $maxChars },
+        sourceLocale: 'en',
+      });
+    expect(render()).toBe('Bonjour {name}');
+    expect(render(9)).toBe('Bonjour\u202f…');
+    warn.mockRestore();
+  });
+
   it('warns once when the source is the malformed text', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const entry = 'Value {n, number';

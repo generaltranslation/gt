@@ -2,6 +2,7 @@ import type {
   TranslationOptions,
   NormalizedLookupOptions,
 } from '../translation-functions/types/options';
+import { formatCutoff } from './formatCutoff';
 import { interpolateIcuMessage } from './interpolateIcuMessage';
 import { interpolateStringMessage } from './interpolateStringMessage';
 import type { StringFormat } from '@generaltranslation/format';
@@ -33,7 +34,11 @@ export function interpolateMessage({
     const fallback =
       target === source && options.$locale === sourceOptions.$locale
         ? undefined
-        : () => routeInterpolation(source, sourceOptions);
+        : () =>
+            // The same variable is often missing from both: keep the reader's language.
+            routeInterpolation(source, sourceOptions, () =>
+              formatCutoff(target, options.$maxChars, options.$locale)
+            );
     return routeInterpolation(target, options, fallback);
   }
 
