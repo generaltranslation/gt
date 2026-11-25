@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { Content } from '@generaltranslation/format';
 import { getReactI18nCache } from '@generaltranslation/react-core/pure';
 import { getI18nConfig, type Hash } from 'gt-i18n/internal';
-import { getLocale } from '../request/getLocale';
+import { getLocale, hasRequestLocale } from '../request/getLocale';
 import { Client_TranslationsSeed } from '../utils/client-boundary';
 import { getPageHashes } from './splitTranslations';
 
@@ -19,16 +19,22 @@ export type GtSegmentProps = {
 
 /**
  * Sends the client components of a page the translations the build placed
- * with that page instead of with the root GTProvider.
+ * with that page instead of with the root GTProvider: in the request's
+ * locale, or in every locale when the page renders without a request.
  */
 export async function GtSegment({ id, children }: GtSegmentProps) {
   const hashes = getPageHashes(id);
   if (!hashes) return children;
+  // A statically rendered page meets a root GTProvider of any locale
+  const locales = (await hasRequestLocale())
+    ? [await getLocale()]
+    : getI18nConfig().getLocales();
+  const translations = await Promise.all(
+    locales.map((locale) => findPageTranslations(locale, hashes))
+  );
   // Seeded in every locale, so a locale change keeps the page mounted.
   return (
-    <Client_TranslationsSeed
-      translations={await findPageTranslations(await getLocale(), hashes)}
-    >
+    <Client_TranslationsSeed translations={Object.assign({}, ...translations)}>
       {children}
     </Client_TranslationsSeed>
   );

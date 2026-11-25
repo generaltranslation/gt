@@ -59,7 +59,10 @@ export type BaseWithGTConfigProps = MiddlewareConfig &
      * wrapper is found in the server files of every route that renders the
      * page; every other translation stays with the root layout, as do those
      * of a page under a `layout` that exports `dynamic` other than the literal
-     * `'auto'` or `'force-dynamic'`, which can make the page static.
+     * `'auto'` or `'force-dynamic'`, which can make the page static. A
+     * wrapped page rendered without a request sends its placed translations
+     * in every locale; an app whose own `getLocale` reads the request must
+     * not render such a page statically.
      * A component loaded with `next/dynamic` from a server component of one
      * page can be placed with that page, while chunks loaded lazily on the
      * client stay with the root layout. A webpack build, `next dev`, and a

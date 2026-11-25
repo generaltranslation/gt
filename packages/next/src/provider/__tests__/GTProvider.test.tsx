@@ -13,6 +13,7 @@ const {
   mockGetI18nConfig,
   mockGetEnableI18n,
   mockGetLocale,
+  mockHasRequestLocale,
   mockGetRegion,
   mockLoadTranslations,
   mockClientGTProvider,
@@ -27,6 +28,7 @@ const {
   mockGetI18nConfig: vi.fn(),
   mockGetEnableI18n: vi.fn(),
   mockGetLocale: vi.fn(),
+  mockHasRequestLocale: vi.fn(),
   mockGetRegion: vi.fn(),
   mockLoadTranslations: vi.fn(),
   mockClientGTProvider: vi.fn(),
@@ -40,6 +42,7 @@ vi.mock('gt-i18n/internal', () => ({
 
 vi.mock('../../request/getLocale', () => ({
   getLocale: mockGetLocale,
+  hasRequestLocale: mockHasRequestLocale,
 }));
 
 vi.mock('../../request/getEnableI18n', () => ({
@@ -222,6 +225,7 @@ describe('split by page', () => {
       '__gt_next_page_hashes_q7Zk2W__[app/%28shop%29/cart/page:6666666666666666;app/orders/page:4444444444444444,5555555555555555,7777777777777777]';
     vi.resetModules();
     mockGetLocale.mockResolvedValue('fr');
+    mockHasRequestLocale.mockResolvedValue(true);
     mockGetRegion.mockResolvedValue(undefined);
     mockGetEnableI18n.mockResolvedValue(true);
     mockLoadTranslations.mockImplementation(async () => ({ ...catalog }));
@@ -258,6 +262,48 @@ describe('split by page', () => {
     });
     expect(mockGetLookupTranslation).toHaveBeenCalledWith('fr');
     expect(mockLoadTranslations).not.toHaveBeenCalled();
+  });
+
+  it('seeds a page rendered without a request in every locale that needs translation', async () => {
+    mockHasRequestLocale.mockResolvedValue(false);
+    mockGetI18nConfig.mockReturnValue({
+      getLocales: () => ['en', 'fr', 'zh', 'de'],
+      requiresTranslation: ({ locale }: { locale: string }) => locale !== 'en',
+    });
+    const zhCatalog: Record<string, string> = {
+      '4444444444444444': '订单',
+      '5555555555555555': '订单也是',
+    };
+    mockGetLookupTranslation.mockImplementation(async (locale: string) =>
+      locale === 'fr'
+        ? lookup
+        : locale === 'zh'
+          ? (_content: unknown, options: { $_hash: string }) =>
+              zhCatalog[options.$_hash]
+          : // The catalog of de failed to load
+            (content: unknown) => content
+    );
+    const { GtSegment } = await import('../GtSegment');
+
+    const element = await GtSegment({
+      id: 'gt-next-page:app/orders/page',
+      children: 'page',
+    });
+
+    expect(element.props.translations).toEqual({
+      fr: {
+        '4444444444444444': 'Commandes',
+        '5555555555555555': 'Commandes aussi',
+      },
+      zh: zhCatalog,
+      de: {},
+    });
+    expect(mockGetLookupTranslation.mock.calls).toEqual([
+      ['fr'],
+      ['zh'],
+      ['de'],
+    ]);
+    expect(mockGetLocale).not.toHaveBeenCalled();
   });
 
   it('renders a page the build placed nothing with alone', async () => {

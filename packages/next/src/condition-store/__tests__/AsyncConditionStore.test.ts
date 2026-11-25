@@ -25,3 +25,35 @@ describe('App Router enable-i18n state', () => {
     }
   );
 });
+
+describe('AsyncConditionStore.hasRequestLocale', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it.each([
+    ['a request', new Headers({ 'accept-language': 'fr' }), true],
+    ['no request, as in a static render', new Headers(), false],
+  ])(
+    'with the default getLocale, reads the headers of %s',
+    async (_name, requestHeaders, expected) => {
+      mockHeaders.mockResolvedValue(requestHeaders);
+      await expect(
+        new AsyncConditionStore({}).hasRequestLocale()
+      ).resolves.toBe(expected);
+    }
+  );
+
+  it('has one when a locale was registered, without reading the headers', async () => {
+    const store = new AsyncConditionStore({});
+    store.enterWith('fr');
+    await expect(store.hasRequestLocale()).resolves.toBe(true);
+    expect(mockHeaders).not.toHaveBeenCalled();
+  });
+
+  it('has one with a custom getLocale, without reading the headers', async () => {
+    const store = new AsyncConditionStore({ getLocale: async () => 'fr' });
+    await expect(store.hasRequestLocale()).resolves.toBe(true);
+    expect(mockHeaders).not.toHaveBeenCalled();
+  });
+});

@@ -50,6 +50,7 @@ export const {
  */
 export class AsyncConditionStore implements AsyncReadonlyConditionStoreInterface {
   private getLocaleFn: () => Promise<string>;
+  private readsRequestHeaders: boolean;
   private getRegionFn: () => Promise<string | undefined>;
   private enableI18n: boolean;
   private localeStore: AsyncLocalStorage<string>;
@@ -64,6 +65,7 @@ export class AsyncConditionStore implements AsyncReadonlyConditionStoreInterface
     ignorePreferredLanguages = false,
   }: AsyncConditionStoreParams) {
     this.localeStore = new AsyncLocalStorage<string>();
+    this.readsRequestHeaders = !getLocale;
     this.getLocaleFn =
       getLocale ??
       createDefaultGetLocale({
@@ -82,6 +84,20 @@ export class AsyncConditionStore implements AsyncReadonlyConditionStoreInterface
     if (registeredLocale) return registeredLocale;
 
     return resolveLocaleOrDefault(await this.getLocaleFn());
+  }
+
+  /**
+   * Whether this render has a request to take the locale from, which is
+   * always so with a custom getLocale, as the app decides.
+   */
+  async hasRequestLocale(): Promise<boolean> {
+    if (this.localeStore.getStore() || !this.readsRequestHeaders) return true;
+    let hasHeaders = false;
+    // A static render gets no headers, and a request always has some
+    (await headers()).forEach(() => {
+      hasHeaders = true;
+    });
+    return hasHeaders;
   }
 
   async getRegion(): Promise<string | undefined> {
