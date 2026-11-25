@@ -3077,6 +3077,21 @@ export const ready = initializeGTSPA({});`,
       ).toMatchObject({ minifiedIds: { hashes: new Map() } });
     });
 
+    it('fails a build given _tagIds as a top-level option', () => {
+      const { plugins } = createPlugins({
+        ...GT_CONFIG,
+        _tagIds: true,
+        experimentalSplitTranslations: { minifyHashes: true },
+      });
+      const { buildStart } = plugins[0];
+      if (typeof buildStart !== 'function') {
+        throw new Error('Expected a buildStart hook');
+      }
+      expect(buildStart).toThrow(
+        'experimentalSplitTranslations.minifyHashes cannot be used with _tagIds'
+      );
+    });
+
     it.each([
       [
         'by chunk, named by token',
