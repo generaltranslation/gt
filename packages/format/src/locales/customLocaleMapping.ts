@@ -6,7 +6,7 @@ export type CustomMapping = {
 
 function isCustomLocaleObject(
   value: CustomMapping[string] | null | undefined
-): value is Partial<LocaleProperties> {
+): value is Exclude<CustomMapping[string], string> {
   return typeof value === 'object' && value !== null;
 }
 
