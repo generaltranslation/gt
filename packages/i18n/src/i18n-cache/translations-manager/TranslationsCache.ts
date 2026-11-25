@@ -165,12 +165,17 @@ export class TranslationsCache<TranslationValue extends Content> {
     key: TranslationKey<T>
   ): Promise<T> {
     const cacheKey = this.getCacheKey(key);
-    const value = await dedupePending(this.pendingTranslations, cacheKey, () =>
-      this.translate(key)
+    const value = await dedupePending(
+      this.pendingTranslations,
+      cacheKey,
+      async () => {
+        const translation = await this.translate(key);
+        if (translation != null) {
+          this.onMiss?.(cacheKey, translation);
+        }
+        return translation;
+      }
     );
-    if (value != null) {
-      this.onMiss?.(cacheKey, value);
-    }
     return value as T;
   }
 

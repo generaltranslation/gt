@@ -812,6 +812,8 @@ describe('I18nCache', () => {
       const cache = createCache({
         loadTranslations: vi.fn().mockResolvedValue({}),
       });
+      const onTranslationsCacheMiss = vi.fn();
+      cache.setTranslationsCacheMissListener(onTranslationsCacheMiss);
 
       await expect(
         settle(
@@ -826,6 +828,7 @@ describe('I18nCache', () => {
       expect(Object.keys(translateMany.mock.calls[0][0])).toEqual([
         unknownHash,
       ]);
+      expect(onTranslationsCacheMiss).toHaveBeenCalledOnce();
     });
 
     it.each([
