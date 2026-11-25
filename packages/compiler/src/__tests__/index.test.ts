@@ -659,11 +659,12 @@ describe('bundler adapters', () => {
 });
 
 describe('package entries', () => {
-  it('loads the internal entry without Babel, and the main entry from ESM', () => {
+  it('loads the internal entry without Babel, the main entry from ESM, and package.json', () => {
     const script = `
       import { createRequire } from 'node:module';
       import * as internal from '@generaltranslation/compiler/internal';
-      const loaded = () => Object.keys(createRequire(import.meta.url).cache);
+      const require = createRequire(import.meta.url);
+      const loaded = () => Object.keys(require.cache);
       const internalLoadsBabel = loaded().some((file) => file.includes('@babel'));
       const { vite, webpack, rollup, rspack, esbuild } = await import('@generaltranslation/compiler');
       console.log(JSON.stringify({
@@ -671,6 +672,7 @@ describe('package entries', () => {
         internalLoadsBabel,
         mainLoadsBabel: loaded().some((file) => file.includes('@babel')),
         adapters: [vite, webpack, rollup, rspack, esbuild].map((adapter) => typeof adapter),
+        packageJson: require(require.resolve('@generaltranslation/compiler/package.json')).name,
       }));
     `;
     const output = execFileSync(
@@ -688,6 +690,7 @@ describe('package entries', () => {
       internalLoadsBabel: false,
       mainLoadsBabel: true,
       adapters: Array(5).fill('function'),
+      packageJson: '@generaltranslation/compiler',
     });
   });
 });
