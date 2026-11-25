@@ -52,16 +52,16 @@ export type BaseWithGTConfigProps = MiddlewareConfig &
      * export is a function written in that file (a function declaration, an
      * arrow or function expression, or the name of one declared there with
      * `function`, `const` or `let`) and it exports no `dynamic` other than the
-     * literal `'auto'` or `'force-dynamic'`; `'use client'` and `'use cache'`
-     * pages and `page` files in private folders (`_lib`) are not wrapped. The
-     * build then places the translation of a compiled client `<T>` with a page
-     * only when that page's entry alone loads every client chunk holding it
-     * and the page's wrapper is found in the server files of every route that
-     * renders the page; every other translation stays with the root layout.
+     * literal `'auto'` or `'force-dynamic'`; `'use client'` pages and `page`
+     * files in private folders (`_lib`) are not wrapped. The build then places
+     * the translation of a compiled client `<T>` with a page only when that
+     * page's entry alone loads every client chunk holding it and the page's
+     * wrapper is found in the server files of every route that renders the
+     * page; every other translation stays with the root layout.
      * A component loaded with `next/dynamic` from a server component of one
      * page can be placed with that page, while chunks loaded lazily on the
-     * client stay with the root layout. A webpack build and `next dev` place
-     * none.
+     * client stay with the root layout. A webpack build, `next dev`, and a
+     * build with `cacheComponents` or `experimental.useCache` place none.
      *
      * Known limitations: an unhashed client `<T>` can also lose its
      * translation when a compiled `<T>` with the same content is placed with

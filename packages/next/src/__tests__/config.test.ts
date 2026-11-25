@@ -1292,6 +1292,29 @@ describe('withGTConfig', () => {
         }
       );
 
+      it.each([
+        ['cacheComponents', { cacheComponents: true }],
+        ['experimental.useCache', { experimental: { useCache: true } }],
+      ])(
+        'wraps no page and places nothing with %s, without a warning',
+        async (_name, nextConfig) => {
+          mockExistingFiles('app', LOAD_TRANSLATIONS);
+
+          const result = withGTConfig(nextConfig, {
+            ...on,
+            loadTranslationsPath: LOAD_TRANSLATIONS,
+          });
+          await hookOf(result)!(metadata);
+
+          expect(pageSegmentsOf(result)).toBeUndefined();
+          expect(mockFillSplitTranslations).toHaveBeenCalledWith(
+            '/app/.next',
+            false
+          );
+          expect(warnings()).toEqual([]);
+        }
+      );
+
       it('wraps no page when the option is off', () => {
         mockExistingFiles('app');
 

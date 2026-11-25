@@ -115,8 +115,13 @@ function splitsTranslations(
 
 // Placement reads the entries of Turbopack's client reference manifests, which
 // webpack's do not list, after a production compile.
-function getPageSegmentsAppDir(): string | undefined {
+function getPageSegmentsAppDir(nextConfig: NextConfig): string | undefined {
   if (!process.env.TURBOPACK || process.env.NODE_ENV === 'development') {
+    return undefined;
+  }
+  // GtSegment reads the locale above any <Suspense> of the page, which fails
+  // the Cache Components prerender of a page that reads it only inside one.
+  if (nextConfig.cacheComponents || nextConfig.experimental?.useCache) {
     return undefined;
   }
   // Next.js reads src/app only when there is no app directory.
@@ -703,7 +708,7 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     mergedExperimentalCompilerOptions
   );
   const pageSegmentsAppDir = splitTranslations
-    ? getPageSegmentsAppDir()
+    ? getPageSegmentsAppDir(internalNextConfig)
     : undefined;
 
   const swcPluginOptions: Record<string, unknown> = {

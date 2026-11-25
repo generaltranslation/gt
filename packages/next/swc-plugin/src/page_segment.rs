@@ -22,8 +22,6 @@ const SEGMENT_LOCAL: &str = "GtNext_Segment";
 const PAGE_LOCAL: &str = "GtNext_Page";
 const WRAPPER_NAME: &str = "GtNext_SegmentPage";
 const PROPS_NAME: &str = "props";
-const SERVER_REFERENCE_SOURCE: &str = "private-next-rsc-server-reference";
-const SERVER_REFERENCE_IMPORTED: &str = "registerServerReference";
 
 /// The paths `filename` can have from the project directory `cwd`, with `/`
 /// separators: Turbopack names files from its root, any ancestor of `cwd`.
@@ -127,69 +125,6 @@ fn has_directive(module: &Module) -> bool {
       _ => None,
     })
     .any(|directive| directive != "use strict")
-}
-
-/// Whether the default export is a server reference, as Next.js compiles a
-/// `'use cache'` page before this plugin runs: Next.js passes it props that a
-/// wrapper would not pass on.
-fn exports_server_reference_as_default(module: &Module) -> bool {
-  let register = module.body.iter().find_map(|item| match item {
-    ModuleItem::ModuleDecl(ModuleDecl::Import(import))
-      if import.src.value == SERVER_REFERENCE_SOURCE =>
-    {
-      import
-        .specifiers
-        .iter()
-        .find_map(|specifier| match specifier {
-          ImportSpecifier::Named(named) => {
-            let imported = match &named.imported {
-              Some(ModuleExportName::Ident(imported)) => &imported.sym,
-              Some(ModuleExportName::Str(_)) => return None,
-              None => &named.local.sym,
-            };
-            (imported == SERVER_REFERENCE_IMPORTED).then(|| named.local.sym.clone())
-          }
-          _ => None,
-        })
-    }
-    _ => None,
-  });
-  let default_export = module.body.iter().find_map(|item| match item {
-    ModuleItem::ModuleDecl(ModuleDecl::ExportDefaultExpr(ExportDefaultExpr { expr, .. })) => {
-      match &**expr {
-        Expr::Ident(name) => Some(name.sym.clone()),
-        _ => None,
-      }
-    }
-    ModuleItem::ModuleDecl(ModuleDecl::ExportDefaultDecl(ExportDefaultDecl {
-      decl: DefaultDecl::Fn(FnExpr {
-        ident: Some(name), ..
-      }),
-      ..
-    })) => Some(name.sym.clone()),
-    _ => None,
-  });
-  let (Some(register), Some(default_export)) = (register, default_export) else {
-    return false;
-  };
-  module.body.iter().any(|item| {
-    let ModuleItem::Stmt(Stmt::Expr(ExprStmt { expr, .. })) = item else {
-      return false;
-    };
-    let Expr::Call(CallExpr {
-      callee: Callee::Expr(callee),
-      args,
-      ..
-    }) = &**expr
-    else {
-      return false;
-    };
-    matches!(&**callee, Expr::Ident(callee) if callee.sym == register)
-      && matches!(
-        args.first(),
-        Some(ExprOrSpread { spread: None, expr }) if matches!(&**expr, Expr::Ident(name) if name.sym == default_export)
-      )
-  })
 }
 
 const DYNAMIC: &str = "dynamic";
@@ -428,7 +363,7 @@ fn wrap_page(module: &mut Module, filename: &str, cwd: &str, config: &PageSegmen
   let Some(id) = page_id(filename, cwd, config) else {
     return;
   };
-  if has_directive(module) || exports_server_reference_as_default(module) || may_be_static(module) {
+  if has_directive(module) || may_be_static(module) {
     return;
   }
   let Some((index, replacement)) =
@@ -771,17 +706,9 @@ mod tests {
   #[test]
   fn leaves_files_it_does_not_wrap_unchanged() {
     let page = "export default function Page() { return <p />; }";
-    // A 'use cache' page as Next.js compiles it before this plugin runs.
-    let cached_page = r#"import { registerServerReference } from "private-next-rsc-server-reference";
-import { cache as $$cache__ } from "private-next-rsc-cache-wrapper";
-const $$RSC_SERVER_CACHE_0_INNER = async function Page({ params }) { return <p>{(await params).id}</p>; };
-export var $$RSC_SERVER_CACHE_0 = function Page() { return $$cache__("default", "c0", 0, $$RSC_SERVER_CACHE_0_INNER, Array.prototype.slice.call(arguments, 0, 1)); };
-registerServerReference($$RSC_SERVER_CACHE_0, "c0", null);
-export default $$RSC_SERVER_CACHE_0;"#;
     for (code_before, filename, config) in [
       (format!("'use client';\n{page}"), PAGE, app()),
       (format!("\"use server\";\n{page}"), PAGE, app()),
-      (cached_page.to_string(), PAGE, app()),
       (
         page.to_string(),
         "/repo/apps/web/app/orders/layout.tsx",
