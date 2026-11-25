@@ -268,7 +268,7 @@ export async function stop(): Promise<RecorderBundle | null> {
   // Use the config SNAPSHOT taken when this session started (see activeConfig) — not
   // live coreConfig, which a later configure() (another mount) may have changed during
   // recording or the harvest. This session's bundle must use its own harvest options
-  // (loadTranslations / hashMessage) and reach its own onComplete.
+  // (loadTranslations / hashSourceText) and reach its own onComplete.
   const cfg = activeConfig ?? coreConfig;
   const onComplete = cfg.onComplete;
   const harvestOptions: HarvestOptions = { ...cfg.harvest };

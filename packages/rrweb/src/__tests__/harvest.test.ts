@@ -351,7 +351,7 @@ describe('harvestHash', () => {
     expect(overlay.fr).toEqual({ 3: 'Utilisation' });
   });
 
-  it('combines <T> content with bare t() strings when hashMessage is given', () => {
+  it('combines <T> content with bare t() strings when hashSourceText is given', () => {
     const mixed = [
       fullSnapshot(
         el(1, 'MAIN', [
@@ -364,7 +364,7 @@ describe('harvestHash', () => {
     return harvestHash(mixed, ['en', 'es'], {
       source: 'en',
       loadTranslations: async () => dict,
-      hashMessage: (m: string) => `h:${m}`,
+      hashSourceText: (m: string) => `h:${m}`,
     }).then((overlay) => {
       expect(overlay.es).toEqual({ 3: 'Uso', 5: 'Proyectos' });
     });
