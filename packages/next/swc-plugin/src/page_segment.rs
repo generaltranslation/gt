@@ -60,6 +60,10 @@ fn page_id_from_project(relative: &str, config: &PageSegmentsConfig) -> Option<S
     .strip_prefix(config.app_dir.trim_matches('/'))?
     .strip_prefix('/')?;
   let (directory, basename) = in_app.rsplit_once('/').unwrap_or(("", in_app));
+  // Next.js does not route private folders, so their files are ordinary modules.
+  if directory.split('/').any(|segment| segment.starts_with('_')) {
+    return None;
+  }
   let extension = basename.strip_prefix("page.")?;
   if !config
     .page_extensions
@@ -920,6 +924,32 @@ export default $$RSC_SERVER_CACHE_0;"#;
         None,
       ),
       ("/repo/apps/web/app/orders/page.mdx", CWD, app(), None),
+      ("/repo/apps/web/app/_lib/page.ts", CWD, app(), None),
+      ("/repo/apps/web/app/_lib/reports/page.ts", CWD, app(), None),
+      (
+        "/repo/apps/web/app/orders/_components/page.tsx",
+        CWD,
+        app(),
+        None,
+      ),
+      (
+        "/repo/apps/web/src/app/_lib/page.tsx",
+        CWD,
+        src_app.clone(),
+        None,
+      ),
+      (
+        "/repo/apps/web/app/%5Flib/page.tsx",
+        CWD,
+        app(),
+        Some("app/%5Flib/page"),
+      ),
+      (
+        "/repo/_apps/web/app/orders/page.tsx",
+        "/repo/_apps/web",
+        app(),
+        Some("app/orders/page"),
+      ),
       (
         "/repo/apps/web/app/orders/page.tsx",
         "/repo/apps/we",

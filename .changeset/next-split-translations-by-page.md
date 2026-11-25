@@ -8,7 +8,8 @@ The SWC plugin wraps a server `page` file in a server component that sends the p
 
 - its default export is a function written in that file: `export default function`, `export default` an arrow or function expression, or `export default Page` where `Page` is declared in that file with `function`, or with `const` or `let` set to an arrow or function expression;
 - it exports no `dynamic`, or exports `const dynamic` set to the string literal `'auto'` or `'force-dynamic'`;
-- it is not a `'use client'` or `'use cache'` page.
+- it is not a `'use client'` or `'use cache'` page;
+- no folder above it in the app directory is a private folder (its name starts with `_`), which Next.js does not route.
 
 Any other page is not wrapped: an imported or computed default export (`export default withAuth(Page)`), `export { Page as default }`, a class, or a page that exports `dynamic` in any other way (`'force-static'`, `'error'`, a template literal, a variable, a re-export).
 
