@@ -93,6 +93,10 @@ import {
 } from './transform/injection/precomputedMessageSupport';
 import { runtimeTranslatePass } from './passes/runtimeTranslatePass';
 import {
+  createUnreadJsxImportSourceWarning,
+  findUnreadJsxImportSources,
+} from './utils/constants/react/jsxImportSources';
+import {
   importsMessageSource,
   taggedTemplateHashInjectionPass,
 } from './passes/taggedTemplateHashInjectionPass';
@@ -294,6 +298,7 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
     const findPrecomputedMessageSupport = createPrecomputedMessageSupport();
     // Each said once per build
     const warnedOfRuntime = { older: false, missing: false };
+    const warnedOfJsxImportSources = new Set<string>();
     /**
      * Whether a file's messages are precomputed when the option is left out:
      * only when the GT runtime the file resolves is known to read them.
@@ -392,6 +397,17 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
             canImportChunkTranslations(ast.program, code)
           ) {
             state.chunkTranslations = { imports: new Set() };
+          }
+
+          if (shouldWarn(options.logLevel) && !isDependency(id)) {
+            for (const source of findUnreadJsxImportSources(
+              ast.program,
+              state.settings
+            )) {
+              if (warnedOfJsxImportSources.has(source)) continue;
+              warnedOfJsxImportSources.add(source);
+              console.warn(createUnreadJsxImportSourceWarning(source, id));
+            }
           }
 
           // Pass 1: Jsx insertion
