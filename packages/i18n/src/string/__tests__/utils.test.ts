@@ -79,6 +79,21 @@ describe('interpolateMessage', () => {
     warn.mockRestore();
   });
 
+  it('warns once when the source is the malformed text', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const entry = 'Value {n, number';
+    expect(
+      interpolateMessage({
+        source: entry,
+        target: entry,
+        options: { $format: 'ICU', $locale: 'en', n: 1 },
+        sourceLocale: 'en',
+      })
+    ).toBe(entry);
+    expect(warn).toHaveBeenCalledOnce();
+    warn.mockRestore();
+  });
+
   it('fills the variables of an ICU message and leaves a string as it is', () => {
     const render = ($format: 'ICU' | 'STRING') =>
       interpolateMessage({

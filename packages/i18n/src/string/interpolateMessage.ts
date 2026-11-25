@@ -28,9 +28,13 @@ export function interpolateMessage({
 }): string {
   // Format translation
   if (target != null) {
-    return routeInterpolation(target, options, () =>
-      routeInterpolation(source, getSourceOptions(options, sourceLocale))
-    );
+    const sourceOptions = getSourceOptions(options, sourceLocale);
+    // The default locale's entry is its own source: a retry would fail alike.
+    const fallback =
+      target === source && options.$locale === sourceOptions.$locale
+        ? undefined
+        : () => routeInterpolation(source, sourceOptions);
+    return routeInterpolation(target, options, fallback);
   }
 
   // Format source
