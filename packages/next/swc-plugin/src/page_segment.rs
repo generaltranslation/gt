@@ -310,9 +310,8 @@ fn segment_page(id: &str, file: &str) -> ModuleItem {
   }))
 }
 
-/// None for a default export that is not a function this module writes: an
-/// imported or computed page can be a `'use cache'` function, which Next.js
-/// handles differently only as the default export itself.
+/// None for a default export that is not a function this module writes: the
+/// plugin cannot tell what an imported or computed value is.
 fn unexport_page(item: &ModuleItem, module: &Module) -> Option<Vec<ModuleItem>> {
   match item {
     ModuleItem::ModuleDecl(ModuleDecl::ExportDefaultDecl(ExportDefaultDecl {
