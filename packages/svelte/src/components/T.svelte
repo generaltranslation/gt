@@ -16,7 +16,11 @@
   import GtNodes from './GtNodes.svelte';
   import { lookupJsxTranslation } from '../runtime/lookup';
   import type { GTRuntimeMetadata } from '@generaltranslation/svelte-extractor';
-  import { validateTarget, type RenderContext } from '../runtime/nodes';
+  import {
+    validateTarget,
+    type GeneratedSnippets,
+    type RenderContext,
+  } from '../runtime/nodes';
   import { setSourceContent } from '../runtime/source';
   import { getGTState } from '../runtime/state.svelte';
   import { warnInvalidTranslation, warnMissingPreprocessor } from '../runtime/warnings';
@@ -35,8 +39,7 @@
     _hash?: string;
     /** @internal Branch metadata. */
     _gtm?: GTRuntimeMetadata;
-    [snippet: string]: unknown;
-  };
+  } & GeneratedSnippets;
 
   let {
     children,
