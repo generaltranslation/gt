@@ -65,7 +65,10 @@ export function getRegionProperties(
   } catch {
     // Keep fallbacks initialized above.
   }
-  const override = customMapping?.[region];
+  const override =
+    customMapping && Object.hasOwn(customMapping, region)
+      ? customMapping[region]
+      : undefined;
   return {
     code: region,
     name: override?.name ?? name,

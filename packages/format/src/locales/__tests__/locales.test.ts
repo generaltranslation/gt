@@ -727,4 +727,10 @@ describe('getRegionProperties', () => {
       expect(getRegionProperties(...args)).toStrictEqual(expected);
     }
   );
+
+  it('reads only the regions a custom mapping names', () => {
+    expect(getRegionProperties('constructor', 'en', {})).toStrictEqual(
+      getRegionProperties('constructor', 'en')
+    );
+  });
 });
