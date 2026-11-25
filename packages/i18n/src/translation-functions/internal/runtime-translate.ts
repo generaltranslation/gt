@@ -1,15 +1,15 @@
 import type { JsxChildren } from '@generaltranslation/format';
 import { getLocale } from '../../helpers/locale';
-import type { JsxTranslationOptions } from '../types/options';
+import type { JsxLookupOptions } from '../types/options';
 import { resolveJsxWithRuntimeFallback } from './helpers';
 
-type RuntimeJsxTranslationOptions = JsxTranslationOptions & {
+type RuntimeJsxLookupOptions = JsxLookupOptions & {
   $locale?: string;
 };
 
 export const GtInternalRuntimeTranslateJsx = (
   content: JsxChildren,
-  options: RuntimeJsxTranslationOptions = {}
+  options: RuntimeJsxLookupOptions = {}
 ) => {
   const locale = options.$locale ?? getLocale();
   return resolveJsxWithRuntimeFallback(locale, content, {

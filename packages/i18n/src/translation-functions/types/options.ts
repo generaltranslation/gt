@@ -27,7 +27,7 @@ export type TranslationOptions = TranslationVariables & TranslationMetadata;
 /**
  * Options for JSX translation
  */
-export type JsxTranslationOptions = Pick<
+export type JsxLookupOptions = Pick<
   TranslationMetadata,
   '$context' | '$id' | '$_hash'
 > & {
@@ -45,7 +45,7 @@ export type LookupOptions =
   | (TranslationOptions & {
       $format: StringFormat;
     })
-  | (JsxTranslationOptions & {
+  | (JsxLookupOptions & {
       $format: 'JSX';
       $locale?: string;
     })
@@ -57,7 +57,7 @@ export type LookupOptions =
     });
 
 export type LookupOptionsFor<T extends DataFormat> = T extends 'JSX'
-  ? JsxTranslationOptions & {
+  ? JsxLookupOptions & {
       /**
        * The locale to use for formatting looking up and formatting the message.
        */

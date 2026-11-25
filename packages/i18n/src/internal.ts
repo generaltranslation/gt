@@ -2,18 +2,13 @@ export {
   createGT,
   getGT,
   renderCachedMessage,
-  type CreateGTParams,
 } from './translation-functions/gt';
 export { createMessages, getMessages } from './translation-functions/messages';
 export {
   isPrecomputedMessage,
   type PrecomputedMessage,
 } from './translation-functions/renderMessage';
-export {
-  createTx,
-  type TX,
-  type TxConditions,
-} from './translation-functions/tx';
+export { createTx, type TX } from './translation-functions/tx';
 export {
   dyn,
   resolveDerivableText,
@@ -22,9 +17,7 @@ export {
 export { GtInternalRuntimeTranslateJsx } from './translation-functions/internal/runtime-translate';
 export { createLookupOptions } from './translation-functions/internal/helpers';
 export { I18nCache } from './i18n-cache/I18nCache';
-export type { TranslationsCacheMissEvent } from './i18n-cache/I18nCache';
 export { ReadonlyConditionStore } from './condition-store/ReadonlyConditionStore';
-export type { ReadonlyConditionStoreParams } from './condition-store/ReadonlyConditionStore';
 export { WritableConditionStore } from './condition-store/WritableConditionStore';
 export type { WritableConditionStoreParams } from './condition-store/WritableConditionStore';
 export type { LocaleCandidates } from './i18n-config/I18nConfig';
@@ -42,7 +35,6 @@ export { I18nConfig } from './i18n-config/I18nConfig';
 export type { I18nConfigParams } from './i18n-config/I18nConfig';
 export { createConditionStoreSingleton } from './condition-store/createConditionStoreSingleton';
 export { createGlobalSingleton } from './globals/createGlobalSingleton';
-export type { GlobalSingleton } from './globals/createGlobalSingleton';
 export { getRuntimeEnvironment } from './utils/getRuntimeEnvironment';
 export { hashContent } from './utils/hashContent';
 export { parseAcceptLanguage } from './utils/request';
@@ -57,7 +49,7 @@ export type {
 } from './i18n-cache/types';
 export type { TranslationsLoader } from './i18n-cache/translations-manager/translations-loaders/types';
 export type {
-  JsxTranslationOptions,
+  JsxLookupOptions,
   LookupOptions,
   NormalizedLookupOptions,
   TranslationMetadata,
