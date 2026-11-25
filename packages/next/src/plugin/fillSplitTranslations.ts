@@ -74,41 +74,66 @@ function segmentPattern(encodedId: string, entry: string): RegExp | undefined {
   return new RegExp(`\\bid:\\s*(["'])${id}\\1,\\s*file:\\s*(["'])${file}\\2`);
 }
 
-const MANIFEST_INIT =
-  'globalThis.__RSC_MANIFEST = globalThis.__RSC_MANIFEST || {};';
 const MANIFEST_ENTRY =
-  /^globalThis\.__RSC_MANIFEST\[("(?:[^"\\]|\\.)*")\] = (\{.*\});$/;
+  /globalThis\.__RSC_MANIFEST\[("(?:[^"\\]|\\.)*")\]\s*=\s*/g;
+
+/** The JSON object that starts at `start`, or undefined when it does not close. */
+function readJsonObject(code: string, start: number): string | undefined {
+  if (code[start] !== '{') return undefined;
+  let depth = 0;
+  let inString = false;
+  for (let index = start; index < code.length; index++) {
+    const char = code[index];
+    if (inString) {
+      if (char === '\\') index++;
+      else if (char === '"') inString = false;
+    } else if (char === '"') inString = true;
+    else if (char === '{' || char === '[') depth++;
+    else if ((char === '}' || char === ']') && --depth === 0) {
+      return code.slice(start, index + 1);
+    }
+  }
+  return undefined;
+}
 
 /**
- * The manifests of a client reference manifest file in the shape Turbopack
- * writes it, read as data: none when the file has any other shape.
+ * The manifests a client reference manifest file assigns, read as data
+ * whatever code Next.js writes around them: undefined when one cannot be
+ * read.
  */
 function parseClientReferenceManifests(
   code: string
-): Record<string, ClientReferenceManifest> {
-  const [init, ...entries] = code.trimEnd().split('\n');
-  if (init !== MANIFEST_INIT) return {};
+): Record<string, ClientReferenceManifest> | undefined {
   const manifests: Record<string, ClientReferenceManifest> = {};
-  for (const entry of entries) {
-    const [, route, manifest] = MANIFEST_ENTRY.exec(entry) ?? [];
-    if (!route) return {};
+  for (const match of Array.from(code.matchAll(MANIFEST_ENTRY))) {
+    const json = readJsonObject(code, match.index! + match[0].length);
+    if (json === undefined) return undefined;
     try {
-      manifests[JSON.parse(route) as string] = JSON.parse(manifest);
+      manifests[JSON.parse(match[1]) as string] = JSON.parse(json);
     } catch {
-      return {};
+      return undefined;
     }
   }
-  return manifests;
+  return Object.keys(manifests).length ? manifests : undefined;
 }
 
-function readRouteManifests(distDir: string): RouteManifest[] {
-  return findJsFiles(path.join(distDir, 'server', 'app'))
-    .filter((file) => file.endsWith('_client-reference-manifest.js'))
-    .flatMap((file) =>
-      Object.entries(
-        parseClientReferenceManifests(fs.readFileSync(file, 'utf8'))
-      ).map(([route, manifest]) => ({ file, route, manifest }))
+// A route whose manifest cannot be read could load any chunk, so then no
+// chunk is known to be one page's alone.
+function readRouteManifests(distDir: string): RouteManifest[] | undefined {
+  const routes: RouteManifest[] = [];
+  const files = findJsFiles(path.join(distDir, 'server', 'app')).filter(
+    (file) => file.endsWith('_client-reference-manifest.js')
+  );
+  for (const file of files) {
+    const manifests = parseClientReferenceManifests(
+      fs.readFileSync(file, 'utf8')
     );
+    if (!manifests) return undefined;
+    for (const [route, manifest] of Object.entries(manifests)) {
+      routes.push({ file, route, manifest });
+    }
+  }
+  return routes;
 }
 
 /**
@@ -224,6 +249,7 @@ function placePageHashes(
   filesByHash: Map<string, string[]>
 ): Map<string, string[]> {
   const routes = readRouteManifests(distDir);
+  if (!routes) return new Map();
   const pageIds = findPageIds(routes);
   const wrappedPages = findWrappedPages(distDir, routes, pageIds);
   // A static page is rendered once, so its seed cannot follow the request's locale.

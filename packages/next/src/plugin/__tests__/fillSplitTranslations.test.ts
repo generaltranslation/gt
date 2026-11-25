@@ -510,19 +510,38 @@ describe('fillSplitTranslations by page', () => {
       (code: string) => code.split('\n').slice(1).join('\n'),
     ],
     [
-      'with a statement after the manifest',
+      'without the final semicolon, as next@16.1 writes it',
+      (code: string) => code.replace(/;$/, ''),
+    ],
+    [
+      'with code after the manifest',
       (code: string) => `${code}\nthrow new Error('executed');`,
     ],
+  ])(
+    'reads a client reference manifest %s, without running it',
+    (_name, edit) => {
+      write(ORDERS_MANIFEST, edit(read(ORDERS_MANIFEST)));
+      fillSplitTranslations(distDir, pageSegments());
+      expect(read(PAGE_HASHES)).toBe(expected);
+    }
+  );
+
+  it.each([
     [
       'with an object that is not JSON',
       (code: string) => code.replace('{"clientModules"', '{clientModules'),
     ],
+    [
+      'with an object that does not close',
+      (code: string) => code.replace(/\};$/, ''),
+    ],
+    ['that assigns no manifest', () => ''],
   ])(
-    'reads nothing from a client reference manifest %s, without running it',
+    'places nothing with any page when one client reference manifest is %s',
     (_name, edit) => {
       write(ORDERS_MANIFEST, edit(read(ORDERS_MANIFEST)));
       fillSplitTranslations(distDir, pageSegments());
-      expect(read(PAGE_HASHES)).toBe(WITHOUT_ORDERS);
+      expect(read(PAGE_HASHES)).toBe(placed());
     }
   );
 
