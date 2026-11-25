@@ -56,15 +56,19 @@ export function isExactKey(key: string): boolean {
 /** The plural or select branch used when no other branch matches. */
 export const FALLBACK_BRANCH_KEY = 'other';
 
-/** CLDR's plural categories. A language uses some of them. */
-export const PLURAL_CATEGORIES: ReadonlySet<string> = new Set([
+/** CLDR's plural categories, in CLDR's order. A language uses some of them. */
+export const PLURAL_CATEGORY_NAMES = [
   'zero',
   'one',
   'two',
   'few',
   'many',
   'other',
-]);
+] as const;
+
+export const PLURAL_CATEGORIES: ReadonlySet<string> = new Set(
+  PLURAL_CATEGORY_NAMES
+);
 
 /** A plural key named for a locale's category, like `one`: not `other` or an exact `=N`. */
 export function isPluralCategoryKey(key: string): boolean {

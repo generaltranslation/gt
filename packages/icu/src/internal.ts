@@ -10,7 +10,11 @@ export type {
   TemplateFragment,
   TemplateHole,
 } from './tree/templateToMessage';
-export { FALLBACK_BRANCH_KEY, PLURAL_CATEGORIES } from './settings/syntax';
+export {
+  FALLBACK_BRANCH_KEY,
+  PLURAL_CATEGORIES,
+  PLURAL_CATEGORY_NAMES,
+} from './settings/syntax';
 export {
   DATE_FIELD_OPTIONS,
   DATE_TIME_CONTEXT_OPTIONS,

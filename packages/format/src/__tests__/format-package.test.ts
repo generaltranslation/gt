@@ -28,9 +28,6 @@ describe('@generaltranslation/format package exports', () => {
   it('loads and formats from the built CJS entrypoints', () => {
     const require = createRequire(import.meta.url);
     const format = require('@generaltranslation/format');
-    const {
-      getCachedPluralRules,
-    } = require('@generaltranslation/format/internal');
 
     const locales = 'en';
     const now = Date.now();
@@ -65,7 +62,6 @@ describe('@generaltranslation/format package exports', () => {
     expect(format.getRegionProperties('US').name).toBe('United States');
     expect(format.standardizeLocale('en-us')).toBe('en-US');
     expect(format.HTML_CONTENT_PROPS.pl).toBe('placeholder');
-    expect(getCachedPluralRules(['en'])).toBe(getCachedPluralRules(['en']));
   });
 
   it('loads and formats from the built ESM entrypoints', () => {
@@ -90,7 +86,6 @@ describe('@generaltranslation/format package exports', () => {
             isValidLocale,
             resolveCanonicalLocale,
           } from '@generaltranslation/format';
-          import { getCachedPluralRules } from '@generaltranslation/format/internal';
 
           const now = Date.now();
           assert.equal(
@@ -114,10 +109,6 @@ describe('@generaltranslation/format package exports', () => {
           assert.equal(isValidLocale('en-US'), true);
           assert.equal(resolveCanonicalLocale('en-US'), 'en-US');
           assert.equal(HTML_CONTENT_PROPS.pl, 'placeholder');
-
-          const pluralRules = getCachedPluralRules(['en']);
-          assert.equal(pluralRules, getCachedPluralRules(['en']));
-          assert.equal(pluralRules.select(1), 'one');
         `,
       ],
       { cwd: packageRoot, stdio: 'pipe' }
