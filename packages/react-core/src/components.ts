@@ -15,7 +15,13 @@ export {
   RelativeTime,
 } from './components/variables/RelativeTime';
 export { GtInternalVar, Var } from './components/variables/Var';
-export { InternalLocaleSelector } from './components/helpers/InternalLocaleSelector';
-export { InternalRegionSelector } from './components/helpers/InternalRegionSelector';
+export {
+  InternalLocaleSelector,
+  type InternalLocaleSelectorProps,
+} from './components/helpers/InternalLocaleSelector';
+export {
+  InternalRegionSelector,
+  type InternalRegionSelectorProps,
+} from './components/helpers/InternalRegionSelector';
 export { InternalGTProvider } from './context/InternalGTProvider';
 export type { InternalGTProviderProps } from './context/InternalGTProvider';

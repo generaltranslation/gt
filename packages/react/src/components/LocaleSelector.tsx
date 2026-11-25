@@ -1,6 +1,8 @@
 import type React from 'react';
-import { InternalLocaleSelector } from '@generaltranslation/react-core/components';
-import type { CustomMapping } from '@generaltranslation/format';
+import {
+  InternalLocaleSelector,
+  type InternalLocaleSelectorProps,
+} from '@generaltranslation/react-core/components';
 import { useLocaleSelector } from './useLocaleSelector';
 
 /**
@@ -19,17 +21,18 @@ export function LocaleSelector({
 
   return (
     <InternalLocaleSelector
+      {...props}
       locale={locale}
       locales={locales}
       setLocale={setLocale}
       getLocaleProperties={getLocaleProperties}
-      {...props}
     />
   );
 }
 
-export type LocaleSelectorProps = {
+export type LocaleSelectorProps = Omit<
+  InternalLocaleSelectorProps,
+  'locale' | 'locales' | 'setLocale' | 'getLocaleProperties'
+> & {
   locales?: string[];
-  customMapping?: CustomMapping;
-  [key: string]: any;
 };

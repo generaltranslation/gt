@@ -4,6 +4,17 @@ import type {
   LocaleProperties,
 } from '@generaltranslation/format';
 
+export type InternalLocaleSelectorProps = Omit<
+  React.ComponentPropsWithoutRef<'select'>,
+  'value' | 'defaultValue' | 'onChange' | 'children'
+> & {
+  locale: string;
+  locales: string[];
+  customMapping?: CustomMapping;
+  setLocale: (locale: string) => void;
+  getLocaleProperties: (locale: string) => LocaleProperties;
+};
+
 /**
  * Capitalizes the first letter of a string if applicable.
  * For strings that do not use capitalization, it returns the string unchanged.
@@ -33,14 +44,7 @@ export function InternalLocaleSelector({
   setLocale,
   getLocaleProperties,
   ...props
-}: {
-  locale: string;
-  locales: string[];
-  customMapping?: CustomMapping;
-  setLocale: (locale: string) => void;
-  getLocaleProperties: (locale: string) => LocaleProperties;
-  [key: string]: any;
-}): React.JSX.Element | null {
+}: InternalLocaleSelectorProps): React.JSX.Element | null {
   // Get display name
   const getDisplayName = (locale: string) => {
     if (customMapping && customMapping[locale]) {

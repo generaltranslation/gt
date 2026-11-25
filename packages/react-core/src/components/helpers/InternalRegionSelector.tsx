@@ -1,6 +1,17 @@
 import React, { ReactNode } from 'react';
 import type { RegionData } from '../../hooks/useInternalRegionSelector';
 
+export type InternalRegionSelectorProps = Omit<
+  React.ComponentPropsWithoutRef<'select'>,
+  'value' | 'defaultValue' | 'onChange' | 'children' | 'placeholder'
+> & {
+  region: string | undefined;
+  regions: string[];
+  regionData: Map<string, RegionData>;
+  setRegion: (region: string) => void;
+  placeholder?: ReactNode;
+};
+
 /**
  * A dropdown component that allows users to select a region.
  * @param {string | undefined} region - The currently selected region.
@@ -19,14 +30,7 @@ export function InternalRegionSelector({
   setRegion,
   placeholder,
   ...props
-}: {
-  region: string | undefined;
-  regions: string[];
-  regionData: Map<string, RegionData>;
-  setRegion: (region: string) => void;
-  placeholder?: ReactNode;
-  [key: string]: any;
-}): React.JSX.Element | null {
+}: InternalRegionSelectorProps): React.JSX.Element | null {
   // If no regions are returned, just render nothing or handle gracefully
   if (!regions || regions.length === 0 || !setRegion) {
     return null;
