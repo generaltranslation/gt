@@ -406,12 +406,7 @@ impl<'a> JsxTraversal<'a> {
     // Namespace import
     if tag_name.ends_with(".Select") {
       let namespace = tag_name.split('.').next().unwrap_or("");
-      if self
-        .visitor
-        .import_tracker
-        .namespace_imports
-        .contains(&Atom::from(namespace))
-      {
+      if self.visitor.is_namespace_import(&Atom::from(namespace)) {
         return true;
       }
     }
@@ -441,12 +436,7 @@ impl<'a> JsxTraversal<'a> {
     // Namespace import
     if let Some((_, component)) = tag_name.rsplit_once('.') {
       let namespace = tag_name.split('.').next().unwrap_or("");
-      if self
-        .visitor
-        .import_tracker
-        .namespace_imports
-        .contains(&Atom::from(namespace))
-      {
+      if self.visitor.is_namespace_import(&Atom::from(namespace)) {
         return plural_transformation(component);
       }
     }

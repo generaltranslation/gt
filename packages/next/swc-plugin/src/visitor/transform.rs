@@ -11,6 +11,9 @@ use crate::visitor::analysis::{
   is_branch_name, is_translation_component_name, is_variable_component_name,
 };
 
+/// The original name a namespace import is tracked under, as no export has it
+const NAMESPACE_IMPORT: &str = "*";
+
 /// Main transformation visitor for the SWC plugin
 pub struct TransformVisitor {
   /// Statistics for the plugin
@@ -144,9 +147,18 @@ impl TransformVisitor {
     false
   }
 
+  /// Whether `name` is a gt-next namespace import (`import * as GT`) that no local binding shadows
+  pub fn is_namespace_import(&self, name: &Atom) -> bool {
+    self
+      .import_tracker
+      .scope_tracker
+      .get_translation_variable(name)
+      .is_some_and(|variable| variable.original_name.as_str() == NAMESPACE_IMPORT)
+  }
+
   /// Check if we should track a namespace component (GT.T, GT.Var, etc.)
   pub fn should_track_namespace_component(&self, obj: &Atom, prop: &Atom) -> (bool, bool, bool) {
-    if self.import_tracker.namespace_imports.contains(obj) {
+    if self.is_namespace_import(obj) {
       let is_translation = is_translation_component_name(prop);
       let is_variable = is_variable_component_name(prop);
       let is_branch = is_branch_name(prop);
@@ -201,8 +213,8 @@ impl TransformVisitor {
               // Handle namespace imports: import * as GT from 'gt-next'
               self
                 .import_tracker
-                .namespace_imports
-                .insert(local.sym.clone());
+                .scope_tracker
+                .track_translation_variable(local.sym.clone(), NAMESPACE_IMPORT.into());
             }
             _ => {}
           }
@@ -429,8 +441,8 @@ mod tests {
     );
     visitor
       .import_tracker
-      .namespace_imports
-      .insert(Atom::new("GT"));
+      .scope_tracker
+      .track_translation_variable(Atom::new("GT"), NAMESPACE_IMPORT.into());
 
     visitor
   }
@@ -588,8 +600,6 @@ mod tests {
       // Check defaults are set
       assert_eq!(visitor.statistics.jsx_element_count, 0);
       assert_eq!(visitor.statistics.dynamic_content_violations, 0);
-      // Scope tracker should be empty initially
-      assert!(visitor.import_tracker.namespace_imports.is_empty());
     }
 
     #[test]
@@ -733,10 +743,7 @@ mod tests {
 
       visitor.process_gt_import_declaration(&import_decl);
 
-      assert!(visitor
-        .import_tracker
-        .namespace_imports
-        .contains(&Atom::new("GT")));
+      assert!(visitor.is_namespace_import(&Atom::new("GT")));
     }
 
     #[test]
@@ -768,7 +775,7 @@ mod tests {
         .scope_tracker
         .get_translation_variable(&Atom::new("React"))
         .is_none());
-      assert!(visitor.import_tracker.namespace_imports.is_empty());
+      assert!(!visitor.is_namespace_import(&Atom::new("React")));
     }
   }
 
@@ -1719,7 +1726,12 @@ mod tests {
     use swc_core::ecma::visit::{FoldWith, VisitMutWith};
 
     /// function Greeting() { return <tag>Hello</tag>; }
-    fn greeting(mut element: JSXElement) -> ModuleItem {
+    fn greeting(element: JSXElement) -> ModuleItem {
+      greeting_with(element, vec![], vec![])
+    }
+
+    /// function Greeting(<params>) { <prelude> return <tag>Hello</tag>; }
+    fn greeting_with(mut element: JSXElement, params: Vec<Param>, mut prelude: Vec<Stmt>) -> ModuleItem {
       element.children = vec![JSXElementChild::JSXText(JSXText {
         span: DUMMY_SP,
         value: Atom::new("Hello"),
@@ -1729,17 +1741,20 @@ mod tests {
         ident: Ident::new("Greeting".into(), DUMMY_SP, SyntaxContext::empty()),
         declare: false,
         function: Box::new(Function {
-          params: vec![],
+          params,
           decorators: vec![],
           span: DUMMY_SP,
           ctxt: SyntaxContext::empty(),
           body: Some(BlockStmt {
             span: DUMMY_SP,
             ctxt: SyntaxContext::empty(),
-            stmts: vec![Stmt::Return(ReturnStmt {
-              span: DUMMY_SP,
-              arg: Some(Box::new(Expr::JSXElement(Box::new(element)))),
-            })],
+            stmts: {
+              prelude.push(Stmt::Return(ReturnStmt {
+                span: DUMMY_SP,
+                arg: Some(Box::new(Expr::JSXElement(Box::new(element)))),
+              }));
+              prelude
+            },
           }),
           is_generator: false,
           is_async: false,
@@ -1780,7 +1795,7 @@ mod tests {
         panic!("expected the Greeting function");
       };
       let stmts = &fn_decl.function.body.as_ref()?.stmts;
-      let Some(Stmt::Return(ReturnStmt { arg: Some(arg), .. })) = stmts.first() else {
+      let Some(Stmt::Return(ReturnStmt { arg: Some(arg), .. })) = stmts.last() else {
         panic!("expected a return statement");
       };
       let Expr::JSXElement(element) = arg.as_ref() else {
@@ -1843,6 +1858,63 @@ mod tests {
         missing.is_empty(),
         "no _hash with the import last: {missing:?}"
       );
+    }
+
+    fn gt_binding() -> BindingIdent {
+      Ident::new("GT".into(), DUMMY_SP, SyntaxContext::empty()).into()
+    }
+
+    /// A parameter or a local const named like a namespace import refers to
+    /// the caller's value, so <GT.T> below it is not gt-next's <T>
+    #[test]
+    fn leaves_t_of_a_binding_that_shadows_a_namespace_import_unhashed() {
+      let parameter = Param {
+        span: DUMMY_SP,
+        decorators: vec![],
+        pat: Pat::Ident(gt_binding()),
+      };
+      let local_const = Stmt::Decl(Decl::Var(Box::new(VarDecl {
+        span: DUMMY_SP,
+        ctxt: SyntaxContext::empty(),
+        kind: VarDeclKind::Const,
+        declare: false,
+        decls: vec![VarDeclarator {
+          span: DUMMY_SP,
+          name: Pat::Ident(gt_binding()),
+          init: Some(Box::new(Expr::Ident(Ident::new(
+            "components".into(),
+            DUMMY_SP,
+            SyntaxContext::empty(),
+          )))),
+          definite: false,
+        }],
+      })));
+      let cases = [
+        (
+          "parameter",
+          greeting_with(create_jsx_member_element("GT", "T"), vec![parameter], vec![]),
+        ),
+        (
+          "local const",
+          greeting_with(create_jsx_member_element("GT", "T"), vec![], vec![local_const]),
+        ),
+      ];
+      let mut hashed = vec![];
+      for (binding, component) in cases {
+        let import = ModuleItem::ModuleDecl(ModuleDecl::Import(create_import_decl(
+          "gt-next",
+          vec![create_namespace_import("GT")],
+        )));
+        let import_first = transform(vec![import.clone(), component.clone()]);
+        let import_last = transform(vec![component, import]);
+        if hash_attr(&import_first.body[1]).is_some() {
+          hashed.push(format!("{binding}, import first"));
+        }
+        if hash_attr(&import_last.body[0]).is_some() {
+          hashed.push(format!("{binding}, import last"));
+        }
+      }
+      assert!(hashed.is_empty(), "hashed a shadowed <GT.T>: {hashed:?}");
     }
   }
 
