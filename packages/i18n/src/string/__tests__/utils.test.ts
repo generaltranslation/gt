@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { formatMessage } from '../formatMessage';
 import { interpolateMessage } from '../interpolateMessage';
 import { isEncodedTranslationOptions } from '../isEncodedTranslationOptions';
@@ -63,6 +63,20 @@ describe('interpolateMessage', () => {
         sourceLocale: 'en',
       })
     ).toBe('Value 1,234.5');
+  });
+
+  it('formats the source with the source locale when the ICU translation is malformed', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(
+      interpolateMessage({
+        source: 'Value {n, number}',
+        target: 'Valeur {n, number',
+        options: { $format: 'ICU', $locale: 'fr', n: 1234.5 },
+        sourceLocale: 'en',
+      })
+    ).toBe('Value 1,234.5');
+    expect(warn).toHaveBeenCalledOnce();
+    warn.mockRestore();
   });
 
   it('fills the variables of an ICU message and leaves a string as it is', () => {

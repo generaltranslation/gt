@@ -28,10 +28,9 @@ export function interpolateMessage({
 }): string {
   // Format translation
   if (target != null) {
-    return routeInterpolation(target, {
-      $_fallback: source,
-      ...options,
-    });
+    return routeInterpolation(target, options, () =>
+      routeInterpolation(source, getSourceOptions(options, sourceLocale))
+    );
   }
 
   // Format source
@@ -47,11 +46,12 @@ export function interpolateMessage({
  */
 function routeInterpolation(
   content: string,
-  options: TranslationOptions
+  options: TranslationOptions,
+  fallback?: () => string
 ): string {
   switch (options.$format ?? 'STRING') {
     case 'ICU':
-      return interpolateIcuMessage(content, options);
+      return interpolateIcuMessage(content, options, fallback);
     case 'I18NEXT':
     case 'STRING':
       return interpolateStringMessage(content, options);

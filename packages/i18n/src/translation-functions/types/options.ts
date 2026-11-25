@@ -16,8 +16,6 @@ export type TranslationMetadata = {
   $_hash?: string;
   /** Whether the translated message requires approval before use. Must be a boolean literal. */
   $requiresReview?: boolean;
-  /** @internal Used to carry the original source when rendering a translation */
-  $_fallback?: string;
   $maxChars?: number;
 };
 
