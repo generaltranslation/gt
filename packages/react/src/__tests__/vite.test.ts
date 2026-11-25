@@ -64,6 +64,49 @@ describe('gtReact', () => {
     });
   });
 
+  it('gives dev server code the env file credentials through process.env', async () => {
+    const root = createRoot({ '.env': ENV_FILE });
+
+    await resolveCredentialDefines(root, 'serve');
+
+    expect(process.env.GT_PROJECT_ID).toBe('project-id');
+    expect(process.env.GT_API_KEY).toBe('SENTINEL_KEY');
+  });
+
+  it('replaces the env file credentials it copied when the config reloads', async () => {
+    const root = createRoot({ '.env': ENV_FILE });
+    await resolveCredentialDefines(root, 'serve');
+    fs.writeFileSync(path.join(root, '.env'), 'GT_PROJECT_ID=new-project\n');
+
+    expect(await resolveCredentialDefines(root, 'serve')).toEqual({
+      projectId: JSON.stringify('new-project'),
+      apiKey: undefined,
+    });
+    expect(process.env.GT_PROJECT_ID).toBe('new-project');
+    expect(process.env.GT_API_KEY).toBeUndefined();
+  });
+
+  it('leaves a dev server the credentials it copied when a build loads its config', async () => {
+    await resolveCredentialDefines(createRoot({ '.env': ENV_FILE }), 'serve');
+    const buildRoot = createRoot({ '.env': 'GT_PROJECT_ID=build-project\n' });
+
+    expect(await resolveCredentialDefines(buildRoot, 'build')).toEqual({
+      projectId: JSON.stringify('build-project'),
+      apiKey: undefined,
+    });
+    expect(process.env.GT_PROJECT_ID).toBe('project-id');
+    expect(process.env.GT_API_KEY).toBe('SENTINEL_KEY');
+  });
+
+  it('leaves process.env alone for a build', async () => {
+    const root = createRoot({ '.env': ENV_FILE });
+
+    await resolveCredentialDefines(root, 'build');
+
+    expect(process.env.GT_PROJECT_ID).toBeUndefined();
+    expect(process.env.GT_API_KEY).toBeUndefined();
+  });
+
   it('exposes only the project ID to a build', async () => {
     const root = createRoot({ '.env': ENV_FILE });
 
@@ -132,11 +175,17 @@ describe('gtReact', () => {
       optimizeDeps: { noDiscovery: true, include: [] },
     });
     try {
+      // The shared reader's source, so Vite applies the plugin's define to it.
       const { addRuntimeCredentials } = await server.ssrLoadModule(
-        '/src/setup/runtimeCredentials.ts'
+        fileURLToPath(
+          new URL(
+            '../../../i18n/src/credentials/runtimeCredentials.ts',
+            import.meta.url
+          )
+        )
       );
 
-      expect(addRuntimeCredentials({})).toMatchObject({
+      expect(addRuntimeCredentials({}, 'gt-react')).toMatchObject({
         projectId: 'project-id',
         apiKey: 'SENTINEL_KEY',
       });

@@ -2,7 +2,7 @@ import {
   internalInitializeGTSRA,
   type ReactInitializeGTParams,
 } from '@generaltranslation/react-core/pure';
-import { addRuntimeCredentials } from './runtimeCredentials';
+import { addRuntimeCredentials } from 'gt-i18n/internal/credentials';
 
 /**
  * Initialize GT for client-side rendering. Translations never expire in the
@@ -10,11 +10,14 @@ import { addRuntimeCredentials } from './runtimeCredentials';
  */
 export function initializeGTSRAClient(config: ReactInitializeGTParams): void {
   internalInitializeGTSRA(
-    addRuntimeCredentials({
-      ...config,
-      // Translations arrive through updateTranslations(), and an expired
-      // locale would drop them.
-      cacheExpiryTime: null,
-    })
+    addRuntimeCredentials(
+      {
+        ...config,
+        // Translations arrive through updateTranslations(), and an expired
+        // locale would drop them.
+        cacheExpiryTime: null,
+      },
+      'gt-react'
+    )
   );
 }
