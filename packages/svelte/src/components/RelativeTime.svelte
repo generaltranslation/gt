@@ -31,12 +31,12 @@
     name?: string;
   } & (
     | {
-        value?: Date | number | null;
+        value?: Date | number | null | undefined;
         /** Unit for a numeric `value`. */
         unit: Intl.RelativeTimeFormatUnit;
       }
     | {
-        value?: Date | null;
+        value?: Date | null | undefined;
         unit?: Intl.RelativeTimeFormatUnit;
       }
   );
