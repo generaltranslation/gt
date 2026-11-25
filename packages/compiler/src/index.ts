@@ -816,9 +816,3 @@ export const vite = gtUnplugin.vite;
 export const rollup = gtUnplugin.rollup;
 export const rspack = gtUnplugin.rspack;
 export const esbuild = gtUnplugin.esbuild;
-
-// For gt-next, which splits translations by its own build step
-export {
-  findHashTokens,
-  findJsxHashes,
-} from './transform/chunk-translations/assignTranslations';

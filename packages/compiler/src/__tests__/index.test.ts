@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -654,5 +655,34 @@ describe('bundler adapters', () => {
   it('builds a raw rspack plugin that exposes a transform hook', () => {
     const plugin = gtUnplugin.raw(PROJECT_SETTINGS, { framework: 'rspack' });
     expect(typeof plugin.transform).toBe('function');
+  });
+});
+
+describe('package entries', () => {
+  it('loads the internal entry without Babel, and the main entry from ESM', () => {
+    const script = `
+      import { createRequire } from 'node:module';
+      import * as internal from '@generaltranslation/compiler/internal';
+      const loaded = () => Object.keys(createRequire(import.meta.url).cache);
+      const internalLoadsBabel = loaded().some((file) => file.includes('@babel'));
+      const { vite, webpack, rollup, rspack, esbuild } = await import('@generaltranslation/compiler');
+      console.log(JSON.stringify({
+        internal: Object.keys(internal).filter((name) => typeof internal[name] === 'function').sort(),
+        internalLoadsBabel,
+        mainLoadsBabel: loaded().some((file) => file.includes('@babel')),
+        adapters: [vite, webpack, rollup, rspack, esbuild].map((adapter) => typeof adapter),
+      }));
+    `;
+    const output = execFileSync(
+      process.execPath,
+      ['--input-type=module', '-e', script],
+      { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8' }
+    );
+    expect(JSON.parse(output)).toEqual({
+      internal: ['findHashTokens', 'findJsxHashes'],
+      internalLoadsBabel: false,
+      mainLoadsBabel: true,
+      adapters: Array(5).fill('function'),
+    });
   });
 });

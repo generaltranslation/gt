@@ -18,7 +18,8 @@ import {
 } from 'vitest';
 import MagicString from 'magic-string';
 import type { UnpluginContextMeta, UnpluginOptions } from 'unplugin';
-import gtUnplugin, { findHashTokens, findJsxHashes } from '../index';
+import gtUnplugin from '../index';
+import { findHashTokens, findJsxHashes } from '../internal';
 import type { GTUnpluginOptions } from '../index';
 import { locate, trace } from './sourcePositions';
 import {

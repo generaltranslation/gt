@@ -1,7 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {
+  findHashTokens,
+  findJsxHashes,
+} from '@generaltranslation/compiler/internal';
 import { SERVER_ONLY_HASHES_PLACEHOLDER } from '../provider/serverOnlyHashesPlaceholder';
-import { nodeRequire } from './nodeCompat';
 
 const [PLACEHOLDER_NAME] = SERVER_ONLY_HASHES_PLACEHOLDER.split('[');
 
@@ -23,10 +26,6 @@ function findJsFiles(directory: string): string[] {
  * the placeholders of the compiled server files.
  */
 export function fillServerOnlyHashes(distDir: string): void {
-  // Loaded here, for it loads Babel: only a build with the option on pays.
-  const { findHashTokens, findJsxHashes } = nodeRequire(
-    '@generaltranslation/compiler'
-  ) as typeof import('@generaltranslation/compiler');
   const clientFiles = findJsFiles(path.join(distDir, 'static'));
   const clientHashes = new Set(
     clientFiles.flatMap((file) => findHashTokens(fs.readFileSync(file, 'utf8')))
