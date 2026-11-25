@@ -216,7 +216,7 @@ function formatNodes<R>(
     const name = node[0];
     switch (node[1]) {
       case undefined: {
-        const value = requireVariable(context.values, name);
+        const value = requireValue(context.values, name);
         append(
           isDateValue(value)
             ? intlCache
@@ -231,7 +231,7 @@ function formatNodes<R>(
         break;
       }
       case 'number': {
-        const value = numberValue(name, requireVariable(context.values, name));
+        const value = numberValue(name, requireValue(context.values, name));
         const style = node[2];
         // An ICU string's skeleton may also hold a scale.
         const { scale, ...intlOptions }: ExtendedNumberFormatOptions = {
@@ -277,7 +277,7 @@ function formatNodes<R>(
       }
       case 'date':
       case 'time': {
-        const value = requireVariable(context.values, name);
+        const value = requireValue(context.values, name);
         if (typeof value !== 'number' && !isDateValue(value)) {
           throw new TypeError(
             `The ICU variable "${name}" must be a Date or a number.`
@@ -324,7 +324,7 @@ function formatNodes<R>(
       }
       case 'select': {
         const branches = node[2];
-        const value = requireVariable(context.values, name);
+        const value = requireValue(context.values, name);
         if (typeof value !== 'string') {
           throw new TypeError(`The ICU variable "${name}" must be a string.`);
         }
@@ -338,10 +338,7 @@ function formatNodes<R>(
       case 'plural':
       case 'selectordinal': {
         const [, kind, branches, offset = 0] = node;
-        const rawValue = numberValue(
-          name,
-          requireVariable(context.values, name)
-        );
+        const rawValue = numberValue(name, requireValue(context.values, name));
         const value =
           typeof rawValue === 'bigint' ? rawValue : Number(rawValue);
         // ICU compares the number, so "01" matches `=1`.
@@ -361,7 +358,7 @@ function formatNodes<R>(
         break;
       }
       case 'tag': {
-        const formatter = requireVariable(context.values, name);
+        const formatter = requireValue(context.values, name);
         if (typeof formatter !== 'function') {
           throw new TypeError(
             `The ICU tag variable "${name}" must be a function.`
@@ -432,13 +429,13 @@ function isDateValue(value: unknown): value is Date {
   return Object.prototype.toString.call(value) === '[object Date]';
 }
 
-function requireVariable<R>(
+function requireValue<R>(
   values: MessageValues<R>,
   name: string
 ): MessageValue<R> {
   // Own values only, so a name like "toString" is not found on every object.
   if (!Object.prototype.hasOwnProperty.call(values, name)) {
-    throw new Error(`The ICU message variable "${name}" was not provided.`);
+    throw new Error(`No value was provided for the variable "${name}".`);
   }
   return values[name];
 }

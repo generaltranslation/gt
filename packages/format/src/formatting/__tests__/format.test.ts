@@ -147,7 +147,7 @@ describe('formatIcu', () => {
         locales: 'en',
         values: Object.create({ name: 'Ada' }),
       })
-    ).toThrow('The ICU message variable "name" was not provided.');
+    ).toThrow('No value was provided for the variable "name".');
   });
 
   it.each([
@@ -236,7 +236,7 @@ describe('formatIcu', () => {
   it('still surfaces missing-variable failures through the package boundary', () => {
     expect(() =>
       formatIcuString('Hello {name}', 'en-US', {}, timeZone)
-    ).toThrow('variable "name" was not provided');
+    ).toThrow('No value was provided for the variable "name"');
   });
 
   it('keeps a syntax error’s code and place through the public boundary', () => {

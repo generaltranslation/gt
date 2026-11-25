@@ -160,7 +160,7 @@ const DIFFERENCES: Difference[] = [
     messages: ['<b>{s}</b>', "a '<b>' b {s}"],
     check: (row) => {
       if (row.message.startsWith('<')) {
-        expect(() => format(row)).toThrow('"b" was not provided');
+        expect(() => format(row)).toThrow('the variable "b"');
       } else {
         expect(format(row)).toBe('a <b> b x');
       }

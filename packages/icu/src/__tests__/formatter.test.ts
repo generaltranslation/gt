@@ -58,7 +58,7 @@ describe('formatIcu', () => {
 
   it('requires every referenced variable', () => {
     expect(() => formatIcu('Hello {name}', 'en')).toThrow(
-      'variable "name" was not provided'
+      'No value was provided for the variable "name"'
     );
   });
 
@@ -66,10 +66,10 @@ describe('formatIcu', () => {
     const inherited = Object.create({ name: 'Ada' }) as Record<string, unknown>;
 
     expect(() => formatIcu('Hello {name}', 'en', inherited)).toThrow(
-      'The ICU message variable "name" was not provided.'
+      'No value was provided for the variable "name".'
     );
     expect(() => formatIcu('{toString}', 'en', {})).toThrow(
-      'The ICU message variable "toString" was not provided.'
+      'No value was provided for the variable "toString".'
     );
   });
 
