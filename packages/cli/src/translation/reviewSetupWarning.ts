@@ -17,12 +17,13 @@ const PROJECT_INFO_TIMEOUT_MS = 10_000;
  * actually contains review-gated content):
  * - false: manual review is already the project workflow — no warning
  * - true: requiresReview config has no gating effect — warn
- * - unavailable (older API, dry runs without credentials): warn with
+ * - unavailable (older API, and dry runs, which make no request): warn with
  *   conditional wording, since auto-approve is the platform default
  */
 export async function warnManualReviewSetup(
   settings: Settings,
-  files: FileToUpload[]
+  files: FileToUpload[],
+  dryRun: boolean
 ): Promise<void> {
   const requiresReviewPaths = settings.files?.requiresReviewPaths;
 
@@ -42,11 +43,13 @@ export async function warnManualReviewSetup(
   if (!hasReviewGatedFile) return;
 
   let autoApprove: boolean | undefined;
-  try {
-    autoApprove = (await api.getProjectInfo(PROJECT_INFO_TIMEOUT_MS))
-      .autoApprove;
-  } catch {
-    // Setting unavailable — fall through to the conditional wording
+  if (!dryRun) {
+    try {
+      autoApprove = (await api.getProjectInfo(PROJECT_INFO_TIMEOUT_MS))
+        .autoApprove;
+    } catch {
+      // Setting unavailable — fall through to the conditional wording
+    }
   }
   if (autoApprove === false) return;
 

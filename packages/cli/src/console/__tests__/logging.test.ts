@@ -270,4 +270,33 @@ describe('logging prompts', () => {
       undefined
     );
   });
+
+  it('lists the translations a download would request with their output paths', () => {
+    const { logTranslationsToRequest, stripAnsi } = logging;
+    const template = '__INTERNAL_GT_TEMPLATE_NAME__';
+    const lastMessage = () =>
+      stripAnsi(vi.mocked(clack.log.message).mock.lastCall?.[0] as string);
+
+    logTranslationsToRequest(
+      [{ fileName: template }, { fileName: 'docs/guide.md' }],
+      ['es', 'fr'],
+      {
+        es: {
+          [template]: 'public/_gt/es.json',
+          'docs/guide.md': 'es/guide.md',
+        },
+        fr: { 'docs/guide.md': 'fr/guide.md' },
+      },
+      'gt-vue'
+    );
+    expect(lastMessage()).toBe(
+      'Translations that would be requested:\n' +
+        '- <Vue Elements> (es) → public/_gt/es.json\n' +
+        '- docs/guide.md (es) → es/guide.md\n' +
+        '- docs/guide.md (fr) → fr/guide.md'
+    );
+
+    logTranslationsToRequest([{ fileName: 'docs/guide.md' }], ['es'], {});
+    expect(lastMessage()).toBe('No translations would be requested.');
+  });
 });

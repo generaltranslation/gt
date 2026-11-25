@@ -217,6 +217,7 @@ export type UploadOptions = {
   apiKey?: string;
   projectId?: string;
   defaultLocale?: string;
+  dryRun?: boolean;
 };
 
 export type GitSetupOptions = {
@@ -727,7 +728,7 @@ export class BaseCLI {
     });
 
     // Preprocess shared static assets if configured (move + rewrite sources)
-    await processSharedStaticAssets(settings);
+    if (!initOptions.dryRun) await processSharedStaticAssets(settings);
 
     await handleSetupProject(initOptions, settings, this.library);
   }
@@ -738,14 +739,16 @@ export class BaseCLI {
     });
 
     // Preprocess shared static assets if configured (move + rewrite sources)
-    await processSharedStaticAssets(settings);
+    if (!initOptions.dryRun) await processSharedStaticAssets(settings);
 
     if (!settings.stageTranslations) {
       // Update settings.stageTranslations to true
       settings.stageTranslations = true;
-      await updateConfig(settings.config, {
-        stageTranslations: true,
-      });
+      if (!initOptions.dryRun) {
+        await updateConfig(settings.config, {
+          stageTranslations: true,
+        });
+      }
     }
     await handleStage(initOptions, settings, this.library, true);
   }
@@ -772,7 +775,7 @@ export class BaseCLI {
       requireConfig: true,
     });
     await handleDownload(initOptions, settings, this.library);
-    await this.finalizeDownloadedTranslations(settings);
+    await this.finalizeDownloadedTranslations(settings, initOptions.dryRun);
   }
 
   protected async handleTranslate(initOptions: TranslateFlags): Promise<void> {
@@ -781,7 +784,7 @@ export class BaseCLI {
     });
 
     // Preprocess shared static assets if configured (move + rewrite sources)
-    await processSharedStaticAssets(settings);
+    if (!initOptions.dryRun) await processSharedStaticAssets(settings);
 
     if (!settings.stageTranslations) {
       // Lottie translations finish asynchronously server-side (layout
@@ -811,17 +814,24 @@ export class BaseCLI {
     } else {
       await handleDownload(initOptions, settings, this.library);
     }
-    await this.finalizeDownloadedTranslations(settings);
+    await this.finalizeDownloadedTranslations(settings, initOptions.dryRun);
   }
 
   /**
    * Postprocesses the translations downloaded in this run and reports the
    * summary. Shared by translate and download so both write the same output.
    * @param settings - The settings for the command
+   * @param dryRun - Whether the run downloaded nothing, so there is nothing to postprocess
    */
   protected async finalizeDownloadedTranslations(
-    settings: Settings
+    settings: Settings,
+    dryRun: boolean
   ): Promise<void> {
+    if (dryRun) {
+      displayTranslateSummary();
+      clearWarnings();
+      return;
+    }
     // Only postprocess files downloaded in this run
     const include = getNeedsPostprocessing();
     if (include.size > 0) {
