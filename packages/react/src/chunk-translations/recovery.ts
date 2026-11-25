@@ -36,6 +36,7 @@ export function readCurrentMap(
   return fetchJson(getFileUrl(state, key, locale, name)).then((map) => {
     state.j = (map as EntryFile | null)?.i;
     state.a = name;
+    state.s = 2;
   });
 }
 

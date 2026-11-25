@@ -1,4 +1,7 @@
-import { getReactI18nCache } from '@generaltranslation/react-core/pure';
+import {
+  getI18nStore,
+  getReactI18nCache,
+} from '@generaltranslation/react-core/pure';
 import type {
   ChunkTranslationsState,
   EntryFile,
@@ -85,12 +88,20 @@ export function register(
  * each call copies the locale's whole table. A load of the locale that is
  * still running would replace what is added before it resolves, so until it
  * has, they wait for it to take them.
+ *
+ * What they hold decides who is told, not which caller adds them: mounted
+ * messages look their translations up again when some of it may be on
+ * screen, see `s`. What waited for a file in time has not rendered, so no
+ * one is told of it.
  */
 export function addArrived(state: ChunkTranslationsState): void {
   if (!state.y || !state.t) return;
   const arrived = state.t;
   state.t = undefined;
-  getReactI18nCache().updateTranslations(arrived);
+  const rendered = state.s;
+  if (rendered === 1) state.s = undefined;
+  if (rendered) getI18nStore().updateRenderedTranslations(arrived);
+  else getReactI18nCache().updateTranslations(arrived);
 }
 
 /** What has arrived for a locale, which its load takes. */
@@ -149,8 +160,12 @@ export function request<F extends object>(
         }
         clearTimeout(timer);
         read(file as F);
-        // A late file is read when it arrives, as nothing waits for it
-        if (late) addArrived(state);
+        // A late file is read when it arrives, as nothing waits for it, and
+        // what rendered without it is told
+        if (late) {
+          if (state.t) state.s ||= 1;
+          addArrived(state);
+        }
         requests[key] = Promise.resolve(true);
         resolve(true);
       },

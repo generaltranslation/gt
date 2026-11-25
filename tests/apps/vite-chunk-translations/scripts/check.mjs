@@ -22,6 +22,7 @@ import { dirname, extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { chromium } from 'playwright-core';
+import { checkArrival, holdBack } from './lateTranslations.mjs';
 import { entriesOf, heldBy, isMinifiedId } from './minifiedTranslations.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -1437,6 +1438,57 @@ if (manifest.maps) {
   );
 }
 
+// ----- A file that arrives after its messages rendered ----- //
+// See scripts/lateTranslations.mjs.
+{
+  const name = 'a route file that arrives after its timeout';
+  const file = fileOf('Orders', 'fr');
+  const held = holdBack(file);
+  const app = await open(on.url, 'fr', held.prepare);
+  await app.goto();
+  await app.navigate('orders');
+  // The route's own messages; its shared modules' are in other files too
+  const { heading, orders, jsx, lines } = ROUTES.orders;
+  const sources = { heading, orders: orders[0], jsx, lines };
+  const expected = Object.fromEntries(
+    Object.entries({ ...SHELL, ...ROUTES.orders }).map(([element, source]) => [
+      element,
+      translate('fr', pick(source, 0)),
+    ])
+  );
+  await checkArrival(check, name, app, held.release, file, sources, expected);
+  await app.close();
+}
+{
+  const name =
+    "the file of the application root's chunk, arriving after its timeout";
+  const file = fileOf('App', 'fr');
+  const held = holdBack(file);
+  const app = await open(on.url, 'fr', held.prepare);
+  await app.goto();
+  const { title, tagline, hook } = SHELL;
+  // The footer is what the root's module read as it was evaluated: its own
+  // messages, and the entry's, which it reads from its own file by an id of
+  // its chunk with hash minification
+  const footer = `${MINIFY_HASHES ? SHELL.frame : translate('fr', SHELL.frame)}: All systems operational (Open, Closed)`;
+  const expected = Object.fromEntries(
+    Object.entries({ ...SHELL, ...ROUTES.home }).map(([element, source]) => [
+      element,
+      element === 'footer' ? footer : translate('fr', pick(source, 0)),
+    ])
+  );
+  await checkArrival(
+    check,
+    name,
+    app,
+    held.release,
+    file,
+    { title, tagline, hook, footer },
+    expected
+  );
+  await app.close();
+}
+
 // A build whose modules run when they are first imported and not when
 // their chunk loads (Rolldown's strictExecutionOrder), of start.html, which
 // has no top-level await: the bundler then merges chunks. It keeps the
@@ -2096,6 +2148,83 @@ const CHANGED = buildChanged();
     );
     await close();
   }
+
+  // A file the page asks for in place of one that is gone can hold another
+  // translation of a message that is on screen. The Orders route and the
+  // panel it opens render one module, whose message the files of both hold.
+  // The route is open when a build with another translation of that message
+  // is deployed. The panel's file is then gone, and the file the page asks
+  // for in its place brings that translation: the route shows it too.
+  {
+    const name =
+      'an open page, after a deploy that changed a translation that is on screen';
+    const text = 'TWO LINES IN THIS ORDER, AGAIN';
+    const replaced = buildChanged('replaced', [
+      ['"TWO LINES IN THIS ORDER"', `"${text}"`],
+    ]);
+    for (const file of assets(ON)) {
+      const path = `/assets/${file}`;
+      if (
+        isTranslationsFile(path) &&
+        !statSync(join(replaced, path), { throwIfNoEntry: false })
+      ) {
+        deployedOver.add(path);
+      }
+    }
+    const deploys = await host(ON);
+    const app = await open(deploys.url, 'fr');
+    await app.goto('#orders');
+    await app.page.waitForLoadState('networkidle');
+    let loads = 0;
+    app.page.on('load', () => loads++);
+    const lines = () =>
+      app.page.evaluate(() =>
+        [...document.querySelectorAll('[data-test="lines"]')].map(
+          (element) => element.textContent
+        )
+      );
+    const before = await lines();
+    deploys.deploy(replaced);
+    const start = app.requests.length;
+    await app.page.click('[data-nav="details"]');
+    await app.page.waitForSelector('[data-test="details"]');
+    const brought = app.requests
+      .slice(start)
+      .filter(isTranslations)
+      .some(
+        ({ path }) =>
+          statSync(join(replaced, path), { throwIfNoEntry: false }) &&
+          readFileSync(join(replaced, path), 'utf8').includes(text)
+      );
+    await app.page
+      .waitForFunction(
+        (text) =>
+          [...document.querySelectorAll('[data-test="lines"]')].every(
+            (element) => element.textContent === text
+          ),
+        text,
+        { timeout: 5000 }
+      )
+      .catch(() => {});
+    const after = await lines();
+    check(
+      `${name}: the file asked for in place of the panel's holds that translation`,
+      before.join() === translate('fr', ROUTES.orders.lines) && brought,
+      before.join(' | ')
+    );
+    check(
+      `${name}: the route shows it as the panel does, without a reload`,
+      after.join() === `${text},${text}` && loads === 0,
+      `${after.join(' | ')}, ${loads} loads`
+    );
+    check(
+      `${name}: no warnings`,
+      !app.warnings.length,
+      app.warnings.join(' | ')
+    );
+    await app.close();
+    deploys.close();
+  }
 }
 
 await browser.close();
@@ -2122,9 +2251,20 @@ function compare(before, after) {
   );
   return { renamed, rewritten, touched: [...renamed, ...rewritten] };
 }
-/** Builds the app with that one translation changed. Returns the directory. */
-function buildChanged() {
-  const translations = join(root, '.check', 'translations');
+/**
+ * Builds the app with that one translation changed, or as `name` with
+ * `changes`: what the fr translations file has and what it is to have.
+ * Returns the directory.
+ */
+function buildChanged(
+  name = 'changed',
+  changes = [['"RECENT ORDERS"', '"RECENT ORDERS, AGAIN"']]
+) {
+  const translations = join(
+    root,
+    '.check',
+    name === 'changed' ? 'translations' : `translations-${name}`
+  );
   mkdirSync(translations, { recursive: true });
   for (const locale of manifest.locales) {
     const catalog = readFileSync(
@@ -2134,11 +2274,14 @@ function buildChanged() {
     writeFileSync(
       join(translations, `${locale}.json`),
       locale === 'fr'
-        ? catalog.replace('"RECENT ORDERS"', '"RECENT ORDERS, AGAIN"')
+        ? changes.reduce(
+            (changed, [before, after]) => changed.replace(before, after),
+            catalog
+          )
         : catalog
     );
   }
-  const changed = join(root, '.check', `${NAMING}-changed`);
+  const changed = join(root, '.check', `${NAMING}-${name}`);
   build(changed, true, translations);
   return changed;
 }

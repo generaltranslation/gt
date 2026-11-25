@@ -25,6 +25,7 @@ export class I18nStore {
   // ----- Listener Sets ----- //
 
   private translateListeners = new Set<TranslateEventListener>();
+  private translationsVersion = 0;
   private logRuntimeTranslationError = createRuntimeTranslationErrorLogger();
 
   /**
@@ -38,6 +39,19 @@ export class I18nStore {
     translations: Record<Locale, Record<Hash, Content>>
   ): void => {
     getReactI18nCache().updateTranslations(translations);
+  };
+
+  /**
+   * Updates translations of messages that may have rendered already: every
+   * mounted message looks its translation up again. `updateTranslations()`
+   * tells no one, for translations that arrive before their messages render.
+   */
+  updateRenderedTranslations = (
+    translations: Record<Locale, Record<Hash, Content>>
+  ): void => {
+    this.updateTranslations(translations);
+    this.translationsVersion++;
+    this.emitTranslateEvent();
   };
 
   // ========== runtime translation ========== //
@@ -69,7 +83,7 @@ export class I18nStore {
   ): Unsubscribe => {
     const lookupKey = getTranslateListenerKey(lookup);
     const wrappedListener: TranslateEventListener = (lookup) => {
-      if (getTranslateListenerKey(lookup) === lookupKey) {
+      if (!lookup || getTranslateListenerKey(lookup) === lookupKey) {
         listener();
       }
     };
@@ -83,6 +97,9 @@ export class I18nStore {
   };
 
   // ----- Snapshots ----- //
+
+  /** Changes with each `updateRenderedTranslations()`. */
+  getTranslationsVersion = (): number => this.translationsVersion;
 
   getTranslateSnapshot = <T extends Content>(
     lookup: TranslateLookup<T>,
@@ -100,7 +117,7 @@ export class I18nStore {
 
   // ----- Listener Utilities ----- //
 
-  private emitTranslateEvent(event: TranslateLookup): void {
+  private emitTranslateEvent(event?: TranslateLookup): void {
     this.translateListeners.forEach((listener) => listener(event));
   }
 }

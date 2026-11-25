@@ -14,6 +14,7 @@ function resetGTGlobals() {
 }
 
 const lookupTranslationWithFallback = vi.fn();
+const updateTranslations = vi.fn();
 
 function setup() {
   initializeI18nConfig({
@@ -22,6 +23,7 @@ function setup() {
   });
   setReactI18nCache({
     lookupTranslationWithFallback,
+    updateTranslations,
   } as unknown as ReactI18nCache);
 }
 
@@ -116,5 +118,54 @@ describe('I18nStore runtime translation failure handling', () => {
     lookupTranslationWithFallback.mockRejectedValueOnce({ code: 'A' });
     await store.translate({ ...lookup, content: 'm5' });
     expect(consoleError).toHaveBeenCalledTimes(4);
+  });
+});
+
+describe('I18nStore translations of rendered messages', () => {
+  const translations = { fr: { hash: 'Bonjour' } };
+
+  beforeEach(() => {
+    resetGTGlobals();
+    vi.clearAllMocks();
+    setup();
+  });
+
+  it('updateRenderedTranslations() updates the cache, then tells every lookup and changes the version', () => {
+    const store = new I18nStore();
+    const onLookup = vi.fn();
+    const onOtherLookup = vi.fn();
+    const onEvent = vi.fn(() =>
+      expect(updateTranslations).toHaveBeenCalledWith(translations)
+    );
+    store.subscribeToTranslate(lookup, onLookup);
+    store.subscribeToTranslate(
+      { ...lookup, content: 'Goodbye' },
+      onOtherLookup
+    );
+    store.subscribeToTranslationEvents(onEvent);
+    const version = store.getTranslationsVersion();
+
+    store.updateRenderedTranslations(translations);
+
+    expect(onLookup).toHaveBeenCalledTimes(1);
+    expect(onOtherLookup).toHaveBeenCalledTimes(1);
+    expect(onEvent.mock.calls).toEqual([[undefined]]);
+    expect(store.getTranslationsVersion()).not.toBe(version);
+  });
+
+  it('updateTranslations() updates the cache and tells no one', () => {
+    const store = new I18nStore();
+    const onLookup = vi.fn();
+    const onEvent = vi.fn();
+    store.subscribeToTranslate(lookup, onLookup);
+    store.subscribeToTranslationEvents(onEvent);
+    const version = store.getTranslationsVersion();
+
+    store.updateTranslations(translations);
+
+    expect(updateTranslations).toHaveBeenCalledWith(translations);
+    expect(onLookup).not.toHaveBeenCalled();
+    expect(onEvent).not.toHaveBeenCalled();
+    expect(store.getTranslationsVersion()).toBe(version);
   });
 });

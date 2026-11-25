@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useSyncExternalStore } from 'react';
 import { getI18nConfig, getTranslateListenerKey } from 'gt-i18n/internal';
 import type { Content } from '@generaltranslation/format';
 import type {
@@ -58,6 +58,13 @@ export function useTrackedTranslationResolver(
     getTranslateListenerKey
   );
 
+  // Translations that arrive after their messages rendered, in production too
+  const translationsVersion = useSyncExternalStore(
+    i18nStore.subscribeToTranslationEvents,
+    i18nStore.getTranslationsVersion,
+    i18nStore.getTranslationsVersion
+  );
+
   /**
    * Remember that we can make no assumptions about when this cb gets invoked
    * - Resolves translation from lookup
@@ -83,13 +90,14 @@ export function useTrackedTranslationResolver(
       }
       return translation;
     },
-    // trackedLookupsVersion: change identity when a tracked translation arrives
+    // Both versions: change identity when a translation it may read arrives
     [
       i18nStore,
       translationsSnapshot,
       onMissingTranslation,
       devHotReloadEnabled,
       trackedLookupsVersion,
+      translationsVersion,
     ]
   );
 }
