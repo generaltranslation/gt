@@ -16,6 +16,7 @@ import {
   onTestFinished,
   vi,
 } from 'vitest';
+import { decode, encode } from '@jridgewell/sourcemap-codec';
 import MagicString from 'magic-string';
 import type { UnpluginContextMeta, UnpluginOptions } from 'unplugin';
 import gtUnplugin from '../index';
@@ -3924,9 +3925,95 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       }
     });
 
+    it('keeps the segments a map has at one column, after what was replaced', () => {
+      const code = 'x("L[]");b()';
+      const map = {
+        version: 3,
+        sources: ['a.tsx', 'b.tsx'],
+        names: [],
+        mappings: encode([
+          [
+            [0, 0, 0, 0],
+            [8, 0, 0, 8],
+            [8, 1, 0, 0],
+          ],
+        ]),
+      };
+      const tracked = trackReplacements(code);
+      tracked.replace(code, /L\[\]/g, () => `L[${SAVE}]`);
+      const moved = JSON.parse(
+        moveSourceMapFile(JSON.stringify(map), code, tracked.replacements!)!
+      );
+      expect(decode(moved.mappings)).toEqual([
+        [
+          [0, 0, 0, 0],
+          [24, 0, 0, 8],
+          [24, 1, 0, 0],
+        ],
+      ]);
+    });
+
+    it('moves an index map with a list written into its code', () => {
+      // The list and what follows it in one section, then one more on its line, then one on the next line
+      const parts = ['a();x("L[]");b();', 'c();', 'd();'];
+      const code = `${parts[0]}${parts[1]}\n${parts[2]}`;
+      const offsets = [
+        { line: 0, column: 0 },
+        { line: 0, column: parts[0].length },
+        { line: 1, column: 0 },
+      ];
+      const map = {
+        version: 3,
+        sections: parts.map((part, index) => ({
+          offset: offsets[index],
+          // Every character maps to itself
+          map: JSON.parse(
+            new MagicString(part)
+              .generateMap({ hires: true, source: `part${index}.tsx` })
+              .toString()
+          ),
+        })),
+      };
+      const tracked = trackReplacements(code);
+      const filled = tracked.replace(code, /L\[\]/g, () => `L[${SAVE}]`);
+      const moved = JSON.parse(
+        moveSourceMapFile(JSON.stringify(map), code, tracked.replacements!)!
+      );
+      expect(
+        moved.sections.map(({ offset }: { offset: object }) => offset)
+      ).toEqual([
+        { line: 0, column: 0 },
+        { line: 0, column: parts[0].length + SAVE.length },
+        { line: 1, column: 0 },
+      ]);
+      expect(moved.sections[2].map).toEqual(map.sections[2].map);
+      for (const [token, source, part] of [
+        ['a()', 'part0.tsx', parts[0]],
+        ['b()', 'part0.tsx', parts[0]],
+        ['c()', 'part1.tsx', parts[1]],
+        ['d()', 'part2.tsx', parts[2]],
+      ]) {
+        expect(trace(moved, filled, token), token).toEqual({
+          source,
+          ...locate(part, token),
+        });
+      }
+    });
+
     it.each([
       ['version 2', { version: 2, sources: [], mappings: 'AAAA' }],
-      ['with sections', { version: 3, sections: [] }],
+      [
+        'with a section that is an index map',
+        {
+          version: 3,
+          sections: [
+            {
+              offset: { line: 0, column: 0 },
+              map: { version: 3, sections: [] },
+            },
+          ],
+        },
+      ],
     ])('leaves a source map file %s alone', (_name, map) => {
       expect(
         moveSourceMapFile(JSON.stringify(map), 'a', [
