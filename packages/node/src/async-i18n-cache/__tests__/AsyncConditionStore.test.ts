@@ -35,8 +35,9 @@ describe('AsyncConditionStore', () => {
     );
   }
 
-  it('throws when reading the locale outside a scoped context', () => {
+  it('throws when reading the locale outside a scoped context in development', () => {
     setTestCache();
+    vi.stubEnv('NODE_ENV', 'development');
     const store = new AsyncConditionStore({
       defaultLocale: 'en',
       locales: ['en', 'fr'],
@@ -60,6 +61,22 @@ describe('AsyncConditionStore', () => {
     expect(warnSpy).toHaveBeenCalledWith(
       'AsyncConditionStore: getLocale() called outside of a withGT() scope.'
     );
+  });
+
+  // The translation cache counts an unset NODE_ENV as production too.
+  it('warns and falls back outside a scoped context when NODE_ENV is unset', () => {
+    setTestCache();
+    vi.stubEnv('NODE_ENV', undefined);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const store = new AsyncConditionStore({
+      defaultLocale: 'en',
+      locales: ['en', 'fr'],
+    });
+
+    expect(store.getLocale()).toBe('en');
+    expect(store.getRegion()).toBeUndefined();
+    expect(store.getEnableI18n()).toBe(true);
+    expect(warnSpy).toHaveBeenCalledTimes(3);
   });
 
   it('returns the scoped locale inside run()', () => {
