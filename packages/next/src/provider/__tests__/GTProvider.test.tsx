@@ -260,21 +260,34 @@ describe('split by page', () => {
     expect(mockLoadTranslations).not.toHaveBeenCalled();
   });
 
-  it.each([
-    ['a page the build placed nothing with', 'gt-next-page:app/page', true],
-    ['the default locale', 'gt-next-page:app/orders/page', false],
-  ])(
-    'renders the page alone for %s',
-    async (_name, id, requiresTranslation) => {
-      mockGetI18nConfig.mockReturnValue({
-        requiresTranslation: vi.fn().mockReturnValue(requiresTranslation),
-      });
-      const { GtSegment } = await import('../GtSegment');
+  it('renders a page the build placed nothing with alone', async () => {
+    const { GtSegment } = await import('../GtSegment');
 
-      expect(await GtSegment({ id, children: 'page' })).toBe('page');
-      expect(mockGetLookupTranslation).not.toHaveBeenCalled();
-    }
-  );
+    expect(
+      await GtSegment({ id: 'gt-next-page:app/page', children: 'page' })
+    ).toBe('page');
+    expect(mockGetLookupTranslation).not.toHaveBeenCalled();
+  });
+
+  it('seeds a page in a locale that needs no translation, so a locale change keeps it mounted', async () => {
+    const { GtSegment } = await import('../GtSegment');
+    const render = () =>
+      GtSegment({ id: 'gt-next-page:app/orders/page', children: 'page' });
+    const translated = await render();
+    mockGetLocale.mockResolvedValue('en');
+    mockGetI18nConfig.mockReturnValue({
+      requiresTranslation: vi.fn().mockReturnValue(false),
+    });
+
+    const untranslated = await render();
+
+    expect([translated.type, untranslated.type]).toEqual([
+      mockClientTranslationsSeed,
+      mockClientTranslationsSeed,
+    ]);
+    expect(untranslated.props).toEqual({ children: 'page', translations: {} });
+    expect(mockGetLookupTranslation).toHaveBeenCalledTimes(1);
+  });
 
   it('seeds nothing that a catalog which failed to load resolves to', async () => {
     mockGetLookupTranslation.mockResolvedValue((content: unknown) => content);

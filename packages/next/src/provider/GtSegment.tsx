@@ -24,8 +24,21 @@ export type GtSegmentProps = {
 export async function GtSegment({ id, children }: GtSegmentProps) {
   const hashes = getPageHashes(id);
   if (!hashes) return children;
-  const locale = await getLocale();
-  if (!getI18nConfig().requiresTranslation({ locale })) return children;
+  // Seeded in every locale, so a locale change keeps the page mounted.
+  return (
+    <Client_TranslationsSeed
+      translations={await findPageTranslations(await getLocale(), hashes)}
+    >
+      {children}
+    </Client_TranslationsSeed>
+  );
+}
+
+async function findPageTranslations(
+  locale: string,
+  hashes: Hash[]
+): Promise<Record<string, Record<Hash, Content>>> {
+  if (!getI18nConfig().requiresTranslation({ locale })) return {};
   const lookupTranslation =
     await getReactI18nCache().getLookupTranslation(locale);
   const translations: Record<Hash, Content> = {};
@@ -38,9 +51,5 @@ export async function GtSegment({ id, children }: GtSegmentProps) {
       translations[hash] = translation;
     }
   }
-  return (
-    <Client_TranslationsSeed translations={{ [locale]: translations }}>
-      {children}
-    </Client_TranslationsSeed>
-  );
+  return { [locale]: translations };
 }
