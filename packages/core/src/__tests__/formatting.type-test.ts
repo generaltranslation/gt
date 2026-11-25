@@ -16,6 +16,7 @@ import { formatMessageTree } from '../internal';
 import type { MessageTree } from '@generaltranslation/icu';
 
 declare const date: Date;
+declare const id: bigint;
 
 // `@generaltranslation/format` requires every argument; here none of the
 // ones it resolves is.
@@ -28,12 +29,14 @@ formatRelativeTime(-1, 'day');
 formatRelativeTimeFromDate(date);
 formatCutoff('text');
 formatIcu('Hi');
+formatIcu('{id}', { values: { id } });
 
 // The same holds for a GTIntl and its methods.
 const intl = new GTIntl();
 intl.formatNum(1);
 intl.formatDateTime(date);
 intl.formatIcu('Hi');
+intl.formatIcu('{id}', { values: { id } });
 intl.formatRelativeTimeFromDate(date);
 intl.formatRelativeTimeFromDate(date, { locale: 'en' });
 intl.formatRelativeTimeFromDate(date, { locale: 'en', baseDate: date });
@@ -61,7 +64,6 @@ declare const tree: MessageTree;
 type Element = { readonly type: string };
 declare const element: Element;
 declare const captured: Record<string, unknown>;
-declare const id: bigint;
 const joinParts = (parts: string[]) => parts.join('');
 
 const plain = formatMessageTree(tree, { values: { name: 'Ada', id } });

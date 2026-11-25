@@ -8,8 +8,7 @@ import {
 import {
   CutoffFormat,
   CutoffFormatOptions,
-  PostpendedCutoffParts,
-  PrependedCutoffParts,
+  CutoffParts,
   ResolvedCutoffFormatOptions,
 } from './types';
 
@@ -116,7 +115,7 @@ export class CutoffFormatConstructor implements CutoffFormat {
    * This method breaks down the formatted result into individual components for more granular control.
    *
    * @param {string} value - The string value to format with cutoff behavior.
-   * @returns {PrependedCutoffParts | PostpendedCutoffParts} An array of string parts representing the formatted result.
+   * @returns {CutoffParts} An array of string parts representing the formatted result.
    *   - For positive maxChars: [cutoffValue, separator?, terminator?]
    *   - For negative maxChars: [terminator?, separator?, cutoffValue]
    *   - For no cutoff: [originalValue]
@@ -125,7 +124,7 @@ export class CutoffFormatConstructor implements CutoffFormat {
    * const formatter = new CutoffFormatConstructor('en', { maxChars: 5, style: 'ellipsis' });
    * formatter.formatToParts('Hello, world!'); // Returns ['Hello', '...']
    */
-  formatToParts(value: string): PrependedCutoffParts | PostpendedCutoffParts {
+  formatToParts(value: string): CutoffParts {
     const { maxChars, terminator, separator } = this.options;
 
     // Slice our value.

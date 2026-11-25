@@ -38,25 +38,11 @@ export interface ResolvedCutoffFormatOptions
 
 // ========== Formatting Parts ========== //
 
-/** Prepended cutoff list */
-export type PrependedCutoffParts =
+/** The cut value with its terminator and separator, each left out when absent. */
+export type CutoffParts =
   | [string]
-  | [ResolvedTerminatorOptions['terminator'], string]
-  | [
-      ResolvedTerminatorOptions['terminator'],
-      ResolvedTerminatorOptions['separator'],
-      string,
-    ];
-
-/** Postpended cutoff list */
-export type PostpendedCutoffParts =
-  | [string]
-  | [string, ResolvedTerminatorOptions['terminator']]
-  | [
-      string,
-      ResolvedTerminatorOptions['separator'],
-      ResolvedTerminatorOptions['terminator'],
-    ];
+  | [string, string]
+  | [string, string, string];
 
 // ========== Cutoff Format Class ========== //
 
@@ -66,7 +52,5 @@ export type PostpendedCutoffParts =
 export interface CutoffFormat {
   format: (value: string) => string;
   resolvedOptions: () => ResolvedCutoffFormatOptions;
-  formatToParts: (
-    value: string
-  ) => PrependedCutoffParts | PostpendedCutoffParts;
+  formatToParts: (value: string) => CutoffParts;
 }

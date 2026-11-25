@@ -23,7 +23,9 @@ const createIntl = (
 describe('GTIntl', () => {
   it('ignores later changes to the locale configuration it was given', () => {
     const brandMapping = { code: 'fr-FR' };
-    const customMapping: CustomMapping = { brand: brandMapping };
+    const customMapping: Record<string, CustomMapping[string]> = {
+      brand: brandMapping,
+    };
     const locales = ['en-US', 'brand', 'es'];
     const config = createIntl({
       defaultLocale: 'en-US',

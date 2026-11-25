@@ -1,4 +1,9 @@
-import type { GTConfig, GTParsingFlags } from '../../index.js';
+import type {
+  CustomMapping,
+  GTConfig,
+  GTParsingFlags,
+  LocaleConfig,
+} from '../../index.js';
 
 type Equal<Left, Right> =
   (<Value>() => Value extends Left ? 1 : 2) extends <
@@ -17,6 +22,14 @@ type ExpectedVueCompilerOptions = {
 type _VueCompilerOptionsMatch = Expect<
   Equal<VueCompilerOptions, ExpectedVueCompilerOptions>
 >;
+
+type _CustomMappingMatch = Expect<
+  Equal<NonNullable<LocaleConfig['customMapping']>, CustomMapping>
+>;
+type _CustomMappingKeys = Expect<Equal<keyof CustomMapping, string>>;
+declare const customMapping: CustomMapping;
+// @ts-expect-error a custom mapping is read-only
+customMapping.fr = 'French';
 
 const validConfig = {
   files: {

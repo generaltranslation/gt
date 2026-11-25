@@ -7,6 +7,7 @@ import {
 } from '../index';
 import { formatIcu } from '../parser';
 import type { ParsedTree } from '../formatter/formatIcu';
+import { PLURAL_CATEGORY_NAMES } from '../internal';
 
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
@@ -243,3 +244,8 @@ readMessageTree(parsedTree);
 readMessageTree([['name']]);
 // @ts-expect-error an argument has no second entry
 readMessageTree([['name', undefined]]);
+
+// The plural categories keep their names as types.
+expectType<
+  Equal<(typeof PLURAL_CATEGORY_NAMES)[number], Intl.LDMLPluralRule>
+>();

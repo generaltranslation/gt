@@ -1,7 +1,9 @@
-import { getCachedPluralRules } from '@generaltranslation/format/internal';
-import { toPluralRulesNumber } from '@generaltranslation/icu/internal';
+import {
+  intlCache,
+  PLURAL_CATEGORY_NAMES,
+  toPluralRulesNumber,
+} from '@generaltranslation/icu/internal';
 
-import { pluralForms } from '../settings/plurals';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 
 /**
@@ -15,12 +17,12 @@ import { defaultDefaultLocale } from '@generaltranslation/format/internal';
  */
 export function getPluralForm(
   n: number | bigint,
-  forms: readonly string[] = pluralForms,
+  forms: readonly string[] = PLURAL_CATEGORY_NAMES,
   locales: string[] = [defaultDefaultLocale],
   type: Intl.PluralRuleType = 'cardinal'
 ): string {
   return selectPluralForm(n, forms, () =>
-    getCachedPluralRules(locales, { type })
+    intlCache.get('PluralRules', locales, { type })
   );
 }
 

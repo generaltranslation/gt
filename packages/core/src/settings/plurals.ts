@@ -1,12 +1,9 @@
-export const pluralForms = [
-  'zero',
-  'one',
-  'two',
-  'few',
-  'many',
-  'other',
-] as const;
-export type PluralType = (typeof pluralForms)[number];
+import {
+  PLURAL_CATEGORIES,
+  PLURAL_CATEGORY_NAMES,
+} from '@generaltranslation/icu/internal';
+
+export type PluralType = (typeof PLURAL_CATEGORY_NAMES)[number];
 
 const EXACT_PLURAL_PROP = /^_(0|[1-9]\d*)$/;
 
@@ -17,7 +14,7 @@ const EXACT_PLURAL_PROP = /^_(0|[1-9]\d*)$/;
  */
 export function isAcceptedPluralForm(form: string): boolean {
   return (
-    (form !== 'other' && pluralForms.includes(form as PluralType)) ||
+    (form !== 'other' && PLURAL_CATEGORIES.has(form)) ||
     EXACT_PLURAL_PROP.test(form)
   );
 }
