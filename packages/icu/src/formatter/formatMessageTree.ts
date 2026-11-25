@@ -243,7 +243,7 @@ function formatNodes<R>(
         };
         if (intlOptions.style === 'currency' && !intlOptions.currency) {
           throw new TypeError(
-            `The ICU variable "${name}" is formatted as currency, but no currency was given.`
+            `The variable "${name}" is formatted as currency, but no currency was given.`
           );
         }
         const scaledValue = applyScale(value, scale);
@@ -254,7 +254,7 @@ function formatNodes<R>(
           (typeof value !== 'number' || Number.isFinite(value))
         ) {
           throw new RangeError(
-            `The ICU variable "${name}" is too large for Intl to format.`
+            `The variable "${name}" is too large for Intl to format.`
           );
         }
         const formatter = intlCache.get(
@@ -269,7 +269,7 @@ function formatNodes<R>(
           formatter.resolvedOptions().numberingSystem !== numberingSystem
         ) {
           throw new RangeError(
-            `The ICU variable "${name}" has the numbering system "${numberingSystem}", which Intl does not have.`
+            `The variable "${name}" has the numbering system "${numberingSystem}", which Intl does not have.`
           );
         }
         append(formatter.format(scaledValue as number));
@@ -280,7 +280,7 @@ function formatNodes<R>(
         const value = requireValue(context.values, name);
         if (typeof value !== 'number' && !isDateValue(value)) {
           throw new TypeError(
-            `The ICU variable "${name}" must be a Date or a number.`
+            `The variable "${name}" must be a Date or a number.`
           );
         }
         const isDate = node[1] === 'date';
@@ -308,7 +308,7 @@ function formatNodes<R>(
         );
         if (alone && fields.length > 1) {
           throw new RangeError(
-            `The ICU variable "${name}" needs a date or time field beside its era and time zone name.`
+            `The variable "${name}" needs a date or time field beside its era and time zone name.`
           );
         }
         append(
@@ -326,7 +326,7 @@ function formatNodes<R>(
         const branches = node[2];
         const value = requireValue(context.values, name);
         if (typeof value !== 'string') {
-          throw new TypeError(`The ICU variable "${name}" must be a string.`);
+          throw new TypeError(`The variable "${name}" must be a string.`);
         }
         const branch =
           ownBranch(branches, value) ??
@@ -360,9 +360,7 @@ function formatNodes<R>(
       case 'tag': {
         const formatter = requireValue(context.values, name);
         if (typeof formatter !== 'function') {
-          throw new TypeError(
-            `The ICU tag variable "${name}" must be a function.`
-          );
+          throw new TypeError(`The tag variable "${name}" must be a function.`);
         }
         const children = formatNodes(
           messageTreeNodes(node[2]),
@@ -456,7 +454,7 @@ function numberValue<R>(
     return value;
   }
   throw new TypeError(
-    `The ICU variable "${name}" must be a number, a bigint or a numeric string.`
+    `The variable "${name}" must be a number, a bigint or a numeric string.`
   );
 }
 
@@ -535,7 +533,7 @@ function ownOption<T>(options: Record<string, T>, key: string): T | undefined {
 // which Intl cannot format.
 function unknownStyle(name: string, style: string): never {
   throw new RangeError(
-    `The ICU variable "${name}" has the style "${style}", which is not an ICU style name. ICU patterns are not supported; write a skeleton, like ::.00 or ::yMMMd.`
+    `The variable "${name}" has the style "${style}", which is not an ICU style name. ICU patterns are not supported; write a skeleton, like ::.00 or ::yMMMd.`
   );
 }
 
@@ -545,6 +543,6 @@ function invalidSelection(
   options: Record<string, unknown>
 ): RangeError {
   return new RangeError(
-    `The ICU variable "${name}" value ${JSON.stringify(String(value))} did not match any of: ${Object.keys(options).join(', ')}.`
+    `The variable "${name}" value ${JSON.stringify(String(value))} did not match any of: ${Object.keys(options).join(', ')}.`
   );
 }

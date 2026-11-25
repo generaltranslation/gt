@@ -10,4 +10,4 @@
 + <GTRecorder harvest={{ loadTranslations, hashSourceText }} />
 ```
 
-When a message is formatted without a value for one of its variables, `@generaltranslation/icu` now throws `No value was provided for the variable "name".` instead of `The ICU message variable "name" was not provided.`
+When a message is formatted without a value for one of its variables, `@generaltranslation/icu` now throws `No value was provided for the variable "name".` instead of `The ICU message variable "name" was not provided.` Its other errors about a value say `The variable "name" …` where they said `The ICU variable "name" …`: a message tree is formatted with no ICU string involved.

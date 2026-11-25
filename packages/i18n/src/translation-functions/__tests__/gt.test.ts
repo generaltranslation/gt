@@ -888,7 +888,7 @@ describe('gt-i18n precomputed messages', () => {
     ) =>
       tag`${select({ role: 5 as unknown as string }, { admin: 'Admin', other: 'Member' })}`;
     const template = await setup({ locale: 'en' });
-    const error = 'The ICU variable "role" must be a string.';
+    const error = 'The variable "role" must be a string.';
     expect(() => render(template)).toThrow(error);
     const args = render(precompute()) as Call;
     expect(() => call(template, ...args)).toThrow(error);
