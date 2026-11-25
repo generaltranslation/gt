@@ -1,4 +1,9 @@
-import { getTranslateListenerKey, Hash, Locale } from 'gt-i18n/internal';
+import {
+  getI18nConfig,
+  getTranslateListenerKey,
+  Hash,
+  Locale,
+} from 'gt-i18n/internal';
 import type {
   StoreListener,
   TranslateEventListener,
@@ -27,10 +32,17 @@ export class I18nStore {
   private translateListeners = new Set<TranslateEventListener>();
   private logRuntimeTranslationError = createRuntimeTranslationErrorLogger();
 
+  private readsOnlyTranslationsSnapshot: boolean;
+
   /**
    * I18nCache must be already initialized
+   * @param options.readsOnlyTranslationsSnapshot - When a lookup is given a translations snapshot, answer it from that snapshot alone and never from the process-wide cache, so a server render matches the browser's first render.
    */
-  constructor() {}
+  constructor({
+    readsOnlyTranslationsSnapshot = false,
+  }: { readsOnlyTranslationsSnapshot?: boolean } = {}) {
+    this.readsOnlyTranslationsSnapshot = readsOnlyTranslationsSnapshot;
+  }
 
   // ========== Translation Updates ========== //
 
@@ -52,7 +64,11 @@ export class I18nStore {
         lookup.options
       )
       .then(() => {
-        this.emitTranslateEvent(lookup);
+        // A cache that expires at once loses the translation, and re-running
+        // the lookup would request it again, forever.
+        if (this.getTranslateSnapshot(lookup) != null) {
+          this.emitTranslateEvent(lookup);
+        }
       })
       .catch((error) => this.logRuntimeTranslationError(error));
   };
@@ -86,15 +102,21 @@ export class I18nStore {
 
   getTranslateSnapshot = <T extends Content>(
     lookup: TranslateLookup<T>,
-    translationsSnapshot: Record<Locale, Record<Hash, Content>> = {}
+    translationsSnapshot?: Record<Locale, Record<Hash, Content>>
   ): TranslateSnapshot<T> => {
-    return (
-      lookupTranslation(translationsSnapshot, lookup) ??
-      getReactI18nCache().lookupTranslation<T>(
-        lookup.locale,
-        lookup.content,
-        lookup.options
-      )
+    const translation = lookupTranslation(translationsSnapshot, lookup);
+    if (
+      translation != null ||
+      (this.readsOnlyTranslationsSnapshot &&
+        translationsSnapshot &&
+        lookup.locale !== getI18nConfig().getDefaultLocale())
+    ) {
+      return translation;
+    }
+    return getReactI18nCache().lookupTranslation<T>(
+      lookup.locale,
+      lookup.content,
+      lookup.options
     );
   };
 
