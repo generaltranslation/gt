@@ -69,6 +69,7 @@ Turbo tasks: `build`, `test`, `lint`, `lint:fix`, `format`, `format:fix`, `trans
 - Do not use default exports.
 - Files directly in `packages/*/src/` are reserved for package entry points (the source of an `exports`, `main`, `module`, `types`, or `bin` entry in `package.json`, including files a `bin` shim imports). Put every other module in a subdirectory. `pnpm check:src-entry-points` (part of `pnpm lint`) enforces this.
 - The function returned by `useGT()` or `getGT()` is named `t` (`const t = useGT()`, `const t = await getGT()`), never `gt`, in code, tests, fixtures, examples and docs; a parameter or prop that receives it is `t` too.
+- Names follow `GLOSSARY.md`: read it before naming or renaming an identifier, option, type, file or diagnostic for what gets translated or how it is rendered (a message, its tree, formats, values, content), and use its term wherever it lists another under _Avoid_.
 - Avoid `useEffect` in React code. Prefer derived state, event handlers, refs, or framework data-loading patterns; only use `useEffect` when synchronizing with an external system.
 - Default to no comments. Add one only when a reader would otherwise miss a fact the code cannot show: an outside constraint, why code that looks removable must stay, or a surprising contract on an exported function. Keep it to one sentence. The code is the source of truth; comments that narrate the code, justify decisions, or record history drift from it and make the code harder to read.
 

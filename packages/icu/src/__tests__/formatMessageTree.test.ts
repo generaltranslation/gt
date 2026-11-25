@@ -237,7 +237,7 @@ describe('formatting context', () => {
     expect(() =>
       formatMessageTree([['t', 'number', 'currency']], 'en', { t: 5 })
     ).toThrow(
-      'The ICU variable "t" is formatted as currency, but no currency was given.'
+      'The variable "t" is formatted as currency, but no currency was given.'
     );
     expect(
       formatMessageTree(
@@ -346,7 +346,7 @@ describe('values', () => {
     ['{n, number, ::scale/10}', 10n ** 400n],
   ])('throws for %s with %s, which Intl prints as ∞', (message, n) => {
     expect(() => formatIcu(message, 'en', { n })).toThrow(
-      new RangeError('The ICU variable "n" is too large for Intl to format.')
+      new RangeError('The variable "n" is too large for Intl to format.')
     );
   });
 
@@ -369,7 +369,7 @@ describe('values', () => {
         formatIcu(`{n, number, ${skeleton}}`, 'ar-EG', { n: 1 })
       ).toThrow(
         new RangeError(
-          `The ICU variable "n" has the numbering system "${name}", which Intl does not have.`
+          `The variable "n" has the numbering system "${name}", which Intl does not have.`
         )
       );
       expect(() =>
@@ -397,7 +397,7 @@ describe('values', () => {
   ];
   it.each(NOT_NUMBERS)('takes no %j for a number or a plural', (n) => {
     const error = new TypeError(
-      'The ICU variable "n" must be a number, a bigint or a numeric string.'
+      'The variable "n" must be a number, a bigint or a numeric string.'
     );
     expect(() => formatMessageTree([['n', 'number']], 'en', { n })).toThrow(
       error
@@ -424,7 +424,7 @@ describe('values', () => {
     (d) => {
       for (const kind of ['date', 'time'] as const) {
         expect(() => formatMessageTree([['d', kind]], 'en', { d })).toThrow(
-          new TypeError('The ICU variable "d" must be a Date or a number.')
+          new TypeError('The variable "d" must be a Date or a number.')
         );
       }
     }
@@ -435,7 +435,7 @@ describe('values', () => {
     (s) => {
       expect(() =>
         formatMessageTree([['s', 'select', { other: 'x' }]], 'en', { s })
-      ).toThrow(new TypeError('The ICU variable "s" must be a string.'));
+      ).toThrow(new TypeError('The variable "s" must be a string.'));
     }
   );
 

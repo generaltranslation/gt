@@ -126,10 +126,9 @@ export function formatIcu(icu: string, options: IcuFormatOptions) {
 
 /**
  * Formats a number according to the specified locales and options.
- * @param {Object} params - The parameters for the number formatting.
- * @param {number | bigint} params.value - The number to format.
- * @param {Intl.NumberFormatOptions} [params.options] - Additional options for number formatting.
- * @param {string | string[]} [params.options.locales] - The locales to use for formatting.
+ * @param {number | bigint} number - The number to format.
+ * @param {Object} options - The locales and the Intl.NumberFormat options to format with.
+ * @param {string | string[]} options.locales - The locales to use for formatting.
  * @returns {string} The formatted number.
  */
 export function formatNum(
@@ -146,10 +145,10 @@ export function formatNum(
 
 /**
  * Formats a date according to the specified languages and options.
- * @param {Object} params - The parameters for the date formatting.
- * @param {Date | number} params.value - The date to format, or its timestamp.
- * @param {ZonedDateTimeFormatOptions} params.options - Options for date formatting, with the time zone.
- * @param {string | string[]} [params.options.locales] - The languages to use for formatting.
+ * @param {Date | number} date - The date to format, or its timestamp.
+ * @param {Object} options - The languages and the options for date formatting, with the time zone.
+ * @param {string | string[]} options.locales - The languages to use for formatting.
+ * @param {string} options.timeZone - The time zone to format in.
  * @returns {string} The formatted date.
  */
 export function formatDateTime(
@@ -166,11 +165,10 @@ export function formatDateTime(
 
 /**
  * Formats a currency value according to the specified languages, currency, and options.
- * @param {Object} params - The parameters for the currency formatting.
- * @param {number | bigint} params.value - The currency value to format.
- * @param {string} params.currency - The currency code (e.g., 'USD').
- * @param {CurrencyFormatOptions} [params.options={}] - Additional options for currency formatting.
- * @param {string | string[]} [params.options.locales] - The locale codes to use for formatting.
+ * @param {number | bigint} value - The currency value to format.
+ * @param {string} currency - The currency code (e.g., 'USD').
+ * @param {Object} options - The locale codes and the options for currency formatting.
+ * @param {string | string[]} options.locales - The locale codes to use for formatting.
  * @returns {string} The formatted currency value.
  */
 export function formatCurrency(
@@ -189,10 +187,9 @@ export function formatCurrency(
 
 /**
  * Formats a list of items according to the specified locales and options.
- * @param {Object} params - The parameters for the list formatting.
- * @param {Array<string | number>} params.value - The list of items to format.
- * @param {Intl.ListFormatOptions} [params.options={}] - Additional options for list formatting.
- * @param {string | string[]} [params.options.locales] - The locales to use for formatting.
+ * @param {Array<string | number>} array - The list of items to format.
+ * @param {Object} options - The locales and the Intl.ListFormat options to format with.
+ * @param {string | string[]} options.locales - The locales to use for formatting.
  * @returns {string} The formatted list.
  */
 export function formatList(
@@ -210,9 +207,8 @@ export function formatList(
 /**
  * Formats a list of items according to the specified locales and options.
  * @param {Array<T>} array - The list of items to format.
- * @param {Object} [options] - Additional options for list formatting.
- * @param {string | string[]} [options.locales] - The locales to use for formatting.
- * @param {Intl.ListFormatOptions} [options] - Additional Intl.ListFormat options.
+ * @param {Object} options - The locales and the Intl.ListFormat options to format with.
+ * @param {string | string[]} options.locales - The locales to use for formatting.
  * @returns {Array<T | string>} The formatted list parts.
  */
 export function formatListToParts<T>(
@@ -229,11 +225,10 @@ export function formatListToParts<T>(
 
 /**
  * Formats a relative time value according to the specified locales and options.
- * @param {Object} params - The parameters for the relative time formatting.
- * @param {number} params.value - The relative time value to format.
- * @param {Intl.RelativeTimeFormatUnit} params.unit - The unit of time (e.g., 'second', 'minute', 'hour', 'day', 'week', 'month', 'year').
- * @param {Intl.RelativeTimeFormatOptions} [params.options={}] - Additional options for relative time formatting.
- * @param {string | string[]} [params.options.locales] - The locales to use for formatting.
+ * @param {number} value - The relative time value to format.
+ * @param {Intl.RelativeTimeFormatUnit} unit - The unit of time (e.g., 'second', 'minute', 'hour', 'day', 'week', 'month', 'year').
+ * @param {Object} options - The locales and the Intl.RelativeTimeFormat options to format with.
+ * @param {string | string[]} options.locales - The locales to use for formatting.
  * @returns {string} The formatted relative time string.
  */
 export function formatRelativeTime(
@@ -252,10 +247,10 @@ export function formatRelativeTime(
 
 /**
  * Formats a relative time string from a Date, automatically selecting the best unit.
- * @param {Date} date - The date to format relative to now.
- * @param {Object} [options] - Formatting options.
- * @param {string | string[]} [options.locales] - The locales to use for formatting.
- * @param {Intl.RelativeTimeFormatOptions} [options] - Additional Intl.RelativeTimeFormat options.
+ * @param {Date} date - The date to format relative to `options.baseDate`.
+ * @param {Object} options - The locales, the date to compare with, and the Intl.RelativeTimeFormat options to format with.
+ * @param {string | string[]} options.locales - The locales to use for formatting.
+ * @param {Date} options.baseDate - The date to compare with.
  * @returns {string} The formatted relative time string (e.g., "2 hours ago", "in 3 days").
  */
 export function formatRelativeTimeFromDate(

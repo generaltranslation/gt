@@ -18,7 +18,7 @@ import type {
 //     message HASH (see hashOf); its text nodes align to the flattened translation for
 //     that hash. Handles JSX structure + variables. (overlayFromDict)
 //   • `t()` / `useGT()` strings: these render as bare text with NO hash marker, so we
-//     hash each recorded SOURCE string (via the caller's `hashMessage`) and look that up
+//     hash each recorded SOURCE string (via the caller's `hashSourceText`) and look that up
 //     in the same dict. (stringOverlay)
 
 // ===================================================================================
@@ -148,7 +148,7 @@ const TEXT_NODE = 3;
 
 /**
  * The message hash a node carries, or null. Two tag-ids mechanisms exist: the runtime
- * wrapper renders `data-_gt` (a `hashMessage` string on a `display:contents` span), and
+ * wrapper renders `data-_gt` (a message hash on a `display:contents` span), and
  * the SWC transform renders `data-_gt-hash`; we accept either. GT's INTERNAL `data-_gt`
  * is an object prop that never reaches the DOM, so it never appears here — but we still
  * reject a non-string / `[object …]` value defensively.
@@ -310,7 +310,7 @@ export function stringOverlay(
   recorded: Map<number, string>,
   covered: Set<number>,
   dict: TranslationDict,
-  hashMessage: (message: string) => string | undefined
+  hashSourceText: (text: string) => string | undefined
 ): Record<number, string> {
   const bag: Record<number, string> = {};
   const hashByText = new Map<string, string | null>(); // memoize per distinct string
@@ -319,7 +319,7 @@ export function stringOverlay(
     let hash = hashByText.get(text);
     if (hash === undefined) {
       try {
-        hash = hashMessage(text) ?? null;
+        hash = hashSourceText(text) ?? null;
       } catch {
         hash = null;
       }
@@ -339,13 +339,13 @@ export async function harvestHash(
   opts: {
     source: string;
     loadTranslations: TranslationsLoader;
-    hashMessage?: (message: string) => string | undefined;
+    hashSourceText?: (text: string) => string | undefined;
   }
 ): Promise<LocaleTextOverlay> {
   const targets = locales.filter((l) => l && l !== opts.source);
   const hashNodes = collectHashNodes(events);
-  // Recorded text is only needed for the `t()`-string lookup (hashMessage path).
-  const recorded = opts.hashMessage ? collectRecordedText(events) : null;
+  // Recorded text is only needed for the `t()`-string lookup (hashSourceText path).
+  const recorded = opts.hashSourceText ? collectRecordedText(events) : null;
   const overlay: LocaleTextOverlay = {};
   for (const target of targets) {
     let dict: TranslationDict | null = null;
@@ -360,11 +360,11 @@ export async function harvestHash(
     }
     // `<T>` content first (precise, wins), then fill bare `t()` text.
     const bag = overlayFromDict(hashNodes, dict);
-    if (recorded && opts.hashMessage) {
+    if (recorded && opts.hashSourceText) {
       const covered = new Set(Object.keys(bag).map(Number));
       Object.assign(
         bag,
-        stringOverlay(recorded, covered, dict, opts.hashMessage)
+        stringOverlay(recorded, covered, dict, opts.hashSourceText)
       );
     }
     overlay[target] = bag;
@@ -391,7 +391,7 @@ function readCookie(name: string): string | undefined {
  * Harvest the per-locale overlay for a recording using ONLY the app's `loadTranslations`
  * (the hash strategy). Without a loader there is nothing to read, so the overlay is empty
  * and the replay renders source. `<T>` content is mapped by the DOM message hash; passing
- * `hashMessage` additionally covers `t()`/`useGT()` strings.
+ * `hashSourceText` additionally covers `t()`/`useGT()` strings.
  */
 export async function harvestLocales(
   events: eventWithTime[],
@@ -414,7 +414,7 @@ export async function harvestLocales(
   return harvestHash(events, locales, {
     source,
     loadTranslations: options.loadTranslations,
-    hashMessage: options.hashMessage,
+    hashSourceText: options.hashSourceText,
   });
 }
 

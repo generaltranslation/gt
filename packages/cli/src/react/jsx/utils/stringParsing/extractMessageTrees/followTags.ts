@@ -13,7 +13,7 @@ import {
   unconfiguredTagKey,
   type HelperFollower,
 } from './followHelpers.js';
-import { parseMessageOptions } from './parseMessageOptions.js';
+import { parseHashMetadata } from './parseHashMetadata.js';
 import { processMessage, reportSkippedMessage } from './processMessage.js';
 import { processMsgCall } from './processMsgCall.js';
 import { getImportedName } from './imports.js';
@@ -299,7 +299,7 @@ function getOptionsKey(
 ): string | undefined {
   if (!options) return unconfiguredTagKey;
   try {
-    return getConfiguredTagKey(parseMessageOptions(options, fallback));
+    return getConfiguredTagKey(parseHashMetadata(options, fallback));
   } catch (error) {
     if (!(error instanceof NonStaticMessageError)) throw error;
     reportSkippedMessage(error, file, config, output);

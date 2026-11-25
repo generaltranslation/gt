@@ -162,7 +162,7 @@ export function formatMessageTree<R>(
   return formatParsedTree(tree, '', locales, values, options);
 }
 
-/** Formats a message tree or an ICU string's syntax tree; `icu` is reported on errors. */
+/** Formats a message tree or the tree built from an ICU string's syntax tree; `icu` is reported on errors. */
 export function formatParsedTree<R>(
   tree: ParsedTree,
   icu: string,
@@ -216,7 +216,7 @@ function formatNodes<R>(
     const name = node[0];
     switch (node[1]) {
       case undefined: {
-        const value = requireVariable(context.values, name);
+        const value = requireValue(context.values, name);
         append(
           isDateValue(value)
             ? intlCache
@@ -231,7 +231,7 @@ function formatNodes<R>(
         break;
       }
       case 'number': {
-        const value = numberValue(name, requireVariable(context.values, name));
+        const value = numberValue(name, requireValue(context.values, name));
         const style = node[2];
         // An ICU string's skeleton may also hold a scale.
         const { scale, ...intlOptions }: ExtendedNumberFormatOptions = {
@@ -243,7 +243,7 @@ function formatNodes<R>(
         };
         if (intlOptions.style === 'currency' && !intlOptions.currency) {
           throw new TypeError(
-            `The ICU variable "${name}" is formatted as currency, but no currency was given.`
+            `The variable "${name}" is formatted as currency, but no currency was given.`
           );
         }
         const scaledValue = applyScale(value, scale);
@@ -254,7 +254,7 @@ function formatNodes<R>(
           (typeof value !== 'number' || Number.isFinite(value))
         ) {
           throw new RangeError(
-            `The ICU variable "${name}" is too large for Intl to format.`
+            `The variable "${name}" is too large for Intl to format.`
           );
         }
         const formatter = intlCache.get(
@@ -269,7 +269,7 @@ function formatNodes<R>(
           formatter.resolvedOptions().numberingSystem !== numberingSystem
         ) {
           throw new RangeError(
-            `The ICU variable "${name}" has the numbering system "${numberingSystem}", which Intl does not have.`
+            `The variable "${name}" has the numbering system "${numberingSystem}", which Intl does not have.`
           );
         }
         append(formatter.format(scaledValue as number));
@@ -277,10 +277,10 @@ function formatNodes<R>(
       }
       case 'date':
       case 'time': {
-        const value = requireVariable(context.values, name);
+        const value = requireValue(context.values, name);
         if (typeof value !== 'number' && !isDateValue(value)) {
           throw new TypeError(
-            `The ICU variable "${name}" must be a Date or a number.`
+            `The variable "${name}" must be a Date or a number.`
           );
         }
         const isDate = node[1] === 'date';
@@ -308,7 +308,7 @@ function formatNodes<R>(
         );
         if (alone && fields.length > 1) {
           throw new RangeError(
-            `The ICU variable "${name}" needs a date or time field beside its era and time zone name.`
+            `The variable "${name}" needs a date or time field beside its era and time zone name.`
           );
         }
         append(
@@ -324,9 +324,9 @@ function formatNodes<R>(
       }
       case 'select': {
         const branches = node[2];
-        const value = requireVariable(context.values, name);
+        const value = requireValue(context.values, name);
         if (typeof value !== 'string') {
-          throw new TypeError(`The ICU variable "${name}" must be a string.`);
+          throw new TypeError(`The variable "${name}" must be a string.`);
         }
         const branch =
           ownBranch(branches, value) ??
@@ -338,10 +338,7 @@ function formatNodes<R>(
       case 'plural':
       case 'selectordinal': {
         const [, kind, branches, offset = 0] = node;
-        const rawValue = numberValue(
-          name,
-          requireVariable(context.values, name)
-        );
+        const rawValue = numberValue(name, requireValue(context.values, name));
         const value =
           typeof rawValue === 'bigint' ? rawValue : Number(rawValue);
         // ICU compares the number, so "01" matches `=1`.
@@ -361,11 +358,9 @@ function formatNodes<R>(
         break;
       }
       case 'tag': {
-        const formatter = requireVariable(context.values, name);
+        const formatter = requireValue(context.values, name);
         if (typeof formatter !== 'function') {
-          throw new TypeError(
-            `The ICU tag variable "${name}" must be a function.`
-          );
+          throw new TypeError(`The tag variable "${name}" must be a function.`);
         }
         const children = formatNodes(
           messageTreeNodes(node[2]),
@@ -432,13 +427,13 @@ function isDateValue(value: unknown): value is Date {
   return Object.prototype.toString.call(value) === '[object Date]';
 }
 
-function requireVariable<R>(
+function requireValue<R>(
   values: MessageValues<R>,
   name: string
 ): MessageValue<R> {
   // Own values only, so a name like "toString" is not found on every object.
   if (!Object.prototype.hasOwnProperty.call(values, name)) {
-    throw new Error(`The ICU message variable "${name}" was not provided.`);
+    throw new Error(`No value was provided for the variable "${name}".`);
   }
   return values[name];
 }
@@ -459,7 +454,7 @@ function numberValue<R>(
     return value;
   }
   throw new TypeError(
-    `The ICU variable "${name}" must be a number, a bigint or a numeric string.`
+    `The variable "${name}" must be a number, a bigint or a numeric string.`
   );
 }
 
@@ -538,7 +533,7 @@ function ownOption<T>(options: Record<string, T>, key: string): T | undefined {
 // which Intl cannot format.
 function unknownStyle(name: string, style: string): never {
   throw new RangeError(
-    `The ICU variable "${name}" has the style "${style}", which is not an ICU style name. ICU patterns are not supported; write a skeleton, like ::.00 or ::yMMMd.`
+    `The variable "${name}" has the style "${style}", which is not an ICU style name. ICU patterns are not supported; write a skeleton, like ::.00 or ::yMMMd.`
   );
 }
 
@@ -548,6 +543,6 @@ function invalidSelection(
   options: Record<string, unknown>
 ): RangeError {
   return new RangeError(
-    `The ICU variable "${name}" value ${JSON.stringify(String(value))} did not match any of: ${Object.keys(options).join(', ')}.`
+    `The variable "${name}" value ${JSON.stringify(String(value))} did not match any of: ${Object.keys(options).join(', ')}.`
   );
 }

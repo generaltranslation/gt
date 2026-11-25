@@ -5,7 +5,7 @@ import { getNumber, getPropertyKey, getStaticText } from './staticValues.js';
 
 type OptionKey = keyof MessageTreeHashMetadata;
 
-export function parseMessageOptions(
+export function parseHashMetadata(
   args: t.CallExpression['arguments'] | undefined,
   tagged: t.Node
 ): MessageTreeHashMetadata {

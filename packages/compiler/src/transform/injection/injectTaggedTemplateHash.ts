@@ -68,14 +68,12 @@ export function injectTaggedTemplateHash(
   if (!kind) return false;
   let hash: string;
   let metadata: MessageTreeHashMetadata;
-  let message: StaticMessage;
+  let template: StaticTemplate;
   try {
-    metadata = t.isCallExpression(tag)
-      ? parseMessageOptions(tag.arguments)
-      : {};
-    message = buildStaticMessage(quasi, path.scope);
+    metadata = t.isCallExpression(tag) ? parseHashMetadata(tag.arguments) : {};
+    template = buildStaticTemplate(quasi, path.scope);
     hash = hashSource({
-      source: message.tree,
+      source: template.tree,
       dataFormat: 'MESSAGE_TREE',
       ...metadata,
     });
@@ -85,15 +83,15 @@ export function injectTaggedTemplateHash(
     onRuntimeTree?.(getLikelyRuntimeTree(path));
     return false;
   }
-  const passed = onHash?.(hash, kind === 'msg', message.tree) ?? hash;
+  const passed = onHash?.(hash, kind === 'msg', template.tree) ?? hash;
   // msg templates are rendered by m() away from their call site.
   if (kind === 'gt' && precompute()) {
     const call = buildPrecomputedCall({
       callee: callee as t.Identifier,
       hash: passed,
       metadata,
-      tree: message.tree,
-      bindings: message.bindings,
+      tree: template.tree,
+      bindings: template.bindings,
     });
     if (call) {
       path.replaceWith(call);
@@ -125,7 +123,7 @@ function getLikelyRuntimeTree(
 ): MessageTree | undefined {
   assumesPrimitives = true;
   try {
-    return buildStaticMessage(path.node.quasi, path.scope).tree;
+    return buildStaticTemplate(path.node.quasi, path.scope).tree;
   } catch {
     return undefined;
   } finally {
@@ -179,7 +177,7 @@ function getHelperName(
   return isGTMessageHelperName(importedName) ? importedName : undefined;
 }
 
-function parseMessageOptions(
+function parseHashMetadata(
   args: t.CallExpression['arguments']
 ): MessageTreeHashMetadata {
   const [options] = args;
@@ -216,17 +214,17 @@ function parseMessageOptions(
   return metadata;
 }
 
-type StaticMessage = TemplateFragment & {
+type StaticTemplate = TemplateFragment & {
   tree: MessageTree;
   /** The values the template binds, in the order it evaluates them. */
   bindings: Binding[];
 };
 
 /** A static template's tree, with the expression of each of its variables. */
-function buildStaticMessage(
+function buildStaticTemplate(
   quasi: t.TemplateLiteral,
   scope: Scope
-): StaticMessage {
+): StaticTemplate {
   const bindings: Binding[] = [];
   const fragment = templateFragment(quasi, scope, bindings);
   const built = templateToMessage(fragment.strings, fragment.holes);

@@ -69,7 +69,7 @@ import {
   createIdPlaceholder,
   findChunkIds,
   getListName,
-  getMessageShape,
+  getMessageTreeShape,
   minifyChunk,
   minifyHashes,
   pickMinifiedTranslations,
@@ -3504,15 +3504,15 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
             ['when', 'date', 'short'],
           ])
         );
-      expect(getMessageShape(plural('count'))).toBe(
-        getMessageShape(plural('_gt_1'))
+      expect(getMessageTreeShape(plural('count'))).toBe(
+        getMessageTreeShape(plural('_gt_1'))
       );
-      expect(getMessageShape(plural('count'))).toBe(
+      expect(getMessageTreeShape(plural('count'))).toBe(
         '["You have ",["","plural",{"one":[0," file of ",[""]],"other":"files"}],["","date","short"]]'
       );
-      expect(getMessageShape('Save')).toBe('"Save"');
-      expect(getMessageShape(['Save ', ['name']])).not.toBe(
-        getMessageShape(['Save ', ['name', 'number']])
+      expect(getMessageTreeShape('Save')).toBe('"Save"');
+      expect(getMessageTreeShape(['Save ', ['name']])).not.toBe(
+        getMessageTreeShape(['Save ', ['name', 'number']])
       );
     });
 

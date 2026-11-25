@@ -16,7 +16,7 @@ import {
   type ChunkTranslationsImport,
 } from './resolveChunkTranslations';
 import type { MessageTree } from '@generaltranslation/icu';
-import { createIdPlaceholder, getMessageShape } from './hashMinification';
+import { createIdPlaceholder, getMessageTreeShape } from './hashMinification';
 
 /** What a file imports from the entry; set on files that can import it. */
 export type ChunkTranslationsFile = { imports: Set<ChunkTranslationsImport> };
@@ -67,7 +67,7 @@ export function recordChunkHash(
   if (!build.minifiedIds) return hash;
   const readers = build.runtimeReaders;
   if (readers && tree !== undefined) {
-    const shape = getMessageShape(tree);
+    const shape = getMessageTreeShape(tree);
     const compiled = readers.compiled.get(shape);
     if (compiled) compiled.add(hash);
     else readers.compiled.set(shape, new Set([hash]));
@@ -117,7 +117,7 @@ export function recordRuntimeReader(
     if (state.settings.filename) readers.unknown.add(state.settings.filename);
     return;
   }
-  const shape = getMessageShape(tree);
+  const shape = getMessageTreeShape(tree);
   readers.shapes.add(shape);
   for (const hash of readers.compiled.get(shape) ?? []) build.unsplit.add(hash);
 }

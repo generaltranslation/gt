@@ -59,7 +59,7 @@ export type HarvestOptions = {
    * key of a message without values or options, such as `` t`Save` ``. Omit it and
    * only `<T>` content (which carries a DOM hash) is harvested.
    */
-  hashMessage?: (message: string) => string | undefined;
+  hashSourceText?: (text: string) => string | undefined;
   /**
    * The locale the recording was captured in (the source render). Defaults to the GT
    * locale cookie (`localeCookieName`), then `locales[0]`. Set this when the app doesn't

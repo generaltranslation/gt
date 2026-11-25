@@ -44,7 +44,7 @@ export type ParsedNode =
       style?: string | Intl.DateTimeFormatOptions,
     ];
 
-/** What the formatter reads: a message tree, or an ICU string's syntax tree. */
+/** What the formatter reads: a message tree, or the tree built from an ICU string's syntax tree. */
 export type ParsedTree = MessageTree<ParsedNode>;
 
 // The parser reads `{` as a placeholder, `'` as a quote and `<` as a tag, and
@@ -52,9 +52,9 @@ export type ParsedTree = MessageTree<ParsedNode>;
 const ICU_SYNTAX = /[{'<]/;
 
 /**
- * The parser's syntax tree as the formatter reads it: a formatted placeholder
- * keeps every Intl option its skeleton spells, which a message tree cannot
- * hold.
+ * The tree the formatter reads, built from the parser's syntax tree: a
+ * formatted placeholder keeps every Intl option its skeleton spells, which a
+ * message tree cannot hold.
  */
 function toParsedTree(ast: MessageFormatElement[]): ParsedTree {
   // Plain text as one string takes the formatter's fast path.

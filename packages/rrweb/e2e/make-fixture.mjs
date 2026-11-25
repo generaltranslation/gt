@@ -26,7 +26,7 @@ const DICT_ES = {
   'fx-run': 'Ejecutar la demo',
   'str:Settings and Projects live here': 'Los ajustes y proyectos viven aquí',
 };
-const hashMessage = (message) => `str:${message}`;
+const hashSourceText = (text) => `str:${text}`;
 
 const server = await startServer(PORT);
 const { browser, close } = await getBrowser();
@@ -81,7 +81,7 @@ try {
   // Harvest with the BUILT dist — the same code the recorder ships.
   const overlay = await harvestLocales(events, LOCALES, {
     loadTranslations: async (locale) => (locale === 'es' ? DICT_ES : null),
-    hashMessage,
+    hashSourceText,
     sourceLocale: 'en',
   });
 
