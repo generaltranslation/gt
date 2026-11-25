@@ -99,7 +99,7 @@ export type RuntimeReaders = {
  * variables: a template builds the same text, branches and formats whatever
  * its values turn out to be, but names a value by what it is when it runs.
  */
-export function getMessageShape(tree: MessageTree): string {
+export function getMessageTreeShape(tree: MessageTree): string {
   return JSON.stringify(blankNames(tree));
 }
 
