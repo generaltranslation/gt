@@ -120,7 +120,7 @@ describe('fillSplitTranslations', () => {
       );
       write(mapPath, sourceMap('AAAA,6CAAU'));
       write(`${MAPPED}.map`, sourceMap('AAAA,6CAAU'));
-      fillSplitTranslations(distDir, false);
+      fillSplitTranslations(distDir, undefined);
       expect(read(mapPath)).toBe(sourceMap('AAAA,6DAAU'));
       expect(read(`${MAPPED}.map`)).toBe(sourceMap('AAAA,6CAAU'));
     }
@@ -133,7 +133,7 @@ describe('fillSplitTranslations', () => {
       MAPPED,
       `a("${SERVER_ONLY_HASHES_PLACEHOLDER}");b()\n${inline(sourceMap('AAAA,6CAAU'))}`
     );
-    fillSplitTranslations(distDir, false);
+    fillSplitTranslations(distDir, undefined);
     expect(read(MAPPED)).toBe(
       `a("__gt_next_server_only_hashes_q7Zk2W__[${SERVER}]");b()\n${inline(sourceMap('AAAA,6DAAU'))}`
     );
@@ -148,7 +148,7 @@ describe('fillSplitTranslations', () => {
       `a("${SERVER_ONLY_HASHES_PLACEHOLDER}");b()\n//# sourceMappingURL=${url}`
     );
     write(`${MAPPED}.map`, sourceMap('AAAA,6CAAU'));
-    fillSplitTranslations(distDir, false);
+    fillSplitTranslations(distDir, undefined);
     expect(read(`${MAPPED}.map`)).toBe(sourceMap('AAAA,6CAAU'));
   });
 
