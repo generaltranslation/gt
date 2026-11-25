@@ -28,6 +28,16 @@ import type { TranslationsTable } from './loadTranslationFiles';
  * messages does, and with nothing else: not with the order of its modules
  * or of its code.
  *
+ * A bundler that limits the size of a chunk measures its modules before it
+ * renders them, so it measures placeholders. A placeholder is therefore
+ * exactly as long as its hash, which is what the call site holds in a build
+ * without hash minification: the bundler measures the same code either way,
+ * and hash minification moves no chunk boundary. So short a string says
+ * nothing by its form, and the build tells its placeholders from the
+ * strings of the app by keeping each one it writes: only those are
+ * minified, and a build fails when its output still holds one, or a call
+ * site there still passes a string of the exact form of one.
+ *
  * A message that two chunks read has an id in each. The hash itself stays
  * what it is everywhere else: in the catalogs, in the unsplit file, at every
  * call site the runtime hashes, and inside this build, which reads ids back
@@ -44,10 +54,11 @@ import type { TranslationsTable } from './loadTranslationFiles';
  */
 
 /**
- * Written before the hash at a call site the build splits, in a module's
- * code, and replaced with the id once the module's chunk is rendered.
+ * What a placeholder starts with, and is filled up with: a character no
+ * hash and no id has, so a placeholder is neither, also where a hash is
+ * written in base64url.
  */
-export const MINIFIED_ID_PLACEHOLDER = '__GT_CHUNK_TRANSLATIONS_ID__';
+export const MINIFIED_ID_PLACEHOLDER = '~';
 
 /** The characters that name a chunk's list of messages: 48 bits of its digest. */
 export const MINIFIED_ID_LIST_LENGTH = 8;
@@ -55,8 +66,13 @@ export const MINIFIED_ID_LIST_LENGTH = 8;
 /** Between the name of a list and the place in it: a character no hash has. */
 export const MINIFIED_ID_SEPARATOR = '.';
 
-/** The ids of a build with hash minification: the hash of each id a chunk was given. */
-export type MinifiedIds = { hashes: Map<string, string> };
+/** The ids of a build with hash minification. */
+export type MinifiedIds = {
+  /** The hash of each id a chunk was given */
+  hashes: Map<string, string>;
+  /** The hash of each placeholder the build wrote at a call site */
+  placeholders: Map<string, string>;
+};
 
 /**
  * What a translations file of a build with hash minification holds, in
@@ -124,13 +140,18 @@ function blankNames(tree: MessageTree): unknown {
   });
 }
 
-// A hash is whatever follows the placeholder, up to the end of its string
-const WRITTEN_HASH = '([^"\'`\\\\]+)';
+// A placeholder is a whole string: it ends where its string does
+const WRITTEN_PLACEHOLDER = `${MINIFIED_ID_PLACEHOLDER}[^"'\`\\\\]+`;
 
+// A string that may be a placeholder, without its quotes, which the match
+// leaves to the strings next to it
 const PLACEHOLDER = new RegExp(
-  `(["'\`])${MINIFIED_ID_PLACEHOLDER}${WRITTEN_HASH}\\1`,
+  `(?<=(["'\`]))${WRITTEN_PLACEHOLDER}(?=\\1)`,
   'g'
 );
+
+// A hash in hexadecimal, which base64url writes in fewer characters
+const HEXADECIMAL_HASH = /^(?:[0-9a-f]{2})+$/;
 
 // The id of a call site in a chunk's final code, see HASH_ARGUMENT in
 // assignTranslations.ts
@@ -141,7 +162,7 @@ const ID_ARGUMENT = new RegExp(
 
 // The placeholder of a call site in the code of a module
 const PLACEHOLDER_ARGUMENT = new RegExp(
-  `[{,]\\s*["']?\\$?_hash["']?\\s*:\\s*(["'\`])${MINIFIED_ID_PLACEHOLDER}${WRITTEN_HASH}\\1`,
+  `[{,]\\s*["']?\\$?_hash["']?\\s*:\\s*(["'\`])(${WRITTEN_PLACEHOLDER})\\1`,
   'g'
 );
 
@@ -197,6 +218,16 @@ export const createTakenIdError = (ids: string[]) =>
     details: nameSome(ids),
   });
 
+export const createUnknownPlaceholdersError = (found: string[]) =>
+  createDiagnosticMessage({
+    source: '@generaltranslation/compiler',
+    severity: 'Error',
+    whatHappened: `Hash minification found ${found.length === 1 ? 'a string at a call site that has' : `${found.length} strings at call sites that have`} the form of a placeholder and that this build did not write`,
+    why: 'a module that another instance of the plugin compiled leaves such a string at its call sites, which would render the source text',
+    fix: 'Compile every module of the build with one instance of the plugin. If a string is data of the app, pass it under another key than _hash or $_hash, or turn experimentalSplitTranslations.minifyHashes off',
+    details: nameSome(found),
+  });
+
 export const createUnminifiedChunksError = (files: string[]) =>
   createDiagnosticMessage({
     source: '@generaltranslation/compiler',
@@ -207,9 +238,38 @@ export const createUnminifiedChunksError = (files: string[]) =>
     details: nameSome(files),
   });
 
-/** What the compiler writes at a call site whose chunk is rendered later. */
-export function createIdPlaceholder(hash: string): string {
-  return `${MINIFIED_ID_PLACEHOLDER}${hash}`;
+/** The placeholder of a hash that is as long as the hash, see createIdPlaceholder. */
+function writeSameLength(hash: string): string {
+  const written = HEXADECIMAL_HASH.test(hash)
+    ? Buffer.from(hash, 'hex')
+        .toString('base64url')
+        .padEnd(hash.length - 1, MINIFIED_ID_PLACEHOLDER)
+    : hash.slice(1);
+  return `${MINIFIED_ID_PLACEHOLDER}${written}`;
+}
+
+/**
+ * What the compiler writes at a call site whose chunk is rendered later,
+ * which `minified` keeps with its hash: a string as long as the hash,
+ * whatever that length is. A hash in hexadecimal is written out in
+ * base64url, which leaves room for the first character, and filled up to
+ * its length, so no two share a placeholder. Any other hash gives up its
+ * first character, and one that differs from an earlier hash in that
+ * character alone gets a placeholder of its own, two characters longer.
+ * Nothing reads a placeholder back into its hash but `minified`.
+ */
+export function createIdPlaceholder(
+  hash: string,
+  minified: MinifiedIds
+): string {
+  const { placeholders } = minified;
+  const sameLength = writeSameLength(hash);
+  const placeholder =
+    (placeholders.get(sameLength) ?? hash) === hash
+      ? sameLength
+      : `${MINIFIED_ID_PLACEHOLDER}${MINIFIED_ID_PLACEHOLDER}${hash}`;
+  placeholders.set(placeholder, hash);
+  return placeholder;
 }
 
 /** What names a list of messages: the start of a digest of their hashes, in the order given. */
@@ -235,7 +295,9 @@ export function minifyHashes(hashes: Iterable<string>): Map<string, string> {
 /**
  * Minifies the hashes of a chunk the bundler has rendered: each placeholder
  * becomes the id of its message, and `minified` learns the hash of each id.
- * Undefined when the chunk holds no placeholder.
+ * A placeholder is a string the build wrote, so any other string that
+ * starts as one does stays as it is. Undefined when the chunk holds no
+ * placeholder.
  *
  * Throws when an id already names another message: two different lists
  * share a digest, which chance does once in 2^48 pairs of them.
@@ -248,8 +310,11 @@ export function minifyChunk(
   replace: ReplaceInChunk = replaceInChunk
 ): string | undefined {
   if (!code.includes(MINIFIED_ID_PLACEHOLDER)) return undefined;
+  const { placeholders } = minified;
   const ids = minifyHashes(
-    [...code.matchAll(PLACEHOLDER)].map((match) => match[2])
+    (code.match(PLACEHOLDER) ?? []).flatMap(
+      (written) => placeholders.get(written) ?? []
+    )
   );
   if (!ids.size) return undefined;
   for (const [hash, id] of ids) {
@@ -259,10 +324,69 @@ export function minifyChunk(
     }
     minified.hashes.set(id, hash);
   }
-  return replace(
-    code,
-    PLACEHOLDER,
-    (_match, quote: string, hash: string) => `${quote}${ids.get(hash)}${quote}`
+  return replace(code, PLACEHOLDER, (written) => {
+    const hash = placeholders.get(written);
+    return hash === undefined ? written : ids.get(hash)!;
+  });
+}
+
+/**
+ * Whether a chunk's final code still holds a placeholder the build wrote,
+ * wherever it is: also one that a minifier joined to the string next to it.
+ */
+function holdsPlaceholder(
+  code: string,
+  placeholders: ReadonlyMap<string, string>,
+  lengths: readonly number[]
+): boolean {
+  for (
+    let start = code.indexOf(MINIFIED_ID_PLACEHOLDER);
+    start !== -1;
+    start = code.indexOf(MINIFIED_ID_PLACEHOLDER, start + 1)
+  ) {
+    if (
+      lengths.some((length) =>
+        placeholders.has(code.slice(start, start + length))
+      )
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Whether a string is exactly what the compiler writes for some hash in
+ * hexadecimal, as long as the string is: data of an app that only starts
+ * as a placeholder does is not.
+ */
+function hasPlaceholderForm(text: string): boolean {
+  const [packed] = text
+    .slice(MINIFIED_ID_PLACEHOLDER.length)
+    .split(MINIFIED_ID_PLACEHOLDER);
+  const hash = Buffer.from(packed, 'base64url').toString('hex');
+  return hash.length === text.length && writeSameLength(hash) === text;
+}
+
+/**
+ * The placeholders at the call sites of a chunk's final code that the build
+ * did not write, as another instance of the plugin leaves them: strings of
+ * the exact form of a placeholder, of a length this build writes, that are
+ * no hash an author wrote there.
+ */
+function findUnknownPlaceholders(
+  code: string,
+  lengths: readonly number[],
+  written: ReadonlySet<string>
+): string[] {
+  const passed = [...code.matchAll(PLACEHOLDER_ARGUMENT)].map(
+    (match) => match[2]
+  );
+  return [...new Set(passed)].filter(
+    (text) =>
+      lengths.includes(text.length) &&
+      !written.has(text) &&
+      hasPlaceholderForm(text)
   );
 }
 
@@ -270,7 +394,8 @@ export function minifyChunk(
  * How a build with hash minification reads its chunks, once all of them are
  * rendered. Throws when an id is also a key of the translations that names
  * something else, so that no page ever renders one message's translation
- * for another, and when a chunk still holds a placeholder.
+ * for another, and when a chunk still holds a placeholder: one the build
+ * wrote, or at a call site one that it did not.
  */
 export function readMinifiedIds(
   minified: MinifiedIds,
@@ -278,11 +403,24 @@ export function readMinifiedIds(
   table: TranslationsTable,
   chunks: readonly { fileName: string; code: string }[]
 ): MinifiedIdReader {
+  const lengths = [
+    ...new Set([...minified.placeholders.keys()].map(({ length }) => length)),
+  ];
   const unminified = chunks
-    .filter(({ code }) => code.includes(MINIFIED_ID_PLACEHOLDER))
+    .filter(({ code }) =>
+      holdsPlaceholder(code, minified.placeholders, lengths)
+    )
     .map(({ fileName }) => fileName);
   if (unminified.length) {
     throw new Error(createUnminifiedChunksError(unminified.sort()));
+  }
+  const unknown = chunks.flatMap(({ fileName, code }) =>
+    findUnknownPlaceholders(code, lengths, build.unsplit).map(
+      (text) => `"${text}" in ${fileName}`
+    )
+  );
+  if (unknown.length) {
+    throw new Error(createUnknownPlaceholdersError(unknown.sort()));
   }
   const taken = [...minified.hashes.keys()].filter(
     (id) =>
@@ -297,15 +435,11 @@ export function readMinifiedIds(
 
 /**
  * How such a build reads the code of a module, which the bundler keeps as
- * it was before its chunk was rendered: each placeholder is its hash.
+ * it was before its chunk was rendered: each placeholder it wrote is its
+ * hash.
  */
-export function readPlaceholders(
-  hashes: ReadonlySet<string>
-): MinifiedIdReader {
-  return {
-    argument: PLACEHOLDER_ARGUMENT,
-    hashes: new Map([...hashes].map((hash) => [hash, hash])),
-  };
+export function readPlaceholders(minified: MinifiedIds): MinifiedIdReader {
+  return { argument: PLACEHOLDER_ARGUMENT, hashes: minified.placeholders };
 }
 
 /**

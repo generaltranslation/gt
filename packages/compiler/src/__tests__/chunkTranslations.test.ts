@@ -2953,8 +2953,13 @@ export const ready = initializeGTSPA({});`,
     const SAVE_TEXT = 'ab72d114d0d156a9';
     const PRINT_TEXT = 'aae8cb2668d0cb74';
     const idsOf = (hashes: string[]) => [...minifyHashes(hashes).values()];
-    const minifiedIds = (): MinifiedIds => ({ hashes: new Map() });
-    const site = (hash: string) => `t({$_hash:"${createIdPlaceholder(hash)}"})`;
+    const minifiedIds = (): MinifiedIds => ({
+      hashes: new Map(),
+      placeholders: new Map(),
+    });
+    /** A call site as a module of the build holds it, with the placeholder the build writes there. */
+    const site = (hash: string, minified: MinifiedIds) =>
+      `t({$_hash:"${createIdPlaceholder(hash, minified)}"})`;
     type Vite = {
       configResolved: (config: object) => void;
       renderChunk: (code: string) => string | null;
@@ -3074,7 +3079,9 @@ export const ready = initializeGTSPA({});`,
       );
       expect(
         resolveChunkTranslations(GT_CONFIG, { ...build, minifyHashes: true })
-      ).toMatchObject({ minifiedIds: { hashes: new Map() } });
+      ).toMatchObject({
+        minifiedIds: { hashes: new Map(), placeholders: new Map() },
+      });
     });
 
     it.each([
@@ -3158,16 +3165,30 @@ export const ready = initializeGTSPA({});`,
     });
 
     it.each([
-      ['16 hexadecimal characters', [SAVE_TEXT, HELLO], '2bFNA3qJ'],
-      ['11 base64url characters', ['q3LRFNDRVqk', 't4XrnVr1AZE'], 'Rze57V1q'],
+      [
+        '16 hexadecimal characters',
+        [SAVE_TEXT, HELLO],
+        '2bFNA3qJ',
+        '~q3LRFNDRVqk~~~~',
+      ],
+      [
+        '11 base64url characters',
+        ['q3LRFNDRVqk', 't4XrnVr1AZE'],
+        'Rze57V1q',
+        '~3LRFNDRVqk',
+      ],
     ])(
       'minifies the hashes of a chunk in the order of the hashes, whatever a hash is made of: %s',
-      (_format, [first, second], name) => {
+      (_format, [first, second], name, placeholder) => {
         const minified = minifiedIds();
+        // A bundler measures a call site by its placeholder, which is as
+        // long as the hash a build without hash minification writes there
+        expect(createIdPlaceholder(first, minified)).toBe(placeholder);
+        expect(placeholder).toHaveLength(first.length);
         const code = [
-          `e(T,{children:"Hello",_hash:'${createIdPlaceholder(second)}'})`,
-          `t({$_hash:"${createIdPlaceholder(first)}",$_tree:"Save"})`,
-          `t({$_hash:\`${createIdPlaceholder(first)}\`})\`Save\``,
+          `e(T,{children:"Hello",_hash:'${createIdPlaceholder(second, minified)}'})`,
+          `t({$_hash:"${createIdPlaceholder(first, minified)}",$_tree:"Save"})`,
+          `t({$_hash:\`${createIdPlaceholder(first, minified)}\`})\`Save\``,
           // A call site that reads the unsplit file by its hash
           `msg({$_hash:"${first}"})\`Save\``,
         ].join(';');
@@ -3215,7 +3236,7 @@ export const ready = initializeGTSPA({});`,
 
     it('gives a chunk the same ids in every build that leaves its messages alone, and two chunks with the same messages the same ids', () => {
       const minified = minifiedIds();
-      const home = `${site(SAVE_TEXT)};${site(HELLO)}`;
+      const home = `${site(SAVE_TEXT, minified)};${site(HELLO, minified)}`;
       const first = minifyChunk(home, minified)!;
       // Other code around the same call sites, and another chunk of the build
       expect(minifyChunk(`var revision=2;${home}`, minified)).toBe(
@@ -3223,10 +3244,13 @@ export const ready = initializeGTSPA({});`,
       );
       // The same call sites the other way round, as when the bundler
       // orders the chunk's modules differently
-      expect(minifyChunk(`${site(HELLO)};${site(SAVE_TEXT)}`, minified)).toBe(
-        first.split(';').reverse().join(';')
-      );
-      minifyChunk(site(PRINT_TEXT), minified);
+      expect(
+        minifyChunk(
+          `${site(HELLO, minified)};${site(SAVE_TEXT, minified)}`,
+          minified
+        )
+      ).toBe(first.split(';').reverse().join(';'));
+      minifyChunk(site(PRINT_TEXT, minified), minified);
       expect([...minified.hashes]).toEqual([
         ['2bFNA3qJ.0', SAVE_TEXT],
         ['2bFNA3qJ.1', HELLO],
@@ -3237,9 +3261,13 @@ export const ready = initializeGTSPA({});`,
     it('fails the build when two lists of messages share a name, and names both messages', () => {
       const minified: MinifiedIds = {
         hashes: new Map([['2bFNA3qJ.0', PRINT_TEXT]]),
+        placeholders: new Map(),
       };
       expect(() =>
-        minifyChunk(`${site(SAVE_TEXT)};${site(HELLO)}`, minified)
+        minifyChunk(
+          `${site(SAVE_TEXT, minified)};${site(HELLO, minified)}`,
+          minified
+        )
       ).toThrow(
         `Hash minification gives two messages the id "2bFNA3qJ.0" because the lists of messages of two chunks have the same digest, and a page would render the translation of one message for the other. Turn experimentalSplitTranslations.minifyHashes off. Details: ${PRINT_TEXT} and ${SAVE_TEXT}.`
       );
@@ -3250,7 +3278,10 @@ export const ready = initializeGTSPA({});`,
       ['an id written by hand', {}, ['2bFNA3qJ.1']],
     ])('fails the build when an id is also %s', (_name, table, unsplit) => {
       const minified = minifiedIds();
-      const code = minifyChunk(`${site(SAVE_TEXT)};${site(HELLO)}`, minified)!;
+      const code = minifyChunk(
+        `${site(SAVE_TEXT, minified)};${site(HELLO, minified)}`,
+        minified
+      )!;
       const chunks = [{ fileName: 'assets/index.js', code }];
       expect(() =>
         readMinifiedIds(minified, { unsplit: new Set(unsplit) }, table, chunks)
@@ -3262,24 +3293,156 @@ export const ready = initializeGTSPA({});`,
       ).toBe(minified.hashes);
     });
 
-    it('fails the build when a chunk reaches the output with a placeholder at its call sites', () => {
-      expect(() =>
-        readMinifiedIds(minifiedIds(), { unsplit: new Set() }, {}, [
-          { fileName: 'assets/worker.js', code: site(SAVE_TEXT) },
-          { fileName: 'assets/index.js', code: 't({$_hash:"2bFNA3qJ.0"})' },
-        ])
-      ).toThrow(
-        'Hash minification did not reach the call sites of a chunk because the bundler wrote them without rendering them through this plugin, so their call sites still hold a placeholder and would render the source text. Turn experimentalSplitTranslations.minifyHashes off. Details: assets/worker.js.'
-      );
+    it('gives two hashes that one placeholder of their length would stand for a placeholder each', () => {
+      const minified = minifiedIds();
+      // No shorter way to write these is known, and they differ where the
+      // placeholder of the first leaves a character out
+      const hashes = ['q3LRFNDRVqk', 'r3LRFNDRVqk'];
+      const written = hashes.map((hash) => createIdPlaceholder(hash, minified));
+      expect(written).toEqual(['~3LRFNDRVqk', '~~r3LRFNDRVqk']);
+      // The same again wherever the hashes are written next
+      expect(
+        [...hashes].reverse().map((hash) => createIdPlaceholder(hash, minified))
+      ).toEqual([...written].reverse());
+      const [name] = idsOf(hashes)[0].split('.');
+      expect(
+        minifyChunk(
+          written.map((text) => `t({$_hash:"${text}"})`).join(';'),
+          minified
+        )
+      ).toBe(`t({$_hash:"${name}.0"});t({$_hash:"${name}.1"})`);
+      expect([...minified.hashes]).toEqual([
+        [`${name}.0`, hashes[0]],
+        [`${name}.1`, hashes[1]],
+      ]);
     });
+
+    // Strings of an app that start as a placeholder does, and a comment
+    // whose quote is closed by the one that opens the next string
+    const LOOKALIKES = [
+      'var home="~/components",flag="~experiments"',
+      '/* such as "~/components */',
+    ].join(';');
+    // What another build writes at a call site of a message
+    const FOREIGN = createIdPlaceholder(PRINT_TEXT, minifiedIds());
+
+    it('minifies only the placeholders the build wrote, and leaves any other string alone', () => {
+      const minified = minifiedIds();
+      const call = site(SAVE_TEXT, minified);
+      const other = `t({$_hash:"${FOREIGN}"});${LOOKALIKES}`;
+      expect(minifyChunk(`${other};${call};${other}`, minified)).toBe(
+        `${other};t({$_hash:"${getListName([SAVE_TEXT])}.0"});${other}`
+      );
+      expect([...minified.hashes.values()]).toEqual([SAVE_TEXT]);
+      expect(minifyChunk(other, minified)).toBe(undefined);
+    });
+
+    it.each([
+      [
+        'at a call site',
+        (placeholder: string) => `t({$_hash:"${placeholder}"})`,
+      ],
+      [
+        'that a minifier joined to another string',
+        (placeholder: string) => `log("read ${placeholder} of 3")`,
+      ],
+    ])(
+      'fails the build when a chunk reaches the output with a placeholder %s',
+      (_where, write) => {
+        const minified = minifiedIds();
+        const code = write(createIdPlaceholder(SAVE_TEXT, minified));
+        // A hash its author wrote, which stays what it is
+        const unsplit = new Set(['~by-hand']);
+        const read = (chunks: { fileName: string; code: string }[]) =>
+          readMinifiedIds(minified, { unsplit }, {}, chunks);
+        expect(() =>
+          read([
+            { fileName: 'assets/worker.js', code },
+            { fileName: 'assets/index.js', code: 't({$_hash:"2bFNA3qJ.0"})' },
+          ])
+        ).toThrow(
+          'Hash minification did not reach the call sites of a chunk because the bundler wrote them without rendering them through this plugin, so their call sites still hold a placeholder and would render the source text. Turn experimentalSplitTranslations.minifyHashes off. Details: assets/worker.js.'
+        );
+        // No other string of the app is taken for a placeholder
+        const app = `${LOOKALIKES};var other="${FOREIGN}";e(T,{_hash:"~by-hand"})`;
+        expect(read([{ fileName: 'assets/index.js', code: app }]).hashes).toBe(
+          minified.hashes
+        );
+      }
+    );
+
+    // Data of an app under the key a call site passes its hash by: what
+    // starts as a placeholder does, what the compiler writes for a hash of
+    // another length, a placeholder with one character more, less or
+    // changed, and one whose last character no hash is written with
+    const DATA = [
+      '~draft',
+      '~',
+      // As long as a hash, in the characters of base64url
+      '~draft-of-a-post',
+      createIdPlaceholder('ab72d114d0d1', minifiedIds()),
+      `${FOREIGN}~`,
+      FOREIGN.slice(0, -1),
+      FOREIGN.replace('~~~~', '~~~.'),
+      FOREIGN.replace(/.~~~~$/, 'R~~~~'),
+    ];
+
+    it.each(
+      DATA.flatMap((data) => [`{_hash:"${data}"}`, `{$_hash:'${data}'}`])
+    )(
+      'never fails the build on data of the app that is no placeholder: %s',
+      (data) => {
+        const minified = minifiedIds();
+        const call = site(SAVE_TEXT, minified);
+        const record = `globalThis.record=${data}`;
+        const code = minifyChunk(`${record};${call};${record}`, minified)!;
+        expect(code).toBe(
+          `${record};t({$_hash:"${getListName([SAVE_TEXT])}.0"});${record}`
+        );
+        expect(
+          readMinifiedIds(minified, { unsplit: new Set() }, {}, [
+            { fileName: 'assets/index.js', code },
+          ]).hashes
+        ).toBe(minified.hashes);
+      }
+    );
+
+    it.each(['_hash', '$_hash'])(
+      'fails the build when a call site passes, as %s, a string of the exact form of a placeholder that the build did not write, and says what it is',
+      (key) => {
+        const minified = minifiedIds();
+        const code = minifyChunk(
+          `${site(SAVE_TEXT, minified)};e(T,{children:"Print",${key}:'${FOREIGN}'})`,
+          minified
+        )!;
+        // What the build did not write stays as it is
+        expect(code).toContain(`${key}:'${FOREIGN}'`);
+        const read = (unsplit: string[]) =>
+          readMinifiedIds(minified, { unsplit: new Set(unsplit) }, {}, [
+            { fileName: 'assets/index.js', code },
+            {
+              fileName: 'assets/Home.js',
+              code: `var data={${key}:"${FOREIGN}"}`,
+            },
+          ]);
+        expect(() => read([])).toThrow(
+          `Hash minification found 2 strings at call sites that have the form of a placeholder and that this build did not write because a module that another instance of the plugin compiled leaves such a string at its call sites, which would render the source text. Compile every module of the build with one instance of the plugin. If a string is data of the app, pass it under another key than _hash or $_hash, or turn experimentalSplitTranslations.minifyHashes off. Details: "${FOREIGN}" in assets/Home.js, "${FOREIGN}" in assets/index.js.`
+        );
+        // A hash its author wrote is no placeholder, whatever its form
+        expect(read([FOREIGN]).hashes).toBe(minified.hashes);
+      }
+    );
 
     it("reads the ids out of a chunk's final code in any quotes, by their list and then their number", () => {
       const minified = minifiedIds();
       const hashes = Array.from({ length: 11 }, (_, place) =>
         place.toString(16).padStart(16, '0')
       );
-      minifyChunk(hashes.map(site).join(';'), minified);
-      minifyChunk(site(SAVE_TEXT), minified);
+      minifyChunk(
+        hashes.map((hash) => site(hash, minified)).join(';'),
+        minified
+      );
+      minifyChunk(site(SAVE_TEXT, minified), minified);
       const ids = readMinifiedIds(minified, { unsplit: new Set() }, {}, []);
       const [list] = idsOf(hashes)[0].split('.');
       const other = idsOf([SAVE_TEXT])[0];
@@ -3352,7 +3515,10 @@ export const Written = () => jsx(T, { _hash: '0123456789abcdef', children: 'Writ
         expect(on).toBe(
           split.reduce(
             (code, hash) =>
-              code.replace(`"${hash}"`, `"${createIdPlaceholder(hash)}"`),
+              code.replace(
+                `"${hash}"`,
+                `"${createIdPlaceholder(hash, minifiedIds())}"`
+              ),
             off.replace(
               'initializeChunkTranslations',
               'initializeMinifiedChunkTranslations'
@@ -3405,8 +3571,8 @@ export const pair = (a, b) => t\`\${{ name: a }} and \${{ name: b }}\`;`;
         await transform(source, { ...MINIFIED, precomputeMessages: true })
       ).toBe(
         off
-          .replace(SAVE_TEXT, createIdPlaceholder(SAVE_TEXT))
-          .replace(hash, createIdPlaceholder(hash))
+          .replace(SAVE_TEXT, createIdPlaceholder(SAVE_TEXT, minifiedIds()))
+          .replace(hash, createIdPlaceholder(hash, minifiedIds()))
       );
     });
 
@@ -3514,8 +3680,12 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       /** The ids of two chunks: one reads all four messages, one two of them. */
       const minify = () => {
         const minified = minifiedIds();
-        minifyChunk(Object.keys(CATALOG).map(site).join(';'), minified);
-        minifyChunk(`${site(SAVE_TEXT)};${site(HELLO)}`, minified);
+        for (const chunk of [Object.keys(CATALOG), [SAVE_TEXT, HELLO]]) {
+          minifyChunk(
+            chunk.map((hash) => site(hash, minified)).join(';'),
+            minified
+          );
+        }
         return minified;
       };
 
@@ -3583,7 +3753,10 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
         const minified = minifiedIds();
         const chunks = [hashes.slice(0, 25), hashes.slice(10, 40), hashes];
         for (const chunk of chunks) {
-          minifyChunk(chunk.map(site).join(';'), minified);
+          minifyChunk(
+            chunk.map((hash) => site(hash, minified)).join(';'),
+            minified
+          );
         }
         const [held, lists] = pickMinifiedTranslations(
           catalog,
@@ -3604,6 +3777,65 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       });
     });
 
+    // The templates of the messages above
+    const TEMPLATES: Record<string, string> = {
+      [SAVE_TEXT]: 't`Save`',
+      [PRINT_TEXT]: 't`Print`',
+      [HELLO]: 't`Hello, ${{ name }}!`',
+    };
+    /**
+     * A module that reads the messages, compiled by a build's plugin, which
+     * minifies only the placeholders it wrote.
+     */
+    const compile = async (
+      created: ReturnType<typeof createPlugins>,
+      hashes: string[]
+    ) =>
+      (await transform(
+        `import { t } from 'gt-react';
+export const read = (name) => [${hashes.map((hash) => TEMPLATES[hash]).join(', ')}];`,
+        MINIFIED,
+        created
+      ))!;
+
+    it('writes the data of an app that starts as a placeholder does as it is, and fails only on a placeholder at a call site that the build did not write', async () => {
+      const created = createPlugins(MINIFIED, 'vite', {
+        'translations/fr.json': JSON.stringify({ [SAVE_TEXT]: 'Enregistrer' }),
+      });
+      const vite = created.plugins[0].vite as Vite;
+      const code = (await transform(
+        `import { t } from 'gt-react';
+globalThis.record = { _hash: '~draft', value: 'ordinary app data' };
+globalThis.options = { $_hash: '~draft', token: '${FOREIGN}' };
+globalThis.save = () => t\`Save\`;`,
+        MINIFIED,
+        created
+      ))!;
+      expect(code).toContain("{ _hash: '~draft', value: 'ordinary app data' }");
+      expect(code).toContain(`{ $_hash: '~draft', token: '${FOREIGN}' }`);
+      const { rendered, emitted } = writeBundle(vite, {
+        'assets/index.js': { code, isEntry: true },
+      });
+      // Only the placeholder of the template became its id
+      const [name] = idsOf([SAVE_TEXT])[0].split('.');
+      expect(rendered['assets/index.js'].code).toBe(
+        code.replace(createIdPlaceholder(SAVE_TEXT, minifiedIds()), `${name}.0`)
+      );
+      expect(JSON.parse(emitted['assets/index.fr']).t).toEqual([
+        ['Enregistrer'],
+        { [name]: [0, 0, 1] },
+      ]);
+      // A call site of a module that another instance of the plugin compiled
+      expect(() =>
+        writeBundle(vite, {
+          'assets/index.js': {
+            code: `${code}\nglobalThis.print = () => t({ $_hash: "${FOREIGN}" })\`Print\`;`,
+            isEntry: true,
+          },
+        })
+      ).toThrow(`Details: "${FOREIGN}" in assets/index.js.`);
+    });
+
     it("gives a message that two chunks read an id in each, and each chunk's file the ids of its own call sites", async () => {
       const created = createPlugins(MINIFIED, 'vite', {
         'translations/fr.json': JSON.stringify({
@@ -3613,11 +3845,11 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
       });
       const { emitted } = writeBundle(created.plugins[0].vite as Vite, {
         'assets/index.js': {
-          code: site(SAVE_TEXT),
+          code: await compile(created, [SAVE_TEXT]),
           isEntry: true,
           dynamicImports: ['assets/Home.js'],
         },
-        'assets/Home.js': { code: `${site(HELLO)};${site(SAVE_TEXT)}` },
+        'assets/Home.js': { code: await compile(created, [HELLO, SAVE_TEXT]) },
       });
       expect(JSON.parse(emitted['assets/index.fr']).t).toEqual([
         ['Enregistrer'],
@@ -3635,23 +3867,26 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
 
     it.each(chunkTranslationsNamings)(
       'gives a page of one build, in the files of the next build named by %s, the message of its own id or nothing',
-      (naming) => {
+      async (naming) => {
         const options = {
           ...MINIFIED,
           experimentalSplitTranslations: { minifyHashes: true, naming },
         };
         /** A build of two chunks, and each id its call sites pass with its hash. */
-        const build = (home: string[], catalog: Record<string, string>) => {
+        const build = async (
+          home: string[],
+          catalog: Record<string, string>
+        ) => {
           const created = createPlugins(options, 'vite', {
             'translations/fr.json': JSON.stringify(catalog),
           });
           const { emitted } = writeBundle(created.plugins[0].vite as Vite, {
             'assets/index.js': {
-              code: site(SAVE_TEXT),
+              code: await compile(created, [SAVE_TEXT]),
               isEntry: true,
               dynamicImports: ['assets/Home.js'],
             },
-            'assets/Home.js': { code: home.map(site).join(';') },
+            'assets/Home.js': { code: await compile(created, home) },
           });
           return {
             files: readTranslationFiles(emitted),
@@ -3662,7 +3897,7 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
             ),
           };
         };
-        const page = build([HELLO, SAVE_TEXT], {
+        const page = await build([HELLO, SAVE_TEXT], {
           [SAVE_TEXT]: 'Enregistrer',
           [HELLO]: 'Bonjour',
         });
@@ -3672,7 +3907,7 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
           [HELLO]: 'Bonjour',
           [PRINT_TEXT]: 'Imprimer',
         };
-        const deployed = build([HELLO, SAVE_TEXT, PRINT_TEXT], next);
+        const deployed = await build([HELLO, SAVE_TEXT, PRINT_TEXT], next);
         const [entryId] = idsOf([SAVE_TEXT]);
         // The entry chunk is as it was and reads its message as it is now;
         // the route's ids are in no file of that build
@@ -3731,11 +3966,15 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
     // t`Save` and t`Print`
     const SAVE_TEXT = 'ab72d114d0d156a9';
     const PRINT_TEXT = 'aae8cb2668d0cb74';
+    // What a build writes at the call sites of the two messages
+    const PLACEHOLDERS = [SAVE_TEXT, PRINT_TEXT].map((hash) =>
+      createIdPlaceholder(hash, { hashes: new Map(), placeholders: new Map() })
+    );
     // A chunk as a bundler renders it, with each rewrite of the build before
     // other code on its line: two call sites, a dynamic import that Vite
     // preloads, and the call that starts the app
     const RENDERED = [
-      `const labels = [t({$_hash:"${createIdPlaceholder(SAVE_TEXT)}"})\`Save\`, t({$_hash:"${createIdPlaceholder(PRINT_TEXT)}"})\`Print\`]; report(labels);`,
+      `const labels = [t({$_hash:"${PLACEHOLDERS[0]}"})\`Save\`, t({$_hash:"${PLACEHOLDERS[1]}"})\`Print\`]; report(labels);`,
       `const Home = load(() => __vitePreload(() => import("./Home.js"), __VITE_PRELOAD__), "${P}"); mount(Home);`,
       `initialize(initializeGTSPA, config, "${UNSPLIT_LOADER_PLACEHOLDER}"); start();`,
     ].join('\n');
@@ -3756,9 +3995,11 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
             [SAVE_TEXT]: 'Enregistrer',
           }),
         });
-        // A msg is rendered away from its chunk, so its translation is unsplit
+        // The build minifies the placeholders it wrote, so it compiles the
+        // call sites. A msg is rendered away from its chunk, so its
+        // translation is unsplit
         await transform(
-          `import { ${unsplit ? 'msg' : 't'} } from 'gt-react';\nexport const saved = ${unsplit ? 'msg' : 't'}\`Save\`;`,
+          `import { msg, t } from 'gt-react';\nexport const labels = () => [t\`Save\`, t\`Print\`];${unsplit ? '\nexport const saved = msg`Save`;' : ''}`,
           MINIFIED,
           created
         );
@@ -3771,7 +4012,12 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
           unsplit ? 'loadTranslations: (locale) =>' : 'initializeGTSPA, config)'
         );
         expect(code).toContain(`import("./Home.js"), "${P}", __vitePreload,`);
-        expect(code).not.toContain(createIdPlaceholder(''));
+        const [name] = [
+          ...minifyHashes([SAVE_TEXT, PRINT_TEXT]).values(),
+        ][0].split('.');
+        expect(code).toContain(
+          `[t({$_hash:"${name}.1"})\`Save\`, t({$_hash:"${name}.0"})\`Print\`]`
+        );
 
         const mapped = vite.renderChunk(RENDERED, chunk, { sourcemap: true });
         expect(mapped).toEqual({ code, map: expect.anything() });
@@ -4711,9 +4957,10 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
     });
 
     describe('with hash minification', () => {
-      const placeholders = (code: string) =>
+      const placeholders = (code: string, minified: MinifiedIds) =>
         Object.values(HASH).reduce(
-          (text, hash) => text.replaceAll(hash, createIdPlaceholder(hash)),
+          (text, hash) =>
+            text.replaceAll(hash, createIdPlaceholder(hash, minified)),
           code
         );
       /**
@@ -4730,17 +4977,23 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
             { imports: ['assets/shared.js'] }
           ),
         };
-        const minifiedIds: MinifiedIds = { hashes: new Map() };
+        const minifiedIds: MinifiedIds = {
+          hashes: new Map(),
+          placeholders: new Map(),
+        };
         const bundle = Object.fromEntries(
           Object.entries(hashed).map(([fileName, file]) => [
             fileName,
             {
               ...file,
-              code: minifyChunk(placeholders(file.code), minifiedIds)!,
+              code: minifyChunk(
+                placeholders(file.code, minifiedIds),
+                minifiedIds
+              )!,
               modules: Object.fromEntries(
                 Object.entries(file.modules).map(([id, { code }]) => [
                   id,
-                  { code: placeholders(code) },
+                  { code: placeholders(code, minifiedIds) },
                 ])
               ),
             },
@@ -4783,7 +5036,7 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
               ...bundle,
               'assets/Admin.js': {
                 ...bundle['assets/Admin.js'],
-                code: placeholders(hashed['assets/Admin.js'].code),
+                code: placeholders(hashed['assets/Admin.js'].code, minifiedIds),
               },
             },
             minifiedIds,

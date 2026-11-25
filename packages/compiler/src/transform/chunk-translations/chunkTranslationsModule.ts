@@ -73,7 +73,7 @@ export function recordChunkHash(
     else readers.compiled.set(shape, new Set([hash]));
     if (readers.shapes.has(shape)) build.unsplit.add(hash);
   }
-  return createIdPlaceholder(hash);
+  return createIdPlaceholder(hash, build.minifiedIds);
 }
 
 /**
