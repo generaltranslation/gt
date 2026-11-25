@@ -187,6 +187,32 @@ function findWrappedPages(
 }
 
 /**
+ * The names of the client files that the code of any client file holds, its
+ * own included.
+ */
+function findNamedFiles(clientCode: Map<string, string>): Set<string> {
+  const names = new Set(
+    Array.from(clientCode.keys(), (file) => path.posix.basename(file))
+  );
+  const lengths = new Set(Array.from(names, (name) => name.length));
+  const named = new Set<string>();
+  // Every name ends in "js", so only text that ends there can be one.
+  clientCode.forEach((code) => {
+    for (
+      let end = code.indexOf('js') + 2;
+      end > 1;
+      end = code.indexOf('js', end) + 2
+    ) {
+      lengths.forEach((length) => {
+        const name = code.slice(end - length, end);
+        if (length <= end && names.has(name)) named.add(name);
+      });
+    }
+  });
+  return named;
+}
+
+/**
  * The <T> hashes to send with each wrapped page: those whose every client
  * file only that page's entry loads.
  */
@@ -208,6 +234,7 @@ function placePageHashes(
       }
     }
   }
+  const namedFiles = findNamedFiles(clientCode);
   const pageOf = (file: string) => {
     const entries = entriesByFile.get(file);
     if (entries?.size !== 1) return undefined;
@@ -215,11 +242,7 @@ function placePageHashes(
     const id = pageIds.get(entry);
     if (!id || !wrappedPages.has(id)) return undefined;
     // A chunk another chunk names can be loaded lazily, by any page.
-    const name = path.posix.basename(file);
-    const loadedLazily = Array.from(clientCode.values()).some((code) =>
-      code.includes(name)
-    );
-    return loadedLazily ? undefined : id;
+    return namedFiles.has(path.posix.basename(file)) ? undefined : id;
   };
   const pageByFile = new Map(
     Array.from(clientCode.keys(), (file) => [file, pageOf(file)])
