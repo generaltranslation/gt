@@ -1,5 +1,11 @@
 # gt-sanity
 
+## 4.0.38
+
+### Patch Changes
+
+- [#3015](https://github.com/generaltranslation/gt/pull/3015) [`1ec94f1`](https://github.com/generaltranslation/gt/commit/1ec94f135bae60d9720362a14baadb2c673730f8) Thanks [@fernando-aviles](https://github.com/fernando-aviles)! - Saving local edits no longer marks changed content as already translated. **Save Local Edits** (the button and the toggle) now only replaces a finished translation General Translation already holds for the same source, and skips locales that have not been translated from the current source yet. Uploading documents together with translations made elsewhere is now a separate **Upload Existing** button.
+
 ## 4.0.37
 
 ### Patch Changes
