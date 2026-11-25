@@ -65,5 +65,11 @@ export function getRegionProperties(
   } catch {
     // Keep fallbacks initialized above.
   }
-  return { code: region, name, emoji, ...customMapping?.[region] };
+  const override = customMapping?.[region];
+  return {
+    code: region,
+    name: override?.name ?? name,
+    emoji: override?.emoji ?? emoji,
+    ...(override?.locale !== undefined && { locale: override.locale }),
+  };
 }

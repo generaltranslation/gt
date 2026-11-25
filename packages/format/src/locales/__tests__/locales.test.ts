@@ -716,10 +716,15 @@ describe('getRegionProperties', () => {
       ['US', 'en', { US: { name: 'United States of Tests' } }],
       { code: 'US', name: 'United States of Tests', emoji: '🇺🇸' },
     ],
+    [
+      'a custom mapping with undefined overrides',
+      ['US', 'en', { US: { name: undefined, emoji: undefined } }],
+      { code: 'US', name: 'United States', emoji: '🇺🇸' },
+    ],
   ] as [string, Parameters<typeof getRegionProperties>, object][])(
     'returns properties for %s',
     (_label, args, expected) => {
-      expect(getRegionProperties(...args)).toEqual(expected);
+      expect(getRegionProperties(...args)).toStrictEqual(expected);
     }
   );
 });
