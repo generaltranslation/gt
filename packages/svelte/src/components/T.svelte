@@ -20,7 +20,7 @@
     validateTarget,
     type GeneratedSnippets,
     type RenderContext,
-  } from '../runtime/nodes';
+  } from '../runtime/nodes.js';
   import { setSourceContent } from '../runtime/source';
   import { getGTState } from '../runtime/state.svelte';
   import { warnInvalidTranslation, warnMissingPreprocessor } from '../runtime/warnings';

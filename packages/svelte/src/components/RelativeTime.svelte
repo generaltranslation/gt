@@ -31,7 +31,7 @@
     name?: string;
   } & (
     | {
-        value: number;
+        value?: Date | number | null;
         /** Unit for a numeric `value`. */
         unit: Intl.RelativeTimeFormatUnit;
       }

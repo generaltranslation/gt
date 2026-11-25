@@ -7,8 +7,13 @@ import type {
   VariableSnippet,
 } from '../src/runtime/nodes';
 
+declare const loading: number | undefined;
+declare const either: number | Date;
+
 export const relativeTimeProps: ComponentProps<typeof RelativeTime>[] = [
   {},
+  { value: loading, unit: 'day' },
+  { value: either, unit: 'day' },
   { value: null },
   { value: new Date(), baseDate: new Date() },
   { value: 3, unit: 'day', options: { numeric: 'auto' } },
