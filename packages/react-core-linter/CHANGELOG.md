@@ -1,5 +1,11 @@
 # @generaltranslation/react-core-linter
 
+## 0.1.16
+
+### Patch Changes
+
+- [#3020](https://github.com/generaltranslation/gt/pull/3020) [`02bebe5`](https://github.com/generaltranslation/gt/commit/02bebe5baee1aa9893782019cf1622c3fa3cc0f5) Thanks [@eoinest](https://github.com/eoinest)! - `static-jsx` no longer reports JSX comments (`{/* ... */}`) or empty braces (`{}`) inside `<T>` as dynamic content.
+
 ## 0.1.15-iris.0
 
 ### Patch Changes
