@@ -26,7 +26,6 @@ export type TranslationOptions = TranslationVariables & TranslationMetadata;
 
 /**
  * Options for JSX translation
- * Used by the resolveJsx() function
  */
 export type JsxTranslationOptions = Pick<
   TranslationMetadata,

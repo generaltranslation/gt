@@ -12,7 +12,7 @@ import { I18nCache } from '../../../i18n-cache/I18nCache';
 import { setI18nCache } from '../../../i18n-cache/singleton-operations';
 import { initializeI18nConfig } from '../../../i18n-config/singleton-operations';
 import { hashContent } from '../../../utils/hashContent';
-import { resolveJsx, resolveJsxWithRuntimeFallback } from '../helpers';
+import { resolveJsxWithRuntimeFallback } from '../helpers';
 
 function setupCache(preloadedTranslations: Record<string, string> = {}) {
   initializeI18nConfig({
@@ -52,17 +52,6 @@ describe('translation helpers', () => {
     Reflect.deleteProperty(globalThis, '__generaltranslation');
     vi.useRealTimers();
     vi.restoreAllMocks();
-  });
-
-  it('resolveJsx looks up JSX in the provided locale and returns undefined on a miss', () => {
-    const lookupTranslation = vi.spyOn(setupCache(), 'lookupTranslation');
-
-    expect(resolveJsx('fr', ['Hello'])).toBeUndefined();
-    expect(lookupTranslation).toHaveBeenCalledWith(
-      'fr',
-      ['Hello'],
-      expect.objectContaining({ $format: 'JSX', $locale: 'fr' })
-    );
   });
 
   it('resolveJsxWithRuntimeFallback runtime translates missing JSX', async () => {
