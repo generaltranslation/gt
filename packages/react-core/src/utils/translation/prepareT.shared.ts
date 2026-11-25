@@ -4,7 +4,7 @@ import { writeChildrenAsObjects } from '../internal/writeChildrenAsObjects';
 import {
   resolveDerivableText,
   type DerivableText,
-  type JsxTranslationOptions as JsxLookupOptions,
+  type JsxLookupOptions,
 } from 'gt-i18n/internal';
 import type { JsxChildren } from '@generaltranslation/format';
 import type { ReactNode } from 'react';

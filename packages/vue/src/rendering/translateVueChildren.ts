@@ -5,13 +5,13 @@ import {
   type JsxChild,
   type JsxChildren,
   type JsxElement,
-  type Variable,
   type VariableType,
 } from '@generaltranslation/format';
 import {
   getPluralBranchKey,
   getPluralForm,
   isAcceptedPluralForm,
+  isVariable,
 } from 'generaltranslation/internal';
 import { hashSource } from 'generaltranslation/id';
 import {
@@ -1504,13 +1504,4 @@ function cloneWithProps(
   extraProps: Record<string, unknown>
 ): VNode {
   return cloneVNode(vnode, extraProps);
-}
-
-function isVariable(value: unknown): value is Variable {
-  return (
-    value != null &&
-    typeof value === 'object' &&
-    'v' in value &&
-    typeof value.v === 'string'
-  );
 }
