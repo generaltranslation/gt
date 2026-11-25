@@ -8,7 +8,7 @@ import { warnNonStaticMessageTreeSync } from '../../../../../console/index.js';
 import { extractStringEntryMetadata } from './extractStringEntryMetadata.js';
 import type { ParsingConfig, ParsingOutput } from '../types.js';
 import { NonStaticMessageError, formatLocation } from './diagnostics.js';
-import { parseMessageOptions } from './parseMessageOptions.js';
+import { parseHashMetadata } from './parseHashMetadata.js';
 import { templateVariants } from './templateVariants.js';
 import type { TagOptions, TreeContext } from './types.js';
 
@@ -27,7 +27,7 @@ export function processMessage(
     resolvingParts: new Set(),
   };
   try {
-    const hashMetadata = parseMessageOptions(options, tagged.node);
+    const hashMetadata = parseHashMetadata(options, tagged.node);
     const variants = templateVariants(tagged.get('quasi'), context);
     const metadata = {
       ...extractStringEntryMetadata({ config, nodeLoc: tagged.node.loc }),

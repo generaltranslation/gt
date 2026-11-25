@@ -70,9 +70,7 @@ export function injectTaggedTemplateHash(
   let metadata: MessageTreeHashMetadata;
   let message: StaticMessage;
   try {
-    metadata = t.isCallExpression(tag)
-      ? parseMessageOptions(tag.arguments)
-      : {};
+    metadata = t.isCallExpression(tag) ? parseHashMetadata(tag.arguments) : {};
     message = buildStaticMessage(quasi, path.scope);
     hash = hashSource({
       source: message.tree,
@@ -179,7 +177,7 @@ function getHelperName(
   return isGTMessageHelperName(importedName) ? importedName : undefined;
 }
 
-function parseMessageOptions(
+function parseHashMetadata(
   args: t.CallExpression['arguments']
 ): MessageTreeHashMetadata {
   const [options] = args;
