@@ -5,8 +5,13 @@ import type {
 } from '@generaltranslation/format';
 
 export type InternalLocaleSelectorProps = Omit<
-  React.ComponentPropsWithoutRef<'select'>,
-  'value' | 'defaultValue' | 'onChange' | 'children'
+  React.ComponentProps<'select'>,
+  | 'value'
+  | 'defaultValue'
+  | 'onChange'
+  | 'children'
+  | 'multiple'
+  | 'dangerouslySetInnerHTML'
 > & {
   locale: string;
   locales: string[];

@@ -2,8 +2,14 @@ import React, { ReactNode } from 'react';
 import type { RegionData } from '../../hooks/useInternalRegionSelector';
 
 export type InternalRegionSelectorProps = Omit<
-  React.ComponentPropsWithoutRef<'select'>,
-  'value' | 'defaultValue' | 'onChange' | 'children' | 'placeholder'
+  React.ComponentProps<'select'>,
+  | 'value'
+  | 'defaultValue'
+  | 'onChange'
+  | 'children'
+  | 'multiple'
+  | 'dangerouslySetInnerHTML'
+  | 'placeholder'
 > & {
   region: string | undefined;
   regions: string[];

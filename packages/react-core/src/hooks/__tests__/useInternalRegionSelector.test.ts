@@ -67,6 +67,28 @@ describe('useInternalRegionSelector', () => {
     });
   });
 
+  it.each(['portal_de', 'de'])(
+    'keeps %s for its own region when another locale shares it',
+    (active) => {
+      const aliasMapping = { portal_de: { code: 'de' } };
+      const locales = ['en-US', 'de', 'portal_de'];
+      resetGTGlobals();
+      initializeI18nConfig({
+        defaultLocale: 'en-US',
+        locales,
+        customMapping: aliasMapping,
+      });
+      vi.mocked(useLocales).mockReturnValue(locales);
+      vi.mocked(useCustomMapping).mockReturnValue(aliasMapping);
+      vi.mocked(useLocale).mockReturnValue(active);
+
+      const { regionData } = useInternalRegionSelector();
+
+      expect(regionData.get('DE')?.locale).toBe(active);
+      expect(regionData.get('US')?.locale).toBe('en-US');
+    }
+  );
+
   it('resolves an active custom alias to its region and names regions in its language', () => {
     const aliasMapping = { portal_de: { code: 'de' } };
     resetGTGlobals();

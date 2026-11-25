@@ -1,8 +1,5 @@
 import type React from 'react';
-import {
-  InternalLocaleSelector,
-  type InternalLocaleSelectorProps,
-} from '@generaltranslation/react-core/components';
+import { InternalLocaleSelector } from '@generaltranslation/react-core/components';
 import { useLocaleSelector } from './useLocaleSelector';
 
 /**
@@ -31,7 +28,7 @@ export function LocaleSelector({
 }
 
 export type LocaleSelectorProps = Omit<
-  InternalLocaleSelectorProps,
+  React.ComponentProps<typeof InternalLocaleSelector>,
   'locale' | 'locales' | 'setLocale' | 'getLocaleProperties'
 > & {
   locales?: string[];

@@ -56,11 +56,13 @@ export function useInternalRegionSelector({
     regionData, // map of ISO 3166 region codes to region display data, potentially not ordered
   ] = useMemo<[string[], Map<string, RegionData>]>(() => {
     const i18nConfig = getI18nConfig();
+    // By the name each locale is configured under: a locale's code can be one
+    // that is not configured, when the locale is an alias.
     const regionToLocaleMap = new Map(
-      contextLocales.map((l) => {
-        const lp = i18nConfig.getLocaleProperties(l, { locale }); // has to be directly called so sourceLocale can be in the user's current locale
-        return [lp.regionCode, lp];
-      })
+      contextLocales.map((l) => [
+        i18nConfig.getLocaleProperties(l, { locale }).regionCode,
+        l,
+      ])
     );
 
     const regions = _regions
@@ -72,7 +74,9 @@ export function useInternalRegionSelector({
         return [
           r,
           {
-            locale: regionToLocaleMap?.get(r)?.code || locale,
+            locale:
+              (r === localeRegion ? locale : regionToLocaleMap.get(r)) ||
+              locale,
             ...i18nConfig.getRegionProperties(r, { locale }),
             ...(typeof customMapping?.[r] === 'string'
               ? { name: customMapping?.[r] }

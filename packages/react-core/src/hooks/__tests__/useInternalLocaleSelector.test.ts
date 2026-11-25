@@ -32,11 +32,11 @@ describe('useInternalLocaleSelector', () => {
   beforeEach(() => {
     resetGTGlobals();
     initializeI18nConfig({
-      defaultLocale: 'el',
-      locales: ['el', 'portal_fr'],
+      defaultLocale: 'fi',
+      locales: ['fi', 'portal_fr'],
       customMapping,
     });
-    vi.mocked(useLocales).mockReturnValue(['el', 'portal_fr']);
+    vi.mocked(useLocales).mockReturnValue(['fi', 'portal_fr']);
     vi.mocked(useCustomMapping).mockReturnValue(customMapping);
     vi.mocked(useLocale).mockReturnValue('portal_fr');
   });
@@ -48,6 +48,7 @@ describe('useInternalLocaleSelector', () => {
     expect(getLocaleProperties('portal_fr').nativeNameWithRegionCode).toBe(
       'français'
     );
-    expect(locales).toEqual(['portal_fr', 'el']);
+    // By name, français before suomi; by code, fi before portal_fr.
+    expect(locales).toEqual(['portal_fr', 'fi']);
   });
 });

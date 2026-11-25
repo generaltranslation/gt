@@ -1,8 +1,5 @@
 import type React from 'react';
-import {
-  InternalRegionSelector,
-  type InternalRegionSelectorProps,
-} from '@generaltranslation/react-core/components';
+import { InternalRegionSelector } from '@generaltranslation/react-core/components';
 import type { InternalRegionSelectorOptions } from '@generaltranslation/react-core/hooks';
 import { useRegionSelector } from './useRegionSelector';
 
@@ -63,7 +60,7 @@ export function RegionSelector({
 }
 
 export type RegionSelectorProps = Omit<
-  InternalRegionSelectorProps,
+  React.ComponentProps<typeof InternalRegionSelector>,
   'region' | 'regions' | 'regionData' | 'setRegion'
 > &
   InternalRegionSelectorOptions & {
