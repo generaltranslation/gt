@@ -42,7 +42,6 @@
       : getI18nConfig().formatCurrency(value, currency, {
           locales: getFormatLocales(contentLocale.current),
           ...options,
-          currency,
         })
   );
 </script>

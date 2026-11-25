@@ -6,6 +6,7 @@ import {
   _formatNum,
   _formatRelativeTime,
   _selectRelativeTimeUnit,
+  type CurrencyFormatOptions,
 } from '../formatting/format';
 import {
   formatMessageTree,
@@ -282,7 +283,7 @@ export class GTIntl {
   formatCurrency(
     value: number | bigint,
     currency: string,
-    options: WithLocales<Intl.NumberFormatOptions> = {}
+    options: WithLocales<CurrencyFormatOptions> = {}
   ) {
     const { locale, locales, ...intlOptions } = options;
     return _formatCurrency({

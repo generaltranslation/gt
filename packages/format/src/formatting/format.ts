@@ -17,6 +17,12 @@ export type ZonedDateTimeFormatOptions = Intl.DateTimeFormatOptions & {
   timeZone: string;
 };
 
+/** Number options for a currency, which comes from its own argument. */
+export type CurrencyFormatOptions = Omit<
+  Intl.NumberFormatOptions,
+  'currency' | 'style'
+>;
+
 /**
  * Formats a number according to the specified locales and options.
  *
@@ -89,10 +95,10 @@ export function _formatCurrency({
 }): string {
   return intlCache
     .get('NumberFormat', locales, {
-      style: 'currency',
-      currency,
       numberingSystem: 'latn',
       ...options,
+      style: 'currency',
+      currency,
     })
     .format(value);
 }

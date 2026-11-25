@@ -6,6 +6,7 @@ import {
   _formatNum,
   _formatRelativeTime,
   _selectRelativeTimeUnit,
+  type CurrencyFormatOptions,
   type ZonedDateTimeFormatOptions,
 } from './format';
 import { formatIcu as _formatIcu } from '@generaltranslation/icu/parser';
@@ -168,14 +169,14 @@ export function formatDateTime(
  * @param {Object} params - The parameters for the currency formatting.
  * @param {number | bigint} params.value - The currency value to format.
  * @param {string} params.currency - The currency code (e.g., 'USD').
- * @param {Intl.NumberFormatOptions} [params.options={}] - Additional options for currency formatting.
+ * @param {CurrencyFormatOptions} [params.options={}] - Additional options for currency formatting.
  * @param {string | string[]} [params.options.locales] - The locale codes to use for formatting.
  * @returns {string} The formatted currency value.
  */
 export function formatCurrency(
   value: number | bigint,
   currency: string,
-  options: LocalesOption & Intl.NumberFormatOptions
+  options: LocalesOption & CurrencyFormatOptions
 ): string {
   const { locales, ...intlOptions } = options;
   return _formatCurrency({

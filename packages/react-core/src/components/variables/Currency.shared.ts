@@ -33,7 +33,6 @@ function computeCurrency({
   return i18nConfig.formatCurrency(children, currency, {
     locales,
     ...options,
-    currency,
   });
 }
 

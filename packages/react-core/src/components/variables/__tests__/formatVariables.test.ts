@@ -48,14 +48,12 @@ describe('variable formatting with a custom locale alias', () => {
     );
   });
 
-  it('formats in the currency prop, not in options.currency', () => {
+  it.each<[Intl.NumberFormatOptions]>([
+    [{ currency: 'EUR' }],
+    [{ style: 'percent' }],
+  ])('formats in the currency prop with options %j', (options) => {
     expect(
-      computeCurrency({
-        ...props,
-        children: 5,
-        currency: 'USD',
-        options: { currency: 'EUR' },
-      })
+      computeCurrency({ ...props, children: 5, currency: 'USD', options })
     ).toBe(
       new Intl.NumberFormat(['fr', 'en'], {
         style: 'currency',

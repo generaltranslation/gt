@@ -1,6 +1,7 @@
 import { render } from 'svelte/server';
 import { describe, expect, it } from 'vitest';
 import type { Content } from '@generaltranslation/format';
+import Currency from '../src/components/Currency.svelte';
 import DuplicateVariableNames from './fixtures/DuplicateVariableNames.svelte';
 import Harness from './fixtures/Harness.svelte';
 import VariableChildren from './fixtures/VariableChildren.svelte';
@@ -76,6 +77,22 @@ describe('variables whose value is their only child', () => {
         },
       })
     ).toContain('<p>1\u202f234 articles, 1234</p>');
+  });
+});
+
+describe('<Currency>', () => {
+  it.each<[Intl.NumberFormatOptions]>([
+    [{ currency: 'USD' }],
+    [{ style: 'percent' }],
+  ])('formats in the currency prop with options %j', (options) => {
+    setupGT();
+    expect(
+      html({
+        component: Currency,
+        props: { value: 5, currency: 'EUR', options },
+        locale: 'en',
+      })
+    ).toBe('€5.00');
   });
 });
 
