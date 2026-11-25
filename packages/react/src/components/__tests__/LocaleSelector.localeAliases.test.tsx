@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { initializeI18nConfig } from '@generaltranslation/react-core/pure';
 import { useLocales } from '@generaltranslation/react-core/hooks';
 import { LocaleSelector } from '../LocaleSelector';
+import { RegionSelector } from '../RegionSelector';
 import { ServerGTProvider } from '../../provider/ServerGTProvider';
 
 function resetConfig() {
@@ -82,5 +83,22 @@ describe('LocaleSelector configured aliases', () => {
     const html = renderSelector('fr-FR');
     expect(html).toContain('value="fr-FR" selected=""');
     expect(html.match(/<option /g)).toHaveLength(2);
+  });
+
+  it('forwards select props such as className to the select', () => {
+    configureAliases();
+    const html = renderToStaticMarkup(
+      <ServerGTProvider locale='fr-fr' translations={{}}>
+        <LocaleSelector className='locale-select' />
+        <RegionSelector className='region-select' />
+      </ServerGTProvider>
+    );
+
+    expect(html).toContain(
+      '<select name="generaltranslation-locale" aria-label="General Translation locale selector" class="locale-select">'
+    );
+    expect(html).toContain(
+      '<select name="generaltranslation-region" aria-label="General Translation region selector" class="region-select">'
+    );
   });
 });

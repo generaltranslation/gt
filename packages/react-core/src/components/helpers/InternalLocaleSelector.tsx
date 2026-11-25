@@ -1,8 +1,24 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import type {
   CustomMapping,
   LocaleProperties,
 } from '@generaltranslation/format';
+
+export type InternalLocaleSelectorProps = Omit<
+  React.ComponentPropsWithoutRef<'select'>,
+  | 'value'
+  | 'defaultValue'
+  | 'onChange'
+  | 'children'
+  | 'multiple'
+  | 'dangerouslySetInnerHTML'
+> & {
+  locale: string;
+  locales: string[];
+  customMapping?: CustomMapping;
+  setLocale: (locale: string) => void;
+  getLocaleProperties: (locale: string) => LocaleProperties;
+};
 
 /**
  * Capitalizes the first letter of a string if applicable.
@@ -26,21 +42,13 @@ function capitalizeName(str: string): string {
  *
  * @internal
  */
-export function InternalLocaleSelector({
-  locale,
-  locales,
-  customMapping,
-  setLocale,
-  getLocaleProperties,
-  ...props
-}: {
-  locale: string;
-  locales: string[];
-  customMapping?: CustomMapping;
-  setLocale: (locale: string) => void;
-  getLocaleProperties: (locale: string) => LocaleProperties;
-  [key: string]: any;
-}): React.JSX.Element | null {
+export const InternalLocaleSelector = forwardRef<
+  HTMLSelectElement,
+  InternalLocaleSelectorProps
+>(function InternalLocaleSelector(
+  { locale, locales, customMapping, setLocale, getLocaleProperties, ...props },
+  ref
+) {
   // Get display name
   const getDisplayName = (locale: string) => {
     if (customMapping && customMapping[locale]) {
@@ -58,6 +66,7 @@ export function InternalLocaleSelector({
 
   return (
     <select
+      ref={ref}
       name='generaltranslation-locale'
       aria-label='General Translation locale selector'
       {...props}
@@ -75,4 +84,4 @@ export function InternalLocaleSelector({
       ))}
     </select>
   );
-}
+});

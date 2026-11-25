@@ -1,10 +1,7 @@
 import { useMemo } from 'react';
-import { useCustomMapping, useLocales } from './i18n-config';
+import { useLocales } from './i18n-config';
 import { useLocale, useRegion } from './condition-store';
-import {
-  getLocaleProperties,
-  type CustomRegionMapping,
-} from '@generaltranslation/format';
+import type { CustomRegionMapping } from '@generaltranslation/format';
 import { getI18nConfig } from 'gt-i18n/internal';
 
 export type RegionData = {
@@ -46,13 +43,11 @@ export function useInternalRegionSelector({
 }: InternalRegionSelectorOptions = {}): InternalRegionSelectorResult {
   // Retrieve the locale, locales, and region
   const contextLocales = useLocales();
-  const localeCustomMapping = useCustomMapping();
   const locale = useLocale();
   const region = useRegion();
-  const { regionCode: localeRegion } = getLocaleProperties(
+  const { regionCode: localeRegion } = getI18nConfig().getLocaleProperties(
     locale,
-    locale,
-    localeCustomMapping
+    { locale }
   );
 
   const [
@@ -60,13 +55,15 @@ export function useInternalRegionSelector({
     regionData, // map of ISO 3166 region codes to region display data, potentially not ordered
   ] = useMemo<[string[], Map<string, RegionData>]>(() => {
     const i18nConfig = getI18nConfig();
-    const regionNameLocale = locale && i18nConfig.resolveLocale(locale);
-    const regionToLocaleMap = new Map(
-      contextLocales.map((l) => {
-        const lp = getLocaleProperties(l, locale, localeCustomMapping); // has to be directly called so sourceLocale can be in the user's current locale
-        return [lp.regionCode, lp];
-      })
-    );
+    // By the name each locale is configured under: a locale's code can be one
+    // that is not configured, when the locale is an alias. A region shared by
+    // several locales goes to the first one configured.
+    const regionToLocaleMap = new Map<string, string>();
+    for (const l of contextLocales) {
+      const { regionCode } = i18nConfig.getLocaleProperties(l, { locale });
+      if (!regionToLocaleMap.has(regionCode))
+        regionToLocaleMap.set(regionCode, l);
+    }
 
     const regions = _regions
       ? [..._regions]
@@ -77,8 +74,10 @@ export function useInternalRegionSelector({
         return [
           r,
           {
-            locale: regionToLocaleMap?.get(r)?.code || locale,
-            ...i18nConfig.getRegionProperties(r, { locale: regionNameLocale }),
+            locale:
+              (r === localeRegion ? locale : regionToLocaleMap.get(r)) ||
+              locale,
+            ...i18nConfig.getRegionProperties(r, { locale }),
             ...(typeof customMapping?.[r] === 'string'
               ? { name: customMapping?.[r] }
               : customMapping?.[r]),
@@ -110,7 +109,6 @@ export function useInternalRegionSelector({
     locale,
     localeRegion,
     contextLocales,
-    localeCustomMapping,
     prioritizeCurrentLocaleRegion,
     sortRegionsAlphabetically,
   ]);

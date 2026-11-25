@@ -14,9 +14,10 @@ type PagesRouterLocaleContext = {
  */
 export function parseLocale(context: PagesRouterLocaleContext): string {
   const requestedLocale = context.locale ?? context.defaultLocale;
-  const locale = isLocaleSupported(requestedLocale)
-    ? requestedLocale
-    : resolveLocaleOrDefault(requestedLocale);
+  const locale =
+    requestedLocale !== undefined && isLocaleSupported(requestedLocale)
+      ? requestedLocale
+      : resolveLocaleOrDefault(requestedLocale);
 
   if (context.locale === undefined) {
     console.warn(createMissingPagesRouterLocaleWarning(locale));
