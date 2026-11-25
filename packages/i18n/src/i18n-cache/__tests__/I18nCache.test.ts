@@ -1010,6 +1010,28 @@ describe('I18nCache', () => {
       );
     });
 
+    it('production: a locale that failed to load misses its own lookups and still honors options.$locale', async () => {
+      const cache = createCache({
+        loadTranslations: vi.fn(async (locale: string) => {
+          if (locale === 'fr') throw new Error('Load failed');
+          return { [expectedHash]: 'Hola {name}!' };
+        }),
+      });
+      await cache.loadTranslations('es');
+
+      const resolver = await cache.getLookupTranslation('fr');
+
+      // The source is not its own translation
+      expect(resolver(message, lookupOptions)).toBeUndefined();
+      // As with a catalog that loaded empty
+      expect(resolver(message, { ...lookupOptions, $locale: 'en' })).toBe(
+        message
+      );
+      expect(resolver(message, { ...lookupOptions, $locale: 'es' })).toBe(
+        'Hola {name}!'
+      );
+    });
+
     it('development: a failing translations loader rejects', async () => {
       vi.stubEnv('NODE_ENV', 'development');
       const cache = createCache({
