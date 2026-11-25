@@ -95,8 +95,64 @@ describe('fillServerOnlyHashes', () => {
   });
 
   it.each([
+    ['a custom file name', 'mapped.js.symbols.map', 'mapped.js.symbols.map'],
+    ['a percent-encoded name', '%5Bmapped%5D.js.map', '[mapped].js.map'],
+    ['another directory', '../maps/mapped.js.map', 'server/maps/mapped.js.map'],
+  ])(
+    'moves the source map the last sourceMappingURL comment names, in %s',
+    (_name, url, mapFile) => {
+      const mapPath = mapFile.includes('/')
+        ? mapFile
+        : `server/chunks/${mapFile}`;
+      write(
+        MAPPED,
+        `a("${SERVER_ONLY_HASHES_PLACEHOLDER}");b()\n//# sourceMappingURL=other.js.map\n//# sourceMappingURL=${url}`
+      );
+      write(mapPath, sourceMap('AAAA,6CAAU'));
+      write(`${MAPPED}.map`, sourceMap('AAAA,6CAAU'));
+      fillServerOnlyHashes(distDir);
+      expect(read(mapPath)).toBe(sourceMap('AAAA,6DAAU'));
+      expect(read(`${MAPPED}.map`)).toBe(sourceMap('AAAA,6CAAU'));
+    }
+  );
+
+  it('moves an inline source map, and writes it back into its comment', () => {
+    const inline = (map: string) =>
+      `//# sourceMappingURL=data:application/json;charset=utf-8;base64,${Buffer.from(map).toString('base64')}`;
+    write(
+      MAPPED,
+      `a("${SERVER_ONLY_HASHES_PLACEHOLDER}");b()\n${inline(sourceMap('AAAA,6CAAU'))}`
+    );
+    fillServerOnlyHashes(distDir);
+    expect(read(MAPPED)).toBe(
+      `a("__gt_next_server_only_hashes_q7Zk2W__[${SERVER}]");b()\n${inline(sourceMap('AAAA,6DAAU'))}`
+    );
+  });
+
+  it.each([
+    ['outside the build', '../../../outside.js.map'],
+    ['at an http URL', 'https://example.com/mapped.js.map'],
+  ])('leaves alone a source map a comment names %s', (_name, url) => {
+    write(
+      MAPPED,
+      `a("${SERVER_ONLY_HASHES_PLACEHOLDER}");b()\n//# sourceMappingURL=${url}`
+    );
+    write(`${MAPPED}.map`, sourceMap('AAAA,6CAAU'));
+    fillServerOnlyHashes(distDir);
+    expect(read(`${MAPPED}.map`)).toBe(sourceMap('AAAA,6CAAU'));
+  });
+
+  it.each([
     ['version 2', { version: 2, sources: [], mappings: 'AAAA,6CAAU' }],
-    ['with sections', { version: 3, sections: [] }],
+    [
+      'with a section that is an index map',
+      {
+        version: 3,
+        sections: [
+          { offset: { line: 0, column: 0 }, map: { version: 3, sections: [] } },
+        ],
+      },
+    ],
   ])('leaves a source map %s alone', (_name, map) => {
     write(MAPPED, `a("${SERVER_ONLY_HASHES_PLACEHOLDER}");b()`);
     write(`${MAPPED}.map`, JSON.stringify(map));
