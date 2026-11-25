@@ -1,4 +1,4 @@
-import type React from 'react';
+import { forwardRef, type ComponentPropsWithoutRef } from 'react';
 import { InternalRegionSelector } from '@generaltranslation/react-core/components';
 import type { InternalRegionSelectorOptions } from '@generaltranslation/react-core/hooks';
 import { useRegionSelector } from './useRegionSelector';
@@ -22,14 +22,20 @@ import { useRegionSelector } from './useRegionSelector';
  * />
  * ```
  */
-export function RegionSelector({
-  regions: _regions,
-  customMapping,
-  prioritizeCurrentLocaleRegion,
-  sortRegionsAlphabetically,
-  asLocaleSelector = false,
-  ...props
-}: RegionSelectorProps): React.JSX.Element | null {
+export const RegionSelector = forwardRef<
+  HTMLSelectElement,
+  RegionSelectorProps
+>(function RegionSelector(
+  {
+    regions: _regions,
+    customMapping,
+    prioritizeCurrentLocaleRegion,
+    sortRegionsAlphabetically,
+    asLocaleSelector = false,
+    ...props
+  },
+  ref
+) {
   // Get region selector properties
   const { region, regions, regionData, locale, setRegion, setLocale } =
     useRegionSelector({
@@ -50,6 +56,7 @@ export function RegionSelector({
 
   return (
     <InternalRegionSelector
+      ref={ref}
       {...props}
       region={region}
       regions={regions}
@@ -57,10 +64,10 @@ export function RegionSelector({
       setRegion={changeRegion}
     />
   );
-}
+});
 
 export type RegionSelectorProps = Omit<
-  React.ComponentProps<typeof InternalRegionSelector>,
+  ComponentPropsWithoutRef<typeof InternalRegionSelector>,
   'region' | 'regions' | 'regionData' | 'setRegion'
 > &
   InternalRegionSelectorOptions & {

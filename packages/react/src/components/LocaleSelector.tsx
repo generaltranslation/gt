@@ -1,4 +1,4 @@
-import type React from 'react';
+import { forwardRef, type ComponentPropsWithoutRef } from 'react';
 import { InternalLocaleSelector } from '@generaltranslation/react-core/components';
 import { useLocaleSelector } from './useLocaleSelector';
 
@@ -8,16 +8,17 @@ import { useLocaleSelector } from './useLocaleSelector';
  * @param {CustomMapping} [customMapping] - An optional object to map locales to custom display names, emojis, or other properties.
  * @returns {React.ReactElement | null} The rendered locale dropdown component or null to prevent rendering.
  */
-export function LocaleSelector({
-  locales: _locales,
-  ...props
-}: LocaleSelectorProps): React.JSX.Element | null {
+export const LocaleSelector = forwardRef<
+  HTMLSelectElement,
+  LocaleSelectorProps
+>(function LocaleSelector({ locales: _locales, ...props }, ref) {
   // Get locale selector properties
   const { locale, locales, getLocaleProperties, setLocale } =
     useLocaleSelector(_locales);
 
   return (
     <InternalLocaleSelector
+      ref={ref}
       {...props}
       locale={locale}
       locales={locales}
@@ -25,10 +26,10 @@ export function LocaleSelector({
       getLocaleProperties={getLocaleProperties}
     />
   );
-}
+});
 
 export type LocaleSelectorProps = Omit<
-  React.ComponentProps<typeof InternalLocaleSelector>,
+  ComponentPropsWithoutRef<typeof InternalLocaleSelector>,
   'locale' | 'locales' | 'setLocale' | 'getLocaleProperties'
 > & {
   locales?: string[];

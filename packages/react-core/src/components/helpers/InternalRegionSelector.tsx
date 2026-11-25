@@ -1,8 +1,8 @@
-import React, { ReactNode } from 'react';
+import React, { forwardRef, type ReactNode } from 'react';
 import type { RegionData } from '../../hooks/useInternalRegionSelector';
 
 export type InternalRegionSelectorProps = Omit<
-  React.ComponentProps<'select'>,
+  React.ComponentPropsWithoutRef<'select'>,
   | 'value'
   | 'defaultValue'
   | 'onChange'
@@ -29,14 +29,13 @@ export type InternalRegionSelectorProps = Omit<
  *
  * @internal
  */
-export function InternalRegionSelector({
-  region,
-  regions,
-  regionData,
-  setRegion,
-  placeholder,
-  ...props
-}: InternalRegionSelectorProps): React.JSX.Element | null {
+export const InternalRegionSelector = forwardRef<
+  HTMLSelectElement,
+  InternalRegionSelectorProps
+>(function InternalRegionSelector(
+  { region, regions, regionData, setRegion, placeholder, ...props },
+  ref
+) {
   // If no regions are returned, just render nothing or handle gracefully
   if (!regions || regions.length === 0 || !setRegion) {
     return null;
@@ -44,6 +43,7 @@ export function InternalRegionSelector({
 
   return (
     <select
+      ref={ref}
       name='generaltranslation-region'
       aria-label='General Translation region selector'
       {...props}
@@ -65,4 +65,4 @@ export function InternalRegionSelector({
       ))}
     </select>
   );
-}
+});

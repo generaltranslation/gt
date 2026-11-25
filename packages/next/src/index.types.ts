@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { typesFileError } from './errors/createErrors';
 import { T as _T } from './server-dir/buildtime/T';
 import { useLocalizeHref as _useLocalizeHref } from './link/useLocalizeHref';
@@ -383,18 +384,18 @@ Ordinal._gtt = { kind: 'ordinal' };
  * @param {CustomMapping} [customMapping] - An optional object to map locales to custom display names, emojis, or other properties.
  * @returns {React.ReactElement | null} The rendered locale dropdown component or null to prevent rendering.
  */
-export const LocaleSelector: typeof _LocaleSelector = () => {
+export const LocaleSelector: typeof _LocaleSelector = forwardRef(() => {
   throw new Error(typesFileError);
-};
+});
 
 /**
  * A dropdown component that allows users to select a region.
  * @param {string[]} regions - An optional list of ISO 3166 region codes to use for the dropdown. If not provided, regions are inferred from the supported locales in the `<GTProvider>` context.
  * @returns {React.ReactElement | null} The rendered region dropdown component or null to prevent rendering.
  */
-export const RegionSelector: typeof _RegionSelector = () => {
+export const RegionSelector: typeof _RegionSelector = forwardRef(() => {
   throw new Error(typesFileError);
-};
+});
 
 /**
  * Read the active locale resolved by Next.js internationalized routing.
