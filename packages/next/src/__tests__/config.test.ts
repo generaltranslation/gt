@@ -1295,6 +1295,10 @@ describe('withGTConfig', () => {
       it.each([
         ['cacheComponents', { cacheComponents: true }],
         ['experimental.useCache', { experimental: { useCache: true } }],
+        [
+          'experimental.cacheComponents',
+          { experimental: { cacheComponents: true } },
+        ],
       ])(
         'wraps no page and places nothing with %s, without a warning',
         async (_name, nextConfig) => {

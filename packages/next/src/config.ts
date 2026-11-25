@@ -122,7 +122,12 @@ function getPageSegmentsAppDir(nextConfig: NextConfig): string | undefined {
   }
   // GtSegment reads the locale above any <Suspense> of the page, which fails
   // the Cache Components prerender of a page that reads it only inside one.
-  if (nextConfig.cacheComponents || nextConfig.experimental?.useCache) {
+  // Next.js promotes experimental.cacheComponents after this config runs.
+  const { useCache, cacheComponents } = (nextConfig.experimental ?? {}) as {
+    useCache?: boolean;
+    cacheComponents?: boolean;
+  };
+  if (nextConfig.cacheComponents || cacheComponents || useCache) {
     return undefined;
   }
   // Next.js reads src/app only when there is no app directory.
