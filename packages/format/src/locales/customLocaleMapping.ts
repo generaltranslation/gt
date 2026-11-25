@@ -1,6 +1,8 @@
 import type { LocaleProperties } from './getLocaleProperties';
 
-export type CustomMapping = Record<string, string | Partial<LocaleProperties>>;
+export type CustomMapping = {
+  readonly [locale: string]: string | Readonly<Partial<LocaleProperties>>;
+};
 
 function isCustomLocaleObject(
   value: CustomMapping[string] | null | undefined

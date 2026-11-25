@@ -1,4 +1,4 @@
-import type { LocaleProperties } from '../locales/getLocaleProperties';
+import type { CustomMapping } from '../locales/customLocaleMapping';
 import { defaultLocaleMatcher } from '../settings/settings';
 
 /** The ECMA-402 locale matching algorithms `determineLocale` supports. */
@@ -9,9 +9,7 @@ export type LocaleMatcher = (typeof localeMatchers)[number];
 export type LocaleConfig = {
   defaultLocale?: string;
   locales?: readonly string[];
-  customMapping?: {
-    readonly [locale: string]: string | Readonly<Partial<LocaleProperties>>;
-  };
+  customMapping?: CustomMapping;
   /** The IANA time zone of the dates and times formatted without one. */
   timeZone?: string;
   localeMatcher?: LocaleMatcher;
