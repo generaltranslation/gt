@@ -21,4 +21,4 @@ export {
   toPluralRulesNumber,
 } from './formatter/formatMessageTree';
 export { forEachPlaceholder } from './tree/walk';
-export { IntlCache, intlCache } from './cache/IntlCache';
+export { type IntlCache, intlCache } from './cache/IntlCache';
