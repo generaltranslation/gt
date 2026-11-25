@@ -116,6 +116,7 @@ module.exports = [
   reactNode('gt-react (rsc)', 'index.rsc'),
   reactNode('gt-react (server)', 'index.server', '55 kB'),
   react('gt-react/macros', 'macros'),
+  react('gt-react/paths', 'paths'),
 
   // Locale matching is loaded only when initializeGTSPA() runs. Track the
   // always-loaded runtime and complete SPA payload independently.
