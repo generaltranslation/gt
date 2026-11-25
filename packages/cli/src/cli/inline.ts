@@ -205,6 +205,7 @@ function fallbackToGtReact(library: SupportedLibraries): InlineLibrary {
   return [
     Libraries.GT_NEXT,
     Libraries.GT_NODE,
+    Libraries.GT_I18N,
     Libraries.GT_REACT_NATIVE,
     Libraries.GT_TANSTACK_START,
     Libraries.GT_FLASK,
@@ -214,6 +215,7 @@ function fallbackToGtReact(library: SupportedLibraries): InlineLibrary {
     ? (library as
         | typeof Libraries.GT_NEXT
         | typeof Libraries.GT_NODE
+        | typeof Libraries.GT_I18N
         | typeof Libraries.GT_REACT_NATIVE
         | typeof Libraries.GT_TANSTACK_START
         | typeof Libraries.GT_FLASK

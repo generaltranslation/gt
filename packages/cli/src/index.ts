@@ -29,7 +29,7 @@ export function main(program: Command) {
     library === Libraries.GT_TANSTACK_START
   ) {
     cli = new ReactCLI(program, library, additionalModules);
-  } else if (library === Libraries.GT_NODE) {
+  } else if (library === Libraries.GT_NODE || library === Libraries.GT_I18N) {
     cli = new NodeCLI(program, library, additionalModules);
   } else if (library === Libraries.GT_VUE) {
     cli = new VueCLI(program, additionalModules);

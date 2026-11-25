@@ -27,6 +27,7 @@ export function determineLibraryForCLI(): DeterminedCLILibrary {
   let library: SupportedLibraries = 'base';
   const additionalModules: SupportedLibraries[] = [];
   let directlyDeclaresVue = false;
+  let declaresGTI18n = false;
   try {
     // Get the current working directory (where the CLI is being run)
     const cwd = process.cwd();
@@ -41,6 +42,7 @@ export function determineLibraryForCLI(): DeterminedCLILibrary {
         ...packageJson.dependencies,
         ...packageJson.devDependencies,
       };
+      declaresGTI18n = Boolean(dependencies[Libraries.GT_I18N]);
 
       // Check for gt-next or gt-react in dependencies
       if (dependencies[Libraries.GT_NEXT]) {
@@ -76,6 +78,11 @@ export function determineLibraryForCLI(): DeterminedCLILibrary {
     // keeps its historical command surface and priority in mixed projects.
     if (library === 'base' && directlyDeclaresVue) {
       library = Libraries.GT_VUE;
+    }
+
+    // Every adapter depends on gt-i18n, so it only counts when nothing else matched.
+    if (library === 'base' && declaresGTI18n) {
+      library = Libraries.GT_I18N;
     }
 
     // Fallback to base if neither is found
