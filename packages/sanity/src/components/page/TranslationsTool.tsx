@@ -27,7 +27,7 @@ import { TranslationsTable } from './TranslationsTable';
 import { TranslateAllDialog } from './TranslateAllDialog';
 import { ImportAllDialog } from './ImportAllDialog';
 import { ImportMissingDialog } from './ImportMissingDialog';
-import { UploadExistingDialog } from './UploadExistingDialog';
+import { LocalActionDialog } from './LocalActionDialog';
 import { SaveLocalTranslationsDialog } from './SaveLocalTranslationsDialog';
 import { DebugInfoDialog } from './DebugInfoDialog';
 import { BatchProgress } from './BatchProgress';
@@ -57,8 +57,9 @@ const TranslationsToolContent: React.FC = () => {
   const [isImportAllDialogOpen, setIsImportAllDialogOpen] = useState(false);
   const [isImportMissingDialogOpen, setIsImportMissingDialogOpen] =
     useState(false);
-  const [isUploadExistingDialogOpen, setIsUploadExistingDialogOpen] =
-    useState(false);
+  const [localActionDialog, setLocalActionDialog] = useState<
+    'save' | 'upload' | null
+  >(null);
   const [isSaveLocalDialogOpen, setIsSaveLocalDialogOpen] = useState(false);
   const [isDebugInfoDialogOpen, setIsDebugInfoDialogOpen] = useState(false);
 
@@ -76,6 +77,9 @@ const TranslationsToolContent: React.FC = () => {
     setAutoRefresh,
     preserveExistingTranslations,
     setPreserveExistingTranslations,
+    isWriteRunning,
+    handleSaveLocalEdits,
+    handleUploadExistingTranslations,
     handleRefreshAll,
     handlePatchDocumentReferences,
     handlePublishAllTranslations,
@@ -95,6 +99,8 @@ const TranslationsToolContent: React.FC = () => {
       case 'Import Missing':
         return 'Importing missing';
       case 'Save Local Edits':
+        return 'Saving local edits';
+      case 'Upload Existing':
         return 'Uploading existing';
       case 'Patch References':
         return 'Patching';
@@ -287,19 +293,36 @@ const TranslationsToolContent: React.FC = () => {
                 </Tooltip>
                 <Tooltip
                   placement='top'
-                  content='Uploads the translations already in Sanity to General Translation, preserving human edits'
+                  content='Saves edits made to translations in Sanity over the translations General Translation holds. Source changes are still translated on the next run'
                 >
                   <Button
                     mode='ghost'
                     fontSize={1}
                     onClick={() => {
                       setCurrentOperation('Save Local Edits');
-                      setIsUploadExistingDialogOpen(true);
+                      setLocalActionDialog('save');
                     }}
                     text='Save Local Edits'
                     loading={isBusy && currentOperation === 'Save Local Edits'}
                     icon={UploadIcon}
-                    disabled={actionsDisabled}
+                    disabled={actionsDisabled || isWriteRunning}
+                  />
+                </Tooltip>
+                <Tooltip
+                  placement='top'
+                  content='Uploads the documents and the translations already in Sanity as finished translations. For content translated before General Translation'
+                >
+                  <Button
+                    mode='ghost'
+                    fontSize={1}
+                    onClick={() => {
+                      setCurrentOperation('Upload Existing');
+                      setLocalActionDialog('upload');
+                    }}
+                    text='Upload Existing'
+                    loading={isBusy && currentOperation === 'Upload Existing'}
+                    icon={UploadIcon}
+                    disabled={actionsDisabled || isWriteRunning}
                   />
                 </Tooltip>
                 <Tooltip
@@ -411,10 +434,18 @@ const TranslationsToolContent: React.FC = () => {
           setIsSaveLocalDialogOpen(false);
         }}
       />
-      <UploadExistingDialog
-        isOpen={isUploadExistingDialogOpen}
-        onClose={() => setIsUploadExistingDialogOpen(false)}
-      />
+      {localActionDialog && (
+        <LocalActionDialog
+          action={localActionDialog}
+          isOpen
+          onClose={() => setLocalActionDialog(null)}
+          onConfirm={
+            localActionDialog === 'save'
+              ? handleSaveLocalEdits
+              : handleUploadExistingTranslations
+          }
+        />
+      )}
       <DebugInfoDialog
         isOpen={isDebugInfoDialogOpen}
         onClose={() => setIsDebugInfoDialogOpen(false)}

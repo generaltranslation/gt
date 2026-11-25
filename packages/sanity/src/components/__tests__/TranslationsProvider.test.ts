@@ -29,6 +29,8 @@ const mocks = vi.hoisted(() => ({
   initProject: vi.fn(),
   createJobs: vi.fn(),
   collectExistingTranslations: vi.fn(),
+  captureExistingTranslations: vi.fn(),
+  downloadTranslations: vi.fn(),
   resolvePreviewUrls: vi.fn(),
   updateTranslationPreviewUrls: vi.fn(),
 }));
@@ -72,6 +74,12 @@ vi.mock('../../translation/createJobs', () => ({
 }));
 vi.mock('../../translation/collectExistingTranslations', () => ({
   collectExistingTranslations: mocks.collectExistingTranslations,
+}));
+vi.mock('../../translation/captureExistingTranslations', () => ({
+  captureExistingTranslations: mocks.captureExistingTranslations,
+}));
+vi.mock('../../translation/downloadTranslations', () => ({
+  downloadTranslations: mocks.downloadTranslations,
 }));
 vi.mock('../../translation/previewUrls', () => ({
   resolvePreviewUrls: mocks.resolvePreviewUrls,
@@ -143,6 +151,13 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
   mocks.uploadFiles.mockResolvedValue({ uploadedFiles: [] });
   mocks.collectExistingTranslations.mockResolvedValue(new Map());
+  mocks.captureExistingTranslations.mockResolvedValue({
+    capturedCount: 0,
+    documentCount: 0,
+    skippedCount: 0,
+    unconfirmedCount: 0,
+    saved: [],
+  });
   mocks.resolvePreviewUrls.mockResolvedValue({ urls: [], failures: [] });
   mocks.updateTranslationPreviewUrls.mockResolvedValue([]);
   mocks.useDocumentStore.mockReturnValue(mocks.documentStore);
@@ -173,6 +188,398 @@ describe('document role', () => {
 });
 
 describe('Save Local Edits', () => {
+  const useClient = (documents: Parameters<typeof createGroqClient>[0]) => {
+    const { client } = createGroqClient(documents);
+    mocks.client = Object.assign(client, {
+      config: () => ({ projectId: 'p', dataset: 'd' }),
+    });
+  };
+
+  test('saves the translations in Sanity without uploading the source or translating', async () => {
+    useClient([page('page-en', 'en')]);
+    mocks.captureExistingTranslations.mockResolvedValue({
+      capturedCount: 1,
+      documentCount: 1,
+      skippedCount: 0,
+      unconfirmedCount: 0,
+      saved: [],
+    });
+
+    const context = await renderProvider(page('page-en', 'en'));
+    await act(() => context.handleSaveLocalEdits());
+
+    expect(mocks.captureExistingTranslations).toHaveBeenCalledWith(
+      expect.objectContaining({
+        documents: [expect.objectContaining({ _id: 'page-en' })],
+        localeIds: ['en', 'fr'],
+        secrets: { project: 'p' },
+      })
+    );
+    expect(mocks.uploadFiles).not.toHaveBeenCalled();
+    expect(mocks.uploadTranslations).not.toHaveBeenCalled();
+    expect(mocks.createJobs).not.toHaveBeenCalled();
+    expect(mocks.toastPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Saved 1 translation(s) across 1 document(s)',
+        status: 'success',
+      })
+    );
+  });
+
+  test('says how many translations were left alone', async () => {
+    useClient([page('page-en', 'en')]);
+    mocks.captureExistingTranslations.mockResolvedValue({
+      capturedCount: 1,
+      documentCount: 1,
+      skippedCount: 2,
+      unconfirmedCount: 0,
+      saved: [],
+    });
+
+    const context = await renderProvider(page('page-en', 'en'));
+    await act(() => context.handleSaveLocalEdits());
+
+    expect(mocks.toastPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Saved 1 translation(s) across 1 document(s)',
+        description: expect.stringContaining('2 skipped'),
+        status: 'success',
+      })
+    );
+  });
+
+  test('warns when nothing could be saved', async () => {
+    useClient([page('page-en', 'en')]);
+    mocks.captureExistingTranslations.mockResolvedValue({
+      capturedCount: 0,
+      documentCount: 0,
+      skippedCount: 1,
+      unconfirmedCount: 0,
+      saved: [],
+    });
+
+    const context = await renderProvider(page('page-en', 'en'));
+    await act(() => context.handleSaveLocalEdits());
+
+    expect(mocks.toastPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'No local edits were saved',
+        status: 'warning',
+      })
+    );
+  });
+
+  test('refuses a source-locale translation of another original', async () => {
+    useClient([
+      page('page-fr', 'fr'),
+      page('page-en', 'en'),
+      metadataDoc(
+        'm',
+        [
+          ['fr', 'page-fr'],
+          ['en', 'page-en'],
+        ],
+        { gtSourceLanguage: 'fr' }
+      ),
+    ]);
+
+    const context = await renderProvider(page('page-en', 'en'));
+    await act(() => context.handleSaveLocalEdits());
+
+    expect(mocks.captureExistingTranslations).not.toHaveBeenCalled();
+    expect(mocks.toastPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Local edits were not saved',
+        status: 'error',
+      })
+    );
+  });
+
+  test('reports a failed save as possibly partial', async () => {
+    useClient([page('page-en', 'en')]);
+    mocks.captureExistingTranslations.mockRejectedValue(
+      new Error('API unavailable')
+    );
+
+    const context = await renderProvider(page('page-en', 'en'));
+    await act(() => context.handleSaveLocalEdits());
+
+    expect(mocks.toastPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: expect.stringContaining('Some may already have been saved'),
+        status: 'error',
+      })
+    );
+  });
+
+  test('stores the preview URL of each translation it saved', async () => {
+    useClient([page('page-en', 'en')]);
+    const saved = [
+      {
+        written: { id: 'page-fr', type: 'page' },
+        file: { branchId: 'b', fileId: 'page-en', versionId: 'r0' },
+        language: 'fr',
+      },
+    ];
+    mocks.captureExistingTranslations.mockResolvedValue({
+      capturedCount: 1,
+      documentCount: 1,
+      skippedCount: 0,
+      unconfirmedCount: 0,
+      saved,
+    });
+
+    const context = await renderProvider(page('page-en', 'en'));
+    await act(() => context.handleSaveLocalEdits());
+
+    expect(mocks.updateTranslationPreviewUrls).toHaveBeenCalledWith(
+      saved,
+      mocks.client,
+      { project: 'p' }
+    );
+  });
+
+  test('warns when General Translation did not confirm every save', async () => {
+    useClient([page('page-en', 'en')]);
+    mocks.captureExistingTranslations.mockResolvedValue({
+      capturedCount: 1,
+      documentCount: 1,
+      skippedCount: 0,
+      unconfirmedCount: 2,
+      saved: [],
+    });
+
+    const context = await renderProvider(page('page-en', 'en'));
+    await act(() => context.handleSaveLocalEdits());
+
+    expect(mocks.toastPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: expect.stringContaining('2 could not be confirmed'),
+        status: 'warning',
+      })
+    );
+  });
+
+  test('does not import a locale while local edits are being saved', async () => {
+    useClient([page('page-en', 'en')]);
+    vi.spyOn(api, 'createBranch').mockResolvedValue({
+      branch: { id: 'b' },
+    } as Awaited<ReturnType<typeof api.createBranch>>);
+    vi.spyOn(api, 'queryFileData').mockResolvedValue({
+      translatedFiles: [
+        {
+          branchId: 'b',
+          fileId: 'page-en',
+          versionId: 'r1',
+          locale: 'fr',
+          completedAt: '2026-01-01T00:00:00Z',
+        },
+      ],
+    } as Awaited<ReturnType<typeof api.queryFileData>>);
+    const emptySave = {
+      capturedCount: 0,
+      documentCount: 0,
+      skippedCount: 0,
+      unconfirmedCount: 0,
+      saved: [],
+    };
+    let finishSave: (value: typeof emptySave) => void = () => {};
+    mocks.captureExistingTranslations.mockReturnValue(
+      new Promise((resolve) => {
+        finishSave = resolve;
+      })
+    );
+    mocks.downloadTranslations.mockResolvedValue([]);
+
+    const context = await renderProvider(page('page-en', 'en'));
+    let save: Promise<void> = Promise.resolve();
+    await act(async () => {
+      save = context.handleSaveLocalEdits();
+    });
+
+    let imported = true;
+    await act(async () => {
+      imported = await latest!.handleImportDocument('page-en', 'r1', 'fr');
+    });
+    expect(imported).toBe(false);
+    expect(mocks.downloadTranslations).not.toHaveBeenCalled();
+
+    await act(async () => {
+      finishSave(emptySave);
+      await save;
+    });
+    await act(async () => {
+      await latest!.handleImportDocument('page-en', 'r1', 'fr');
+    });
+    expect(mocks.downloadTranslations).toHaveBeenCalledTimes(1);
+  });
+
+  test('asks for a retry when General Translation confirmed none of the saves', async () => {
+    useClient([page('page-en', 'en')]);
+    mocks.captureExistingTranslations.mockResolvedValue({
+      capturedCount: 0,
+      documentCount: 0,
+      skippedCount: 0,
+      unconfirmedCount: 2,
+      saved: [],
+    });
+
+    const context = await renderProvider(page('page-en', 'en'));
+    await act(() => context.handleSaveLocalEdits());
+
+    expect(mocks.toastPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'No local edits were saved',
+        description: expect.stringContaining('2 could not be confirmed'),
+        status: 'warning',
+      })
+    );
+  });
+
+  test('a translation run warns when its save of local edits was not confirmed', async () => {
+    useClient([page('page-en', 'en')]);
+    mocks.captureExistingTranslations.mockResolvedValue({
+      capturedCount: 1,
+      documentCount: 1,
+      skippedCount: 0,
+      unconfirmedCount: 1,
+      saved: [],
+    });
+    mocks.createJobs.mockResolvedValue({ jobData: {}, locales: ['fr'] });
+
+    await renderProvider(page('page-en', 'en'));
+    await act(async () => latest!.setPreserveExistingTranslations(true));
+    await act(() => latest!.handleTranslateAll());
+
+    expect(mocks.toastPush).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: expect.stringContaining(
+          '1 existing translation(s) could not be confirmed'
+        ),
+        status: 'warning',
+      })
+    );
+    expect(mocks.uploadFiles).toHaveBeenCalled();
+  });
+
+  test('does not import a locale while existing translations are being uploaded', async () => {
+    useClient([page('page-en', 'en')]);
+    vi.spyOn(api, 'createBranch').mockResolvedValue({
+      branch: { id: 'b' },
+    } as Awaited<ReturnType<typeof api.createBranch>>);
+    vi.spyOn(api, 'queryFileData').mockResolvedValue({
+      translatedFiles: [
+        {
+          branchId: 'b',
+          fileId: 'page-en',
+          versionId: 'r1',
+          locale: 'fr',
+          completedAt: '2026-01-01T00:00:00Z',
+        },
+      ],
+    } as Awaited<ReturnType<typeof api.queryFileData>>);
+    let finishUpload: (value: { uploadedFiles: [] }) => void = () => {};
+    mocks.uploadFiles.mockReturnValue(
+      new Promise((resolve) => {
+        finishUpload = resolve;
+      })
+    );
+
+    const context = await renderProvider(page('page-en', 'en'));
+    let upload: Promise<void> = Promise.resolve();
+    await act(async () => {
+      upload = context.handleUploadExistingTranslations();
+    });
+
+    let imported = true;
+    await act(async () => {
+      imported = await latest!.handleImportDocument('page-en', 'r1', 'fr');
+    });
+    expect(imported).toBe(false);
+    expect(mocks.downloadTranslations).not.toHaveBeenCalled();
+
+    await act(async () => {
+      finishUpload({ uploadedFiles: [] });
+      await upload;
+    });
+  });
+
+  test('does not save while another write is running, and saves once it finishes', async () => {
+    useClient([page('page-en', 'en')]);
+    let finishUpload: (value: { uploadedFiles: [] }) => void = () => {};
+    mocks.uploadFiles.mockReturnValue(
+      new Promise((resolve) => {
+        finishUpload = resolve;
+      })
+    );
+
+    const context = await renderProvider(page('page-en', 'en'));
+    let upload: Promise<void> = Promise.resolve();
+    await act(async () => {
+      upload = context.handleUploadExistingTranslations();
+    });
+    expect(latest!.isWriteRunning).toBe(true);
+
+    await act(() => latest!.handleSaveLocalEdits());
+    expect(mocks.captureExistingTranslations).not.toHaveBeenCalled();
+
+    await act(async () => {
+      finishUpload({ uploadedFiles: [] });
+      await upload;
+    });
+    expect(latest!.isWriteRunning).toBe(false);
+
+    await act(() => latest!.handleSaveLocalEdits());
+    expect(mocks.captureExistingTranslations).toHaveBeenCalledTimes(1);
+  });
+
+  test('does not save or upload while a single locale is being imported', async () => {
+    useClient([page('page-en', 'en')]);
+    vi.spyOn(api, 'createBranch').mockResolvedValue({
+      branch: { id: 'b' },
+    } as Awaited<ReturnType<typeof api.createBranch>>);
+    vi.spyOn(api, 'queryFileData').mockResolvedValue({
+      translatedFiles: [
+        {
+          branchId: 'b',
+          fileId: 'page-en',
+          versionId: 'r1',
+          locale: 'fr',
+          completedAt: '2026-01-01T00:00:00Z',
+        },
+      ],
+    } as Awaited<ReturnType<typeof api.queryFileData>>);
+    let finishDownload: (files: []) => void = () => {};
+    mocks.downloadTranslations.mockReturnValue(
+      new Promise((resolve) => {
+        finishDownload = resolve;
+      })
+    );
+
+    const context = await renderProvider(page('page-en', 'en'));
+    let localeImport: Promise<boolean> = Promise.resolve(false);
+    await act(async () => {
+      localeImport = context.handleImportDocument('page-en', 'r1', 'fr');
+    });
+    expect(latest!.isWriteRunning).toBe(true);
+
+    await act(() => latest!.handleSaveLocalEdits());
+    await act(() => latest!.handleUploadExistingTranslations());
+    expect(mocks.captureExistingTranslations).not.toHaveBeenCalled();
+    expect(mocks.uploadFiles).not.toHaveBeenCalled();
+
+    await act(async () => {
+      finishDownload([]);
+      await localeImport;
+    });
+    expect(latest!.isWriteRunning).toBe(false);
+
+    await act(() => latest!.handleSaveLocalEdits());
+    expect(mocks.captureExistingTranslations).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Upload Existing Translations', () => {
   test('refuses a source-locale translation of another original before uploading', async () => {
     // The en page is a translation of a fr original. Its group lookup has
     // not returned, so the dialog still shows it as an original.
@@ -204,7 +611,7 @@ describe('Save Local Edits', () => {
     expect(mocks.uploadTranslations).not.toHaveBeenCalled();
     expect(mocks.toastPush).toHaveBeenCalledWith(
       expect.objectContaining({
-        title: 'Local edits were not saved',
+        title: 'Existing translations were not uploaded',
         description:
           'This document is a translation of fr. Translate from the fr original instead.',
         status: 'error',

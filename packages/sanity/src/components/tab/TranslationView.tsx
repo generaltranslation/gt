@@ -11,6 +11,7 @@ import { useToast } from '@sanity/ui/toast';
 import { pluginConfig } from '../../adapter/core';
 import { SaveLocalTranslationsDialog } from '../page/SaveLocalTranslationsDialog';
 import { RetranslateDocumentDialog } from '../page/RetranslateDocumentDialog';
+import { LocalActionDialog } from '../page/LocalActionDialog';
 import { DebugInfoDialog } from '../page/DebugInfoDialog';
 import { version as PACKAGE_VERSION } from '../../../package.json';
 import {
@@ -49,7 +50,9 @@ export const TranslationView = () => {
     branchId,
     isBusy,
     handleTranslateAll,
+    handleSaveLocalEdits,
     handleUploadExistingTranslations,
+    isWriteRunning,
     handleImportDocument,
     handleRefreshAll,
     isRefreshing,
@@ -72,7 +75,12 @@ export const TranslationView = () => {
 
   const [isImporting, setIsImporting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [isUploadingExisting, setIsUploadingExisting] = useState(false);
+  const [localActionDialog, setLocalActionDialog] = useState<
+    'save' | 'upload' | null
+  >(null);
+  const [runningLocalAction, setRunningLocalAction] = useState<
+    'save' | 'upload' | null
+  >(null);
   const [isSaveLocalDialogOpen, setIsSaveLocalDialogOpen] = useState(false);
   const [isRetranslateDialogOpen, setIsRetranslateDialogOpen] = useState(false);
   const [isDebugInfoDialogOpen, setIsDebugInfoDialogOpen] = useState(false);
@@ -165,6 +173,24 @@ export const TranslationView = () => {
     );
   }
 
+  const localActionsDisabled =
+    isWriteRunning ||
+    isImporting ||
+    isPublishing ||
+    !availableLocales.length ||
+    !canPreserveLocalEdits;
+
+  const runLocalAction = async (action: 'save' | 'upload') => {
+    setRunningLocalAction(action);
+    try {
+      await (action === 'save'
+        ? handleSaveLocalEdits()
+        : handleUploadExistingTranslations());
+    } finally {
+      setRunningLocalAction(null);
+    }
+  };
+
   const handleStartRun = async (options?: TranslateAllOptions) => {
     const enqueuedKeys = await handleTranslateAll(options);
     // A run that did not start leaves the stored results as they were.
@@ -197,7 +223,9 @@ export const TranslationView = () => {
       const { autoOnly = false } = options;
 
       // Check preconditions
-      if (isImporting || !documentId || !versionId) return;
+      // Another write, such as saving local edits, must finish first. Auto
+      // import runs again once it does.
+      if (isImporting || isBusy || !documentId || !versionId) return;
       if (autoOnly && !autoImport) return;
       // A document that stopped being its group's original must not import,
       // nor publish what its group now treats as the source.
@@ -271,6 +299,7 @@ export const TranslationView = () => {
       autoImport,
       isVerifiedOriginal,
       isImporting,
+      isBusy,
       documentId,
       versionId,
       statusLocales,
@@ -349,9 +378,7 @@ export const TranslationView = () => {
             }
             icon={TranslateIcon}
             text={isWaitingOnTranslations ? 'Translating…' : 'Translate'}
-            loading={
-              (isBusy && !isUploadingExisting) || isWaitingOnTranslations
-            }
+            loading={(isBusy && !runningLocalAction) || isWaitingOnTranslations}
             style={{ flex: 1 }}
           />
           <Button
@@ -388,6 +415,16 @@ export const TranslationView = () => {
           setIsSaveLocalDialogOpen(false);
         }}
       />
+
+      {localActionDialog && (
+        <LocalActionDialog
+          action={localActionDialog}
+          isOpen
+          onClose={() => setLocalActionDialog(null)}
+          onConfirm={() => runLocalAction(localActionDialog)}
+          blocked={isImporting || isPublishing}
+        />
+      )}
 
       {/* Translation Status Section */}
       {documentId && versionId && statusLocales.length > 0 && (
@@ -457,20 +494,11 @@ export const TranslationView = () => {
             <Flex gap={2} align='center' justify='flex-start'>
               <Button
                 mode='ghost'
-                onClick={async () => {
-                  setIsUploadingExisting(true);
-                  try {
-                    await handleUploadExistingTranslations();
-                  } finally {
-                    setIsUploadingExisting(false);
-                  }
-                }}
-                disabled={
-                  isBusy || !availableLocales.length || !canPreserveLocalEdits
-                }
+                onClick={() => setLocalActionDialog('save')}
+                disabled={localActionsDisabled}
                 icon={UploadIcon}
                 text='Save Local Edits'
-                loading={isUploadingExisting}
+                loading={runningLocalAction === 'save'}
                 style={{ minWidth: '180px' }}
               />
               <Flex gap={2} align='center'>
@@ -511,6 +539,7 @@ export const TranslationView = () => {
                   icon={DownloadIcon}
                   disabled={
                     isImporting ||
+                    isBusy ||
                     statusLocales.every((locale) => {
                       const key = createTranslationStatusKey(
                         branchId,
@@ -604,6 +633,22 @@ export const TranslationView = () => {
                 />
                 <Text size={1}>Auto-publish after import</Text>
               </Flex>
+            </Flex>
+            <Flex gap={2} align='center' justify='flex-start'>
+              <Tooltip
+                placement='top'
+                content='Uploads this document and the translations already in Sanity as finished translations. For content translated before General Translation'
+              >
+                <Button
+                  mode='ghost'
+                  onClick={() => setLocalActionDialog('upload')}
+                  disabled={localActionsDisabled}
+                  icon={UploadIcon}
+                  text='Upload Existing'
+                  loading={runningLocalAction === 'upload'}
+                  style={{ minWidth: '180px' }}
+                />
+              </Tooltip>
             </Flex>
           </Stack>
         </Stack>

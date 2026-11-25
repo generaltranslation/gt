@@ -3,6 +3,7 @@ import type { SanityClient, SanityDocument, Schema } from 'sanity';
 
 const downloadFileBatch = vi.fn();
 const uploadTranslations = vi.fn();
+const queryFileData = vi.fn();
 const collectExistingTranslations = vi.fn();
 
 vi.mock('../../adapter/core', async () => {
@@ -18,6 +19,7 @@ vi.mock('../../adapter/core', async () => {
     api: {
       downloadFileBatch: (...args: unknown[]) => downloadFileBatch(...args),
       uploadTranslations: (...args: unknown[]) => uploadTranslations(...args),
+      queryFileData: (...args: unknown[]) => queryFileData(...args),
     },
     overrideConfig: vi.fn(),
   };
@@ -61,7 +63,21 @@ const run = (documents: SanityDocument[], localeIds = ['es']) =>
 
 beforeEach(() => {
   vi.clearAllMocks();
-  uploadTranslations.mockResolvedValue({ uploadedFiles: [], count: 0 });
+  uploadTranslations.mockImplementation(
+    async (files: { translations: unknown[] }[]) => ({
+      uploadedFiles: files.flatMap((file) => file.translations),
+    })
+  );
+  // By default General Translation holds a finished translation for every
+  // locale asked about.
+  queryFileData.mockImplementation(
+    async ({ translatedFiles }: { translatedFiles: object[] }) => ({
+      translatedFiles: translatedFiles.map((file) => ({
+        ...file,
+        completedAt: '2026-01-01T00:00:00Z',
+      })),
+    })
+  );
   collectExistingTranslations.mockResolvedValue(new Map());
 });
 
@@ -165,5 +181,185 @@ describe('captureExistingTranslations', () => {
     expect(
       files[0].translations.map((t: { locale: string }) => t.locale)
     ).toEqual(['es', 'fr']);
+  });
+
+  test('saves only the locales General Translation already holds a finished translation for', async () => {
+    // French was translated from rev-new; Spanish has not been yet, so the
+    // Spanish in Sanity still belongs to the older source.
+    downloadFileBatch.mockResolvedValue({
+      files: [seedFile('a', 'rev-new')],
+      count: 1,
+    });
+    collectExistingTranslations.mockResolvedValue(
+      new Map([
+        [
+          'a',
+          [
+            { locale: 'es', content: '<html>hola</html>' },
+            { locale: 'fr', content: '<html>bonjour</html>' },
+          ],
+        ],
+      ])
+    );
+    queryFileData.mockResolvedValue({
+      translatedFiles: [
+        {
+          branchId: 'branch-1',
+          fileId: 'a',
+          versionId: 'rev-new',
+          locale: 'fr',
+          completedAt: '2026-01-01T00:00:00Z',
+        },
+      ],
+    });
+
+    const result = await run([doc('a', 'rev-new')], ['es', 'fr']);
+
+    expect(queryFileData).toHaveBeenCalledWith({
+      translatedFiles: [
+        {
+          branchId: 'branch-1',
+          fileId: 'a',
+          versionId: 'rev-new',
+          locale: 'es',
+        },
+        {
+          branchId: 'branch-1',
+          fileId: 'a',
+          versionId: 'rev-new',
+          locale: 'fr',
+        },
+      ],
+    });
+    const [files] = uploadTranslations.mock.calls[0];
+    expect(
+      files[0].translations.map((t: { locale: string }) => t.locale)
+    ).toEqual(['fr']);
+    expect(result).toMatchObject({
+      capturedCount: 1,
+      documentCount: 1,
+      skippedCount: 1,
+    });
+  });
+
+  test('saves nothing when General Translation holds a newer source that has not been translated', async () => {
+    downloadFileBatch.mockResolvedValue({
+      files: [seedFile('a', 'rev-new')],
+      count: 1,
+    });
+    collectExistingTranslations.mockResolvedValue(
+      new Map([['a', [{ locale: 'es', content: '<html>hola</html>' }]]])
+    );
+    queryFileData.mockResolvedValue({ translatedFiles: [] });
+
+    const result = await run([doc('a', 'rev-new')]);
+
+    expect(uploadTranslations).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      capturedCount: 0,
+      documentCount: 0,
+      skippedCount: 1,
+    });
+  });
+
+  test('does not save over a translation that is still in progress', async () => {
+    downloadFileBatch.mockResolvedValue({
+      files: [seedFile('a', 'rev-new')],
+      count: 1,
+    });
+    collectExistingTranslations.mockResolvedValue(
+      new Map([['a', [{ locale: 'es', content: '<html>hola</html>' }]]])
+    );
+    queryFileData.mockResolvedValue({
+      translatedFiles: [
+        {
+          branchId: 'branch-1',
+          fileId: 'a',
+          versionId: 'rev-new',
+          locale: 'es',
+          completedAt: null,
+        },
+      ],
+    });
+
+    const result = await run([doc('a', 'rev-new')]);
+
+    expect(uploadTranslations).not.toHaveBeenCalled();
+    expect(result.skippedCount).toBe(1);
+  });
+
+  test('counts the translations General Translation confirms it saved', async () => {
+    downloadFileBatch.mockResolvedValue({
+      files: [seedFile('a', 'rev-old')],
+      count: 1,
+    });
+    collectExistingTranslations.mockResolvedValue(
+      new Map([
+        [
+          'a',
+          [
+            { locale: 'es', content: '<html>hola</html>' },
+            { locale: 'fr', content: '<html>bonjour</html>' },
+          ],
+        ],
+      ])
+    );
+    uploadTranslations.mockResolvedValue({
+      uploadedFiles: [{ fileId: 'a', locale: 'es' }],
+    });
+
+    const result = await run([doc('a', 'rev-1')], ['es', 'fr']);
+
+    expect(result.capturedCount).toBe(1);
+  });
+
+  test('reports only what General Translation confirms, by document', async () => {
+    downloadFileBatch.mockResolvedValue({
+      files: [seedFile('a', 'rev-a'), seedFile('b', 'rev-b')],
+      count: 2,
+    });
+    collectExistingTranslations.mockResolvedValue(
+      new Map([
+        [
+          'a',
+          [
+            {
+              locale: 'es',
+              content: '<html>hola</html>',
+              document: { id: 'a-es', type: 'page' },
+            },
+          ],
+        ],
+        [
+          'b',
+          [
+            {
+              locale: 'es',
+              content: '<html>adios</html>',
+              document: { id: 'b-es', type: 'page' },
+            },
+          ],
+        ],
+      ])
+    );
+    uploadTranslations.mockResolvedValue({
+      uploadedFiles: [{ fileId: 'a', locale: 'es' }],
+    });
+
+    const result = await run([doc('a', 'rev-1'), doc('b', 'rev-1')]);
+
+    expect(result).toMatchObject({
+      capturedCount: 1,
+      documentCount: 1,
+      skippedCount: 0,
+      unconfirmedCount: 1,
+    });
+    expect(result.saved).toEqual([
+      {
+        written: { id: 'a-es', type: 'page' },
+        file: { branchId: 'branch-1', fileId: 'a', versionId: 'rev-a' },
+        language: 'es',
+      },
+    ]);
   });
 });

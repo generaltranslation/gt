@@ -207,6 +207,11 @@ interface TranslationsContextType {
   setPreserveExistingTranslations: (value: boolean) => void;
   /** Resolves to the status keys it enqueued, none when the run did not start. */
   handleTranslateAll: (options?: TranslateAllOptions) => Promise<string[]>;
+  /** True while an action is writing to Sanity or General Translation, a single locale import included. */
+  isWriteRunning: boolean;
+  /** Saves the translations in Sanity over the finished translations General Translation holds. */
+  handleSaveLocalEdits: () => Promise<void>;
+  /** Uploads the current source and the translations in Sanity as a finished pair. */
   handleUploadExistingTranslations: () => Promise<void>;
   handleImportAll: () => Promise<void>;
   handleImportMissing: () => Promise<void>;
@@ -352,6 +357,8 @@ const TranslationsProviderContent: React.FC<
   // Fixed for the Studio's lifetime; see TranslationsProvider.
   const allowNonDefault = allowsNonDefaultSourceLocales();
   const [isBusy, setIsBusy] = useState(false);
+  const [runningLocaleImports, setRunningLocaleImports] = useState(0);
+  const isWriteRunning = isBusy || runningLocaleImports > 0;
   const [documents, setDocuments] = useState<SanityDocument[]>([]);
   // Originals outside the source locale that Translate All leaves out; each is
   // translated from the Translate dialog on that document.
@@ -775,6 +782,41 @@ const TranslationsProviderContent: React.FC<
     [toast]
   );
 
+  // Counts the saves and uploads of Sanity translations in progress. Imports
+  // read it so they never replace a translation that is being sent. A ref, so
+  // a callback created before the write started still sees it.
+  const localWritesRef = useRef(0);
+  const saveLocalEdits = useCallback(
+    async (sourceDocuments: SanityDocument[]) => {
+      if (!secrets) throw new Error('Secrets not loaded');
+      localWritesRef.current += 1;
+      try {
+        const result = await captureExistingTranslations({
+          documents: getDefaultSourceDocuments(sourceDocuments),
+          localeIds: getSelectedLocaleIds(locales),
+          secrets,
+          context: translationContext,
+          branchId,
+        });
+        warnTranslationPreviewUrlFailures(
+          await updateTranslationPreviewUrls(result.saved, client, secrets)
+        );
+        return result;
+      } finally {
+        localWritesRef.current -= 1;
+      }
+    },
+    [
+      secrets,
+      locales,
+      client,
+      schema,
+      branchId,
+      getDefaultSourceDocuments,
+      warnTranslationPreviewUrlFailures,
+    ]
+  );
+
   const handleTranslateAll = useCallback(
     async ({ force = false }: TranslateAllOptions = {}) => {
       if (!secrets || documents.length === 0) return [];
@@ -800,17 +842,20 @@ const TranslationsProviderContent: React.FC<
         // costs edit preservation, and must not block the translation itself.
         if (preserveExistingTranslations && !force) {
           try {
-            const captured = await captureExistingTranslations({
-              documents: getDefaultSourceDocuments(sourceDocuments),
-              localeIds: availableLocaleIds,
-              secrets,
-              context: translationContext,
-              branchId,
-            });
+            const captured = await saveLocalEdits(sourceDocuments);
             if (captured.capturedCount > 0) {
               toast.push({
                 title: `Preserved ${captured.capturedCount} existing translation(s) across ${captured.documentCount} document(s)`,
                 status: 'info',
+                closable: true,
+              });
+            }
+            if (captured.unconfirmedCount > 0) {
+              toast.push({
+                title: `${captured.unconfirmedCount} existing translation(s) could not be confirmed as preserved`,
+                description:
+                  'Translation is continuing, but edits made to those translated documents may be overwritten.',
+                status: 'warning',
                 closable: true,
               });
             }
@@ -1002,6 +1047,7 @@ const TranslationsProviderContent: React.FC<
       }
     },
     [
+      saveLocalEdits,
       secrets,
       documents,
       locales,
@@ -1022,10 +1068,70 @@ const TranslationsProviderContent: React.FC<
     ]
   );
 
-  const handleUploadExistingTranslations = useCallback(async () => {
-    if (!secrets || documents.length === 0) return;
+  const handleSaveLocalEdits = useCallback(async () => {
+    if (!secrets || documents.length === 0 || isWriteRunning) return;
 
     setIsBusy(true);
+    localWritesRef.current += 1;
+    try {
+      const sourceDocuments = allowNonDefault
+        ? await getUploadableSources(documents, 'Local edits were not saved')
+        : documents;
+      if (!sourceDocuments) return;
+
+      const saved = await saveLocalEdits(sourceDocuments);
+      const notes = [
+        saved.unconfirmedCount > 0 &&
+          `${saved.unconfirmedCount} could not be confirmed as saved. Try again.`,
+        saved.skippedCount > 0 &&
+          `${saved.skippedCount} skipped: not translated from the current source yet.`,
+      ].filter(Boolean);
+
+      toast.push(
+        saved.capturedCount > 0
+          ? {
+              title: `Saved ${saved.capturedCount} translation(s) across ${saved.documentCount} document(s)`,
+              description: notes.length > 0 ? notes.join(' ') : undefined,
+              status: saved.unconfirmedCount > 0 ? 'warning' : 'success',
+              closable: true,
+            }
+          : {
+              title: 'No local edits were saved',
+              description:
+                saved.unconfirmedCount > 0
+                  ? notes.join(' ')
+                  : 'Local edits are saved over a translation General Translation already holds for the current source. Translate first, or use Upload Existing for content translated elsewhere.',
+              status: 'warning',
+              closable: true,
+            }
+      );
+    } catch (error) {
+      console.error('Error saving local edits:', error);
+      toast.push({
+        title:
+          'Local edits could not all be saved. Some may already have been saved. Try again or check the console for details.',
+        status: 'error',
+        closable: true,
+      });
+    } finally {
+      localWritesRef.current -= 1;
+      setIsBusy(false);
+    }
+  }, [
+    secrets,
+    documents,
+    allowNonDefault,
+    saveLocalEdits,
+    getUploadableSources,
+    toast,
+    isWriteRunning,
+  ]);
+
+  const handleUploadExistingTranslations = useCallback(async () => {
+    if (!secrets || documents.length === 0 || isWriteRunning) return;
+
+    setIsBusy(true);
+    localWritesRef.current += 1;
     try {
       const availableLocaleIds = locales
         .filter((locale) => locale.enabled !== false)
@@ -1038,7 +1144,7 @@ const TranslationsProviderContent: React.FC<
         const defaultSourceDocuments = getDefaultSourceDocuments();
         if (defaultSourceDocuments.length === 0) {
           toast.push({
-            title: `Local edits can only be saved for translations of ${pluginConfig.getSourceLocale()} documents`,
+            title: `Existing translations can only be uploaded for ${pluginConfig.getSourceLocale()} documents`,
             status: 'warning',
             closable: true,
           });
@@ -1046,7 +1152,7 @@ const TranslationsProviderContent: React.FC<
         }
         const uploadable = await getUploadableSources(
           defaultSourceDocuments,
-          'Local edits were not saved'
+          'Existing translations were not uploaded'
         );
         if (!uploadable) return;
         sourceDocuments = uploadable;
@@ -1109,6 +1215,7 @@ const TranslationsProviderContent: React.FC<
         closable: true,
       });
     } finally {
+      localWritesRef.current -= 1;
       setIsBusy(false);
     }
   }, [
@@ -1123,6 +1230,7 @@ const TranslationsProviderContent: React.FC<
     getDefaultSourceDocuments,
     getUploadableSources,
     warnTranslationPreviewUrlFailures,
+    isWriteRunning,
   ]);
 
   const handleImportAll = useCallback(async () => {
@@ -1586,6 +1694,17 @@ const TranslationsProviderContent: React.FC<
         return false;
       }
 
+      if (localWritesRef.current > 0) {
+        toast.push({
+          title: 'Translations in Sanity are being sent to General Translation',
+          description: 'Import again once that finishes.',
+          status: 'warning',
+          closable: true,
+        });
+        return false;
+      }
+
+      setRunningLocaleImports((count) => count + 1);
       try {
         const downloadedFiles = await downloadTranslations(
           [
@@ -1674,6 +1793,8 @@ const TranslationsProviderContent: React.FC<
           status: 'error',
           closable: true,
         });
+      } finally {
+        setRunningLocaleImports((count) => count - 1);
       }
       return false;
     },
@@ -2008,6 +2129,8 @@ const TranslationsProviderContent: React.FC<
     setAutoPublish,
     setPreserveExistingTranslations,
     handleTranslateAll,
+    isWriteRunning,
+    handleSaveLocalEdits,
     handleUploadExistingTranslations,
     handleImportAll,
     handleImportMissing,
