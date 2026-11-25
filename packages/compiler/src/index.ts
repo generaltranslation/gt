@@ -96,6 +96,7 @@ import {
   importsMessageSource,
   taggedTemplateHashInjectionPass,
 } from './passes/taggedTemplateHashInjectionPass';
+import { mayImportReadSource } from './utils/mayImportReadSource';
 
 /**
  * Architecture:
@@ -367,6 +368,8 @@ const gtUnplugin = createUnplugin<GTUnpluginOptions | undefined>(
         );
       },
       transform(code: string, id: string) {
+        if (!mayImportReadSource(code)) return null;
+
         // Initialize processing state
         const state = initializeState(resolvedOptions, id, chunkTranslations);
         if (debugManifest) state.debugManifest = debugManifest;
