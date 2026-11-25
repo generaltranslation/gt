@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import zlib from 'node:zlib';
 import type { ParsedSummary } from '../analysis/module-index.js';
+import type { Reads } from '../analysis/reads.js';
+import type { ParaglideUsage } from '../analysis/types.js';
 import { packageVersions } from '../project/packages.js';
 import { isJsonObject, parseJsonObject } from '../utils/json.js';
 import { relativePath } from '../utils/paths.js';
@@ -18,7 +20,10 @@ import { writeFileAtomically } from '../utils/write-file.js';
  * CI run starts from what the last committed run found.
  *
  * Every entry holds the hash of its file's content, and is used only while
- * the file still has it: a stale entry costs work, never a wrong result.
+ * the file still has it; an analysis holds a digest of what it read, and is
+ * used only while that is the same. Whichever entries the lock file holds,
+ * e.g. lines of two branches git merged, a stale one costs work, never a
+ * wrong result.
  */
 
 export const LOCK_FILE = 'gt-lock.json';
@@ -49,6 +54,28 @@ export type CachedFile = {
   hash: string;
   /** Unset for a file a language's tooling generates a module for: it is generated again. */
   summary?: ParsedSummary;
+  /** For an analyzed file: what it uses, and what finding that read, project-relative. */
+  analysis?: {
+    usages: ParaglideUsage[];
+    reads: ReadList;
+    /** See `ProjectState`. */
+    digest: string;
+  };
+};
+
+/** `Reads`, sorted, as JSON carries them. */
+type ReadList = {
+  files: string[];
+  importers: string[];
+  mentions: string[];
+};
+
+/** What a file links to in this run, project-relative: see `ProjectState`. */
+type FileLinks = {
+  /** The file each of its specifiers resolves to. */
+  imports: Record<string, string>;
+  /** The auto-imported names it mentions. */
+  globals: string[];
 };
 
 type Section = {
@@ -97,7 +124,10 @@ export class UsageCache {
   /** Each entry of `cached` as it was read: one that did not change is written as it was. */
   private readonly encoded = new Map<string, string>();
   private readonly found = new Map<string, CachedFile>();
+  /** Not saved: a run links every file it indexes. */
+  private readonly links = new Map<string, FileLinks>();
   private readonly relatives = new Map<string, string>();
+  private state: ProjectState | undefined;
 
   private constructor(
     private readonly projectRoot: string,
@@ -134,6 +164,83 @@ export class UsageCache {
   /** What this run found of `file`: only what a run records is saved. */
   set(file: string, entry: CachedFile): void {
     this.found.set(this.relative(file), entry);
+  }
+
+  /** Records what `file` links to in this run: the files its specifiers resolve to, and the auto-imported names it mentions. */
+  link(
+    file: string,
+    links: {
+      imports: Iterable<readonly [string, string | undefined]>;
+      globals: Iterable<string>;
+    }
+  ): void {
+    const imports: Record<string, string> = {};
+    for (const [specifier, target] of links.imports) {
+      if (target) imports[specifier] = this.relative(target);
+    }
+
+    this.links.set(this.relative(file), {
+      imports,
+      globals: [...new Set(links.globals)].sort(),
+    });
+  }
+
+  /**
+   * Once every file this run indexed is linked: what every analysis depends
+   * on besides what it read, e.g. the outdirs, whose modules it matches by
+   * their path without reading them.
+   */
+  linked(context: readonly string[]): void {
+    this.state = new ProjectState(this.found, this.links, context);
+  }
+
+  /** The usages the last run's analysis of `file` found, if nothing it read changed since: kept for the next run too. */
+  reuseAnalysis(file: string): ParaglideUsage[] | undefined {
+    const relative = this.relative(file);
+    const analysis = this.cached.get(relative)?.analysis;
+    const entry = this.found.get(relative);
+
+    const isValid =
+      analysis !== undefined &&
+      entry !== undefined &&
+      this.state !== undefined &&
+      analysis.digest === this.state.digest(analysis.reads);
+    if (!isValid) return undefined;
+
+    entry.analysis = analysis;
+
+    return analysis.usages.map((usage) => ({
+      ...usage,
+      targetFile: this.absolute(usage.targetFile),
+    }));
+  }
+
+  /** Keeps what the analysis of `file` found and read, for the next run. */
+  recordAnalysis(
+    file: string,
+    usages: readonly ParaglideUsage[],
+    reads: Reads
+  ): void {
+    const entry = this.found.get(this.relative(file));
+    if (!entry || !this.state) return;
+
+    const relative = (files: Iterable<string>) =>
+      [...files].map((read) => this.relative(read)).sort();
+    const readList: ReadList = {
+      // Its own file too, whose summary it may not have read.
+      files: relative(new Set([file, ...reads.files])),
+      importers: relative(reads.importers),
+      mentions: [...reads.mentions].sort(),
+    };
+
+    entry.analysis = {
+      usages: usages.map((usage) => ({
+        ...usage,
+        targetFile: this.relative(usage.targetFile),
+      })),
+      reads: readList,
+      digest: this.state.digest(readList),
+    };
   }
 
   /**
@@ -184,7 +291,7 @@ export class UsageCache {
     }
   }
 
-  relative(file: string): string {
+  private relative(file: string): string {
     let relative = this.relatives.get(file);
 
     if (relative === undefined) {
@@ -194,6 +301,105 @@ export class UsageCache {
 
     return relative;
   }
+
+  private absolute(file: string): string {
+    return path.resolve(this.projectRoot, file);
+  }
+}
+
+/**
+ * What an analysis can read of the project, as this run found it: each
+ * file's content and links, who imports each module, and who mentions each
+ * auto-imported name, with the context of every analysis. An analysis is
+ * reused only while the digest of what it read is the same as when it ran,
+ * whichever entries the lock file holds.
+ */
+class ProjectState {
+  private readonly importers = new Map<string, string[]>();
+  private readonly mentions = new Map<string, string[]>();
+  private readonly fileDigests = new Map<string, string>();
+  private readonly importerDigests = new Map<string, string>();
+  private readonly mentionDigests = new Map<string, string>();
+
+  constructor(
+    private readonly entries: ReadonlyMap<string, CachedFile>,
+    private readonly links: ReadonlyMap<string, FileLinks>,
+    private readonly context: readonly string[]
+  ) {
+    for (const [file, { imports, globals }] of links) {
+      for (const target of new Set(Object.values(imports))) {
+        appendTo(this.importers, target, file);
+      }
+      for (const name of globals) appendTo(this.mentions, name, file);
+    }
+  }
+
+  digest({ files, importers, mentions }: ReadList): string {
+    return contentHash(
+      JSON.stringify([
+        this.context,
+        files.map((file) => this.ofFile(file)),
+        importers.map((file) =>
+          this.ofFiles(this.importerDigests, this.importers, file)
+        ),
+        mentions.map((name) =>
+          this.ofFiles(this.mentionDigests, this.mentions, name)
+        ),
+      ])
+    );
+  }
+
+  /** Its content, and what its links are: what an analysis that reads it sees. */
+  private ofFile(file: string): string {
+    return memo(this.fileDigests, file, () => {
+      const entry = this.entries.get(file);
+      if (!entry) return 'none';
+
+      return contentHash(JSON.stringify([entry.hash, this.links.get(file)]));
+    });
+  }
+
+  /** The files of `key` in `groups`, e.g. who imports a module, each with its digest. */
+  private ofFiles(
+    digests: Map<string, string>,
+    groups: ReadonlyMap<string, readonly string[]>,
+    key: string
+  ): string {
+    return memo(digests, key, () =>
+      contentHash(
+        [...(groups.get(key) ?? [])]
+          .sort(compareText)
+          .map((file) => `${file} ${this.ofFile(file)}`)
+          .join('\n')
+      )
+    );
+  }
+}
+
+function memo(
+  digests: Map<string, string>,
+  key: string,
+  compute: () => string
+): string {
+  let digest = digests.get(key);
+
+  if (digest === undefined) {
+    digest = compute();
+    digests.set(key, digest);
+  }
+
+  return digest;
+}
+
+function appendTo(
+  map: Map<string, string[]>,
+  key: string,
+  value: string
+): void {
+  const values = map.get(key);
+
+  if (values) values.push(value);
+  else map.set(key, [value]);
 }
 
 function readSection(file: string): Section | undefined {
@@ -281,7 +487,8 @@ function isCachedFile(value: unknown): value is CachedFile {
   return (
     isJsonObject(value) &&
     typeof value.hash === 'string' &&
-    (value.summary === undefined || isArrayOf(value.summary, isSummaryPart))
+    (value.summary === undefined || isArrayOf(value.summary, isSummaryPart)) &&
+    (value.analysis === undefined || isAnalysis(value.analysis))
   );
 }
 
@@ -302,6 +509,39 @@ function isSummaryPart(value: unknown): boolean {
         isArrayOf(exports.stars, isString))) &&
     isArrayOf(globalNames, isString) &&
     (sites === undefined || isArrayOf(sites, Number.isInteger))
+  );
+}
+
+/** See `CachedFile.analysis`. */
+function isAnalysis(value: unknown): boolean {
+  if (!isJsonObject(value) || !isJsonObject(value.reads)) return false;
+
+  const { files, importers, mentions } = value.reads;
+
+  return (
+    isArrayOf(value.usages, isUsage) &&
+    isArrayOf(files, isString) &&
+    isArrayOf(importers, isString) &&
+    isArrayOf(mentions, isString) &&
+    typeof value.digest === 'string'
+  );
+}
+
+/** See `ParaglideUsage`. */
+function isUsage(value: unknown): boolean {
+  if (!isJsonObject(value)) return false;
+
+  const { target, name, dynamic, inlangProject, kind, targetFile } = value;
+  const { start, end, line, column, endLine } = value;
+
+  return (
+    typeof target === 'string' &&
+    typeof name === 'string' &&
+    (dynamic === undefined || typeof dynamic === 'boolean') &&
+    (inlangProject === undefined || typeof inlangProject === 'string') &&
+    (kind === 'call' || kind === 'method' || kind === 'reference') &&
+    typeof targetFile === 'string' &&
+    [start, end, line, column, endLine].every(Number.isInteger)
   );
 }
 

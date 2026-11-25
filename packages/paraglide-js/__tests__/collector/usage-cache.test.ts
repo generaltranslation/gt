@@ -23,6 +23,7 @@ const FILES = {
     `export const Page = () => <h1>{m.greeting()}{label(m.greeting)}</h1>;`,
   ].join('\n'),
   'src/label.ts': `export function label(message: () => string) { return message(); }`,
+  'src/plain.ts': `export const answer = 42;`,
 };
 
 async function readLock(root: string): Promise<Record<string, unknown>> {
@@ -103,7 +104,9 @@ test('a changed file is indexed again', async () => {
   ).files;
 
   expect(after['src/label.ts']).not.toEqual(before['src/label.ts']);
-  expect(after['src/page.tsx']).toEqual(before['src/page.tsx']);
+  // The page's analysis read the label: it is analyzed again.
+  expect(after['src/page.tsx']).not.toEqual(before['src/page.tsx']);
+  expect(after['src/plain.ts']).toEqual(before['src/plain.ts']);
   expect(warm.usages.length).toBeGreaterThan(0);
 });
 
@@ -192,6 +195,10 @@ test.each([
   [
     'has a summary of another shape',
     encode({ hash: 'h', summary: [{ specifiers: 'a' }] }),
+  ],
+  [
+    'has an analysis of another shape',
+    encode({ hash: 'h', analysis: { usages: [{}], reads: {}, digest: 'd' } }),
   ],
   // 1 KB that expands to 1 MB.
   [
