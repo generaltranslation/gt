@@ -12,11 +12,9 @@ import {
 import {
   formatMessageTree as _formatMessageTree,
   type FormatMessageTreeOptions,
-  type FormattedMessage,
   type MessagePlainValue,
   type MessageTree,
   type MessageValues,
-  type OnePartValues,
 } from '@generaltranslation/icu';
 import {
   DATE_FIELD_OPTIONS,
@@ -262,17 +260,17 @@ export function formatMessageTree(
 ): string;
 /**
  * With rich values or tag formatters, the result is a string, a rich value,
- * or the parts around them. A tag formatter alone needs `R` written.
+ * a function given for a plain placeholder, or the parts around them.
  */
-export function formatMessageTree<R>(
+export function formatMessageTree(
   tree: MessageTree,
-  options: MessageTreeOptions<MessageValues<R> & OnePartValues<R>>
-): FormattedMessage<R>;
-export function formatMessageTree<R>(
+  options: MessageTreeOptions<MessageValues<unknown>>
+): unknown;
+export function formatMessageTree(
   tree: MessageTree,
-  options?: MessageTreeOptions<MessageValues<R> & OnePartValues<R>>
-): FormattedMessage<R> {
-  return _formatMessageTree<R>(
+  options?: MessageTreeOptions<MessageValues<unknown>>
+): unknown {
+  return _formatMessageTree<unknown>(
     tree,
     options?.locales ?? defaultDefaultLocale,
     options?.values ?? {},

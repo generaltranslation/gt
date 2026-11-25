@@ -10,11 +10,9 @@ import {
 import {
   formatMessageTree,
   type FormatMessageTreeOptions,
-  type FormattedMessage,
   type MessagePlainValue,
   type MessageTree,
   type MessageValues,
-  type OnePartValues,
 } from '@generaltranslation/icu';
 import { formatIcu } from '@generaltranslation/icu/parser';
 import { intlCache } from '../cache/IntlCache';
@@ -368,16 +366,16 @@ export class GTIntl {
   ): string;
   /**
    * With rich values or tag formatters, the result is a string, a rich value,
-   * or the parts around them. A tag formatter alone needs `R` written.
+   * a function given for a plain placeholder, or the parts around them.
    */
-  formatMessageTree<R>(
+  formatMessageTree(
     tree: MessageTree,
-    options: MessageTreeOptions<MessageValues<R> & OnePartValues<R>>
-  ): FormattedMessage<R>;
-  formatMessageTree<R>(
+    options: MessageTreeOptions<MessageValues<unknown>>
+  ): unknown;
+  formatMessageTree(
     tree: MessageTree,
-    options: MessageTreeOptions<MessageValues<R> & OnePartValues<R>>
-  ): FormattedMessage<R> {
+    options: MessageTreeOptions<MessageValues<unknown>>
+  ): unknown {
     const {
       locale,
       locales,
@@ -385,7 +383,7 @@ export class GTIntl {
       formats,
       timeZone = this.timeZone,
     } = options;
-    return formatMessageTree<R>(
+    return formatMessageTree<unknown>(
       tree,
       this.getFormattingLocales(locale, locales),
       values,

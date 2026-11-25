@@ -38,9 +38,9 @@ intl.formatRelativeTimeFromDate(date);
 intl.formatRelativeTimeFromDate(date, { locale: 'en' });
 intl.formatRelativeTimeFromDate(date, { locale: 'en', baseDate: date });
 
-// A message tree formats to what its values make it, as in
-// `@generaltranslation/icu`: a string from plain values, the parts around a
-// rich value otherwise.
+// A message tree formats to a string from plain values. Other values give
+// `unknown`: a function is returned as it is where the tree has a plain
+// placeholder and called where it has a tag, and the types cannot see which.
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
     ? true
@@ -50,20 +50,20 @@ function expectType<T extends true>(): void {}
 declare const tree: MessageTree;
 type Element = { readonly type: string };
 declare const element: Element;
-type Rich = string | Element | Array<string | Element>;
 declare const captured: Record<string, unknown>;
 declare const id: bigint;
+const joinParts = (parts: string[]) => parts.join('');
 
 const plain = formatMessageTree(tree, { values: { name: 'Ada', id } });
 expectType<Equal<typeof plain, string>>();
 const none = formatMessageTree(tree);
 expectType<Equal<typeof none, string>>();
 const rich = formatMessageTree(tree, { values: { avatar: element } });
-expectType<Equal<typeof rich, Rich>>();
-const tagged = formatMessageTree<Element>(tree, {
-  values: { b: (parts) => ({ type: 'b', children: parts }) as Element },
-});
-expectType<Equal<typeof tagged, Rich>>();
+expectType<Equal<typeof rich, unknown>>();
+const tagged = formatMessageTree(tree, { values: { b: joinParts } });
+expectType<Equal<typeof tagged, unknown>>();
+// Tag formatters of different types need no type argument.
+formatMessageTree(tree, { values: { b: joinParts, image: () => element } });
 // Values of an unknown type, as a tagged template captures them.
 const any = formatMessageTree(tree, { values: captured });
 expectType<Equal<typeof any, unknown>>();
@@ -78,9 +78,13 @@ const richMethod = intl.formatMessageTree(tree, {
   values: { avatar: element },
   formats,
 });
-expectType<Equal<typeof richMethod, Rich>>();
-const taggedMethod = intl.formatMessageTree<Element>(tree, {
-  values: { b: (parts) => ({ type: 'b', children: parts }) as Element },
+expectType<Equal<typeof richMethod, unknown>>();
+const taggedMethod = intl.formatMessageTree(tree, {
+  values: { b: joinParts },
   formats,
 });
-expectType<Equal<typeof taggedMethod, Rich>>();
+expectType<Equal<typeof taggedMethod, unknown>>();
+intl.formatMessageTree(tree, {
+  values: { b: joinParts, image: () => element },
+  formats,
+});
