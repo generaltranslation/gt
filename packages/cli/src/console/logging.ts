@@ -20,6 +20,7 @@ import { paintFrame } from './globe/paint.js';
 import { TEMPLATE_FILE_NAME } from '../utils/constants.js';
 import type { CustomMapping } from '@generaltranslation/format';
 import type { FileToUpload } from 'generaltranslation';
+import type { FileMapping } from '../types/files.js';
 import { parseTypedLocale } from './promptParsing.js';
 import { getFilteredLocaleOptions } from './localeOptions.js';
 import {
@@ -420,5 +421,33 @@ export function logCollectedFiles(
           return `- ${file.fileName}`;
         })
         .join('\n')
+  );
+}
+
+/**
+ * Helper: Log the translations a download would request and where each would be written
+ */
+export function logTranslationsToRequest(
+  files: Pick<FileToUpload, 'fileName'>[],
+  locales: string[],
+  fileMapping: FileMapping,
+  inlineLibrary?: InlineLibrary
+): void {
+  const elementLabel = getInlineElementsLabel(inlineLibrary);
+  const translations = files.flatMap(({ fileName }) =>
+    locales.flatMap((locale) => {
+      const outputPath = fileMapping[locale]?.[fileName];
+      if (!outputPath) return [];
+      const label =
+        fileName === TEMPLATE_FILE_NAME ? `<${elementLabel}>` : fileName;
+      return [`- ${label} (${locale}) → ${outputPath}`];
+    })
+  );
+  logger.message(
+    translations.length > 0
+      ? chalk.cyan('Translations that would be requested:') +
+          '\n' +
+          translations.join('\n')
+      : 'No translations would be requested.'
   );
 }

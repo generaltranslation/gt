@@ -7,7 +7,12 @@ import {
   runDownloadWorkflow,
   FileTranslationData,
 } from '../../workflows/download.js';
-import { exitSync, logErrorAndExit } from '../../console/logging.js';
+import {
+  exitSync,
+  logErrorAndExit,
+  logTranslationsToRequest,
+} from '../../console/logging.js';
+import { logger } from '../../console/logger.js';
 import { convertToFileTranslationData } from '../../formats/files/convertToFileTranslationData.js';
 import {
   collectFiles,
@@ -74,6 +79,20 @@ export async function handleDownload(
       return logErrorAndExit(noVersionIdError);
     }
     fileVersionData = convertToFileTranslationData(files);
+  }
+
+  // Dry run
+  if (options.dryRun) {
+    logger.success(
+      `Dry run: No translations were downloaded from General Translation.`
+    );
+    logTranslationsToRequest(
+      Object.values(fileVersionData),
+      settings.locales,
+      fileMapping,
+      inlineLibrary
+    );
+    return;
   }
 
   // Check for remaining translations
