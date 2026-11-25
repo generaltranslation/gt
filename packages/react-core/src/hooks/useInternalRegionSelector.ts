@@ -1,10 +1,7 @@
 import { useMemo } from 'react';
 import { useCustomMapping, useLocales } from './i18n-config';
 import { useLocale, useRegion } from './condition-store';
-import {
-  getLocaleProperties,
-  type CustomRegionMapping,
-} from '@generaltranslation/format';
+import type { CustomRegionMapping } from '@generaltranslation/format';
 import { getI18nConfig } from 'gt-i18n/internal';
 
 export type RegionData = {
@@ -49,10 +46,9 @@ export function useInternalRegionSelector({
   const localeCustomMapping = useCustomMapping();
   const locale = useLocale();
   const region = useRegion();
-  const { regionCode: localeRegion } = getLocaleProperties(
+  const { regionCode: localeRegion } = getI18nConfig().getLocaleProperties(
     locale,
-    locale,
-    localeCustomMapping
+    { locale }
   );
 
   const [
@@ -60,10 +56,9 @@ export function useInternalRegionSelector({
     regionData, // map of ISO 3166 region codes to region display data, potentially not ordered
   ] = useMemo<[string[], Map<string, RegionData>]>(() => {
     const i18nConfig = getI18nConfig();
-    const regionNameLocale = locale && i18nConfig.resolveLocale(locale);
     const regionToLocaleMap = new Map(
       contextLocales.map((l) => {
-        const lp = getLocaleProperties(l, locale, localeCustomMapping); // has to be directly called so sourceLocale can be in the user's current locale
+        const lp = i18nConfig.getLocaleProperties(l, { locale }); // has to be directly called so sourceLocale can be in the user's current locale
         return [lp.regionCode, lp];
       })
     );
@@ -78,7 +73,7 @@ export function useInternalRegionSelector({
           r,
           {
             locale: regionToLocaleMap?.get(r)?.code || locale,
-            ...i18nConfig.getRegionProperties(r, { locale: regionNameLocale }),
+            ...i18nConfig.getRegionProperties(r, { locale }),
             ...(typeof customMapping?.[r] === 'string'
               ? { name: customMapping?.[r] }
               : customMapping?.[r]),

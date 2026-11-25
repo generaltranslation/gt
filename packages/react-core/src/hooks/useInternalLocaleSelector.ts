@@ -1,8 +1,6 @@
 import { useCallback, useMemo } from 'react';
-import {
-  getLocaleProperties,
-  type LocaleProperties,
-} from '@generaltranslation/format';
+import type { LocaleProperties } from '@generaltranslation/format';
+import { getI18nConfig } from 'gt-i18n/internal';
 import { useCustomMapping, useLocales } from './i18n-config';
 import { useLocale } from './condition-store';
 
@@ -28,11 +26,12 @@ export function useInternalLocaleSelector(
     if (!contextLocales || contextLocales.length === 0) {
       return [];
     }
+    const i18nConfig = getI18nConfig();
     const collator = new Intl.Collator();
     return [...contextLocales].sort((a, b) =>
       collator.compare(
-        getLocaleProperties(a, locale, customMapping).nativeNameWithRegionCode,
-        getLocaleProperties(b, locale, customMapping).nativeNameWithRegionCode
+        i18nConfig.getLocaleProperties(a, { locale }).nativeNameWithRegionCode,
+        i18nConfig.getLocaleProperties(b, { locale }).nativeNameWithRegionCode
       )
     );
   }, [contextLocales, locale, customMapping]);
@@ -40,7 +39,7 @@ export function useInternalLocaleSelector(
   // create getLocaleProperties callback
   const getLocalePropertiesCallback = useCallback(
     (locale: string) => {
-      return getLocaleProperties(locale, locale, customMapping);
+      return getI18nConfig().getLocaleProperties(locale, { locale });
     },
     [locale, customMapping]
   );

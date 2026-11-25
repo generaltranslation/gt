@@ -66,4 +66,26 @@ describe('useInternalRegionSelector', () => {
       locale: 'brand-french',
     });
   });
+
+  it('resolves an active custom alias to its region and names regions in its language', () => {
+    const aliasMapping = { portal_de: { code: 'de' } };
+    resetGTGlobals();
+    initializeI18nConfig({
+      defaultLocale: 'en-US',
+      locales: ['en-US', 'portal_de'],
+      customMapping: aliasMapping,
+    });
+    vi.mocked(useLocales).mockReturnValue(['en-US', 'portal_de']);
+    vi.mocked(useCustomMapping).mockReturnValue(aliasMapping);
+    vi.mocked(useLocale).mockReturnValue('portal_de');
+
+    const { localeRegion, regions, regionData } = useInternalRegionSelector();
+
+    expect(localeRegion).toBe('DE');
+    expect(regions).toEqual(['DE', 'US']);
+    expect(regionData.get('US')).toMatchObject({
+      name: new Intl.DisplayNames(['de'], { type: 'region' }).of('US'),
+      locale: 'en-US',
+    });
+  });
 });
