@@ -74,7 +74,7 @@ describe('framework message API bundles', () => {
   );
 
   // Known leak, a static chain into @generaltranslation/icu/parser:
-  // A: I18nConfig extends GTIntl, whose formatMessage method calls formatIcu;
+  // A: I18nConfig extends GTIntl, whose formatIcu method calls the parser's formatIcu;
   //    class methods are never tree-shaken.
   // These assert the parser IS bundled, so a broken build still fails and a
   // fix flips them; once the chain is cut, move them to the list above.

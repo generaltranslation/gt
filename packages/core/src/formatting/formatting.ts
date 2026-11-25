@@ -4,7 +4,7 @@ import {
   formatDateTime as _formatDateTime,
   formatList as _formatList,
   formatListToParts as _formatListToParts,
-  formatMessage as _formatMessage,
+  formatIcu as _formatIcu,
   formatNum as _formatNum,
   formatRelativeTime as _formatRelativeTime,
   formatRelativeTimeFromDate as _formatRelativeTimeFromDate,
@@ -222,25 +222,24 @@ export function formatCutoff(
 }
 
 /**
- * Formats an ICU message according to the specified locales and options.
+ * Formats an ICU string according to the specified locales and options.
  *
- * @param {string} message - The message to format.
- * @param {Object} [options] - `locales`, `variables` and `dataFormat`; when
- * `dataFormat` is `STRING` the message is returned as is. The `timeZone` of
- * its dates and times defaults to the host's.
- * @returns {string} The formatted message.
+ * @param {string} icu - The ICU string to format.
+ * @param {Object} [options] - `locales` and the `values` of its variables.
+ * The `timeZone` of its dates and times defaults to the host's.
+ * @returns {string} The formatted text.
  *
  * @example
- * formatMessage('Hello {name}', { variables: { name: 'John' } });
+ * formatIcu('Hello {name}', { values: { name: 'John' } });
  * // Returns: "Hello John"
  */
-export function formatMessage(
-  message: string,
-  options?: Options<typeof _formatMessage, 1, 'variables' | 'timeZone'>
+export function formatIcu(
+  icu: string,
+  options?: Options<typeof _formatIcu, 1, 'values' | 'timeZone'>
 ): string {
-  return _formatMessage(message, {
+  return _formatIcu(icu, {
     ...withLocales(options),
-    variables: options?.variables ?? {},
+    values: options?.values ?? {},
     timeZone: options?.timeZone ?? hostTimeZone(),
   });
 }

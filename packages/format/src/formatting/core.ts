@@ -8,7 +8,7 @@ import {
   _selectRelativeTimeUnit,
   type ZonedDateTimeFormatOptions,
 } from './format';
-import { formatIcu } from '@generaltranslation/icu/parser';
+import { formatIcu as _formatIcu } from '@generaltranslation/icu/parser';
 import { intlCache } from '../cache/IntlCache';
 import { GTIntl } from '../intl/GTIntl';
 import type { CutoffFormatOptions } from './custom-formats/CutoffFormat/types';
@@ -27,8 +27,7 @@ import { _requiresTranslation } from '../locales/requiresTranslation';
 import { _resolveAliasLocale } from '../locales/resolveAliasLocale';
 import { _resolveCanonicalLocale } from '../locales/resolveCanonicalLocale';
 import type { CustomMapping } from '../locales/customLocaleMapping';
-import type { FormatVariables } from '../types-dir/types';
-import type { StringFormat } from '../types-dir/jsx/content';
+import type { FormatValues } from '../types-dir/types';
 import {
   defaultLocaleMatcher,
   defaultDefaultLocale,
@@ -40,10 +39,9 @@ type LocalesOption = {
   locales: string | string[];
 };
 
-type MessageFormatOptions = LocalesOption & {
-  variables: FormatVariables;
-  dataFormat?: StringFormat;
-  /** The time zone of the dates and times in the message. */
+type IcuFormatOptions = LocalesOption & {
+  values: FormatValues;
+  /** The time zone of the dates and times in the ICU string. */
   timeZone: string;
 };
 
@@ -106,23 +104,21 @@ export function formatCutoff(
 }
 
 /**
- * Formats a message according to the specified locales and options.
+ * Formats an ICU string according to the specified locales and options.
  *
- * @param {string} message - The message to format.
- * @param {Object} [options] - Configuration options for message formatting.
- * @param {string | string[]} [options.locales] - The locales to use for formatting.
- * @param {FormatVariables} [options.variables] - The variables to use for formatting.
- * @param {StringFormat} [options.dataFormat='ICU'] - The format of the message. When STRING, the message is returned as is.
- * @param {string} options.timeZone - The time zone of the dates and times in the message.
- * @returns {string} The formatted message.
+ * @param {string} icu - The ICU string to format.
+ * @param {Object} options - What the ICU string is formatted with.
+ * @param {string | string[]} options.locales - The locales to use for formatting.
+ * @param {FormatValues} options.values - The values of its variables.
+ * @param {string} options.timeZone - The time zone of its dates and times.
+ * @returns {string} The formatted text.
  *
  * @example
- * formatMessage('Hello {name}', { variables: { name: 'John' }, timeZone: 'UTC' });
+ * formatIcu('Hello {name}', { locales: 'en', values: { name: 'John' }, timeZone: 'UTC' });
  * // Returns: "Hello John"
  */
-export function formatMessage(message: string, options: MessageFormatOptions) {
-  if (options.dataFormat === 'STRING') return message;
-  return formatIcu(message, options.locales, options.variables, {
+export function formatIcu(icu: string, options: IcuFormatOptions) {
+  return _formatIcu(icu, options.locales, options.values, {
     timeZone: options.timeZone,
   });
 }

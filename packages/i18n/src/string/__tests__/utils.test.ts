@@ -65,6 +65,16 @@ describe('interpolateMessage', () => {
     ).toBe('Value 1,234.5');
   });
 
+  it('fills the variables of an ICU message and leaves a string as it is', () => {
+    const render = ($format: 'ICU' | 'STRING') =>
+      interpolateMessage({
+        source: 'Hello {name}',
+        options: { $format, name: 'Ada' },
+      });
+    expect(render('ICU')).toBe('Hello Ada');
+    expect(render('STRING')).toBe('Hello {name}');
+  });
+
   it('cuts an ICU message with the terminator of its locale, like a string', () => {
     const cut = ($format: 'ICU' | 'STRING') =>
       interpolateMessage({

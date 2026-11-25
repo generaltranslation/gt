@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   formatCutoff,
   formatDateTime,
-  formatMessage as publicFormatMessage,
+  formatIcu as publicFormatIcu,
   formatRelativeTimeFromDate,
 } from '../core';
 import { intlCache } from '../../cache/IntlCache';
@@ -11,20 +11,20 @@ import {
   _formatRelativeTime,
   _selectRelativeTimeUnit,
 } from '../format';
-import type { FormatVariables } from '../../types-dir/types';
+import type { FormatValues } from '../../types-dir/types';
 
 // The host's zone, so a formatted date compares with what Intl gives.
 const timeZone = new Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-// formatMessage with positional arguments, as these cases are written.
+// formatIcu with positional arguments, as these cases are written.
 const formatIcuString = (
   message: string,
   locales: string | string[],
-  variables: FormatVariables,
+  values: FormatValues,
   zone: string
-) => publicFormatMessage(message, { locales, variables, timeZone: zone });
+) => publicFormatIcu(message, { locales, values, timeZone: zone });
 
-describe('formatMessage with ICU strings', () => {
+describe('formatIcu', () => {
   it.each([
     ['plain text', {}, 'plain text'],
     ['Hello {name}', { name: 'Ada' }, 'Hello Ada'],
@@ -131,20 +131,20 @@ describe('formatMessage with ICU strings', () => {
 
   it('preserves numeric-string precision through the public boundary', () => {
     expect(
-      publicFormatMessage('{value, number}', {
+      publicFormatIcu('{value, number}', {
         timeZone,
         locales: 'en-US',
-        variables: { value: '123456789012345678901234567890' },
+        values: { value: '123456789012345678901234567890' },
       })
     ).toBe('123,456,789,012,345,678,901,234,567,890');
   });
 
   it('reads own variables only through the public boundary', () => {
     expect(() =>
-      publicFormatMessage('Hello {name}', {
+      publicFormatIcu('Hello {name}', {
         timeZone,
         locales: 'en',
-        variables: Object.create({ name: 'Ada' }),
+        values: Object.create({ name: 'Ada' }),
       })
     ).toThrow('The ICU message variable "name" was not provided.');
   });
@@ -161,10 +161,10 @@ describe('formatMessage with ICU strings', () => {
     'reads Unicode space U+%s as part of a style name, which is then unknown',
     (_codePoint, space) => {
       expect(() =>
-        publicFormatMessage(`{n, number, ${space}percent}`, {
+        publicFormatIcu(`{n, number, ${space}percent}`, {
           timeZone,
           locales: 'en-US',
-          variables: { n: 2 },
+          values: { n: 2 },
         })
       ).toThrow('is not an ICU style name');
     }
@@ -193,10 +193,10 @@ describe('formatMessage with ICU strings', () => {
     (locale, skeleton, expected) => {
       const value = new Date(2020, 4, 6, 14, 3, 2);
       expect(
-        publicFormatMessage(`{value, time, ::${skeleton}}`, {
+        publicFormatIcu(`{value, time, ::${skeleton}}`, {
           timeZone,
           locales: locale,
-          variables: { value },
+          values: { value },
         })
       ).toBe(expected);
     }
@@ -205,16 +205,16 @@ describe('formatMessage with ICU strings', () => {
   it("formats an empty list in the host's locale", () => {
     const value = new Date(2020, 4, 6, 7, 3, 2);
     expect(
-      publicFormatMessage('{value, time, ::j}', {
+      publicFormatIcu('{value, time, ::j}', {
         timeZone,
         locales: [],
-        variables: { value },
+        values: { value },
       })
     ).toBe(
-      publicFormatMessage('{value, time, ::j}', {
+      publicFormatIcu('{value, time, ::j}', {
         timeZone,
         locales: new Intl.DateTimeFormat().resolvedOptions().locale,
-        variables: { value },
+        values: { value },
       })
     );
   });
@@ -241,8 +241,8 @@ describe('formatMessage with ICU strings', () => {
   it('keeps a syntax error’s code and place through the public boundary', () => {
     expect.assertions(3);
     try {
-      publicFormatMessage('{name', {
-        variables: {},
+      publicFormatIcu('{name', {
+        values: {},
         timeZone,
         locales: 'en-US',
       });
@@ -269,9 +269,9 @@ describe('formatMessage with ICU strings', () => {
     'coerces numeric-string plural %j through the public package',
     (count, expected) => {
       expect(
-        publicFormatMessage(
+        publicFormatIcu(
           '{count, plural, =2 {exact} one {one item} other {# items}}',
-          { timeZone, locales: 'en-US', variables: { count } }
+          { timeZone, locales: 'en-US', values: { count } }
         )
       ).toBe(expected);
     }
@@ -286,10 +286,10 @@ describe('formatMessage with ICU strings', () => {
     'matches an exact selector by number through the public package for %j',
     (count, expected) => {
       expect(
-        publicFormatMessage('{count, plural, =01 {one} other {other}}', {
+        publicFormatIcu('{count, plural, =01 {one} other {other}}', {
           timeZone,
           locales: 'en-US',
-          variables: { count },
+          values: { count },
         })
       ).toBe(expected);
     }
@@ -297,17 +297,17 @@ describe('formatMessage with ICU strings', () => {
 
   it('formats a boolean as text, and a Date as a short date and time', () => {
     expect(
-      publicFormatMessage('before {value} after', {
+      publicFormatIcu('before {value} after', {
         locales: 'en-US',
         timeZone,
-        variables: { value: true },
+        values: { value: true },
       })
     ).toBe('before true after');
     expect(
-      publicFormatMessage('before {value} after', {
+      publicFormatIcu('before {value} after', {
         locales: 'en-US',
         timeZone: 'Asia/Tokyo',
-        variables: { value: new Date(0) },
+        values: { value: new Date(0) },
       })
     ).toBe('before 1/1/70, 9:00 AM after');
   });

@@ -35,9 +35,9 @@ describe('@generaltranslation/format package exports', () => {
     const locales = 'en';
     const now = Date.now();
     expect(
-      format.formatMessage('Hi {name}', {
+      format.formatIcu('Hi {name}', {
         locales,
-        variables: { name: 'Ada' },
+        values: { name: 'Ada' },
         timeZone: 'UTC',
       })
     ).toBe('Hi Ada');
@@ -81,8 +81,8 @@ describe('@generaltranslation/format package exports', () => {
             HTML_CONTENT_PROPS,
             formatCurrency,
             formatCutoff,
+            formatIcu,
             formatList,
-            formatMessage,
             formatNum,
             formatRelativeTime,
             formatRelativeTimeFromDate,
@@ -94,7 +94,7 @@ describe('@generaltranslation/format package exports', () => {
 
           const now = Date.now();
           assert.equal(
-            formatMessage('Hi {name}', { locales: 'en', variables: { name: 'Ada' }, timeZone: 'UTC' }),
+            formatIcu('Hi {name}', { locales: 'en', values: { name: 'Ada' }, timeZone: 'UTC' }),
             'Hi Ada'
           );
           assert.equal(formatCutoff('Hello, world!', { locales: 'en', maxChars: 8 }), 'Hello, …');
