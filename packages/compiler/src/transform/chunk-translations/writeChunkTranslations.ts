@@ -538,16 +538,21 @@ export function createIsLoadedWith(
   chunks: readonly { fileName: string; imports: readonly string[] }[]
 ): (chunk: string, other: string) => boolean {
   const byFile = new Map(chunks.map((chunk) => [chunk.fileName, chunk]));
+  // What each chunk loads, walked when it is first asked about
+  const loaded = new Map<string, Set<string>>();
   return (chunk, other) => {
-    const reached = new Set<string>();
-    const pending = [chunk];
-    for (let file = pending.pop(); file; file = pending.pop()) {
-      if (file === other) return true;
-      if (reached.has(file)) continue;
-      reached.add(file);
-      pending.push(...(byFile.get(file)?.imports ?? []));
+    let reached = loaded.get(chunk);
+    if (!reached) {
+      reached = new Set<string>();
+      const pending = [chunk];
+      for (let file = pending.pop(); file; file = pending.pop()) {
+        if (reached.has(file)) continue;
+        reached.add(file);
+        pending.push(...(byFile.get(file)?.imports ?? []));
+      }
+      loaded.set(chunk, reached);
     }
-    return false;
+    return reached.has(other);
   };
 }
 
