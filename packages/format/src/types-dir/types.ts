@@ -1,4 +1,3 @@
-export type FormatValues = Record<
-  string,
-  string | number | boolean | null | undefined | Date
->;
+import type { MessagePlainValue } from '@generaltranslation/icu';
+
+export type FormatValues = Record<string, MessagePlainValue>;
