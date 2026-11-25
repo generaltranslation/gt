@@ -61,6 +61,15 @@ export { initializeGT } from './setup/initializeGT';
 
 // ===== Types ===== //
 export type { GT, GTOptions, M, Msg, Part, Placeholder } from 'gt-i18n';
+export type {
+  CurrencyProps,
+  DateTimeProps,
+  NProps,
+  NumProps,
+  PluralProps,
+  RelativeTimeProps,
+  SelectProps,
+} from '@generaltranslation/react-core/components-rsc';
 export type { GTProviderProps } from './provider/GTProvider';
 export type { GetLocaleParams } from './utils/getLocale';
 export type { ReactInitializeGTParams as InitializeGTParams } from '@generaltranslation/react-core/pure';
