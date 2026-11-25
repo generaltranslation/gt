@@ -44,6 +44,7 @@ import {
 import {
   generateReplacementsMap,
   moveMappings,
+  moveSourceMapFile,
   trackReplacements,
 } from '../transform/chunk-translations/chunkSourceMap';
 import { wrapDynamicImports } from '../transform/chunk-translations/chunkTranslationsModule';
@@ -3894,6 +3895,44 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
         ...locate(code, '"X"); two'),
       });
       expect(moved.mappings.split(';')).toHaveLength(4);
+    });
+
+    it('moves a source map file with a list written into its code, and with the list written again', () => {
+      const code = 'a();x("L[]");b();\nc();';
+      const fill = (written: string, map: string, list: string) => {
+        const tracked = trackReplacements(written);
+        const filled = tracked.replace(written, /L\[[0-9a-f,]*\]/g, () => list);
+        return {
+          filled,
+          map: moveSourceMapFile(map, written, tracked.replacements!)!,
+        };
+      };
+      // Every character maps to itself
+      const map = new MagicString(code)
+        .generateMap({ hires: true, source: 'page.tsx' })
+        .toString();
+      const first = fill(code, map, `L[${SAVE}]`);
+      const second = fill(first.filled, first.map, `L[${HELLO},${SAVE}]`);
+      expect(second.filled).toBe(`a();x("L[${HELLO},${SAVE}]");b();\nc();`);
+      for (const { filled, map } of [first, second]) {
+        for (const token of ['a()', 'b()', 'c()']) {
+          expect(trace(map, filled, token), token).toEqual({
+            source: 'page.tsx',
+            ...locate(code, token),
+          });
+        }
+      }
+    });
+
+    it.each([
+      ['version 2', { version: 2, sources: [], mappings: 'AAAA' }],
+      ['with sections', { version: 3, sections: [] }],
+    ])('leaves a source map file %s alone', (_name, map) => {
+      expect(
+        moveSourceMapFile(JSON.stringify(map), 'a', [
+          { start: 0, end: 1, content: 'bb' },
+        ])
+      ).toBeUndefined();
     });
 
     it.each(['a map file', 'an inline map'])(

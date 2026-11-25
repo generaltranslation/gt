@@ -679,7 +679,12 @@ describe('package entries', () => {
       { cwd: path.resolve(__dirname, '../..'), encoding: 'utf8' }
     );
     expect(JSON.parse(output)).toEqual({
-      internal: ['findHashTokens', 'findJsxHashes'],
+      internal: [
+        'findHashTokens',
+        'findJsxHashes',
+        'moveSourceMapFile',
+        'trackReplacements',
+      ],
       internalLoadsBabel: false,
       mainLoadsBabel: true,
       adapters: Array(5).fill('function'),

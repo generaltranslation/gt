@@ -3,6 +3,8 @@ import path from 'node:path';
 import {
   findHashTokens,
   findJsxHashes,
+  moveSourceMapFile,
+  trackReplacements,
 } from '@generaltranslation/compiler/internal';
 import { SERVER_ONLY_HASHES_PLACEHOLDER } from '../provider/serverOnlyHashesPlaceholder';
 
@@ -46,7 +48,18 @@ export function fillServerOnlyHashes(distDir: string): void {
   const filled = `${PLACEHOLDER_NAME}[${hashes.join(',')}]`;
   for (const file of placeholderFiles) {
     const code = fs.readFileSync(file, 'utf8');
-    const rewritten = code.replace(PLACEHOLDER, filled);
-    if (rewritten !== code) fs.writeFileSync(file, rewritten);
+    const tracked = trackReplacements(code);
+    const rewritten = tracked.replace(code, PLACEHOLDER, () => filled);
+    if (rewritten === code) continue;
+    fs.writeFileSync(file, rewritten);
+    const mapFile = `${file}.map`;
+    const { replacements } = tracked;
+    if (!replacements || !fs.existsSync(mapFile)) continue;
+    const map = moveSourceMapFile(
+      fs.readFileSync(mapFile, 'utf8'),
+      code,
+      replacements
+    );
+    if (map !== undefined) fs.writeFileSync(mapFile, map);
   }
 }

@@ -179,6 +179,25 @@ export function moveMappings(
   return encode(moved);
 }
 
+/**
+ * The source map file `source` of `code` moved with `replacements`, which
+ * were made in `code`, or undefined when it is not a version 3 map without
+ * sections.
+ */
+export function moveSourceMapFile(
+  source: string,
+  code: string,
+  replacements: readonly Replacement[]
+): string | undefined {
+  const map = JSON.parse(source);
+  if (map.version !== 3 || 'sections' in map) return undefined;
+  if (typeof map.mappings !== 'string') return undefined;
+  return JSON.stringify({
+    ...map,
+    mappings: moveMappings(map.mappings, code, replacements),
+  });
+}
+
 /** A chunk of a bundle, with the source map a bundler holds for it. */
 export type BundledChunk = {
   fileName: string;
