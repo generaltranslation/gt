@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   collectHashNodes,
+  collectMarkedTextIds,
   collectRecordedText,
   flattenEntry,
   harvestHash,
@@ -43,7 +44,7 @@ const fullSnapshot = (node: Ser): eventWithTime =>
     timestamp: 0,
   }) as unknown as eventWithTime;
 const mutation = (
-  adds: { node: Ser }[] = [],
+  adds: { node: Ser; parentId?: number }[] = [],
   texts: { id: number; value: string }[] = []
 ): eventWithTime =>
   ({
@@ -349,6 +350,93 @@ describe('harvestHash', () => {
     });
     expect(overlay.es).toEqual({});
     expect(overlay.fr).toEqual({ 3: 'Utilisation' });
+  });
+
+  it('does not let the bare-string fallback rewrite text owned by a marked message', () => {
+    const events = [
+      fullSnapshot(
+        el(1, 'MAIN', [
+          el(2, 'span', [text(3, 'Hello '), text(4, 'Ada'), text(5, '!')], {
+            'data-_gt-hash': 'greeting',
+          }),
+          hashSpan(6, 'missing', [text(7, 'Keep me')]),
+          hashSpan(8, 'plural', [text(9, '1 item')]),
+          hashSpan(10, 'same', [text(11, 'Welcome')]),
+          el(12, 'NAV', [text(13, 'Projects')]),
+        ])
+      ),
+    ];
+    const dict: TranslationDict = {
+      greeting: ['Bonjour ', { k: 'name' }, ' !'],
+      Ada: 'Adele',
+      missing: null,
+      'Keep me': 'Garde-moi',
+      plural: [
+        {
+          t: 'span',
+          i: 1,
+          d: { t: 'p', b: { one: ['1 article'], other: ['n articles'] } },
+        },
+      ],
+      '1 item': '1 article',
+      same: 'Welcome',
+      Welcome: 'Bienvenue',
+      Projects: 'Projets',
+    };
+    return harvestHash(events, ['en', 'fr'], {
+      source: 'en',
+      loadTranslations: async () => dict,
+      hashMessage: (m: string) => m,
+    }).then((overlay) => {
+      expect(overlay.fr).toEqual({
+        3: 'Bonjour ',
+        5: ' !',
+        13: 'Projets',
+      });
+    });
+  });
+
+  it('keeps text added later under an existing marked <T> off the string fallback', () => {
+    const events = [
+      fullSnapshot(
+        el(1, 'MAIN', [
+          hashSpan(2, 'greet', [text(3, 'Hello '), el(4, 'B')]),
+          el(5, 'NAV', [text(6, 'Projects')]),
+        ])
+      ),
+      // A child component fills in the name after the snapshot (rrweb adds it by parentId).
+      mutation([{ node: text(7, 'Ada'), parentId: 4 }]),
+      // New bare text outside any <T> still gets the fallback.
+      mutation([{ node: text(8, 'Projects'), parentId: 5 }]),
+    ];
+    const dict: TranslationDict = {
+      greet: null,
+      Ada: 'Adele',
+      Projects: 'Projets',
+    };
+    expect([...collectMarkedTextIds(events)].sort()).toEqual([3, 7]);
+    return harvestHash(events, ['en', 'fr'], {
+      source: 'en',
+      loadTranslations: async () => dict,
+      hashMessage: (m: string) => m,
+    }).then((overlay) => {
+      expect(overlay.fr).toEqual({ 6: 'Projets', 8: 'Projets' });
+    });
+  });
+
+  it('keeps a text node protected after it is moved out of a marked <T>', () => {
+    const events = [
+      fullSnapshot(
+        el(1, 'MAIN', [
+          hashSpan(2, 'greet', [text(3, 'Hello '), el(4, 'B')]),
+          el(5, 'NAV', []),
+        ])
+      ),
+      mutation([{ node: text(7, 'Ada'), parentId: 4 }]),
+      // the same node gets re-added under a plain element
+      mutation([{ node: text(7, 'Ada'), parentId: 5 }]),
+    ];
+    expect([...collectMarkedTextIds(events)].sort()).toEqual([3, 7]);
   });
 
   it('combines <T> content with bare gt() strings when hashMessage is given', () => {

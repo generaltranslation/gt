@@ -272,6 +272,59 @@ export function collectHashNodes(events: eventWithTime[]): HashNode[] {
 }
 
 /**
+ * Ids of every recorded text node that sits inside a marked `<T>` (a hash node), across
+ * the FullSnapshot and mutations. rrweb records a later DOM insertion as its own `add`
+ * pointing at its parent by `parentId`, so text added under an EXISTING marked ancestor
+ * never appears inside that ancestor's subtree in `collectHashNodes`. Tracking parents
+ * lets the bare-string fallback skip that text too, instead of rewriting it with an
+ * unrelated standalone translation. Coverage only grows (removals are ignored), which
+ * errs toward leaving text on source. Pure.
+ */
+export function collectMarkedTextIds(events: eventWithTime[]): Set<number> {
+  const parentsOf = new Map<number, number[]>();
+  const marked = new Set<number>();
+  const textIds: number[] = [];
+  const walk = (n: SerializedNode | undefined, parentId?: number) => {
+    if (!n) return;
+    if (parentId !== undefined) {
+      // keep every parent a node has had, so a move out of a marked message doesn't unprotect it
+      const seen = parentsOf.get(n.id);
+      if (!seen) parentsOf.set(n.id, [parentId]);
+      else if (!seen.includes(parentId)) seen.push(parentId);
+    }
+    if (hashOf(n)) marked.add(n.id);
+    if (n.type === TEXT_NODE) textIds.push(n.id);
+    n.childNodes?.forEach((c) => walk(c, n.id));
+  };
+  for (const e of events) {
+    if (e.type === EventType.FullSnapshot) {
+      walk(e.data.node as SerializedNode);
+    } else if (
+      e.type === EventType.IncrementalSnapshot &&
+      e.data.source === IncrementalSource.Mutation
+    ) {
+      for (const add of e.data.adds)
+        walk(add.node as SerializedNode, add.parentId);
+    }
+  }
+  const isOwned = (id: number): boolean => {
+    const stack = [id];
+    const visited = new Set<number>();
+    while (stack.length) {
+      const cur = stack.pop() as number;
+      if (marked.has(cur)) return true;
+      if (visited.has(cur)) continue; // defensive: malformed cycle
+      visited.add(cur);
+      stack.push(...(parentsOf.get(cur) ?? []));
+    }
+    return false;
+  };
+  const covered = new Set<number>();
+  for (const id of textIds) if (isOwned(id)) covered.add(id);
+  return covered;
+}
+
+/**
  * Build one locale's overlay from a translations dict by aligning each hash node's text
  * nodes to the flattened translation. A node is skipped (left on source) when its hash
  * is untranslated, is a plural/branch (no single rendered form), or the leaf count
@@ -300,8 +353,8 @@ export function overlayFromDict(
 /**
  * Cover text NOT wrapped in a `<T>` — `gt()`/`useGT()` strings and other bare recorded
  * text — by hashing each recorded SOURCE string to its GT message hash and looking that
- * up in the dict. Nodes already translated by the `<T>` path (`covered`) are skipped so
- * it wins. Only STRING dict entries apply (a JSX entry belongs to a `<T>`, not bare
+ * up in the dict. Nodes owned by a marked `<T>` (`covered`) are skipped so the hash
+ * path wins. Only STRING dict entries apply (a JSX entry belongs to a `<T>`, not bare
  * text); a translation equal to source, blank, or absent is left on source. An
  * interpolated string (e.g. `gt('Hello {name}')` rendered as "Hello Ann") won't match its
  * template's hash, so it simply stays on source. Pure.
@@ -346,6 +399,7 @@ export async function harvestHash(
   const hashNodes = collectHashNodes(events);
   // Recorded text is only needed for the `gt()`-string lookup (hashMessage path).
   const recorded = opts.hashMessage ? collectRecordedText(events) : null;
+  const markedText = opts.hashMessage ? collectMarkedTextIds(events) : null;
   const overlay: LocaleTextOverlay = {};
   for (const target of targets) {
     let dict: TranslationDict | null = null;
@@ -361,7 +415,12 @@ export async function harvestHash(
     // `<T>` content first (precise, wins), then fill bare `gt()` text.
     const bag = overlayFromDict(hashNodes, dict);
     if (recorded && opts.hashMessage) {
-      const covered = new Set(Object.keys(bag).map(Number));
+      // Include variables, unchanged leaves, and skipped marked entries, not just bag keys.
+      // Text added later under a marked ancestor is covered via mutation parents.
+      const covered = new Set([
+        ...hashNodes.flatMap((node) => node.textNodes.map((t) => t.id)),
+        ...(markedText ?? []),
+      ]);
       Object.assign(
         bag,
         stringOverlay(recorded, covered, dict, opts.hashMessage)
