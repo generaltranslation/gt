@@ -500,12 +500,12 @@ describe('GTIntl time zone', () => {
     expect(
       intl.formatDateTime(at, { timeStyle: 'short', timeZone: 'UTC' })
     ).toBe('2:03 PM');
-    expect(intl.formatMessage('{at, time, short}', { variables: { at } })).toBe(
+    expect(intl.formatIcu('{at, time, short}', { values: { at } })).toBe(
       '11:03 PM'
     );
     expect(
-      intl.formatMessage('{at, time, short}', {
-        variables: { at },
+      intl.formatIcu('{at, time, short}', {
+        values: { at },
         timeZone: 'UTC',
       })
     ).toBe('2:03 PM');

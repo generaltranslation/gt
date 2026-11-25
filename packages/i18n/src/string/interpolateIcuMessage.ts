@@ -30,8 +30,7 @@ export function interpolateIcuMessage<T extends string | null | undefined>(
         ...variables,
         [RESERVED_NAME_PREFIX]: 'other',
       },
-      options.$locale,
-      options.$format
+      options.$locale
     );
     // Apply cutoff formatting
     const cutoffMessage = formatCutoff(

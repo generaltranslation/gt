@@ -31,7 +31,7 @@ import { _getLocaleDirection } from '../locales/getLocaleDirection';
 import { defaultDefaultLocale } from '../settings/settings';
 import { _isSameDialect } from '../locales/isSameDialect';
 import { _isSupersetLocale } from '../locales/isSupersetLocale';
-import type { FormatVariables } from '../types-dir/types';
+import type { FormatValues } from '../types-dir/types';
 import {
   snapshotLocaleConfig,
   type LocaleConfig,
@@ -45,7 +45,6 @@ import {
 import { _resolveAliasLocale } from '../locales/resolveAliasLocale';
 import { _resolveCanonicalLocale } from '../locales/resolveCanonicalLocale';
 import type { CutoffFormatOptions } from '../formatting/custom-formats/CutoffFormat/types';
-import type { StringFormat } from '../types-dir/jsx/content';
 
 /** `locale` overrides the instance locale for one call. */
 type LocaleOption = {
@@ -338,26 +337,18 @@ export class GTIntl {
       .format(value);
   }
 
-  formatMessage(
-    message: string,
+  formatIcu(
+    icu: string,
     options: WithLocales<{
-      variables?: FormatVariables;
-      dataFormat?: StringFormat;
+      values?: FormatValues;
       timeZone?: string;
     }> = {}
   ) {
-    const {
-      locale,
-      locales,
-      variables,
-      dataFormat,
-      timeZone = this.timeZone,
-    } = options;
-    if (dataFormat === 'STRING') return message;
+    const { locale, locales, values, timeZone = this.timeZone } = options;
     return formatIcu(
-      message,
+      icu,
       this.getFormattingLocales(locale, locales),
-      variables ?? {},
+      values ?? {},
       { timeZone }
     );
   }

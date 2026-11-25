@@ -1,11 +1,10 @@
-import type { StringFormat } from '@generaltranslation/format';
 import logger from '../logs/logger';
 import { createInterpolationFailureMessage } from './messages';
 import {
   getI18nConfig,
   isI18nConfigInitialized,
 } from '../i18n-config/singleton-operations';
-import { formatMessage as formatUnconfiguredMessage } from 'generaltranslation/internal';
+import { formatIcu } from 'generaltranslation/internal';
 
 /**
  * Given an encoded message and variables, formats the message.
@@ -17,24 +16,15 @@ import { formatMessage as formatUnconfiguredMessage } from 'generaltranslation/i
 export function formatMessage(
   encodedMsg: string,
   variables: Record<string, string>,
-  locales?: string | string[],
-  dataFormat?: StringFormat
+  locales?: string | string[]
 ): string {
   try {
     // Formatting also works before initializeGT(). Once configured, use
     // its custom mapping so app aliases never reach Intl as language codes.
-    if (!isI18nConfigInitialized()) {
-      return formatUnconfiguredMessage(encodedMsg, {
-        variables,
-        locales,
-        dataFormat,
-      });
-    }
-    return getI18nConfig().formatMessage(encodedMsg, {
-      variables,
-      locales,
-      dataFormat,
-    });
+    const options = { values: variables, locales };
+    return isI18nConfigInitialized()
+      ? getI18nConfig().formatIcu(encodedMsg, options)
+      : formatIcu(encodedMsg, options);
   } catch {
     logger.warn(createInterpolationFailureMessage(encodedMsg));
     return encodedMsg;

@@ -3,7 +3,7 @@ import type {
   GTTranslationOptions,
   RegisterableMessages,
 } from './types';
-import { formatMessage } from 'generaltranslation/internal';
+import { formatIcu } from 'generaltranslation/internal';
 import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { RESERVED_NAME_PREFIX } from '@generaltranslation/icu/internal';
 import { createInterpolationFailureMessage } from './messages';
@@ -77,9 +77,9 @@ export function msg(
   const variables = extractVariables(options);
   let interpolatedString: string;
   try {
-    interpolatedString = formatMessage(message, {
+    interpolatedString = formatIcu(message, {
       locales: [defaultDefaultLocale], // TODO: use compiler to insert locales
-      variables: {
+      values: {
         ...variables,
         [RESERVED_NAME_PREFIX]: 'other',
       },

@@ -4,9 +4,9 @@ import {
   formatCurrency,
   formatCutoff,
   formatDateTime,
+  formatIcu,
   formatList,
   formatListToParts,
-  formatMessage,
   formatNum,
   formatRelativeTime,
   formatRelativeTimeFromDate,
@@ -27,13 +27,13 @@ formatListToParts([1, 2]);
 formatRelativeTime(-1, 'day');
 formatRelativeTimeFromDate(date);
 formatCutoff('text');
-formatMessage('Hi');
+formatIcu('Hi');
 
 // The same holds for a GTIntl and its methods.
 const intl = new GTIntl();
 intl.formatNum(1);
 intl.formatDateTime(date);
-intl.formatMessage('Hi');
+intl.formatIcu('Hi');
 intl.formatRelativeTimeFromDate(date);
 intl.formatRelativeTimeFromDate(date, { locale: 'en' });
 intl.formatRelativeTimeFromDate(date, { locale: 'en', baseDate: date });

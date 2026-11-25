@@ -3,9 +3,9 @@ import {
   formatCurrency,
   formatCutoff,
   formatDateTime,
+  formatIcu,
   formatList,
   formatListToParts,
-  formatMessage,
   formatNum,
   formatRelativeTime,
   formatRelativeTimeFromDate,
@@ -27,9 +27,9 @@ describe('the time zone of dates and times', () => {
       })
     ).toBe('10:03 AM');
     expect(
-      formatMessage('{at, time, short}', {
+      formatIcu('{at, time, short}', {
         locales: 'en-US',
-        variables: { at: date },
+        values: { at: date },
         timeZone: 'Asia/Tokyo',
       })
     ).toBe('11:03 PM');
@@ -49,9 +49,9 @@ describe('the time zone of dates and times', () => {
       expected
     );
     expect(
-      formatMessage('{at, time, short}', {
+      formatIcu('{at, time, short}', {
         locales: 'en-US',
-        variables: { at: date },
+        values: { at: date },
       })
     ).toBe(expected);
     expect(new GTIntl().timeZone).toBe(hostTimeZone());
@@ -92,10 +92,8 @@ describe('what a caller leaves out', () => {
   });
 
   it('formats a message without variables', () => {
-    expect(formatMessage('Hi')).toBe('Hi');
-    expect(formatMessage('Hi {name}', { variables: { name: 'Ada' } })).toBe(
-      'Hi Ada'
-    );
+    expect(formatIcu('Hi')).toBe('Hi');
+    expect(formatIcu('Hi {name}', { values: { name: 'Ada' } })).toBe('Hi Ada');
   });
 
   it('formats a message tree', () => {
