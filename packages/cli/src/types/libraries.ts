@@ -98,12 +98,14 @@ export const GT_LIBRARIES_UPSTREAM: Record<GTLibrary, GTLibrary[]> = {
     Libraries.GT_REACT_CORE,
     Libraries.GT_REACT,
     Libraries.GT_NEXT,
+    Libraries.GT_NODE, // server code in the same app, such as emails
   ],
   [Libraries.GT_REACT]: [
     Libraries.GT_I18N,
     Libraries.GT_REACT_CORE,
     Libraries.GT_REACT,
     Libraries.GT_REACT_NATIVE, // allow for cross-library compatibility (gt-react/gt-react-native only)
+    Libraries.GT_NODE, // server code in the same app, such as emails
   ],
   [Libraries.GT_REACT_NATIVE]: [
     Libraries.GT_I18N,
@@ -118,6 +120,7 @@ export const GT_LIBRARIES_UPSTREAM: Record<GTLibrary, GTLibrary[]> = {
     Libraries.GT_REACT_CORE,
     Libraries.GT_REACT,
     Libraries.GT_TANSTACK_START,
+    Libraries.GT_NODE, // server code in the same app, such as emails
   ],
   [Libraries.GT_I18N]: [Libraries.GT_I18N],
   [Libraries.GT_FLASK]: [Libraries.GT_FLASK],
