@@ -10,8 +10,11 @@ import {
 import {
   formatMessageTree,
   type FormatMessageTreeOptions,
+  type FormattedMessage,
+  type MessagePlainValue,
   type MessageTree,
   type MessageValues,
+  type OnePartValues,
 } from '@generaltranslation/icu';
 import { formatIcu } from '@generaltranslation/icu/parser';
 import { intlCache } from '../cache/IntlCache';
@@ -56,6 +59,12 @@ type WithLocales<T = object> = T &
   LocaleOption & {
     locales?: string | string[];
   };
+
+type MessageTreeOptions<Values> = WithLocales<{
+  values: Values;
+  formats: FormatMessageTreeOptions['formats'];
+  timeZone?: string;
+}>;
 
 function getCustomRegionMapping(
   customMapping: NonNullable<LocaleConfig['customMapping']>
@@ -350,16 +359,25 @@ export class GTIntl {
 
   /**
    * Formats a message tree in this instance's locales and time zone, so a
-   * caller passes neither unless it overrides them.
+   * caller passes neither unless it overrides them. Plain values give a
+   * string.
    */
   formatMessageTree(
     tree: MessageTree,
-    options: WithLocales<{
-      values: MessageValues<unknown>;
-      formats: FormatMessageTreeOptions['formats'];
-      timeZone?: string;
-    }>
-  ): unknown {
+    options: MessageTreeOptions<Readonly<Record<string, MessagePlainValue>>>
+  ): string;
+  /**
+   * With rich values or tag formatters, the result is a string, a rich value,
+   * or the parts around them. A tag formatter alone needs `R` written.
+   */
+  formatMessageTree<R>(
+    tree: MessageTree,
+    options: MessageTreeOptions<MessageValues<R> & OnePartValues<R>>
+  ): FormattedMessage<R>;
+  formatMessageTree<R>(
+    tree: MessageTree,
+    options: MessageTreeOptions<MessageValues<R> & OnePartValues<R>>
+  ): FormattedMessage<R> {
     const {
       locale,
       locales,
@@ -367,7 +385,7 @@ export class GTIntl {
       formats,
       timeZone = this.timeZone,
     } = options;
-    return formatMessageTree<unknown>(
+    return formatMessageTree<R>(
       tree,
       this.getFormattingLocales(locale, locales),
       values,

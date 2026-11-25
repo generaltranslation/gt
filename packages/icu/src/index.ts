@@ -5,6 +5,7 @@ export {
   type MessagePlainValue,
   type MessageTagFormatter,
   type MessageValues,
+  type OnePartValues,
 } from './formatter/formatMessageTree';
 export type {
   ArgumentNode,
