@@ -42,6 +42,7 @@ import {
 } from './plugin/getStableNextVersionInfo';
 import { distDir, nodeRequire } from './plugin/nodeCompat';
 import { fillSplitTranslations } from './plugin/fillSplitTranslations';
+import type { PageSegments } from './plugin/layoutDynamic';
 import { PAGE_ID_PREFIX } from './provider/splitTranslationsPlaceholders';
 import { validateCompiler } from './config-dir/utils/validateCompiler';
 import {
@@ -710,12 +711,8 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
   const pageSegmentsAppDir = splitTranslations
     ? getPageSegmentsAppDir(internalNextConfig)
     : undefined;
-
-  const swcPluginOptions: Record<string, unknown> = {
-    ...compilerOptions,
-    autoderiveJsx: loadedConfig.files?.gt?.parsingFlags?.autoderive ?? false,
-    ...(pageSegmentsAppDir && {
-      pageSegments: {
+  const pageSegments: PageSegments | undefined = pageSegmentsAppDir
+    ? {
         appDir: pageSegmentsAppDir,
         pageExtensions:
           internalNextConfig.pageExtensions ??
@@ -723,9 +720,15 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
             nodeRequire(
               'next/dist/server/config-shared'
             ) as typeof import('next/dist/server/config-shared')
-          ).defaultConfig.pageExtensions,
-        idPrefix: PAGE_ID_PREFIX,
-      },
+          ).defaultConfig.pageExtensions!,
+      }
+    : undefined;
+
+  const swcPluginOptions: Record<string, unknown> = {
+    ...compilerOptions,
+    autoderiveJsx: loadedConfig.files?.gt?.parsingFlags?.autoderive ?? false,
+    ...(pageSegments && {
+      pageSegments: { ...pageSegments, idPrefix: PAGE_ID_PREFIX },
     }),
   };
 
@@ -764,7 +767,13 @@ export function withGTConfig<TNextConfig extends object = NextConfig>(
     ...userCompiler,
     runAfterProductionCompile: async (metadata) => {
       await userCompiler.runAfterProductionCompile?.(metadata);
-      fillSplitTranslations(metadata.distDir, pageSegmentsAppDir !== undefined);
+      fillSplitTranslations(
+        metadata.distDir,
+        pageSegments && {
+          ...pageSegments,
+          appDir: path.resolve(metadata.projectDir, pageSegments.appDir),
+        }
+      );
     },
   };
 

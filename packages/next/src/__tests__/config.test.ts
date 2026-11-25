@@ -1137,7 +1137,7 @@ describe('withGTConfig', () => {
       expect(appHook).toHaveBeenCalledWith(metadata);
       expect(mockFillSplitTranslations).toHaveBeenCalledWith(
         '/app/.next',
-        false
+        undefined
       );
       expect(ran).toEqual(['app', 'gt-next']);
     });
@@ -1252,10 +1252,10 @@ describe('withGTConfig', () => {
             pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
             idPrefix: PAGE_ID_PREFIX,
           });
-          expect(mockFillSplitTranslations).toHaveBeenCalledWith(
-            '/app/.next',
-            true
-          );
+          expect(mockFillSplitTranslations).toHaveBeenCalledWith('/app/.next', {
+            appDir: path.resolve('/app', appDir),
+            pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
+          });
           expect(warnings()).toEqual([]);
         }
       );
@@ -1286,7 +1286,7 @@ describe('withGTConfig', () => {
           expect(pageSegmentsOf(result)).toBeUndefined();
           expect(mockFillSplitTranslations).toHaveBeenCalledWith(
             '/app/.next',
-            false
+            undefined
           );
           expect(warnings()).toEqual([]);
         }
@@ -1309,7 +1309,7 @@ describe('withGTConfig', () => {
           expect(pageSegmentsOf(result)).toBeUndefined();
           expect(mockFillSplitTranslations).toHaveBeenCalledWith(
             '/app/.next',
-            false
+            undefined
           );
           expect(warnings()).toEqual([]);
         }

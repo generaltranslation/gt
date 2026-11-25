@@ -41,6 +41,11 @@ function write(file: string, code: string) {
 const read = (file: string) =>
   fs.readFileSync(path.join(distDir, file), 'utf8');
 
+const pageSegments = () => ({
+  appDir: path.join(distDir, 'project/app'),
+  pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
+});
+
 describe('fillSplitTranslations', () => {
   beforeEach(() => {
     distDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gt-next-split-'));
@@ -56,32 +61,32 @@ describe('fillSplitTranslations', () => {
   });
 
   it('writes the <T> hashes that only server files hold into every placeholder', () => {
-    fillSplitTranslations(distDir, false);
+    fillSplitTranslations(distDir, undefined);
     expect(read(PROVIDER)).toBe(filled(SERVER));
   });
 
   it('reads .mjs and .cjs server files', () => {
     write('server/chunks/x.mjs', `e(T,{_hash:"${OTHER_SERVER}"})`);
     write('server/chunks/x.cjs', `e(T,{_hash:"${MESSAGE}"})`);
-    fillSplitTranslations(distDir, false);
+    fillSplitTranslations(distDir, undefined);
     expect(read(PROVIDER)).toBe(filled(OTHER_SERVER, SERVER, MESSAGE));
   });
 
   it('fills a placeholder an earlier build filled, and writes no file whose content stays', () => {
-    fillSplitTranslations(distDir, false);
+    fillSplitTranslations(distDir, undefined);
     const page = path.join(distDir, 'server/app/page.js');
     const untouched = new Date(0);
     fs.utimesSync(page, untouched, untouched);
     fs.utimesSync(path.join(distDir, PROVIDER), untouched, untouched);
 
-    fillSplitTranslations(distDir, false);
+    fillSplitTranslations(distDir, undefined);
     expect(read(PROVIDER)).toBe(filled(SERVER));
     expect(fs.statSync(page).mtime).toEqual(untouched);
     expect(fs.statSync(path.join(distDir, PROVIDER)).mtime).toEqual(untouched);
 
     write('server/app/other/page.js', `e(T,{_hash:"${OTHER_SERVER}"})`);
     write('static/chunks/1.js', `e(T,{_hash:"${SERVER}"})`);
-    fillSplitTranslations(distDir, false);
+    fillSplitTranslations(distDir, undefined);
     expect(read(PROVIDER)).toBe(filled(OTHER_SERVER));
   });
 
@@ -89,12 +94,12 @@ describe('fillSplitTranslations', () => {
     write(MAPPED, `a("${SERVER_ONLY_HASHES_PLACEHOLDER}");b()`);
     // a() at column 0 and b() at column 45, from columns 0 and 10 of line 1
     write(`${MAPPED}.map`, sourceMap('AAAA,6CAAU'));
-    fillSplitTranslations(distDir, false);
+    fillSplitTranslations(distDir, undefined);
     // b() 16 columns later
     expect(read(`${MAPPED}.map`)).toBe(sourceMap('AAAA,6DAAU'));
 
     write('server/app/other/page.js', `e(T,{_hash:"${OTHER_SERVER}"})`);
-    fillSplitTranslations(distDir, false);
+    fillSplitTranslations(distDir, undefined);
     // b() 33 columns later
     expect(read(`${MAPPED}.map`)).toBe(sourceMap('AAAA,8EAAU'));
   });
@@ -161,7 +166,7 @@ describe('fillSplitTranslations', () => {
   ])('leaves a source map %s alone', (_name, map) => {
     write(MAPPED, `a("${SERVER_ONLY_HASHES_PLACEHOLDER}");b()`);
     write(`${MAPPED}.map`, JSON.stringify(map));
-    fillSplitTranslations(distDir, false);
+    fillSplitTranslations(distDir, undefined);
     expect(read(MAPPED)).toBe(
       `a("__gt_next_server_only_hashes_q7Zk2W__[${SERVER}]");b()`
     );
@@ -181,7 +186,7 @@ describe('fillSplitTranslations', () => {
     'leaves out a hash a client file holds %s',
     (_name, clientFile, clientCode) => {
       write(clientFile, clientCode);
-      fillSplitTranslations(distDir, false);
+      fillSplitTranslations(distDir, undefined);
       expect(read(PROVIDER)).toBe(filled());
     }
   );
@@ -189,13 +194,13 @@ describe('fillSplitTranslations', () => {
   it('lists no hash when the build wrote no client file', () => {
     write(PROVIDER, filled(SERVER));
     fs.rmSync(path.join(distDir, 'static'), { recursive: true });
-    fillSplitTranslations(distDir, false);
+    fillSplitTranslations(distDir, undefined);
     expect(read(PROVIDER)).toBe(filled());
   });
 
   it('does nothing when there is no build', () => {
     fs.rmSync(distDir, { recursive: true });
-    expect(() => fillSplitTranslations(distDir, false)).not.toThrow();
+    expect(() => fillSplitTranslations(distDir, undefined)).not.toThrow();
   });
 });
 
@@ -330,7 +335,7 @@ describe('fillSplitTranslations by page', () => {
   );
 
   it('places with a wrapped page the <T> hashes only its own entry loads', () => {
-    fillSplitTranslations(distDir, true);
+    fillSplitTranslations(distDir, pageSegments());
     expect(read(PAGE_HASHES)).toBe(expected);
   });
 
@@ -341,24 +346,33 @@ describe('fillSplitTranslations by page', () => {
     );
     // a(), b() and c() at columns 0, 45 and 83, from columns 0, 10 and 20 of line 1
     write(`${MAPPED}.map`, sourceMap('AAAA,6CAAU,sCAAU'));
-    fillSplitTranslations(distDir, true);
+    fillSplitTranslations(distDir, pageSegments());
     // b() 16 columns later, after one hash, and c() 116, after the pages too
     expect(read(`${MAPPED}.map`)).toBe(sourceMap('AAAA,6DAAU,0IAAU'));
   });
 
+  it('places nothing with a page that a layout above it may make static', () => {
+    write(
+      'project/app/orders/layout.tsx',
+      "export const dynamic = 'force-static';"
+    );
+    fillSplitTranslations(distDir, pageSegments());
+    expect(read(PAGE_HASHES)).toBe(WITHOUT_ORDERS);
+  });
+
   it('places nothing when the build did not wrap pages', () => {
-    fillSplitTranslations(distDir, true);
-    fillSplitTranslations(distDir, false);
+    fillSplitTranslations(distDir, pageSegments());
+    fillSplitTranslations(distDir, undefined);
     expect(read(PAGE_HASHES)).toBe(placed());
   });
 
   it('fills a placeholder an earlier build filled', () => {
-    fillSplitTranslations(distDir, true);
-    fillSplitTranslations(distDir, true);
+    fillSplitTranslations(distDir, pageSegments());
+    fillSplitTranslations(distDir, pageSegments());
     expect(read(PAGE_HASHES)).toBe(expected);
 
     write(ORDERS_SERVER, '');
-    fillSplitTranslations(distDir, true);
+    fillSplitTranslations(distDir, pageSegments());
     expect(read(PAGE_HASHES)).toBe(WITHOUT_ORDERS);
   });
 
@@ -378,7 +392,7 @@ describe('fillSplitTranslations by page', () => {
     'places nothing with a page whose route holds its id only %s',
     (_name, code) => {
       write(ORDERS_SERVER, code);
-      fillSplitTranslations(distDir, true);
+      fillSplitTranslations(distDir, pageSegments());
       expect(read(PAGE_HASHES)).toBe(WITHOUT_ORDERS);
     }
   );
@@ -433,7 +447,7 @@ describe('fillSplitTranslations by page', () => {
       segment('app/%28shop%29/cart/page', 'app/app/%28shop%29/cart/page')
     );
     write(ORDERS_SERVER, segment('app/orders/page', file));
-    fillSplitTranslations(distDir, true);
+    fillSplitTranslations(distDir, pageSegments());
     expect(read(PAGE_HASHES)).toBe(result);
   });
 
@@ -441,7 +455,7 @@ describe('fillSplitTranslations by page', () => {
     write(ORDERS_SERVER, '');
     write('server/chunks/ssr/stale.js', segment('app/orders/page'));
     write('server/app/page.js', segment('app/orders/page'));
-    fillSplitTranslations(distDir, true);
+    fillSplitTranslations(distDir, pageSegments());
     expect(read(PAGE_HASHES)).toBe(WITHOUT_ORDERS);
   });
 
@@ -452,19 +466,19 @@ describe('fillSplitTranslations by page', () => {
       ['server/chunks/ssr/photos.js']
     );
     write('server/chunks/ssr/photos.js', '');
-    fillSplitTranslations(distDir, true);
+    fillSplitTranslations(distDir, pageSegments());
     expect(read(PAGE_HASHES)).toBe(WITHOUT_ORDERS);
   });
 
   it('places nothing with a page whose route has no trace', () => {
     fs.rmSync(path.join(distDir, 'server/app/orders/page.js.nft.json'));
-    fillSplitTranslations(distDir, true);
+    fillSplitTranslations(distDir, pageSegments());
     expect(read(PAGE_HASHES)).toBe(WITHOUT_ORDERS);
   });
 
   it('places nothing from a chunk whose name a client chunk holds, its own included', () => {
     write(ORDERS, `${read(ORDERS)};load("orders.js")`);
-    fillSplitTranslations(distDir, true);
+    fillSplitTranslations(distDir, pageSegments());
     expect(read(PAGE_HASHES)).toBe(WITHOUT_ORDERS);
   });
 
@@ -475,7 +489,7 @@ describe('fillSplitTranslations by page', () => {
       { 'app/layout': [], 'app/orders/page': ['static/chunks/a.js', ORDERS] },
       [ORDERS_SERVER]
     );
-    fillSplitTranslations(distDir, true);
+    fillSplitTranslations(distDir, pageSegments());
     expect(read(PAGE_HASHES)).toBe(expected);
   });
 
@@ -484,7 +498,7 @@ describe('fillSplitTranslations by page', () => {
       'server/app/orders/page_client-reference-manifest.js',
       `globalThis.__RSC_MANIFEST = globalThis.__RSC_MANIFEST || {};\nglobalThis.__RSC_MANIFEST["/orders/page"] = {"clientModules":{}};`
     );
-    fillSplitTranslations(distDir, true);
+    fillSplitTranslations(distDir, pageSegments());
     expect(read(PAGE_HASHES)).toBe(placed());
   });
 
@@ -507,7 +521,7 @@ describe('fillSplitTranslations by page', () => {
     'reads nothing from a client reference manifest %s, without running it',
     (_name, edit) => {
       write(ORDERS_MANIFEST, edit(read(ORDERS_MANIFEST)));
-      fillSplitTranslations(distDir, true);
+      fillSplitTranslations(distDir, pageSegments());
       expect(read(PAGE_HASHES)).toBe(WITHOUT_ORDERS);
     }
   );
@@ -524,7 +538,7 @@ describe('fillSplitTranslations by page', () => {
       ORDERS_SERVER,
       segment('app/orders/page') + segment('app/%28shop%29/cart/page')
     );
-    fillSplitTranslations(distDir, true);
+    fillSplitTranslations(distDir, pageSegments());
     expect(read(PAGE_HASHES)).toBe(expected);
   });
 

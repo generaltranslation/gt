@@ -10,6 +10,7 @@ import {
   SERVER_ONLY_HASHES_PLACEHOLDER,
 } from '../provider/splitTranslationsPlaceholders';
 import { fillCompiledFile } from './fillCompiledFile';
+import { layoutsMayMakePageStatic, type PageSegments } from './layoutDynamic';
 
 const [SERVER_ONLY_HASHES_NAME] = SERVER_ONLY_HASHES_PLACEHOLDER.split('[');
 const [PAGE_HASHES_NAME] = PAGE_HASHES_PLACEHOLDER.split('[');
@@ -213,17 +214,24 @@ function findNamedFiles(clientCode: Map<string, string>): Set<string> {
 }
 
 /**
- * The <T> hashes to send with each wrapped page: those whose every client
- * file only that page's entry loads.
+ * The <T> hashes to send with each wrapped page that no layout above it may
+ * make static: those whose every client file only that page's entry loads.
  */
 function placePageHashes(
   distDir: string,
+  pageSegments: PageSegments,
   clientCode: Map<string, string>,
   filesByHash: Map<string, string[]>
 ): Map<string, string[]> {
   const routes = readRouteManifests(distDir);
   const pageIds = findPageIds(routes);
   const wrappedPages = findWrappedPages(distDir, routes, pageIds);
+  // A static page is rendered once, so its seed cannot follow the request's locale.
+  wrappedPages.forEach((id) => {
+    if (layoutsMayMakePageStatic(pageSegments, decodeURIComponent(id))) {
+      wrappedPages.delete(id);
+    }
+  });
 
   const entriesByFile = new Map<string, Set<string>>();
   for (const { manifest } of routes) {
@@ -268,7 +276,7 @@ function placePageHashes(
  */
 export function fillSplitTranslations(
   distDir: string,
-  wrapsPages: boolean
+  pageSegments: PageSegments | undefined
 ): void {
   const clientCode = new Map(
     findJsFiles(path.join(distDir, 'static')).map((file) => [
@@ -300,8 +308,10 @@ export function fillSplitTranslations(
   }
 
   const hashes = clientCode.size ? Array.from(serverOnlyHashes).sort() : [];
-  const pages = wrapsPages
-    ? Array.from(placePageHashes(distDir, clientCode, filesByHash))
+  const pages = pageSegments
+    ? Array.from(
+        placePageHashes(distDir, pageSegments, clientCode, filesByHash)
+      )
     : [];
   const fills: [pattern: RegExp, filled: string][] = [
     [SERVER_ONLY_HASHES, `${SERVER_ONLY_HASHES_NAME}[${hashes.join(',')}]`],

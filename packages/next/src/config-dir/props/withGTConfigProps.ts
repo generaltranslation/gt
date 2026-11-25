@@ -57,17 +57,17 @@ export type BaseWithGTConfigProps = MiddlewareConfig &
      * the translation of a compiled client `<T>` with a page only when that
      * page's entry alone loads every client chunk holding it and the page's
      * wrapper is found in the server files of every route that renders the
-     * page; every other translation stays with the root layout.
+     * page; every other translation stays with the root layout, as do those
+     * of a page under a `layout` that exports `dynamic` other than the literal
+     * `'auto'` or `'force-dynamic'`, which can make the page static.
      * A component loaded with `next/dynamic` from a server component of one
      * page can be placed with that page, while chunks loaded lazily on the
      * client stay with the root layout. A webpack build, `next dev`, and a
      * build with `cacheComponents` or `experimental.useCache` place none.
      *
-     * Known limitations: an unhashed client `<T>` can also lose its
+     * Known limitation: an unhashed client `<T>` can also lose its
      * translation when a compiled `<T>` with the same content is placed with
-     * another page, and a page that a layout above it makes static can render
-     * its client `<T>` in the source language after a client-side navigation
-     * when the locale comes from the request.
+     * another page.
      */
     experimentalSplitTranslations?: InferInput<
       typeof WithGTConfigPropsSchema
