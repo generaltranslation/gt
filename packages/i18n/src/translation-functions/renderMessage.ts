@@ -66,7 +66,6 @@ export function renderMessage(
   metadata: MessageTreeMetadata,
   lookupTranslation: LookupTreeTranslation
 ): string {
-  const { maxChars } = metadata;
   const defaultLocale = getI18nConfig().getDefaultLocale();
   const options = createMessageTreeLookupOptions(tree, locale, metadata);
   const hash = options.$_hash;
@@ -76,25 +75,16 @@ export function renderMessage(
     hash
   );
 
-  let outputLocale = defaultLocale;
-  let output: string | undefined;
-  // An empty translation is the text '', not a missing one.
-  if (translation !== undefined) {
-    try {
-      output = formatTree(translation, locale, values, formats);
-      outputLocale = locale;
-    } catch (error) {
-      warnOnce(
-        `format:${locale}:${hash}`,
-        createTranslationFormatWarning(locale, hash, error)
-      );
-    }
-  }
-  output ??= formatTree(tree, defaultLocale, values, formats);
-
-  return maxChars == null
-    ? output
-    : getI18nConfig().formatCutoff(output, { locale: outputLocale, maxChars });
+  return formatTranslationOrSource(
+    tree,
+    translation,
+    values,
+    formats,
+    locale,
+    defaultLocale,
+    hash,
+    metadata.maxChars
+  );
 }
 
 /**
@@ -133,8 +123,7 @@ export function renderPrecomputedMessage(
 ): string {
   const tree = site.$_tree;
   const hash = site.$_hash;
-  const config = getI18nConfig();
-  const defaultLocale = config.getDefaultLocale();
+  const defaultLocale = getI18nConfig().getDefaultLocale();
   let translation: MessageTree | undefined;
   // Disabled skips every lookup, including custom ones with default-locale entries.
   if (enabled) {
@@ -154,7 +143,28 @@ export function renderPrecomputedMessage(
     }
   }
 
-  const { maxChars } = site;
+  return formatTranslationOrSource(
+    tree,
+    translation,
+    values,
+    formats,
+    locale,
+    defaultLocale,
+    hash,
+    site.maxChars
+  );
+}
+
+function formatTranslationOrSource(
+  tree: MessageTree,
+  translation: MessageTree | undefined,
+  values: Record<string, unknown>,
+  formats: MessageFormats,
+  locale: string,
+  defaultLocale: string,
+  hash: string,
+  maxChars: number | undefined
+): string {
   let outputLocale = defaultLocale;
   let output: string | undefined;
   // An empty translation is the text '', not a missing one.
@@ -172,7 +182,7 @@ export function renderPrecomputedMessage(
   output ??= formatTree(tree, defaultLocale, values, formats);
   return maxChars == null
     ? output
-    : config.formatCutoff(output, { locale: outputLocale, maxChars });
+    : getI18nConfig().formatCutoff(output, { locale: outputLocale, maxChars });
 }
 
 /** The lookup options of a tree in `locale`, hashing it unless `$_hash` is set. */
