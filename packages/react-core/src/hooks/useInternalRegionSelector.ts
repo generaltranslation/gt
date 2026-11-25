@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useCustomMapping, useLocales } from './i18n-config';
+import { useLocales } from './i18n-config';
 import { useLocale, useRegion } from './condition-store';
 import type { CustomRegionMapping } from '@generaltranslation/format';
 import { getI18nConfig } from 'gt-i18n/internal';
@@ -43,7 +43,6 @@ export function useInternalRegionSelector({
 }: InternalRegionSelectorOptions = {}): InternalRegionSelectorResult {
   // Retrieve the locale, locales, and region
   const contextLocales = useLocales();
-  const localeCustomMapping = useCustomMapping();
   const locale = useLocale();
   const region = useRegion();
   const { regionCode: localeRegion } = getI18nConfig().getLocaleProperties(
@@ -57,13 +56,14 @@ export function useInternalRegionSelector({
   ] = useMemo<[string[], Map<string, RegionData>]>(() => {
     const i18nConfig = getI18nConfig();
     // By the name each locale is configured under: a locale's code can be one
-    // that is not configured, when the locale is an alias.
-    const regionToLocaleMap = new Map(
-      contextLocales.map((l) => [
-        i18nConfig.getLocaleProperties(l, { locale }).regionCode,
-        l,
-      ])
-    );
+    // that is not configured, when the locale is an alias. A region shared by
+    // several locales goes to the first one configured.
+    const regionToLocaleMap = new Map<string, string>();
+    for (const l of contextLocales) {
+      const { regionCode } = i18nConfig.getLocaleProperties(l, { locale });
+      if (!regionToLocaleMap.has(regionCode))
+        regionToLocaleMap.set(regionCode, l);
+    }
 
     const regions = _regions
       ? [..._regions]
@@ -109,7 +109,6 @@ export function useInternalRegionSelector({
     locale,
     localeRegion,
     contextLocales,
-    localeCustomMapping,
     prioritizeCurrentLocaleRegion,
     sortRegionsAlphabetically,
   ]);

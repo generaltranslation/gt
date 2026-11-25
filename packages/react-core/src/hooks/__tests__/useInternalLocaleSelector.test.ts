@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { initializeI18nConfig } from 'gt-i18n/internal';
-import { useCustomMapping, useLocales } from '../i18n-config';
+import { useLocales } from '../i18n-config';
 import { useLocale } from '../condition-store';
 import { useInternalLocaleSelector } from '../useInternalLocaleSelector';
 
@@ -10,7 +10,6 @@ vi.mock('react', () => ({
 }));
 
 vi.mock('../i18n-config', () => ({
-  useCustomMapping: vi.fn(),
   useLocales: vi.fn(),
 }));
 
@@ -37,7 +36,6 @@ describe('useInternalLocaleSelector', () => {
       customMapping,
     });
     vi.mocked(useLocales).mockReturnValue(['fi', 'portal_fr']);
-    vi.mocked(useCustomMapping).mockReturnValue(customMapping);
     vi.mocked(useLocale).mockReturnValue('portal_fr');
   });
   afterEach(resetGTGlobals);

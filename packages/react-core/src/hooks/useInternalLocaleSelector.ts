@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import type { LocaleProperties } from '@generaltranslation/format';
 import { getI18nConfig } from 'gt-i18n/internal';
-import { useCustomMapping, useLocales } from './i18n-config';
+import { useLocales } from './i18n-config';
 import { useLocale } from './condition-store';
 
 // Explicit return type so the inferred type stays portable for downstream
@@ -18,7 +18,6 @@ export function useInternalLocaleSelector(
 ): InternalLocaleSelectorResult {
   // Retrieve the locale, locales, and setLocale function
   const contextLocales = useLocales();
-  const customMapping = useCustomMapping();
   const locale = useLocale();
 
   // sort
@@ -34,14 +33,14 @@ export function useInternalLocaleSelector(
         i18nConfig.getLocaleProperties(b, { locale }).nativeNameWithRegionCode
       )
     );
-  }, [contextLocales, locale, customMapping]);
+  }, [contextLocales, locale]);
 
   // create getLocaleProperties callback
   const getLocalePropertiesCallback = useCallback(
     (locale: string) => {
       return getI18nConfig().getLocaleProperties(locale, { locale });
     },
-    [locale, customMapping]
+    [locale]
   );
 
   return {
