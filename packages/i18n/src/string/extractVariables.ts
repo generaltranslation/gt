@@ -18,7 +18,6 @@ export function extractVariables<T extends TranslationVariables>(
         key !== '$hash' && // this is already being done in @gt/react-core
         key !== '$_hash' &&
         key !== '$_source' &&
-        key !== '$_fallback' &&
         key !== '$format' &&
         key !== '$locale' &&
         key !== '$requiresReview'

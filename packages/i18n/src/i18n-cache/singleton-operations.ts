@@ -3,7 +3,7 @@ import { createGlobalSingleton } from '../globals/createGlobalSingleton';
 import { I18nCache } from './I18nCache';
 import type { Content } from '@generaltranslation/format';
 
-const i18nCacheSingleton = createGlobalSingleton<I18nCache>({
+const i18nCacheSingleton = createGlobalSingleton<I18nCache<Content>>({
   namespace: 'i18n',
   key: 'i18nCache',
   notInitialized: () =>
@@ -19,13 +19,10 @@ const i18nCacheSingleton = createGlobalSingleton<I18nCache>({
 /**
  * Get the singleton instance of I18nCache
  * @returns The singleton instance of I18nCache
- * @template U - The type of the translation that will be cached
  *
  * Note: should not be consumed by gt-react, consumers should use a wrapper
  */
-export function getI18nCache<U extends Content = Content>():
-  | I18nCache<U>
-  | I18nCache<Content> {
+export function getI18nCache(): I18nCache<Content> {
   return i18nCacheSingleton.get();
 }
 
@@ -37,10 +34,8 @@ export function getI18nCache<U extends Content = Content>():
  *
  * Note: should not be consumed by gt-react, consumers should use a wrapper
  */
-export function setI18nCache<TranslationValue extends Content>(
-  i18nCacheInstance: I18nCache<TranslationValue>
-): void {
-  i18nCacheSingleton.set(i18nCacheInstance as unknown as I18nCache);
+export function setI18nCache(i18nCacheInstance: I18nCache<Content>): void {
+  i18nCacheSingleton.set(i18nCacheInstance);
 }
 
 export function isI18nCacheInitialized(): boolean {

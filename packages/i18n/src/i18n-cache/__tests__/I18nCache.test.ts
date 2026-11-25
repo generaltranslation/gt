@@ -812,6 +812,8 @@ describe('I18nCache', () => {
       const cache = createCache({
         loadTranslations: vi.fn().mockResolvedValue({}),
       });
+      const onTranslationsCacheMiss = vi.fn();
+      cache.setTranslationsCacheMissListener(onTranslationsCacheMiss);
 
       await expect(
         settle(
@@ -826,6 +828,38 @@ describe('I18nCache', () => {
       expect(Object.keys(translateMany.mock.calls[0][0])).toEqual([
         unknownHash,
       ]);
+      expect(onTranslationsCacheMiss).toHaveBeenCalledOnce();
+    });
+
+    it('notifies no miss for a failed request, and one for its retry', async () => {
+      const unknownMessage = 'Unknown message';
+      vi.stubEnv('NODE_ENV', 'development');
+      translateMany
+        .mockRejectedValueOnce(new Error('API down'))
+        .mockResolvedValue(
+          translated({ [icuHash(unknownMessage)]: 'Message inconnu' })
+        );
+      const cache = createCache({
+        loadTranslations: vi.fn().mockResolvedValue({}),
+      });
+      const onTranslationsCacheMiss = vi.fn();
+      cache.setTranslationsCacheMissListener(onTranslationsCacheMiss);
+      const lookups = () =>
+        settle(
+          Promise.all([
+            cache.lookupTranslationWithFallback('fr', unknownMessage, icu),
+            cache.lookupTranslationWithFallback('fr', unknownMessage, icu),
+          ])
+        );
+
+      await expect(lookups()).rejects.toThrow('API down');
+      expect(onTranslationsCacheMiss).not.toHaveBeenCalled();
+
+      await expect(lookups()).resolves.toEqual([
+        'Message inconnu',
+        'Message inconnu',
+      ]);
+      expect(onTranslationsCacheMiss).toHaveBeenCalledOnce();
     });
 
     it.each([

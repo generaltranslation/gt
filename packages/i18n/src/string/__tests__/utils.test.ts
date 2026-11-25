@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { formatMessage } from '../formatMessage';
 import { interpolateMessage } from '../interpolateMessage';
 import { isEncodedTranslationOptions } from '../isEncodedTranslationOptions';
@@ -63,6 +63,49 @@ describe('interpolateMessage', () => {
         sourceLocale: 'en',
       })
     ).toBe('Value 1,234.5');
+  });
+
+  it('formats the source with the source locale when the ICU translation is malformed', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(
+      interpolateMessage({
+        source: 'Value {n, number}',
+        target: 'Valeur {n, number',
+        options: { $format: 'ICU', $locale: 'fr', n: 1234.5 },
+        sourceLocale: 'en',
+      })
+    ).toBe('Value 1,234.5');
+    expect(warn).toHaveBeenCalledOnce();
+    warn.mockRestore();
+  });
+
+  it('keeps the translation when the source cannot be formatted either', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const render = ($maxChars?: number) =>
+      interpolateMessage({
+        source: 'Hello {name}',
+        target: 'Bonjour {name}',
+        options: { $format: 'ICU', $locale: 'fr', $maxChars },
+        sourceLocale: 'en',
+      });
+    expect(render()).toBe('Bonjour {name}');
+    expect(render(9)).toBe('Bonjour\u202f…');
+    warn.mockRestore();
+  });
+
+  it('warns once when the source is the malformed text', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const entry = 'Value {n, number';
+    expect(
+      interpolateMessage({
+        source: entry,
+        target: entry,
+        options: { $format: 'ICU', $locale: 'en', n: 1 },
+        sourceLocale: 'en',
+      })
+    ).toBe(entry);
+    expect(warn).toHaveBeenCalledOnce();
+    warn.mockRestore();
   });
 
   it('fills the variables of an ICU message and leaves a string as it is', () => {

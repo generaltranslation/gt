@@ -19,7 +19,7 @@ export function initializeGT(params: InitializeGTParams): void {
 
   initializeI18nConfig(config);
 
-  const i18nCache = new I18nCache<string>(config);
+  const i18nCache = new I18nCache(config);
   const conditionStore = new AsyncConditionStore();
 
   setI18nCache(i18nCache);
