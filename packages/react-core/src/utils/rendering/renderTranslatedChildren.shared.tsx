@@ -206,7 +206,7 @@ function createRenderTranslatedChildren({
     // Multiple children
     if (Array.isArray(source) && Array.isArray(target)) {
       // Track the variables
-      const variables: Record<number, VariableProps['variableValue']> = {};
+      const valuesById: Record<number, VariableProps['variableValue']> = {};
       const variablesOptions: Record<number, VariableProps['variableOptions']> =
         {};
       const variableInjectionTypes: Record<
@@ -227,7 +227,7 @@ function createRenderTranslatedChildren({
                 variableOptions,
                 injectionType,
               } = getVariableProps(sourceChild.props);
-              variables[variableId] = variableValue;
+              valuesById[variableId] = variableValue;
               variablesOptions[variableId] = variableOptions;
               variableInjectionTypes[variableId] = injectionType;
             } else {
@@ -278,7 +278,7 @@ function createRenderTranslatedChildren({
             <React.Fragment key={`var_${index}`}>
               {renderVariable({
                 variableType: targetChild.v,
-                variableValue: variables[targetChild.i],
+                variableValue: valuesById[targetChild.i],
                 variableOptions: variablesOptions[targetChild.i],
                 locales,
                 enableI18n,
