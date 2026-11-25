@@ -53,7 +53,7 @@ function computeRelativeTime({
   if (children != null) {
     return i18nConfig.formatRelativeTimeFromDate(children, {
       locales,
-      baseDate: baseDate ?? new Date(),
+      baseDate,
       numeric: options.numeric,
       style: options.style,
       localeMatcher: options.localeMatcher,

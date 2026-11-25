@@ -59,7 +59,7 @@
     }
     return getI18nConfig().formatRelativeTimeFromDate(value, {
       ...formatOptions,
-      baseDate: baseDate ?? new Date(),
+      baseDate,
     });
   });
 </script>
