@@ -4,6 +4,7 @@ import { GTIntl } from '../GTIntl';
 import { determineLocale } from '../../formatting/core';
 import type { CustomMapping } from '../../locales/customLocaleMapping';
 import type { LocaleConfig } from '../localeConfig';
+import type { MessageTree } from '@generaltranslation/icu';
 
 // GTIntl takes every setting; these tests name the two required ones once.
 const createIntl = (
@@ -289,22 +290,109 @@ describe('GTIntl locale option', () => {
     expect(intl.formatList(['a', 'b'], { locales: ['en'] })).toBe('a and b');
   });
 
-  it('gives Intl one locale, or the locales of the call as they are', () => {
-    // Klingon has no locale data, and Intl formats it in the host's locale:
-    // the default locale is not tried for it unless the call lists it.
+  const date = new Date(Date.UTC(2026, 0, 15));
+  const counts = [0, 1, 2, 5, 21];
+  const pluralTree: MessageTree = [
+    [
+      'n',
+      'plural',
+      {
+        zero: 'zero',
+        one: 'one',
+        two: 'two',
+        few: 'few',
+        many: 'many',
+        other: 'other',
+      },
+    ],
+  ];
+  // What each formatter gives for the instance locale, and what Intl gives
+  // for `locale` alone.
+  const formatted = (intl: GTIntl) => ({
+    number: intl.formatNum(1234.5),
+    currency: intl.formatCurrency(1234.5, 'EUR'),
+    date: intl.formatDateTime(date, { dateStyle: 'long' }),
+    relativeTime: intl.formatRelativeTime(-1, 'day', { numeric: 'auto' }),
+    list: intl.formatList(['a', 'b', 'c']),
+    plurals: counts.map((n) =>
+      intl.formatMessageTree(pluralTree, { values: { n }, formats: {} })
+    ),
+    icuPlurals: counts.map((n) =>
+      intl.formatMessage('{n, plural, one {one} few {few} other {other}}', {
+        variables: { n },
+      })
+    ),
+  });
+  const formattedByIntl = (locale: string) => {
+    const categories = counts.map((n) =>
+      new Intl.PluralRules(locale).select(n)
+    );
+    return {
+      number: new Intl.NumberFormat(locale, {
+        numberingSystem: 'latn',
+      }).format(1234.5),
+      currency: new Intl.NumberFormat(locale, {
+        numberingSystem: 'latn',
+        style: 'currency',
+        currency: 'EUR',
+      }).format(1234.5),
+      date: new Intl.DateTimeFormat(locale, {
+        calendar: 'gregory',
+        numberingSystem: 'latn',
+        dateStyle: 'long',
+        timeZone: 'UTC',
+      }).format(date),
+      relativeTime: new Intl.RelativeTimeFormat(locale, {
+        numeric: 'auto',
+      }).format(-1, 'day'),
+      list: new Intl.ListFormat(locale).format(['a', 'b', 'c']),
+      plurals: categories,
+      icuPlurals: categories.map((category) =>
+        category === 'one' || category === 'few' ? category : 'other'
+      ),
+    };
+  };
+
+  // The host has at most one of these as its own locale, so the others fail
+  // if Intl is left to format in the host's.
+  it.each(['de', 'ar', 'pl'])(
+    'formats a locale Intl has no data for in the default locale %s',
+    (defaultLocale) => {
+      expect(
+        formatted(createIntl({ defaultLocale }, { locale: 'qaa' }))
+      ).toEqual(formattedByIntl(defaultLocale));
+      // As gt-i18n formats a translation: the locale is of the call.
+      expect(
+        counts.map((n) =>
+          createIntl({ defaultLocale }).formatMessageTree(pluralTree, {
+            locale: 'qaa',
+            values: { n },
+            formats: {},
+          })
+        )
+      ).toEqual(formattedByIntl(defaultLocale).plurals);
+    }
+  );
+
+  it.each(['fr-CA', 'es-419', 'zh-Hant-HK', 'sr-Latn', 'ar', 'he', 'ru', 'pl'])(
+    'formats %s, which Intl has data for, as Intl does that locale alone',
+    (locale) => {
+      expect(
+        formatted(createIntl({ defaultLocale: 'ja' }, { locale }))
+      ).toEqual(formattedByIntl(locale));
+    }
+  );
+
+  it('gives Intl the locales of a call as they are, and the code of an alias', () => {
+    // Klingon has no locale data: a call that lists it alone gets the host's
+    // locale, as it asked.
     const klingon = createIntl({ defaultLocale: 'de' }, { locale: 'tlh' });
-    expect(klingon.formatNum(1234.5)).toBe(
+    expect(klingon.formatNum(1234.5, { locales: 'tlh' })).toBe(
       new Intl.NumberFormat('tlh').format(1234.5)
     );
-    expect(klingon.formatNum(1234.5, { locales: ['tlh', 'de'] })).toBe(
-      '1.234,5'
+    expect(klingon.formatNum(1234.5, { locales: ['tlh', 'fr'] })).toBe(
+      new Intl.NumberFormat('fr').format(1234.5)
     );
-    expect(
-      klingon.formatMessageTree([['n', 'number']], {
-        values: { n: 1234.5 },
-        formats: {},
-      })
-    ).toBe(new Intl.NumberFormat('tlh').format(1234.5));
     // An alias never reaches Intl: its code does.
     const brand = createIntl(
       { customMapping: { brand: { code: 'fr' } } },
@@ -316,6 +404,12 @@ describe('GTIntl locale option', () => {
     expect(brand.formatNum(1234.5, { locales: ['brand'] })).toBe(
       new Intl.NumberFormat('fr').format(1234.5)
     );
+    expect(
+      createIntl(
+        { defaultLocale: 'source', customMapping: { source: { code: 'de' } } },
+        { locale: 'qaa' }
+      ).formatNum(1234.5)
+    ).toBe('1.234,5');
   });
 
   it('falls back to the default locale without an instance locale', () => {

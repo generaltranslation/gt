@@ -163,6 +163,7 @@ function createRenderTranslatedChildren({
     return renderDefaultChildren({
       children: sourceElement,
       defaultLocale: locales[0],
+      locales,
       enableI18n,
     });
   }
@@ -192,6 +193,7 @@ function createRenderTranslatedChildren({
       return renderDefaultChildren({
         children: source,
         defaultLocale: locales[0],
+        locales,
         enableI18n,
       });
     if (typeof target === 'string') return target;
@@ -349,6 +351,7 @@ function createRenderTranslatedChildren({
     return renderDefaultChildren({
       children: source,
       defaultLocale: locales[0],
+      locales,
       enableI18n,
     });
   }

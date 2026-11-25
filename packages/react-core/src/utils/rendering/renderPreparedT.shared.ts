@@ -125,7 +125,7 @@ function createRenderPreparedT({
         : renderTarget({
             taggedSourceChildren,
             targetJsxChildren,
-            locales: [locale],
+            locales: [locale, defaultLocale],
             enableI18n,
           });
 

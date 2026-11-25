@@ -217,16 +217,24 @@ export class GTIntl {
 
   /**
    * What a format call gives `Intl`: the call's `locales` as they are, or
-   * its one target locale. Only a custom alias is resolved, to its code.
-   * `Intl` picks from a list, and formats a locale it has no data for in the
-   * host's locale.
+   * its target locale, then the default locale. A custom alias is resolved to
+   * its code. `Intl` formats in the first locale it has data for, so a target
+   * it has none for formats in the default locale; given that target alone,
+   * `Intl` formats in the host's locale, which differs between a server and
+   * each browser.
    */
   private getFormattingLocales(
     locale: string | undefined,
     locales: string | string[] | undefined
   ): string | string[] {
     if (locales === undefined) {
-      return this.resolveCanonicalLocale(this.getTargetLocale({ locale }));
+      const targetLocale = this.resolveCanonicalLocale(
+        this.getTargetLocale({ locale })
+      );
+      const defaultLocale = this.resolveCanonicalLocale(this.defaultLocale);
+      return targetLocale === defaultLocale
+        ? targetLocale
+        : [targetLocale, defaultLocale];
     }
     return typeof locales === 'string'
       ? this.resolveCanonicalLocale(locales)
