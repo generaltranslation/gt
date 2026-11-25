@@ -26,6 +26,7 @@ type _VueCompilerOptionsMatch = Expect<
 type _CustomMappingMatch = Expect<
   Equal<NonNullable<LocaleConfig['customMapping']>, CustomMapping>
 >;
+type _CustomMappingKeys = Expect<Equal<keyof CustomMapping, string>>;
 declare const customMapping: CustomMapping;
 // @ts-expect-error a custom mapping is read-only
 customMapping.fr = 'French';
