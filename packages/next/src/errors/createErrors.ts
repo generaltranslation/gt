@@ -167,6 +167,14 @@ export const autoJsxInjectionCompilerWarning = createGtNextPluginDiagnostic({
   fix: "Set experimentalCompilerOptions.type to 'babel' in withGTConfig() and build with webpack",
 });
 
+export const splitTranslationsCompilerWarning = createGtNextPluginDiagnostic({
+  severity: 'Warning',
+  whatHappened:
+    'experimentalSplitTranslations reads the hashes the GT SWC plugin writes, and this build does not run it with compileTimeHash',
+  wayOut: 'Client components are sent every translation, as without the option',
+  fix: `Set experimentalCompilerOptions.type in withGTConfig() to 'swc', which needs next@${SWC_PLUGIN_SUPPORT} or newer, and leave compileTimeHash on`,
+});
+
 export const customGetLocaleUnresolvedWarning = createGtNextDiagnostic({
   whatHappened: 'Custom getLocale() could not be resolved',
   wayOut: 'gt-next will fall back to default locale detection',

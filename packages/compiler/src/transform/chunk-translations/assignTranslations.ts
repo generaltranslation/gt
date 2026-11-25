@@ -1,6 +1,7 @@
 import path from 'node:path';
 import type { ChunkImportMap } from './chunkImportMap';
 import { replaceInChunk, type ReplaceInChunk } from './chunkSourceMap';
+import { HASH_ARGUMENT } from './findHashes';
 import { IMPORTED_CHUNKS_PLACEHOLDER } from './resolveChunkTranslations';
 import type { MinifiedIdReader } from './hashMinification';
 
@@ -56,14 +57,6 @@ export type TranslationAssignment = {
  * than another request.
  */
 export const MIN_SHARED_CHUNK_MESSAGES = 20;
-
-// The hash of a call site, in each form the compiler writes it there: the
-// `$_hash` option of a `t` template, the `$_hash` of a precomputed message,
-// and the `_hash` prop of a <T>. Any other compiled shape (such as a
-// precomputed <T>) must extend this pattern, or those messages leave the
-// files.
-const HASH_ARGUMENT =
-  /[{,]\s*["']?\$?_hash["']?\s*:\s*(["'`])([0-9a-f]{16})\1/g;
 
 const CHUNK_EXTENSION = /\.[cm]?js$/;
 

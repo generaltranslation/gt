@@ -16,9 +16,11 @@ import {
   onTestFinished,
   vi,
 } from 'vitest';
+import { decode, encode } from '@jridgewell/sourcemap-codec';
 import MagicString from 'magic-string';
 import type { UnpluginContextMeta, UnpluginOptions } from 'unplugin';
 import gtUnplugin from '../index';
+import { findHashTokens, findJsxHashes } from '../internal';
 import type { GTUnpluginOptions } from '../index';
 import { locate, trace } from './sourcePositions';
 import {
@@ -43,6 +45,7 @@ import {
 import {
   generateReplacementsMap,
   moveMappings,
+  moveSourceMapFile,
   trackReplacements,
 } from '../transform/chunk-translations/chunkSourceMap';
 import { wrapDynamicImports } from '../transform/chunk-translations/chunkTranslationsModule';
@@ -546,6 +549,22 @@ export const { a } = await import(\`./a.js\`);`,
         findChunkHashes(
           `t({$_hash:\`${HELLO}\`})\`Hello, \${{name:n}}!\`;e(T,{children:"Save",_hash:'${SAVE}'})`,
           HASHES
+        )
+      ).toEqual([SAVE, HELLO]);
+    });
+
+    it('finds the hashes of <T> call sites alone, for the entry', () => {
+      expect(
+        findJsxHashes(
+          `t({$_hash:"${HELLO}"})\`Hello\`;m({$_hash:'${HELLO}',$_tree:"Hello"});e(T,{children:"Save",_hash:"${SAVE}"});e(T,{_hash:'${SAVE}'})`
+        )
+      ).toEqual([SAVE]);
+    });
+
+    it('finds every token as long as a hash, in any syntax, for the entry', () => {
+      expect(
+        findHashTokens(
+          `eval("e(T,{_hash: \\"${SAVE}\\"})");x=[${HELLO}];y="${HELLO}0";z="0${SAVE}"`
         )
       ).toEqual([SAVE, HELLO]);
     });
@@ -3877,6 +3896,130 @@ export const derived = () => t\`Hello, \${derive(getName())}\`;`,
         ...locate(code, '"X"); two'),
       });
       expect(moved.mappings.split(';')).toHaveLength(4);
+    });
+
+    it('moves a source map file with a list written into its code, and with the list written again', () => {
+      const code = 'a();x("L[]");b();\nc();';
+      const fill = (written: string, map: string, list: string) => {
+        const tracked = trackReplacements(written);
+        const filled = tracked.replace(written, /L\[[0-9a-f,]*\]/g, () => list);
+        return {
+          filled,
+          map: moveSourceMapFile(map, written, tracked.replacements!)!,
+        };
+      };
+      // Every character maps to itself
+      const map = new MagicString(code)
+        .generateMap({ hires: true, source: 'page.tsx' })
+        .toString();
+      const first = fill(code, map, `L[${SAVE}]`);
+      const second = fill(first.filled, first.map, `L[${HELLO},${SAVE}]`);
+      expect(second.filled).toBe(`a();x("L[${HELLO},${SAVE}]");b();\nc();`);
+      for (const { filled, map } of [first, second]) {
+        for (const token of ['a()', 'b()', 'c()']) {
+          expect(trace(map, filled, token), token).toEqual({
+            source: 'page.tsx',
+            ...locate(code, token),
+          });
+        }
+      }
+    });
+
+    it('keeps the segments a map has at one column, after what was replaced', () => {
+      const code = 'x("L[]");b()';
+      const map = {
+        version: 3,
+        sources: ['a.tsx', 'b.tsx'],
+        names: [],
+        mappings: encode([
+          [
+            [0, 0, 0, 0],
+            [8, 0, 0, 8],
+            [8, 1, 0, 0],
+          ],
+        ]),
+      };
+      const tracked = trackReplacements(code);
+      tracked.replace(code, /L\[\]/g, () => `L[${SAVE}]`);
+      const moved = JSON.parse(
+        moveSourceMapFile(JSON.stringify(map), code, tracked.replacements!)!
+      );
+      expect(decode(moved.mappings)).toEqual([
+        [
+          [0, 0, 0, 0],
+          [24, 0, 0, 8],
+          [24, 1, 0, 0],
+        ],
+      ]);
+    });
+
+    it('moves an index map with a list written into its code', () => {
+      // The list and what follows it in one section, then one more on its line, then one on the next line
+      const parts = ['a();x("L[]");b();', 'c();', 'd();'];
+      const code = `${parts[0]}${parts[1]}\n${parts[2]}`;
+      const offsets = [
+        { line: 0, column: 0 },
+        { line: 0, column: parts[0].length },
+        { line: 1, column: 0 },
+      ];
+      const map = {
+        version: 3,
+        sections: parts.map((part, index) => ({
+          offset: offsets[index],
+          // Every character maps to itself
+          map: JSON.parse(
+            new MagicString(part)
+              .generateMap({ hires: true, source: `part${index}.tsx` })
+              .toString()
+          ),
+        })),
+      };
+      const tracked = trackReplacements(code);
+      const filled = tracked.replace(code, /L\[\]/g, () => `L[${SAVE}]`);
+      const moved = JSON.parse(
+        moveSourceMapFile(JSON.stringify(map), code, tracked.replacements!)!
+      );
+      expect(
+        moved.sections.map(({ offset }: { offset: object }) => offset)
+      ).toEqual([
+        { line: 0, column: 0 },
+        { line: 0, column: parts[0].length + SAVE.length },
+        { line: 1, column: 0 },
+      ]);
+      expect(moved.sections[2].map).toEqual(map.sections[2].map);
+      for (const [token, source, part] of [
+        ['a()', 'part0.tsx', parts[0]],
+        ['b()', 'part0.tsx', parts[0]],
+        ['c()', 'part1.tsx', parts[1]],
+        ['d()', 'part2.tsx', parts[2]],
+      ]) {
+        expect(trace(moved, filled, token), token).toEqual({
+          source,
+          ...locate(part, token),
+        });
+      }
+    });
+
+    it.each([
+      ['version 2', { version: 2, sources: [], mappings: 'AAAA' }],
+      [
+        'with a section that is an index map',
+        {
+          version: 3,
+          sections: [
+            {
+              offset: { line: 0, column: 0 },
+              map: { version: 3, sections: [] },
+            },
+          ],
+        },
+      ],
+    ])('leaves a source map file %s alone', (_name, map) => {
+      expect(
+        moveSourceMapFile(JSON.stringify(map), 'a', [
+          { start: 0, end: 1, content: 'bb' },
+        ])
+      ).toBeUndefined();
     });
 
     it.each(['a map file', 'an inline map'])(

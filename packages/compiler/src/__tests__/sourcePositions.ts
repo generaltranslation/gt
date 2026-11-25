@@ -1,7 +1,7 @@
 import {
+  FlattenMap,
   originalPositionFor,
-  TraceMap,
-  type SourceMapInput,
+  type SectionedSourceMapInput,
 } from '@jridgewell/trace-mapping';
 
 /** Where the first `token` of a text is, as a source map counts it. */
@@ -18,7 +18,7 @@ export function locate(
 /** Where a source map says the first `token` of the code it is for comes from. */
 export function trace(map: unknown, code: string, token: string) {
   const { source, line, column } = originalPositionFor(
-    new TraceMap(map as SourceMapInput),
+    new FlattenMap(map as SectionedSourceMapInput),
     locate(code, token)
   );
   return { source, line, column };

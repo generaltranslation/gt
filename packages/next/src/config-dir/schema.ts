@@ -89,6 +89,12 @@ export const GTNextConfigSchema = looseObject({
   ...gtNextConfigEntries,
 });
 
+/** withGTConfig() props: the file's keys and the props the file cannot set. */
+export const WithGTConfigPropsSchema = looseObject({
+  ...GTNextConfigSchema.entries,
+  experimentalSplitTranslations: optional(boolean()),
+});
+
 /** Options only gt-next reads, from gt.config.json or withGTConfig(). */
 export type GTNextOptions = InferInput<
   ObjectSchema<typeof gtNextConfigEntries, undefined>

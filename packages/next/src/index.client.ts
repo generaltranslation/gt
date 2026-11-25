@@ -58,9 +58,9 @@ export {
   Plural,
   RegionSelector,
   RelativeTime,
-  T,
   Var,
 } from 'gt-react';
+export { T } from './components/T';
 
 // ===== Hooks ===== //
 export {

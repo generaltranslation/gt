@@ -127,6 +127,94 @@ function getLineStarts(code: string): number[] {
   return starts;
 }
 
+type Position = { line: number; column: number };
+
+const CODE_START: Position = { line: 0, column: 0 };
+
+/**
+ * Moves positions of `code`, each no earlier than the one before it, to
+ * where they are after `replacements`: a position keeps its place in its
+ * code, and a position inside what was replaced moves to where the
+ * replacement starts.
+ */
+function createPositionMover(
+  code: string,
+  replacements: readonly Replacement[]
+): (position: Position) => Position & { isReplaced: boolean } {
+  const lineStarts = getLineStarts(code);
+  let replaced = '';
+  let copied = 0;
+  for (const { start, end, content } of replacements) {
+    replaced += code.slice(copied, start) + content;
+    copied = end;
+  }
+  const movedLineStarts = getLineStarts(replaced + code.slice(copied));
+  let grown = 0;
+  let next = 0;
+  let line = 0;
+  return (position) => {
+    const at = lineStarts[position.line] + position.column;
+    for (; next < replacements.length; next++) {
+      const { start, end, content } = replacements[next];
+      if (end > at) break;
+      grown += content.length - (end - start);
+    }
+    const around = replacements[next];
+    const isReplaced = around !== undefined && around.start < at;
+    const movedTo = isReplaced ? around.start + grown : at + grown;
+    while (movedLineStarts[line + 1] <= movedTo) line++;
+    return { line, column: movedTo - movedLineStarts[line], isReplaced };
+  };
+}
+
+/**
+ * Moves the mappings of a map whose generated code starts at `offset` in
+ * the code `move` moves positions of, to a map that starts at `movedOffset`.
+ */
+function moveSectionMappings(
+  mappings: string,
+  move: ReturnType<typeof createPositionMover>,
+  offset: Position,
+  movedOffset: Position
+): string {
+  const lines = decode(mappings);
+  const moved: typeof lines = lines.map(() => []);
+  let previous: { index: number; column: number; isWritten: boolean } = {
+    index: -1,
+    column: -1,
+    isWritten: false,
+  };
+  lines.forEach((segments, index) => {
+    for (const segment of segments) {
+      const position = move({
+        line: offset.line + index,
+        column: index ? segment[0] : offset.column + segment[0],
+      });
+      const line = position.line - movedOffset.line;
+      const column =
+        line === 0 ? position.column - movedOffset.column : position.column;
+      while (moved.length <= line) moved.push([]);
+      const written = moved[line];
+      const movedSegment = [...segment] as typeof segment;
+      movedSegment[0] = column;
+      let isWritten = true;
+      // Segments a map already has at one column stay together
+      if (previous.index === index && previous.column === segment[0]) {
+        isWritten = previous.isWritten;
+      } else if (written[written.length - 1]?.[0] === column) {
+        // What follows something deleted is at the column where that started
+        if (position.isReplaced) isWritten = false;
+        else {
+          while (written[written.length - 1]?.[0] === column) written.pop();
+        }
+      }
+      if (isWritten) written.push(movedSegment);
+      previous = { index, column: segment[0], isWritten };
+    }
+  });
+  return encode(moved);
+}
+
 /**
  * The mappings of a source map of `code` as those of the code after
  * `replacements`: every position keeps what it maps to and moves with its
@@ -138,45 +226,61 @@ export function moveMappings(
   code: string,
   replacements: readonly Replacement[]
 ): string {
-  const lineStarts = getLineStarts(code);
-  let replaced = '';
-  let copied = 0;
-  for (const { start, end, content } of replacements) {
-    replaced += code.slice(copied, start) + content;
-    copied = end;
+  return moveSectionMappings(
+    mappings,
+    createPositionMover(code, replacements),
+    CODE_START,
+    CODE_START
+  );
+}
+
+type Section = { offset: Position; map: { mappings?: unknown } };
+
+/**
+ * The source map file `source` of `code` moved with `replacements`, which
+ * were made in `code`, or undefined when it is not a version 3 map, or is
+ * an index map with a section that is not a map with mappings.
+ */
+export function moveSourceMapFile(
+  source: string,
+  code: string,
+  replacements: readonly Replacement[]
+): string | undefined {
+  const map = JSON.parse(source);
+  if (map.version !== 3) return undefined;
+  if (!('sections' in map)) {
+    if (typeof map.mappings !== 'string') return undefined;
+    return JSON.stringify({
+      ...map,
+      mappings: moveMappings(map.mappings, code, replacements),
+    });
   }
-  const movedLineStarts = getLineStarts(replaced + code.slice(copied));
-  const lines = decode(mappings);
-  const moved: typeof lines = movedLineStarts.map(() => []);
-  let grown = 0;
-  let next = 0;
-  let line = 0;
-  lines.forEach((segments, index) => {
-    for (const segment of segments) {
-      const at = lineStarts[index] + segment[0];
-      for (; next < replacements.length; next++) {
-        const { start, end, content } = replacements[next];
-        if (end > at) break;
-        grown += content.length - (end - start);
-      }
-      const around = replacements[next];
-      const isReplaced = around !== undefined && around.start < at;
-      const movedTo = isReplaced ? around.start + grown : at + grown;
-      while (movedLineStarts[line + 1] <= movedTo) line++;
-      const column = movedTo - movedLineStarts[line];
-      const movedSegment = [...segment] as typeof segment;
-      movedSegment[0] = column;
-      const last = moved[line].length - 1;
-      if (moved[line][last]?.[0] !== column) moved[line].push(movedSegment);
-      // What follows something deleted is at the column where that started
-      else if (!isReplaced) moved[line][last] = movedSegment;
-    }
+  const sections: Section[] = map.sections;
+  if (sections.some((section) => typeof section.map?.mappings !== 'string')) {
+    return undefined;
+  }
+  const move = createPositionMover(code, replacements);
+  return JSON.stringify({
+    ...map,
+    // Sections are in the order of their offsets, as `move` takes positions
+    sections: sections.map((section) => {
+      const { line, column } = move(section.offset);
+      const offset = { line, column };
+      return {
+        ...section,
+        offset,
+        map: {
+          ...section.map,
+          mappings: moveSectionMappings(
+            section.map.mappings as string,
+            move,
+            section.offset,
+            offset
+          ),
+        },
+      };
+    }),
   });
-  // Lines without a mapping at the end of the code are not written
-  while (moved.length > lines.length && !moved[moved.length - 1].length) {
-    moved.pop();
-  }
-  return encode(moved);
 }
 
 /** A chunk of a bundle, with the source map a bundler holds for it. */

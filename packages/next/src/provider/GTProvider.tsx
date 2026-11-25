@@ -5,6 +5,7 @@ import { Client_GTProvider } from '../utils/client-boundary';
 import { getReactI18nCache } from '@generaltranslation/react-core/pure';
 import { getI18nConfig, type Locale } from 'gt-i18n/internal';
 import { getEnableI18n } from '../request/getEnableI18n';
+import { getClientTranslations } from './serverOnlyHashes';
 
 /** The props the client GTProvider receives from the RSC GTProvider. */
 export async function getGTProviderProps(locale: Locale) {
@@ -14,7 +15,7 @@ export async function getGTProviderProps(locale: Locale) {
   const enableI18n = await getEnableI18n();
   const translationRequired = i18nConfig.requiresTranslation({ locale });
   const translations = translationRequired
-    ? await i18nCache.loadTranslations(locale)
+    ? getClientTranslations(await i18nCache.loadTranslations(locale))
     : {};
   return {
     supportsLocaleRefresh:

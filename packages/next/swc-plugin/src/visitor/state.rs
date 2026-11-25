@@ -1,5 +1,4 @@
 use crate::ast::ScopeTracker;
-use swc_core::ecma::atoms::Atom;
 
 // For tracking statistics for the plugin
 #[derive(Default)]
@@ -24,16 +23,12 @@ pub struct TraversalState {
 pub struct ImportTracker {
   /// Scope tracker for tracking variables
   pub scope_tracker: ScopeTracker,
-
-  /// Other import tracking
-  pub namespace_imports: std::collections::HashSet<Atom>,
 }
 
 impl ImportTracker {
   pub fn new() -> Self {
     Self {
       scope_tracker: ScopeTracker::default(),
-      namespace_imports: std::collections::HashSet::new(),
     }
   }
 }

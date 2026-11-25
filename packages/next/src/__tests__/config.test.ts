@@ -12,7 +12,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import type { NextConfig } from 'next';
-import { BABEL_PLUGIN_SUPPORT } from '../plugin/constants';
+import { BABEL_PLUGIN_SUPPORT, SWC_PLUGIN_SUPPORT } from '../plugin/constants';
 import { nextLocaleCookieName } from '../utils/cookies';
 import { getRequireSpecifiers } from './utils/importGraph';
 
@@ -34,6 +34,12 @@ const mockVersionInfo = vi.hoisted(() => ({
 }));
 
 vi.mock('../plugin/getStableNextVersionInfo', () => mockVersionInfo);
+
+const mockFillServerOnlyHashes = vi.hoisted(() => vi.fn());
+
+vi.mock('../plugin/fillServerOnlyHashes', () => ({
+  fillServerOnlyHashes: mockFillServerOnlyHashes,
+}));
 
 // The default render settings are derived from NODE_ENV when the config
 // module loads, so it is imported once the development env is in place.
@@ -500,6 +506,11 @@ describe('withGTConfig', () => {
       ],
       ['string locales', { locales: 'fr' }, 'locales: Invalid type'],
       ['a null pathRegex', { pathRegex: null }, 'pathRegex: Invalid type'],
+      [
+        'a non-boolean experimentalSplitTranslations',
+        { experimentalSplitTranslations: { enabled: true } },
+        'experimentalSplitTranslations: Invalid type',
+      ],
     ])('rejects %s in withGTConfig() props', (_case, props, issue) => {
       expect(() => withGTConfig({}, props as never)).toThrow(
         'gt-next (plugin) Error: The withGTConfig() configuration is invalid'
@@ -1080,6 +1091,131 @@ describe('withGTConfig', () => {
       ]) {
         expect(warn).toHaveBeenCalledWith(expect.stringContaining(text));
       }
+    });
+  });
+
+  describe('experimentalSplitTranslations', () => {
+    type AfterProductionCompile = (metadata: {
+      projectDir: string;
+      distDir: string;
+    }) => Promise<void>;
+    // next@15.2.3, which gt-next is typed against, does not type the hook.
+    const hookOf = (config: NextConfig) =>
+      (
+        config.compiler as {
+          runAfterProductionCompile?: AfterProductionCompile;
+        }
+      )?.runAfterProductionCompile;
+    const swc = { experimentalCompilerOptions: { type: 'swc' } } as const;
+    const metadata = { projectDir: '/app', distDir: '/app/.next' };
+    const warnings = () =>
+      warn.mock.calls
+        .map(([message]) => String(message))
+        .filter((message) => message.includes('experimentalSplitTranslations'));
+
+    it('runs its build step after the hook of the app, and keeps the other compiler options', async () => {
+      const ran: string[] = [];
+      const appHook = vi.fn(async () => {
+        await Promise.resolve();
+        ran.push('app');
+      });
+      mockFillServerOnlyHashes.mockImplementation(() => ran.push('gt-next'));
+
+      const result = withGTConfig(
+        {
+          compiler: {
+            removeConsole: true,
+            runAfterProductionCompile: appHook,
+          },
+        } as NextConfig,
+        { ...swc, experimentalSplitTranslations: true }
+      );
+      await hookOf(result)!(metadata);
+
+      expect(result.compiler).toHaveProperty('removeConsole', true);
+      expect(appHook).toHaveBeenCalledWith(metadata);
+      expect(mockFillServerOnlyHashes).toHaveBeenCalledWith('/app/.next');
+      expect(ran).toEqual(['app', 'gt-next']);
+    });
+
+    it.each([
+      ['on with true', true, undefined, true],
+      ['off with false', false, undefined, false],
+      ['off when left out', undefined, undefined, false],
+      ['off with GT_SPLIT_TRANSLATIONS=true alone', undefined, 'true', false],
+      ['off with false and GT_SPLIT_TRANSLATIONS=true', false, 'true', false],
+    ])('is %s', (_name, option, env, expected) => {
+      vi.stubEnv('GT_SPLIT_TRANSLATIONS', env);
+      const compiler = { removeConsole: true };
+
+      const result = withGTConfig(
+        { compiler },
+        { ...swc, experimentalSplitTranslations: option }
+      );
+
+      expect(typeof hookOf(result) === 'function').toBe(expected);
+      expect(result.env?._GENERALTRANSLATION_SPLIT_TRANSLATIONS).toBe(
+        String(expected)
+      );
+      if (!expected) expect(result.compiler).toBe(compiler);
+      expect(warnings()).toEqual([]);
+    });
+
+    it('is read from withGTConfig() alone, not from gt.config.json', () => {
+      mockConfigFile({ experimentalSplitTranslations: true });
+
+      expect(hookOf(withGTConfig({}, swc))).toBeUndefined();
+    });
+
+    it('ignores the value gt.config.json holds when the props set another', () => {
+      mockConfigFile({ experimentalSplitTranslations: false });
+
+      const result = withGTConfig(
+        {},
+        { ...swc, experimentalSplitTranslations: true }
+      );
+
+      expect(hookOf(result)).toBeTypeOf('function');
+    });
+
+    it.each([
+      ['no compiler is set', { type: 'none' }, true],
+      ['the swc compiler needs a newer Next.js', { type: 'swc' }, false],
+      ['the compiler is babel', { type: 'babel' }, true],
+      [
+        'the swc compiler writes no hash',
+        { type: 'swc', compileTimeHash: false },
+        true,
+      ],
+    ] as const)(
+      'warns once and leaves the build as it is when %s',
+      (_name, experimentalCompilerOptions, swcCompatible) => {
+        mockVersionInfo.swcPluginCompatible = swcCompatible;
+
+        const result = withGTConfig(
+          {},
+          {
+            experimentalCompilerOptions,
+            experimentalSplitTranslations: true,
+          }
+        );
+
+        expect(result).not.toHaveProperty('compiler');
+        expect(result.env?._GENERALTRANSLATION_SPLIT_TRANSLATIONS).toBe(
+          'false'
+        );
+        expect(warnings()).toEqual([
+          expect.stringContaining(
+            `experimentalCompilerOptions.type in withGTConfig() to 'swc', which needs next@${SWC_PLUGIN_SUPPORT} or newer`
+          ),
+        ]);
+      }
+    );
+
+    it('stays out of the config the runtime reads', () => {
+      expect(
+        buildParams({ ...swc, experimentalSplitTranslations: true })
+      ).not.toHaveProperty('experimentalSplitTranslations');
     });
   });
 

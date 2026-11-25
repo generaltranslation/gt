@@ -12,10 +12,9 @@ use swc_core::{
 };
 
 impl VisitMut for TransformVisitor {
-  /// Process import declarations to track gt-next imports
-  fn visit_mut_import_decl(&mut self, import_decl: &mut ImportDecl) {
-    self.process_gt_import_declaration(import_decl);
-    import_decl.visit_mut_children_with(self);
+  fn visit_mut_module(&mut self, module: &mut Module) {
+    self.track_module_imports(module);
+    module.visit_mut_children_with(self);
   }
 
   /// Process variable declarations to track variables that shadow gt-next imports
@@ -164,10 +163,9 @@ impl VisitMut for TransformVisitor {
 }
 
 impl Fold for TransformVisitor {
-  /// Process import declarations to track GT-Next imports
-  fn fold_import_decl(&mut self, import_decl: ImportDecl) -> ImportDecl {
-    self.process_gt_import_declaration(&import_decl);
-    import_decl
+  fn fold_module(&mut self, module: Module) -> Module {
+    self.track_module_imports(&module);
+    module.fold_children_with(self)
   }
 
   /// Process variable declarations to track variables that shadow gt-next imports

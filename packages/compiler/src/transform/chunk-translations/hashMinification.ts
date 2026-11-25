@@ -133,7 +133,7 @@ const PLACEHOLDER = new RegExp(
 );
 
 // The id of a call site in a chunk's final code, see HASH_ARGUMENT in
-// assignTranslations.ts
+// findHashes.ts
 const ID_ARGUMENT = new RegExp(
   `[{,]\\s*["']?\\$?_hash["']?\\s*:\\s*(["'\`])([A-Za-z0-9_-]{${MINIFIED_ID_LIST_LENGTH}}\\${MINIFIED_ID_SEPARATOR}\\d+)\\1`,
   'g'

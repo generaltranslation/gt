@@ -67,6 +67,18 @@ with each way of splitting, with and without hash minification, and checks
 that the bundler reports no broken source map and that positions in the
 emitted chunks map back to their file, line and column.
 
+`next-app-router` checks gt-next's experimental `experimentalSplitTranslations`
+option with its own script (`scripts/check.mjs`), which needs no browser: it
+builds the app with the SWC compiler, with and without the option, once with
+Turbopack and once with webpack, starts each build and requests the page in
+French. It checks that the server and the client `<T>` render in French, and
+that the RSC payload carries every translation without the option and every
+one but that of the server `<T>` with it:
+
+```bash
+pnpm --filter gt-test-next-app-router check
+```
+
 Run the browser automation for every browser-capable development app, or select
 a comma-separated subset. The React Native app remains a manual native test:
 
