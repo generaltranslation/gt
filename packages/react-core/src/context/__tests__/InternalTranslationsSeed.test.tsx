@@ -1,19 +1,16 @@
 import { useContext, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
-import type { Content } from '@generaltranslation/format';
 import type { I18nStore } from '../../i18n-store/I18nStore';
-import { getGTContext } from '../context';
+import { getGTContext, type TranslationsSnapshot } from '../context';
 import { InternalGTProvider } from '../InternalGTProvider';
 import { InternalTranslationsSeed } from '../InternalTranslationsSeed';
-
-type Translations = Record<string, Record<string, Content>>;
 
 function Provider({
   translations,
   children,
 }: {
-  translations: Translations;
+  translations: TranslationsSnapshot;
   children?: ReactNode;
 }) {
   return (
@@ -33,7 +30,7 @@ function Provider({
 }
 
 function snapshotsOf(tree: (probe: ReactNode) => ReactNode) {
-  const snapshots: (Translations | undefined)[] = [];
+  const snapshots: (TranslationsSnapshot | undefined)[] = [];
   function Probe() {
     snapshots.push(useContext(getGTContext())?.translationsSnapshot);
     return null;
