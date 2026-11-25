@@ -1,7 +1,12 @@
 import type { MessageTree, MessageFormats } from '@generaltranslation/icu';
 import { forEachPlaceholder } from '@generaltranslation/icu/internal';
+import { formatCutoff, formatMessageTree } from 'generaltranslation/internal';
+import { defaultDefaultLocale } from '@generaltranslation/format/internal';
 import { getWritableConditionStore } from '../condition-store/singleton-operations';
-import { getIntl } from '../i18n-config/singleton-operations';
+import {
+  getI18nConfig,
+  isI18nConfigInitialized,
+} from '../i18n-config/singleton-operations';
 import { createGtI18nDiagnostic } from '../logs/diagnostics';
 import {
   type CreateGTParams,
@@ -77,15 +82,18 @@ function formatSource(
   formats: MessageFormats,
   maxChars: number | undefined
 ): string {
-  const intl = getIntl();
-  const locale = intl.defaultLocale;
-  const formatted = intl.formatMessageTree(tree, { locale, values, formats });
+  const config = isI18nConfigInitialized() ? getI18nConfig() : undefined;
+  const locale = config?.getDefaultLocale() ?? defaultDefaultLocale;
+  const formatted = config
+    ? config.formatMessageTree(tree, { locale, values, formats })
+    : formatMessageTree(tree, { locales: locale, values, formats });
   const output = Array.isArray(formatted)
     ? formatted.join('')
     : String(formatted);
-  return maxChars == null
-    ? output
-    : intl.formatCutoff(output, { locale, maxChars });
+  if (maxChars == null) return output;
+  return config
+    ? config.formatCutoff(output, { locale, maxChars })
+    : formatCutoff(output, { locales: locale, maxChars });
 }
 
 /** Creates an m that renders like the GT createGT returns for `params`. */

@@ -14,6 +14,7 @@ export {
   formatList,
   formatListToParts,
   formatMessage,
+  formatMessageTree,
   formatNum,
   formatRelativeTime,
   formatRelativeTimeFromDate,

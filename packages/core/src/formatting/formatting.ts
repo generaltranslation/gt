@@ -10,6 +10,12 @@ import {
   formatRelativeTimeFromDate as _formatRelativeTimeFromDate,
 } from '@generaltranslation/format';
 import {
+  formatMessageTree as _formatMessageTree,
+  type FormatMessageTreeOptions,
+  type MessageTree,
+  type MessageValues,
+} from '@generaltranslation/icu';
+import {
   DATE_FIELD_OPTIONS,
   DEFAULT_DATE_TIME_STYLE,
 } from '@generaltranslation/icu/internal';
@@ -231,4 +237,31 @@ export function formatMessage(
     variables: options?.variables ?? {},
     timeZone: options?.timeZone ?? hostTimeZone(),
   });
+}
+
+/**
+ * Formats a message tree according to the specified locales and options.
+ *
+ * @param {MessageTree} tree - The message tree to format.
+ * @param {Object} [options] - `locales`, the `values` of the tree's
+ * variables and its `formats`. The `timeZone` of its dates and times
+ * defaults to the host's.
+ * @returns The formatted message: a string, or the parts around rich values.
+ */
+export function formatMessageTree(
+  tree: MessageTree,
+  options?: Partial<FormatMessageTreeOptions> & {
+    locales?: string | string[];
+    values?: MessageValues<unknown>;
+  }
+): unknown {
+  return _formatMessageTree<unknown>(
+    tree,
+    options?.locales ?? defaultDefaultLocale,
+    options?.values ?? {},
+    {
+      formats: options?.formats ?? {},
+      timeZone: options?.timeZone ?? hostTimeZone(),
+    }
+  );
 }

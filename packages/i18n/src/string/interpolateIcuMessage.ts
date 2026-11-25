@@ -1,6 +1,6 @@
 import { extractVariables } from './extractVariables';
+import { formatCutoff } from './formatCutoff';
 import { formatMessage } from './formatMessage';
-import { getIntl } from '../i18n-config/singleton-operations';
 import { RESERVED_NAME_PREFIX } from '@generaltranslation/icu/internal';
 import logger from '../logs/logger';
 import { createInterpolationFailureMessage } from './messages';
@@ -34,10 +34,11 @@ export function interpolateIcuMessage<T extends string | null | undefined>(
       options.$format
     );
     // Apply cutoff formatting
-    const cutoffMessage = getIntl().formatCutoff(interpolatedMessage, {
-      locales: options.$locale,
-      maxChars: options.$maxChars,
-    });
+    const cutoffMessage = formatCutoff(
+      interpolatedMessage,
+      options.$maxChars,
+      options.$locale
+    );
     return cutoffMessage as T extends string ? string : T;
   } catch {
     logger.warn(createInterpolationFailureMessage(encodedMsg));
@@ -51,10 +52,11 @@ export function interpolateIcuMessage<T extends string | null | undefined>(
     }
 
     // Apply cutoff formatting
-    const cutoffMessage = getIntl().formatCutoff(encodedMsg, {
-      locales: options.$locale,
-      maxChars: options.$maxChars,
-    });
+    const cutoffMessage = formatCutoff(
+      encodedMsg,
+      options.$maxChars,
+      options.$locale
+    );
     return cutoffMessage as T extends string ? string : T;
   }
 }
