@@ -38,6 +38,16 @@ intl.formatRelativeTimeFromDate(date);
 intl.formatRelativeTimeFromDate(date, { locale: 'en' });
 intl.formatRelativeTimeFromDate(date, { locale: 'en', baseDate: date });
 
+// The currency and the currency style come from the arguments, not options.
+// @ts-expect-error
+formatCurrency(1, 'USD', { currency: 'EUR' });
+// @ts-expect-error
+formatCurrency(1, 'USD', { style: 'percent' });
+// @ts-expect-error
+intl.formatCurrency(1, 'USD', { currency: 'EUR' });
+// @ts-expect-error
+intl.formatCurrency(1, 'USD', { style: 'percent' });
+
 // A message tree formats to a string from plain values. Other values give
 // `unknown`: a function is returned as it is where the tree has a plain
 // placeholder and called where it has a tag, and the types cannot see which.

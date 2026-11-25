@@ -7,6 +7,7 @@ import {
 } from '../core';
 import { intlCache } from '../../cache/IntlCache';
 import {
+  _formatCurrency,
   _formatListToParts,
   _formatRelativeTime,
   _selectRelativeTimeUnit,
@@ -504,6 +505,22 @@ describe('_formatRelativeTime', () => {
     expect(
       _formatRelativeTime({ value, unit, locales: [locale], options: {} })
     ).toBe(expected);
+  });
+});
+
+describe('_formatCurrency', () => {
+  it.each<[Intl.NumberFormatOptions]>([
+    [{ currency: 'USD' }],
+    [{ style: 'percent' }],
+  ])('formats the given currency with options %j', (options) => {
+    expect(
+      _formatCurrency({
+        value: 5,
+        currency: 'EUR',
+        locales: ['en-US'],
+        options,
+      })
+    ).toBe('€5.00');
   });
 });
 
