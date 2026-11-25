@@ -162,7 +162,7 @@ export function formatMessageTree<R>(
   return formatParsedTree(tree, '', locales, values, options);
 }
 
-/** Formats a message tree or an ICU string's syntax tree; `icu` is reported on errors. */
+/** Formats a message tree or the tree built from an ICU string's syntax tree; `icu` is reported on errors. */
 export function formatParsedTree<R>(
   tree: ParsedTree,
   icu: string,
