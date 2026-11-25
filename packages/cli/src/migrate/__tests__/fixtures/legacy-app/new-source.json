@@ -1,0 +1,438 @@
+{
+  "9564e3123aec3de1": {
+    "source": "About us",
+    "dataFormat": "ICU",
+    "id": "footer.about"
+  },
+  "459fd02379259631": {
+    "source": "Jobs",
+    "dataFormat": "ICU",
+    "id": "footer.careers"
+  },
+  "3188bc3b3c4508bc": {
+    "source": "Privacy policy",
+    "dataFormat": "ICU",
+    "id": "footer.privacy"
+  },
+  "642a713bc3b12d8c": {
+    "source": "© {year} Acme Outfitters. All rights reserved.",
+    "dataFormat": "ICU",
+    "id": "footer.copyright"
+  },
+  "eb973c194940e6da": {
+    "source": "Join our newsletter",
+    "dataFormat": "ICU",
+    "id": "footer.newsletter.title"
+  },
+  "4ed2aa55d6691d99": {
+    "source": "Subscribe",
+    "dataFormat": "ICU",
+    "id": "footer.newsletter.subscribe",
+    "context": "Newsletter signup button"
+  },
+  "31105b18ab21aeb4": {
+    "source": "{count, plural, one {Join # other subscriber} other {Join # other subscribers}}",
+    "dataFormat": "ICU",
+    "id": "footer.newsletter.subscribers"
+  },
+  "bd3deac54c2c3113": {
+    "source": "Email address",
+    "dataFormat": "ICU"
+  },
+  "001f9b710eadc5a9": {
+    "source": "Save",
+    "dataFormat": "MESSAGE_TREE",
+    "context": "Save button in the settings form"
+  },
+  "1461aa43db735a5c": {
+    "source": ["Update your password every ", ["days"], " days"],
+    "dataFormat": "MESSAGE_TREE",
+    "context": "Security tip"
+  },
+  "884b53222572b725": {
+    "source": "Changes are saved automatically.",
+    "dataFormat": "MESSAGE_TREE",
+    "maxChars": 40
+  },
+  "1089420314519f6b": {
+    "source": "Save",
+    "dataFormat": "MESSAGE_TREE",
+    "context": "Discount label"
+  },
+  "2cded0afec74560f": {
+    "source": "Delete account",
+    "dataFormat": "MESSAGE_TREE",
+    "maxChars": 24
+  },
+  "9b1206b9d64ce5eb": {
+    "source": {
+      "t": "h2",
+      "i": 1,
+      "c": "Settings"
+    },
+    "dataFormat": "JSX",
+    "context": "Account settings page title"
+  },
+  "35d87bbc180d1e5d": {
+    "source": [
+      "Your cart has ",
+      ["_gt_1", "number"],
+      " items totaling ",
+      ["_gt_2", "number", "currency"],
+      "."
+    ],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "a3db809f06210b76": {
+    "source": [
+      [
+        "_gt_1",
+        "plural",
+        {
+          "one": ["You have ", 0, " item in your cart."],
+          "other": ["You have ", 0, " items in your cart."]
+        }
+      ]
+    ],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "2f0a33c8008918a9": {
+    "source": ["Estimated delivery: ", ["_gt_1", "date"]],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "1be0fe3f76bfe080": {
+    "source": [
+      "Promo code ",
+      ["code"],
+      " saves you ",
+      ["_gt_1", "number", "currency"],
+      " on this order."
+    ],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "348f70b8949635e4": {
+    "source": "Proceed to checkout",
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "f0cf73dca93a0a97": {
+    "source": {
+      "t": "h2",
+      "i": 1,
+      "c": "Cart"
+    },
+    "dataFormat": "JSX",
+    "context": "Shopping cart heading"
+  },
+  "95740571c1dcbdd5": {
+    "source": [
+      "Hi ",
+      {
+        "i": 1,
+        "k": "_gt_value_1",
+        "v": "v"
+      },
+      ", ",
+      {
+        "t": "b",
+        "i": 2,
+        "c": "welcome back"
+      },
+      "! Check out",
+      " ",
+      {
+        "t": "a",
+        "i": 3,
+        "c": [
+          "today's ",
+          {
+            "t": "em",
+            "i": 4,
+            "c": "deals"
+          }
+        ]
+      },
+      "."
+    ],
+    "dataFormat": "JSX"
+  },
+  "1495d7bdb3df9600": {
+    "source": {
+      "t": "Branch",
+      "i": 1,
+      "d": {
+        "b": {
+          "pending": {
+            "t": "p",
+            "i": 2,
+            "c": [
+              "Your order is ",
+              {
+                "t": "strong",
+                "i": 3,
+                "c": "pending"
+              },
+              "."
+            ]
+          },
+          "shipped": {
+            "t": "p",
+            "i": 2,
+            "c": [
+              "Your order has ",
+              {
+                "t": "strong",
+                "i": 3,
+                "c": "shipped"
+              },
+              "!"
+            ]
+          }
+        },
+        "t": "b"
+      },
+      "c": {
+        "t": "p",
+        "i": 2,
+        "c": "We are checking the status of your order."
+      }
+    },
+    "dataFormat": "JSX"
+  },
+  "111a44209dc6e701": {
+    "source": "Remove",
+    "dataFormat": "JSX",
+    "$context": "Remove an item from the cart",
+    "$maxChars": "20"
+  },
+  "619a8db474acd4fd": {
+    "source": "Continue shopping",
+    "dataFormat": "JSX"
+  },
+  "0ab9fbbc81f6f785": {
+    "source": [["viewers"], " shoppers are browsing right now"],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "875d2963662f2b1b": {
+    "source": ["Signed in as ", ["_gt_1"]],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "7cce1a1f3b623342": {
+    "source": ["Good to see you, ", ["username"], "!"],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "c4fc26b3dd0a3630": {
+    "source": "You are on the Free plan",
+    "dataFormat": "MESSAGE_TREE",
+    "deriveGroup": "derive-1"
+  },
+  "c3a8fa5391cc5681": {
+    "source": "You are on the Pro plan",
+    "dataFormat": "MESSAGE_TREE",
+    "deriveGroup": "derive-1"
+  },
+  "724272c571c9aa01": {
+    "source": "You are on the Team plan",
+    "dataFormat": "MESSAGE_TREE",
+    "deriveGroup": "derive-1"
+  },
+  "79f3d898c44c9db1": {
+    "source": "Your admin dashboard is ready.",
+    "dataFormat": "MESSAGE_TREE",
+    "deriveGroup": "derive-2"
+  },
+  "6c22bbb27a88235a": {
+    "source": "Your member dashboard is ready.",
+    "dataFormat": "MESSAGE_TREE",
+    "deriveGroup": "derive-2"
+  },
+  "a5cae848b9cc5a76": {
+    "source": "Search products",
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "d2c60c72dce56502": {
+    "source": "Sign in",
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "06505a35a712feb6": {
+    "source": "Recently viewed",
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "53223d6dc71cbbac": {
+    "source": "Free shipping on all orders over $50",
+    "dataFormat": "JSX"
+  },
+  "23e11cb27f14eb19": {
+    "source": [
+      "You have ",
+      [
+        "count",
+        "plural",
+        {
+          "one": [0, " new notification"],
+          "other": [0, " new notifications"]
+        }
+      ]
+    ],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "cd2f8827bcc97321": {
+    "source": [["name"], " commented on your post"],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "3ff9747088ed5aeb": {
+    "source": [
+      [
+        "gender",
+        "select",
+        {
+          "female": "She",
+          "male": "He",
+          "other": "They"
+        }
+      ],
+      " liked your photo"
+    ],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "4a6c11b6b152ec84": {
+    "source": [
+      "This is your ",
+      [
+        "place",
+        "selectordinal",
+        {
+          "few": [0, "rd"],
+          "one": [0, "st"],
+          "other": [0, "th"],
+          "two": [0, "nd"]
+        }
+      ],
+      " order with us"
+    ],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "22b5898b2c89aa60": {
+    "source": [
+      [
+        "count",
+        "plural",
+        {
+          "=0": "No unread messages",
+          "one": "One unread message",
+          "other": [0, " unread messages"]
+        }
+      ]
+    ],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "ebc69c8c97aeff98": {
+    "source": ["Your balance is ", ["amount", "number", "currency"]],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "83aa329716569865": {
+    "source": ["Last signed in ", ["when", "date", "medium"]],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "bd66675a608bd0b8": {
+    "source": ["Order shipped at ", ["time", "time", "short"]],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "1be1a03645c15943": {
+    "source": [
+      "You are using ",
+      ["usage", "number", "percent"],
+      " of your storage"
+    ],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "5b409e6b3e3d741a": {
+    "source": [
+      [
+        "_gt_1",
+        "plural",
+        {
+          "one": [0, " day"],
+          "other": [0, " days"]
+        }
+      ],
+      " left in your free trial"
+    ],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "0079aeb4fb3872a8": {
+    "source": "Mark all notifications as read",
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "bbf9419b8e6f5802": {
+    "source": "Home",
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "f2e973382c8e5a89": {
+    "source": "Shop",
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "184c9605dde81513": {
+    "source": "Orders",
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "f7cdb7902cbcc65b": {
+    "source": "Help & support",
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "397acff1597e5c65": {
+    "source": "Out of stock",
+    "dataFormat": "MESSAGE_TREE",
+    "context": "Product availability badge"
+  },
+  "c56a0796152d3ccf": {
+    "source": "Almost gone",
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "db2f6b2dfab743e3": {
+    "source": "Track package",
+    "dataFormat": "ICU"
+  },
+  "3d7a6a7751c7e284": {
+    "source": "Your orders",
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "f3b30421ef501566": {
+    "source": ["Order #", ["orderId"]],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "31de7e9926310506": {
+    "source": ["Placed on ", ["date", "date", "long"]],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "894b5f58be761c1a": {
+    "source": [
+      [
+        "count",
+        "plural",
+        {
+          "one": [0, " item"],
+          "other": [0, " items"]
+        }
+      ]
+    ],
+    "dataFormat": "MESSAGE_TREE"
+  },
+  "5934b492bf309802": {
+    "source": [
+      "Need help with an order? ",
+      {
+        "t": "a",
+        "i": 1,
+        "c": "Contact support"
+      },
+      " and we will get back to you within ",
+      {
+        "i": 2,
+        "k": "_gt_n_2",
+        "v": "n"
+      },
+      " hours."
+    ],
+    "dataFormat": "JSX"
+  }
+}

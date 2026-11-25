@@ -1,0 +1,236 @@
+{
+  "9564e3123aec3de1": "About us",
+  "f7ff9265a69905f1": "Careers",
+  "3188bc3b3c4508bc": "Privacy policy",
+  "642a713bc3b12d8c": "© {year} Acme Outfitters. All rights reserved.",
+  "eb973c194940e6da": "Join our newsletter",
+  "4ed2aa55d6691d99": "Subscribe",
+  "31105b18ab21aeb4": "{count, plural, one {Join # other subscriber} other {Join # other subscribers}}",
+  "bd3deac54c2c3113": "Email address",
+  "7f3ce5caa875dc3c": "Update your password every {days} days",
+  "b3baf49bdf422cc0": "Save",
+  "fe691435bd365176": "Save",
+  "d218025620554381": "Delete account",
+  "9b1206b9d64ce5eb": {
+    "t": "h2",
+    "i": 1,
+    "c": "Settings"
+  },
+  "249219a6f40ac113": "Changes are saved automatically.",
+  "f0cf73dca93a0a97": {
+    "t": "h2",
+    "i": 1,
+    "c": "Cart"
+  },
+  "95740571c1dcbdd5": [
+    "Hi ",
+    {
+      "i": 1,
+      "k": "_gt_value_1",
+      "v": "v"
+    },
+    ", ",
+    {
+      "t": "b",
+      "i": 2,
+      "c": "welcome back"
+    },
+    "! Check out",
+    " ",
+    {
+      "t": "a",
+      "i": 3,
+      "c": [
+        "today's ",
+        {
+          "t": "em",
+          "i": 4,
+          "c": "deals"
+        }
+      ]
+    },
+    "."
+  ],
+  "b0717a26ba687fd1": [
+    "Your cart has ",
+    {
+      "i": 1,
+      "k": "_gt_n_1",
+      "v": "n"
+    },
+    " items totaling",
+    " ",
+    {
+      "i": 2,
+      "k": "_gt_cost_2",
+      "v": "c"
+    },
+    "."
+  ],
+  "7a94e62ddf761bf9": {
+    "t": "Plural",
+    "i": 1,
+    "d": {
+      "b": {
+        "one": {
+          "t": "C2",
+          "i": 2,
+          "c": [
+            "You have ",
+            {
+              "i": 3,
+              "k": "_gt_n_3",
+              "v": "n"
+            },
+            " item in your cart."
+          ]
+        },
+        "other": {
+          "t": "C2",
+          "i": 2,
+          "c": [
+            "You have ",
+            {
+              "i": 3,
+              "k": "_gt_n_3",
+              "v": "n"
+            },
+            " items in your cart."
+          ]
+        }
+      },
+      "t": "p"
+    }
+  },
+  "03ac2a0cebc8841a": [
+    "Estimated delivery: ",
+    {
+      "i": 1,
+      "k": "_gt_date_1",
+      "v": "d"
+    }
+  ],
+  "a8da5a187a382177": [
+    "Promo code ",
+    {
+      "i": 1,
+      "k": "code",
+      "v": "v"
+    },
+    " saves you",
+    " ",
+    {
+      "i": 2,
+      "k": "_gt_cost_2",
+      "v": "c"
+    },
+    " on this order."
+  ],
+  "1495d7bdb3df9600": {
+    "t": "Branch",
+    "i": 1,
+    "d": {
+      "b": {
+        "pending": {
+          "t": "p",
+          "i": 2,
+          "c": [
+            "Your order is ",
+            {
+              "t": "strong",
+              "i": 3,
+              "c": "pending"
+            },
+            "."
+          ]
+        },
+        "shipped": {
+          "t": "p",
+          "i": 2,
+          "c": [
+            "Your order has ",
+            {
+              "t": "strong",
+              "i": 3,
+              "c": "shipped"
+            },
+            "!"
+          ]
+        }
+      },
+      "t": "b"
+    },
+    "c": {
+      "t": "p",
+      "i": 2,
+      "c": "We are checking the status of your order."
+    }
+  },
+  "ed183e39532cd793": "Remove",
+  "66bb6ae37d74db50": "Proceed to checkout",
+  "619a8db474acd4fd": "Continue shopping",
+  "a10b666b99e5cbd3": "Signed in as {_gt_1, select, other {}}",
+  "39959a3829477f74": "Good to see you, there!",
+  "47efa82426cfae24": "Good to see you, {_gt_1, select, other {} _gt_var_name {username}}!",
+  "4e242a20613f72f6": "You are on the Team plan",
+  "b4791b20bdc34eba": "You are on the Pro plan",
+  "244a55b2d97e54a3": "You are on the Free plan",
+  "454c39b739038471": [
+    "Your ",
+    {
+      "t": "Derive",
+      "i": 1,
+      "c": "admin"
+    },
+    " dashboard is ready."
+  ],
+  "5d8981b5c0f0c9f0": [
+    "Your ",
+    {
+      "t": "Derive",
+      "i": 1,
+      "c": "member"
+    },
+    " dashboard is ready."
+  ],
+  "6df57099a35b36bb": "Search products",
+  "4681c4c9541539a4": "Sign in",
+  "53223d6dc71cbbac": "Free shipping on all orders over $50",
+  "66a6905db9c3ad9b": "You have {count, plural, one {# new notification} other {# new notifications}}",
+  "8732b45d6a9de0b3": "{name} commented on your post",
+  "8ee56e8868ed1a21": "{gender, select, female {She} male {He} other {They}} liked your photo",
+  "f9bb05030fd9e2ec": "This is your {place, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} order with us",
+  "f4a2003d0d205248": "{count, plural, =0 {No unread messages} one {One unread message} other {# unread messages}}",
+  "30e543e2f17f02a0": "Your balance is {amount, number, ::currency/USD}",
+  "ba8daa74a1c6bdc5": "Last login: {when, date, medium}",
+  "37643cc0e5584808": "Order shipped at {time, time, short}",
+  "ab2fc4dec0d71762": "You are using {usage, number, percent} of your storage",
+  "87ad24956d2ad354": "{days, plural, one {# day} other {# days}} left in your free trial",
+  "b78a7929feb88b2c": "Mark all as read",
+  "2ecf88ef9e8e4259": "Home",
+  "e4d2a41d27c49ad0": "Shop",
+  "64e9647d8379767b": "Orders",
+  "0df20c4461cf42ab": "Help center",
+  "273902a55b863099": "Out of stock",
+  "2548ab3bd542bc7e": "Almost gone",
+  "e96c0a48cc8b47f2": "Your orders",
+  "434a14a0bd17690c": "Order #{orderId}",
+  "11d78c9b26584682": "Placed on {date, date, long}",
+  "f5683e647a65e15c": "{count, plural, one {# item} other {# items}}",
+  "db2f6b2dfab743e3": "Track package",
+  "5934b492bf309802": [
+    "Need help with an order? ",
+    {
+      "t": "a",
+      "i": 1,
+      "c": "Contact support"
+    },
+    " and we will get back to you within ",
+    {
+      "i": 2,
+      "k": "_gt_n_2",
+      "v": "n"
+    },
+    " hours."
+  ]
+}
