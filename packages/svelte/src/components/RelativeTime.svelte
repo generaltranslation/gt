@@ -18,26 +18,30 @@
   import { getFormatLocales } from '../runtime/format';
   import { useContentLocale } from '../runtime/source';
 
-  let {
-    value,
-    unit,
-    baseDate,
-    options = {},
-  }: {
-    value?: Date | number | null | undefined;
+  type Props = {
     /**
      * The value as a single `{expression}` child, as in gt-react. The
      * gt-svelte preprocessor passes it as `value`.
      */
     children?: Snippet;
-    /** Unit for a numeric `value`. */
-    unit?: Intl.RelativeTimeFormatUnit;
     /** Date to measure from. Defaults to now. */
     baseDate?: Date;
     options?: Intl.RelativeTimeFormatOptions;
     /** Name shown to translators. Must be a static string. */
     name?: string;
-  } = $props();
+  } & (
+    | {
+        value?: Date | number | null | undefined;
+        /** Unit for a numeric `value`. */
+        unit: Intl.RelativeTimeFormatUnit;
+      }
+    | {
+        value?: Date | null | undefined;
+        unit?: Intl.RelativeTimeFormatUnit;
+      }
+  );
+
+  let { value, unit, baseDate, options = {} }: Props = $props();
 
   const contentLocale = useContentLocale();
   const formatted = $derived.by(() => {

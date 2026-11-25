@@ -10,8 +10,7 @@ import type { Snippet } from 'svelte';
 
 /** Everything `GtNodes` needs to resolve target nodes to source snippets. */
 export type RenderContext = {
-  /** Props passed to `<T>`, including the generated snippets. */
-  snippets: Record<string, unknown>;
+  snippets: GeneratedSnippets;
   meta: GTRuntimeMetadata;
   /** Locales used to pick plural forms: the active locale, then the default. */
   locales: string[];
@@ -20,6 +19,14 @@ export type RenderContext = {
 export type ElementSnippet = Snippet<[Snippet, JsxElement['d']]>;
 export type VariableSnippet = Snippet<[]>;
 export type BranchSnippet = Snippet<[Snippet<[unknown]>]>;
+
+/** The snippet props the preprocessor generates for `<T>` children. */
+export type GeneratedSnippets = {
+  [element: `${typeof ELEMENT_PREFIX}${string}`]:
+    | ElementSnippet
+    | BranchSnippet;
+  [variable: `${typeof VARIABLE_PREFIX}${string}`]: VariableSnippet;
+};
 
 export type RenderItem =
   | { kind: 'text'; key: string; text: string }
@@ -78,7 +85,7 @@ export function toRenderItems(
         items.push({
           kind: 'variable',
           key: uniqueKey(`v${resolved.scopedId}`),
-          snippet: resolved.snippet as VariableSnippet,
+          snippet: resolved.snippet,
         });
       }
       return;
@@ -87,11 +94,11 @@ export function toRenderItems(
     const resolved = resolve(ELEMENT_PREFIX, node.i, scopes, context);
     if (!resolved) return;
     const key = uniqueKey(`e${resolved.scopedId}`);
-    if (context.meta.b?.[resolved.scopedId]) {
+    if (isBranchSnippet(resolved.snippet, resolved.scopedId, context)) {
       items.push({
         kind: 'branch',
         key,
-        snippet: resolved.snippet as BranchSnippet,
+        snippet: resolved.snippet,
         node,
         scopes,
         scopedId: resolved.scopedId,
@@ -100,7 +107,7 @@ export function toRenderItems(
       items.push({
         kind: 'element',
         key,
-        snippet: resolved.snippet as ElementSnippet,
+        snippet: resolved.snippet,
         node,
       });
     }
@@ -268,13 +275,27 @@ function pickBranch(value: unknown, branches: string[]): string | undefined {
   return branches.includes('other') ? 'other' : undefined;
 }
 
+function isBranchSnippet(
+  snippet: ElementSnippet | BranchSnippet,
+  scopedId: string,
+  context: RenderContext
+): snippet is BranchSnippet {
+  return context.meta.b?.[scopedId] !== undefined;
+}
+
 /** Finds the snippet of the source element or variable with this id. */
-function resolve(
-  prefix: string,
+function resolve<Prefix extends typeof ELEMENT_PREFIX | typeof VARIABLE_PREFIX>(
+  prefix: Prefix,
   id: number | undefined,
   scopes: string[],
   context: RenderContext
-): { snippet: unknown; scope: string; scopedId: string } | undefined {
+):
+  | {
+      snippet: GeneratedSnippets[`${Prefix}${string}`];
+      scope: string;
+      scopedId: string;
+    }
+  | undefined {
   if (typeof id !== 'number') return undefined;
   for (const scope of scopes) {
     const snippet = context.snippets[`${prefix}${scope}${id}`];
