@@ -31,6 +31,8 @@ type GTContextType = {
   onMissingTranslation?: OnMissingTranslation;
 };
 
+export type TranslationsSnapshot = GTContextType['translationsSnapshot'];
+
 const gtContextSingleton = createGlobalSingleton<
   Context<GTContextType | undefined>
 >({
@@ -52,6 +54,47 @@ export function getGTContext(): Context<GTContextType | undefined> {
     gtContextSingleton.set(createContext<GTContextType | undefined>(undefined));
   }
   return gtContextSingleton.get();
+}
+
+const seededTranslationsContextSingleton = createGlobalSingleton<
+  Context<TranslationsSnapshot | undefined>
+>({
+  namespace: 'reactCore',
+  key: 'seededTranslationsContext',
+  notInitialized: () =>
+    createDiagnosticMessage({
+      source: '@generaltranslation/react-core',
+      severity: 'Error',
+      whatHappened:
+        'Cannot read the seeded translations context before it has been initialized',
+      why: 'the internal seeded translations context singleton is unavailable',
+    }),
+});
+
+/**
+ * The translations that InternalTranslationsSeed elements above hold, which a
+ * provider below them adds under its own.
+ */
+export function getSeededTranslationsContext(): Context<
+  TranslationsSnapshot | undefined
+> {
+  if (!seededTranslationsContextSingleton.isInitialized()) {
+    seededTranslationsContextSingleton.set(
+      createContext<TranslationsSnapshot | undefined>(undefined)
+    );
+  }
+  return seededTranslationsContextSingleton.get();
+}
+
+export function mergeTranslations(
+  base: TranslationsSnapshot,
+  layer: TranslationsSnapshot
+): TranslationsSnapshot {
+  const merged = { ...base };
+  for (const locale in layer) {
+    merged[locale] = { ...base[locale], ...layer[locale] };
+  }
+  return merged;
 }
 
 export function useGTContext(): GTContextType | undefined {

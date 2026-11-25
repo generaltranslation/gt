@@ -1,8 +1,12 @@
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useContext, useEffect, useMemo, type ReactNode } from 'react';
 import { I18nStore } from '../i18n-store/I18nStore';
 import type { Locale, Hash } from 'gt-i18n/internal';
 import type { Content } from '@generaltranslation/format';
-import { getGTContext } from './context';
+import {
+  getGTContext,
+  getSeededTranslationsContext,
+  mergeTranslations,
+} from './context';
 import type { OnMissingTranslation } from '../hooks/utils/missing-translation';
 
 export type InternalGTProviderProps = {
@@ -22,6 +26,7 @@ export type InternalGTProviderProps = {
 
 // ===== Component ===== //
 const GTContext = getGTContext();
+const SeededTranslationsContext = getSeededTranslationsContext();
 /**
  * - Shared provider logic btwn client and server providers
  * - This is not userfacing, it should be wrapped in a userfacing provider with runtime-specific logic
@@ -42,9 +47,17 @@ export function InternalGTProvider({
   i18nStore,
   onMissingTranslation,
 }: InternalGTProviderProps) {
+  const seededTranslations = useContext(SeededTranslationsContext);
+  const translationsSnapshot = useMemo(
+    () =>
+      seededTranslations
+        ? mergeTranslations(seededTranslations, translations)
+        : translations,
+    [seededTranslations, translations]
+  );
   const value = useMemo(
     () => ({
-      translationsSnapshot: translations,
+      translationsSnapshot,
       i18nStore,
       locale,
       region,
@@ -55,7 +68,7 @@ export function InternalGTProvider({
       onMissingTranslation,
     }),
     [
-      translations,
+      translationsSnapshot,
       i18nStore,
       locale,
       region,
@@ -69,8 +82,8 @@ export function InternalGTProvider({
 
   // Update cache with data from server, do not emit events
   useEffect(() => {
-    i18nStore.updateTranslations(translations);
-  }, [translations, i18nStore]);
+    i18nStore.updateTranslations(translationsSnapshot);
+  }, [translationsSnapshot, i18nStore]);
 
   return <GTContext.Provider value={value}>{children}</GTContext.Provider>;
 }

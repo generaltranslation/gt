@@ -1,4 +1,5 @@
 use crate::logging::LogLevel;
+use crate::page_segment::PageSegmentsConfig;
 use serde::Deserialize;
 
 // For plugin configuration and settings
@@ -42,6 +43,8 @@ pub struct PluginConfig {
   pub disable_build_checks: bool,
   #[serde(default)]
   pub autoderive_jsx: bool,
+  #[serde(default)]
+  pub page_segments: Option<PageSegmentsConfig>,
 }
 
 impl Default for PluginConfig {
@@ -52,6 +55,7 @@ impl Default for PluginConfig {
       filename: None,
       disable_build_checks: false,
       autoderive_jsx: false,
+      page_segments: None,
     }
   }
 }

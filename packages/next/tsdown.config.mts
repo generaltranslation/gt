@@ -29,6 +29,8 @@ const esmDeclarationStubsPlugin = createEsmDeclarationStubsPlugin(
     'internal/_load-dictionary',
     'internal/_getLocale',
     'internal/_getRegion',
+    'internal/_segment',
+    'internal/_segment.rsc',
   ],
   {
     // `export *` skips default, and re-exporting the CJS module's default would

@@ -14,6 +14,14 @@ export function getLocale(): Promise<string> {
   return getAsyncConditionStore().getLocale();
 }
 
+/**
+ * Whether this render has a request to take the locale from: false when
+ * Next.js renders a page statically with the default getLocale.
+ */
+export function hasRequestLocale(): Promise<boolean> {
+  return getAsyncConditionStore().hasRequestLocale();
+}
+
 export function useLocale() {
   return use(getLocale());
 }

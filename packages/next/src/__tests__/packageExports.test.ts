@@ -238,6 +238,7 @@ describe('gt-next package exports', () => {
       './internal/_load-dictionary',
       './internal/_getLocale',
       './internal/_getRegion',
+      './internal/_segment',
     ]);
   });
 

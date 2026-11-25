@@ -1,0 +1,10 @@
+[
+  ["app/page", "app/page"],
+  ["app/(shop)/cart/page", "app/%28shop%29/cart/page"],
+  ["app/item/[id]/page", "app/item/%5Bid%5D/page"],
+  ["app/docs/[...slug]/page", "app/docs/%5B...slug%5D/page"],
+  ["app/dash/@panel/page", "app/dash/%40panel/page"],
+  ["app/café/page", "app/caf%C3%A9/page"],
+  ["app/my orders/page", "app/my%20orders/page"],
+  ["app/it's \"x\"/page", "app/it%27s%20%22x%22/page"]
+]

@@ -13,18 +13,27 @@ const {
   mockGetI18nConfig,
   mockGetEnableI18n,
   mockGetLocale,
+  mockHasRequestLocale,
   mockGetRegion,
   mockLoadTranslations,
   mockClientGTProvider,
+  mockClientTranslationsSeed,
+  mockGetLookupTranslation,
   mockPlaceholder,
 } = vi.hoisted(() => ({
-  mockPlaceholder: { filled: '__gt_next_server_only_hashes_q7Zk2W__[]' },
+  mockPlaceholder: {
+    filled: '__gt_next_server_only_hashes_q7Zk2W__[]',
+    pages: '__gt_next_page_hashes_q7Zk2W__[]',
+  },
   mockGetI18nConfig: vi.fn(),
   mockGetEnableI18n: vi.fn(),
   mockGetLocale: vi.fn(),
+  mockHasRequestLocale: vi.fn(),
   mockGetRegion: vi.fn(),
   mockLoadTranslations: vi.fn(),
   mockClientGTProvider: vi.fn(),
+  mockClientTranslationsSeed: vi.fn(),
+  mockGetLookupTranslation: vi.fn(),
 }));
 
 vi.mock('gt-i18n/internal', () => ({
@@ -33,6 +42,7 @@ vi.mock('gt-i18n/internal', () => ({
 
 vi.mock('../../request/getLocale', () => ({
   getLocale: mockGetLocale,
+  hasRequestLocale: mockHasRequestLocale,
 }));
 
 vi.mock('../../request/getEnableI18n', () => ({
@@ -46,17 +56,23 @@ vi.mock('../../request/getRegion', () => ({
 vi.mock('@generaltranslation/react-core/pure', () => ({
   getReactI18nCache: () => ({
     loadTranslations: mockLoadTranslations,
+    getLookupTranslation: mockGetLookupTranslation,
   }),
 }));
 
 vi.mock('../../utils/client-boundary', () => ({
   Client_GTProvider: mockClientGTProvider,
+  Client_TranslationsSeed: mockClientTranslationsSeed,
 }));
 
 // The literal as a build with experimentalSplitTranslations leaves it.
-vi.mock('../serverOnlyHashesPlaceholder', () => ({
+vi.mock('../splitTranslationsPlaceholders', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
   get SERVER_ONLY_HASHES_PLACEHOLDER() {
     return mockPlaceholder.filled;
+  },
+  get PAGE_HASHES_PLACEHOLDER() {
+    return mockPlaceholder.pages;
   },
 }));
 
@@ -157,10 +173,10 @@ describe('GTProvider', () => {
     mockGetRegion.mockResolvedValue('US');
     mockGetEnableI18n.mockResolvedValue(false);
     const getClientTranslations = vi.fn();
-    vi.doMock('../serverOnlyHashes', () => ({ getClientTranslations }));
+    vi.doMock('../splitTranslations', () => ({ getClientTranslations }));
     vi.resetModules();
     onTestFinished(() => {
-      vi.doUnmock('../serverOnlyHashes');
+      vi.doUnmock('../splitTranslations');
       vi.resetModules();
     });
 
@@ -185,6 +201,191 @@ describe('GTProvider', () => {
           en: {},
         },
       },
+    });
+  });
+});
+
+describe('split by page', () => {
+  const catalog = {
+    '1111111111111111': 'Serveur',
+    '2222222222222222': 'Racine',
+    '4444444444444444': 'Commandes',
+    '5555555555555555': 'Commandes aussi',
+    '6666666666666666': 'Panier',
+  };
+  // The lookup of the I18nCache, which reads the catalog without a copy.
+  const lookup = (_content: unknown, options: { $_hash: string }) =>
+    catalog[options.$_hash as keyof typeof catalog];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPlaceholder.filled =
+      '__gt_next_server_only_hashes_q7Zk2W__[1111111111111111]';
+    mockPlaceholder.pages =
+      '__gt_next_page_hashes_q7Zk2W__[app/%28shop%29/cart/page:6666666666666666;app/orders/page:4444444444444444,5555555555555555,7777777777777777]';
+    vi.resetModules();
+    mockGetLocale.mockResolvedValue('fr');
+    mockHasRequestLocale.mockResolvedValue(true);
+    mockGetRegion.mockResolvedValue(undefined);
+    mockGetEnableI18n.mockResolvedValue(true);
+    mockLoadTranslations.mockImplementation(async () => ({ ...catalog }));
+    mockGetLookupTranslation.mockResolvedValue(lookup);
+    mockGetI18nConfig.mockReturnValue({
+      requiresTranslation: vi.fn().mockReturnValue(true),
+    });
+  });
+  afterEach(() => {
+    mockPlaceholder.filled = '__gt_next_server_only_hashes_q7Zk2W__[]';
+    mockPlaceholder.pages = '__gt_next_page_hashes_q7Zk2W__[]';
+    vi.resetModules();
+  });
+
+  it('seeds a page with the translations the build placed with it', async () => {
+    const { GtSegment } = await import('../GtSegment');
+
+    const element = await GtSegment({
+      id: 'gt-next-page:app/orders/page',
+      children: 'page',
+    });
+
+    expect(element).toMatchObject({
+      type: mockClientTranslationsSeed,
+      props: {
+        children: 'page',
+        translations: {
+          fr: {
+            '4444444444444444': 'Commandes',
+            '5555555555555555': 'Commandes aussi',
+          },
+        },
+      },
+    });
+    expect(mockGetLookupTranslation).toHaveBeenCalledWith('fr');
+    expect(mockLoadTranslations).not.toHaveBeenCalled();
+  });
+
+  it('seeds a page rendered without a request in every locale that needs translation', async () => {
+    mockHasRequestLocale.mockResolvedValue(false);
+    mockGetI18nConfig.mockReturnValue({
+      getLocales: () => ['en', 'fr', 'zh', 'de'],
+      requiresTranslation: ({ locale }: { locale: string }) => locale !== 'en',
+    });
+    const zhCatalog: Record<string, string> = {
+      '4444444444444444': '订单',
+      '5555555555555555': '订单也是',
+    };
+    mockGetLookupTranslation.mockImplementation(async (locale: string) =>
+      locale === 'fr'
+        ? lookup
+        : locale === 'zh'
+          ? (_content: unknown, options: { $_hash: string }) =>
+              zhCatalog[options.$_hash]
+          : // The catalog of de failed to load
+            (content: unknown) => content
+    );
+    const { GtSegment } = await import('../GtSegment');
+
+    const element = await GtSegment({
+      id: 'gt-next-page:app/orders/page',
+      children: 'page',
+    });
+
+    expect(element.props.translations).toEqual({
+      fr: {
+        '4444444444444444': 'Commandes',
+        '5555555555555555': 'Commandes aussi',
+      },
+      zh: zhCatalog,
+      de: {},
+    });
+    expect(mockGetLookupTranslation.mock.calls).toEqual([
+      ['fr'],
+      ['zh'],
+      ['de'],
+    ]);
+    expect(mockGetLocale).not.toHaveBeenCalled();
+  });
+
+  it('renders a page the build placed nothing with alone', async () => {
+    const { GtSegment } = await import('../GtSegment');
+
+    expect(
+      await GtSegment({ id: 'gt-next-page:app/page', children: 'page' })
+    ).toBe('page');
+    expect(mockGetLookupTranslation).not.toHaveBeenCalled();
+  });
+
+  it('seeds a page in a locale that needs no translation, so a locale change keeps it mounted', async () => {
+    const { GtSegment } = await import('../GtSegment');
+    const render = () =>
+      GtSegment({ id: 'gt-next-page:app/orders/page', children: 'page' });
+    const translated = await render();
+    mockGetLocale.mockResolvedValue('en');
+    mockGetI18nConfig.mockReturnValue({
+      requiresTranslation: vi.fn().mockReturnValue(false),
+    });
+
+    const untranslated = await render();
+
+    expect([translated.type, untranslated.type]).toEqual([
+      mockClientTranslationsSeed,
+      mockClientTranslationsSeed,
+    ]);
+    expect(untranslated.props).toEqual({ children: 'page', translations: {} });
+    expect(mockGetLookupTranslation).toHaveBeenCalledTimes(1);
+  });
+
+  it('seeds nothing that a catalog which failed to load resolves to', async () => {
+    mockGetLookupTranslation.mockResolvedValue((content: unknown) => content);
+    const { GtSegment } = await import('../GtSegment');
+
+    const element = await GtSegment({
+      id: 'gt-next-page:app/orders/page',
+      children: 'page',
+    });
+
+    expect(element.props.translations).toEqual({ fr: {} });
+  });
+
+  it('seeds a translation whose text is its hash', async () => {
+    mockGetLookupTranslation.mockResolvedValue(
+      (_content: unknown, options: { $_hash: string }) => options.$_hash
+    );
+    const { GtSegment } = await import('../GtSegment');
+
+    const element = await GtSegment({
+      id: 'gt-next-page:app/orders/page',
+      children: 'page',
+    });
+
+    expect(element.props.translations).toEqual({
+      fr: {
+        '4444444444444444': '4444444444444444',
+        '5555555555555555': '5555555555555555',
+        '7777777777777777': '7777777777777777',
+      },
+    });
+  });
+
+  it('sends with the root and the seeds every translation it sent before', async () => {
+    const { getGTProviderProps } = await import('../GTProvider');
+    const { GtSegment } = await import('../GtSegment');
+
+    const root = (await getGTProviderProps('fr')).translations.fr;
+    const seeds = await Promise.all(
+      ['app/orders/page', 'app/%28shop%29/cart/page'].map(
+        async (page) =>
+          (await GtSegment({ id: `gt-next-page:${page}` })).props.translations
+            .fr
+      )
+    );
+
+    expect(root).toEqual({ '2222222222222222': 'Racine' });
+    expect(Object.assign({}, root, ...seeds)).toEqual({
+      '2222222222222222': 'Racine',
+      '4444444444444444': 'Commandes',
+      '5555555555555555': 'Commandes aussi',
+      '6666666666666666': 'Panier',
     });
   });
 });

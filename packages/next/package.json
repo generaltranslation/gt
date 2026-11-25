@@ -239,6 +239,26 @@
         "types": "./dist/internal/_getRegion.d.ts",
         "default": "./dist/internal/_getRegion.js"
       }
+    },
+    "./internal/_segment": {
+      "react-server": {
+        "import": {
+          "types": "./dist/internal/_segment.rsc.d.mts",
+          "default": "./dist/internal/_segment.rsc.mjs"
+        },
+        "default": {
+          "types": "./dist/internal/_segment.rsc.d.ts",
+          "default": "./dist/internal/_segment.rsc.js"
+        }
+      },
+      "import": {
+        "types": "./dist/internal/_segment.d.mts",
+        "default": "./dist/internal/_segment.mjs"
+      },
+      "default": {
+        "types": "./dist/internal/_segment.d.ts",
+        "default": "./dist/internal/_segment.js"
+      }
     }
   },
   "keywords": [

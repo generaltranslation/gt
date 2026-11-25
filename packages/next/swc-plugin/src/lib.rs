@@ -304,6 +304,13 @@ pub fn process_transform(program: Program, metadata: TransformPluginProgramMetad
 
   let mut program = program;
 
+  page_segment::transform(
+    &mut program,
+    config.page_segments.as_ref(),
+    filename.as_deref(),
+    metadata.get_context(&TransformPluginMetadataContextKind::Cwd).as_deref(),
+  );
+
   if !config.compile_time_hash {
     return program;
   }
@@ -341,5 +348,6 @@ pub mod ast;
 pub mod config;
 pub mod hash;
 pub mod logging;
+pub mod page_segment;
 pub mod visitor;
 pub mod whitespace;
