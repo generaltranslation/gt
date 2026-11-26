@@ -362,4 +362,50 @@ describe('captureExistingTranslations', () => {
       },
     ]);
   });
+
+  test('counts a save as confirmed when General Translation reports its locale under another spelling', async () => {
+    // The upload route answers with the project's own locale, such as `ja`
+    // for a translation sent as `ja-JP`.
+    downloadFileBatch.mockResolvedValue({
+      files: [seedFile('a', 'rev-a')],
+      count: 1,
+    });
+    collectExistingTranslations.mockResolvedValue(
+      new Map([
+        [
+          'a',
+          [
+            {
+              locale: 'ja-JP',
+              content: '<html></html>',
+              document: { id: 'a-ja', type: 'page' },
+            },
+            {
+              locale: 'es-ES',
+              content: '<html></html>',
+              document: { id: 'a-es', type: 'page' },
+            },
+          ],
+        ],
+      ])
+    );
+    uploadTranslations.mockResolvedValue({
+      uploadedFiles: [
+        { fileId: 'a', locale: 'ja' },
+        { fileId: 'a', locale: 'es-ES' },
+      ],
+    });
+
+    const result = await run([doc('a', 'rev-1')], ['ja-JP', 'es-ES']);
+
+    expect(result).toMatchObject({
+      capturedCount: 2,
+      documentCount: 1,
+      unconfirmedCount: 0,
+    });
+    expect(result.saved.map(({ language }) => language)).toEqual([
+      'ja-JP',
+      'es-ES',
+    ]);
+  });
 });
