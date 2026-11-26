@@ -12,6 +12,7 @@ import {
 import {
   formatMessageTree as _formatMessageTree,
   type FormatMessageTreeOptions,
+  type MessagePlainValue,
   type MessageTree,
   type MessageValues,
 } from '@generaltranslation/icu';
@@ -38,6 +39,11 @@ type Options<
   Index extends number,
   Keys extends keyof Parameters<Formatter>[Index] = never,
 > = WithOptional<Parameters<Formatter>[Index], Keys | 'locales'>;
+
+type MessageTreeOptions<Values> = Partial<FormatMessageTreeOptions> & {
+  locales?: string | string[];
+  values?: Values;
+};
 
 const withLocales = <Given extends { locales?: string | string[] }>(
   options: Given | undefined
@@ -243,20 +249,34 @@ export function formatMessage(
  * Formats a message tree according to the specified locales and options.
  *
  * @param {MessageTree} tree - The message tree to format.
- * @param {string | string[]} [locales] - The locales to use for formatting.
- * @param {Object} [values] - The values of the tree's variables.
- * @param {Object} [options] - What the tree is formatted with. The
- * `timeZone` of its dates and times defaults to the host's.
- * @returns The formatted message: a string, or the parts around rich values.
+ * @param {Object} [options] - `locales`, the `values` of the tree's
+ * variables and its `formats`. The `timeZone` of its dates and times
+ * defaults to the host's.
+ * @returns The formatted message: a string from plain values.
  */
 export function formatMessageTree(
   tree: MessageTree,
-  locales: string | string[] = defaultDefaultLocale,
-  values: MessageValues<unknown> = {},
-  options?: Partial<FormatMessageTreeOptions>
+  options?: MessageTreeOptions<Readonly<Record<string, MessagePlainValue>>>
+): string;
+/**
+ * With rich values or tag formatters, the result is a string, a rich value,
+ * a function given for a plain placeholder, or the parts around them.
+ */
+export function formatMessageTree(
+  tree: MessageTree,
+  options: MessageTreeOptions<MessageValues<unknown>>
+): unknown;
+export function formatMessageTree(
+  tree: MessageTree,
+  options?: MessageTreeOptions<MessageValues<unknown>>
 ): unknown {
-  return _formatMessageTree<unknown>(tree, locales, values, {
-    formats: options?.formats ?? {},
-    timeZone: options?.timeZone ?? hostTimeZone(),
-  });
+  return _formatMessageTree<unknown>(
+    tree,
+    options?.locales ?? defaultDefaultLocale,
+    options?.values ?? {},
+    {
+      formats: options?.formats ?? {},
+      timeZone: options?.timeZone ?? hostTimeZone(),
+    }
+  );
 }

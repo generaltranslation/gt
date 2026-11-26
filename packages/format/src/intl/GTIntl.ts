@@ -10,6 +10,7 @@ import {
 import {
   formatMessageTree,
   type FormatMessageTreeOptions,
+  type MessagePlainValue,
   type MessageTree,
   type MessageValues,
 } from '@generaltranslation/icu';
@@ -56,6 +57,12 @@ type WithLocales<T = object> = T &
   LocaleOption & {
     locales?: string | string[];
   };
+
+type MessageTreeOptions<Values> = WithLocales<{
+  values: Values;
+  formats: FormatMessageTreeOptions['formats'];
+  timeZone?: string;
+}>;
 
 function getCustomRegionMapping(
   customMapping: NonNullable<LocaleConfig['customMapping']>
@@ -350,15 +357,24 @@ export class GTIntl {
 
   /**
    * Formats a message tree in this instance's locales and time zone, so a
-   * caller passes neither unless it overrides them.
+   * caller passes neither unless it overrides them. Plain values give a
+   * string.
    */
   formatMessageTree(
     tree: MessageTree,
-    options: WithLocales<{
-      values: MessageValues<unknown>;
-      formats: FormatMessageTreeOptions['formats'];
-      timeZone?: string;
-    }>
+    options: MessageTreeOptions<Readonly<Record<string, MessagePlainValue>>>
+  ): string;
+  /**
+   * With rich values or tag formatters, the result is a string, a rich value,
+   * a function given for a plain placeholder, or the parts around them.
+   */
+  formatMessageTree(
+    tree: MessageTree,
+    options: MessageTreeOptions<MessageValues<unknown>>
+  ): unknown;
+  formatMessageTree(
+    tree: MessageTree,
+    options: MessageTreeOptions<MessageValues<unknown>>
   ): unknown {
     const {
       locale,

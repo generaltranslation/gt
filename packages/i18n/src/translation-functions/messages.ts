@@ -72,27 +72,28 @@ const invalidMsgError = createGtI18nDiagnostic({
   fix: 'Pass a string, or the object msg() returned with its fields unchanged',
 });
 
-/** Renders a tree in the library default locale. */
+/**
+ * Renders a tree in the default locale: the config's, or the library's in
+ * code paths without i18n, which may never initialize a config.
+ */
 function formatSource(
   tree: MessageTree,
   values: Record<string, unknown>,
   formats: MessageFormats,
   maxChars: number | undefined
 ): string {
-  // Code paths without i18n may never initialize the config.
-  const formatted = isI18nConfigInitialized()
-    ? getI18nConfig().formatMessageTree(tree, {
-        locales: defaultDefaultLocale,
-        values,
-        formats,
-      })
-    : formatMessageTree(tree, defaultDefaultLocale, values, { formats });
+  const config = isI18nConfigInitialized() ? getI18nConfig() : undefined;
+  const locale = config?.getDefaultLocale() ?? defaultDefaultLocale;
+  const formatted = config
+    ? config.formatMessageTree(tree, { locale, values, formats })
+    : formatMessageTree(tree, { locales: locale, values, formats });
   const output = Array.isArray(formatted)
     ? formatted.join('')
     : String(formatted);
-  return maxChars == null
-    ? output
-    : formatCutoff(output, { locales: defaultDefaultLocale, maxChars });
+  if (maxChars == null) return output;
+  return config
+    ? config.formatCutoff(output, { locale, maxChars })
+    : formatCutoff(output, { locales: locale, maxChars });
 }
 
 /** Creates an m that renders like the GT createGT returns for `params`. */
@@ -124,8 +125,8 @@ export async function getMessages(
 }
 
 /**
- * An m that never translates: it renders the source in the library default
- * locale, for code paths without i18n.
+ * An m that never translates: it renders the source in the default locale,
+ * which is the library's in code paths without i18n.
  *
  * @example
  * function label(m: M = mFallback) {

@@ -99,19 +99,15 @@ describe('what a caller leaves out', () => {
   });
 
   it('formats a message tree', () => {
-    expect(formatMessageTree([['n', 'number']], undefined, { n: 1234.5 })).toBe(
-      '1,234.5'
-    );
-    const at = [['at', 'time', 'short']] as const;
     expect(
-      formatMessageTree(
-        [...at],
-        'en-US',
-        { at: date },
-        { timeZone: 'Asia/Tokyo' }
-      )
+      formatMessageTree([['n', 'number']], { values: { n: 1234.5 } })
+    ).toBe('1,234.5');
+    const at = [['at', 'time', 'short']] as const;
+    const options = { locales: 'en-US', values: { at: date } };
+    expect(
+      formatMessageTree([...at], { ...options, timeZone: 'Asia/Tokyo' })
     ).toBe('11:03 PM');
-    expect(formatMessageTree([...at], 'en-US', { at: date })).toBe(
+    expect(formatMessageTree([...at], options)).toBe(
       new Intl.DateTimeFormat('en-US', { timeStyle: 'short' }).format(date)
     );
   });
