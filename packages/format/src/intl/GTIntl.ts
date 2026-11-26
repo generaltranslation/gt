@@ -343,15 +343,22 @@ export class GTIntl {
     options: WithLocales<{
       variables?: FormatVariables;
       dataFormat?: StringFormat;
+      timeZone?: string;
     }> = {}
   ) {
-    const { locale, locales, variables, dataFormat } = options;
+    const {
+      locale,
+      locales,
+      variables,
+      dataFormat,
+      timeZone = this.timeZone,
+    } = options;
     if (dataFormat === 'STRING') return message;
     return formatIcu(
       message,
       this.getFormattingLocales(locale, locales),
       variables ?? {},
-      { timeZone: this.timeZone }
+      { timeZone }
     );
   }
 

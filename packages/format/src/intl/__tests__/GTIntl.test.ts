@@ -503,6 +503,12 @@ describe('GTIntl time zone', () => {
     expect(intl.formatMessage('{at, time, short}', { variables: { at } })).toBe(
       '11:03 PM'
     );
+    expect(
+      intl.formatMessage('{at, time, short}', {
+        variables: { at },
+        timeZone: 'UTC',
+      })
+    ).toBe('2:03 PM');
   });
 
   it('formats a message tree in its locales and time zone', () => {
