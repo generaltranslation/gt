@@ -1,6 +1,5 @@
-import { getPluralForm } from 'generaltranslation/internal';
 import { createDiagnosticMessage } from 'generaltranslation/diagnostics';
-import { getRuntimeEnvironment } from 'gt-i18n/internal';
+import { getI18nConfig, getRuntimeEnvironment } from 'gt-i18n/internal';
 
 // Branches are keyed as in stored content: `=0`, a plural category, a
 // `<Select>` value, or `other`. Stored content drops a branch whose content is
@@ -28,7 +27,11 @@ export function selectPluralKey(
   const keys = Object.keys(branches).filter(
     (key) => branches[key] !== undefined
   );
-  return getPluralForm(n, keys, locales, ordinal ? 'ordinal' : 'cardinal');
+  // The config reads a locale alias as its code, like its formatters.
+  return getI18nConfig().getPluralForm(n, keys, {
+    locales,
+    type: ordinal ? 'ordinal' : 'cardinal',
+  });
 }
 
 /** The key of the branch named by the value, then `other`. */

@@ -1,7 +1,9 @@
 import { render } from 'svelte/server';
 import { beforeEach, describe, expect, it } from 'vitest';
+import BarePlural from './fixtures/BarePlural.svelte';
 import Harness from './fixtures/Harness.svelte';
 import SourceFallback from './fixtures/SourceFallback.svelte';
+import { initializeGT } from '../src/runtime/config';
 import { hashesOf, setupGT, withoutComments } from './helpers';
 
 const [pluralHash, numHash] = hashesOf('SourceFallback.svelte');
@@ -53,6 +55,38 @@ describe('<T> source content in a translated locale', () => {
     expect(
       html({ component: SourceFallback, locale: 'fr', translations: {} })
     ).toContain('<p class="num">Total: 1,234.5</p>');
+  });
+
+  it('selects a plural in the code of a locale alias Intl cannot read', () => {
+    initializeGT({
+      defaultLocale: 'en',
+      locales: ['en', 'portal_uk', 'portal_fr'],
+      customMapping: {
+        portal_uk: { code: 'en-GB' },
+        portal_fr: { code: 'fr' },
+      },
+      loadTranslations: async () => ({}),
+    });
+    const uk = { props: { n: 1 }, locale: 'portal_uk', translations: {} };
+    expect(html({ component: SourceFallback, ...uk })).toContain(
+      '<p class="plural">one item</p>'
+    );
+    expect(html({ component: BarePlural, ...uk })).toBe('one item');
+    // French counts 0 as "one".
+    expect(
+      html({
+        component: SourceFallback,
+        props: { n: 0 },
+        locale: 'portal_fr',
+        translations: {
+          [pluralHash]: {
+            t: 'Plural',
+            i: 1,
+            d: { t: 'p', b: { one: 'un', other: 'plusieurs' } },
+          },
+        },
+      })
+    ).toContain('<p class="plural">un</p>');
   });
 
   it('formats translated variables in the active locale', () => {

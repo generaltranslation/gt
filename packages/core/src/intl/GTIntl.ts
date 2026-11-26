@@ -11,6 +11,7 @@ import {
   createDiagnosticMessage,
   formatDiagnosticErrorDetails,
 } from '../logging/diagnostics';
+import { selectPluralForm } from '../locales/getPluralForm';
 import { hostTimeZone } from '../utils/hostTimeZone';
 
 type LocaleOption = ConstructorParameters<typeof ResolvedGTIntl>[1];
@@ -18,6 +19,7 @@ type LocaleOption = ConstructorParameters<typeof ResolvedGTIntl>[1];
 type RelativeTimeFromDateOptions = Parameters<
   ResolvedGTIntl['formatRelativeTimeFromDate']
 >[1];
+type PluralRulesOptions = Parameters<ResolvedGTIntl['getPluralRules']>[0];
 
 // A config is built far more often than it names a new zone.
 const knownTimeZones = new Set<string>();
@@ -64,6 +66,19 @@ export class GTIntl extends ResolvedGTIntl {
       },
       options
     );
+  }
+
+  /**
+   * Picks a plural branch as ICU does, by the rules of the target locale:
+   * the exact key `=n`, then its plural category for `n`, then `other`.
+   * `type: 'ordinal'` picks among the categories of 1st, 2nd, 3rd.
+   */
+  getPluralForm(
+    n: number | bigint,
+    forms: readonly string[],
+    options?: PluralRulesOptions
+  ): string {
+    return selectPluralForm(n, forms, () => this.getPluralRules(options));
   }
 
   /** Compares the date with now when no `baseDate` is given. */

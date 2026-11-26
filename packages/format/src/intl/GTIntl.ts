@@ -233,6 +233,19 @@ export class GTIntl {
       : locales.map((code) => this.resolveCanonicalLocale(code));
   }
 
+  /**
+   * The plural rules of the target locale, which pick a plural or, with
+   * `type: 'ordinal'`, an ordinal branch.
+   */
+  getPluralRules(options: WithLocales<Intl.PluralRulesOptions> = {}) {
+    const { locale, locales, ...intlOptions } = options;
+    return intlCache.get(
+      'PluralRules',
+      this.getFormattingLocales(locale, locales),
+      intlOptions
+    );
+  }
+
   formatNum(
     value: number | bigint,
     options: WithLocales<Intl.NumberFormatOptions> = {}

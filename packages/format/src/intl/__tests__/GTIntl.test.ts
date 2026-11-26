@@ -530,6 +530,18 @@ describe('GTIntl time zone', () => {
     ).toBe('Hi Ada');
   });
 
+  it('gives the plural rules of the target locale, with an alias as its code', () => {
+    // French counts 0 as "one" and has no ordinal "two"; English is the reverse.
+    const intl = createIntl(
+      { customMapping: { brand: { code: 'fr' } } },
+      { locale: 'brand' }
+    );
+    expect(intl.getPluralRules().select(0)).toBe('one');
+    expect(intl.getPluralRules({ type: 'ordinal' }).select(2)).toBe('other');
+    expect(intl.getPluralRules({ locale: 'en' }).select(0)).toBe('other');
+    expect(intl.getPluralRules({ locales: ['brand'] }).select(0)).toBe('one');
+  });
+
   it('compares a date with the base date it is given', () => {
     const hour = 60 * 60 * 1000;
     expect(

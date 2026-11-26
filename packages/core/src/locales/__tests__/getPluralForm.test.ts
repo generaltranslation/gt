@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { getPluralForm } from '../getPluralForm';
+import { GTIntl } from '../../intl/GTIntl';
 import {
   getPluralBranchKey,
   isAcceptedPluralForm,
@@ -10,6 +11,18 @@ const form = (n: number | bigint, forms: string[], locale: string) =>
   getPluralForm(n, forms, [locale]);
 
 describe('getPluralForm', () => {
+  it('picks by the rules of a GTIntl, which reads an alias as its code', () => {
+    const intl = new GTIntl({ customMapping: { portal_fr: { code: 'fr' } } });
+    const options = { locale: 'portal_fr' };
+    // French counts 0 as "one" and has no ordinal "two".
+    expect(intl.getPluralForm(0, ['one', 'other'], options)).toBe('one');
+    expect(
+      intl.getPluralForm(2, ['two', 'other'], { ...options, type: 'ordinal' })
+    ).toBe('other');
+    expect(intl.getPluralForm(0, ['=0', 'one', 'other'], options)).toBe('=0');
+    expect(intl.getPluralForm(0, ['one', 'other'])).toBe('other');
+  });
+
   it.each([
     ['lv', 0, 'zero'],
     ['ar', 0, 'zero'],
@@ -41,6 +54,17 @@ describe('getPluralForm', () => {
     );
     expect(form(count, [`=${count}`, 'one', 'other'], 'ru')).toBe(`=${count}`);
     expect(form(count, ['=0', 'other'], 'ru')).toBe('other');
+  });
+
+  it('asks Intl for no rules when no branch is a category', () => {
+    const intl = new GTIntl();
+    const options = { locale: 'fr_FR' };
+    expect(() => new Intl.PluralRules('fr_FR')).toThrow(RangeError);
+
+    expect(intl.getPluralForm(0, ['=0', 'one', 'other'], options)).toBe('=0');
+    expect(intl.getPluralForm(5, ['other'], options)).toBe('other');
+    expect(form(0, ['=0', 'one', 'other'], 'fr_FR')).toBe('=0');
+    expect(form(5, ['other'], 'fr_FR')).toBe('other');
   });
 
   it('prefers an exact key over the category', () => {
