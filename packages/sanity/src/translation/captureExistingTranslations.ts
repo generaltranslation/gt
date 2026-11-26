@@ -156,28 +156,50 @@ export async function captureExistingTranslations({
     }),
     { sourceLocale }
   );
-  const confirmed = new Set(
-    response.uploadedFiles.map((file) => `${file.fileId}:${file.locale}`)
-  );
-  const saved = groups.flatMap(({ seed, translations }) =>
-    translations
-      .filter(({ locale }) => confirmed.has(`${seed.fileId}:${locale}`))
-      .map(({ locale, document }) => ({
-        written: document,
-        file: {
-          branchId: seed.branchId,
-          fileId: seed.fileId,
-          versionId: seed.versionId,
-        },
-        language: locale,
-      }))
-  );
+  // General Translation answers with the project's own locale, such as `ja`
+  // for a translation sent as `ja-JP`, so a file is matched by how many of its
+  // translations were stored. Locales are only compared when some are missing.
+  const storedCountByFileId = new Map<string, number>();
+  const storedKeys = new Set<string>();
+  for (const file of response.uploadedFiles) {
+    storedCountByFileId.set(
+      file.fileId,
+      (storedCountByFileId.get(file.fileId) ?? 0) + 1
+    );
+    storedKeys.add(`${file.fileId}:${file.locale}`);
+  }
+
+  let capturedCount = 0;
+  let documentCount = 0;
+  const saved = groups.flatMap(({ seed, translations }) => {
+    const storedCount = Math.min(
+      storedCountByFileId.get(seed.fileId) ?? 0,
+      translations.length
+    );
+    capturedCount += storedCount;
+    if (storedCount > 0) documentCount += 1;
+    const confirmed =
+      storedCount === translations.length
+        ? translations
+        : translations.filter(({ locale }) =>
+            storedKeys.has(`${seed.fileId}:${locale}`)
+          );
+    return confirmed.map(({ locale, document }) => ({
+      written: document,
+      file: {
+        branchId: seed.branchId,
+        fileId: seed.fileId,
+        versionId: seed.versionId,
+      },
+      language: locale,
+    }));
+  });
 
   return {
-    capturedCount: saved.length,
-    documentCount: new Set(saved.map(({ file }) => file.fileId)).size,
+    capturedCount,
+    documentCount,
     skippedCount,
-    unconfirmedCount: replaceableCount - saved.length,
+    unconfirmedCount: replaceableCount - capturedCount,
     saved,
   };
 }
