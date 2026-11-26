@@ -10,9 +10,6 @@ type BranchProps = {
 
 // ===== Component ===== //
 
-/**
- * External-store version of the `<Branch>` component.
- */
 function GtInternalBranch({
   children,
   branch,
