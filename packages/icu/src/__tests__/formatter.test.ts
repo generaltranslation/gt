@@ -450,6 +450,42 @@ describe('formatMessage', () => {
     }
   });
 
+  it('builds plural rules once per locale list and plural type across messages', () => {
+    const originalPluralRules = Intl.PluralRules;
+    const built: unknown[][] = [];
+    Object.defineProperty(Intl, 'PluralRules', {
+      value: new Proxy(originalPluralRules, {
+        construct(target, args) {
+          built.push(args);
+          return Reflect.construct(target, args);
+        },
+      }),
+    });
+
+    try {
+      const cardinal =
+        '{n, plural, one {# item} few {# items (few)} other {# items}}';
+      const ordinal = '{n, selectordinal, one {#st} two {#nd} other {#th}}';
+      expect(formatMessage(cardinal, ['ru', 'en'], { n: 3 })).toBe(
+        '3 items (few)'
+      );
+      expect(formatMessage(cardinal, ['ru', 'en'], { n: 1 })).toBe('1 item');
+      expect(formatMessage(cardinal, 'en', { n: 3 })).toBe('3 items');
+      expect(formatMessage(ordinal, 'en', { n: 2 })).toBe('2nd');
+      expect(formatMessage(cardinal, 'en', { n: 1 })).toBe('1 item');
+
+      expect(built).toEqual([
+        [['ru', 'en'], { type: 'cardinal' }],
+        ['en', { type: 'cardinal' }],
+        ['en', { type: 'ordinal' }],
+      ]);
+    } finally {
+      Object.defineProperty(Intl, 'PluralRules', {
+        value: originalPluralRules,
+      });
+    }
+  });
+
   it('preserves the actionable missing-Intl.PluralRules error contract', () => {
     const descriptor = Object.getOwnPropertyDescriptor(Intl, 'PluralRules');
     Object.defineProperty(Intl, 'PluralRules', {
