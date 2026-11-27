@@ -54,7 +54,6 @@ type FormatContext = {
   variables: MessageVariables;
   numberFormats?: Map<string, Intl.NumberFormat>;
   dateTimeFormats?: Map<string, Intl.DateTimeFormat>;
-  pluralRules?: Map<Intl.PluralRuleType, Intl.PluralRules>;
 };
 
 export function formatMessage(
@@ -241,6 +240,15 @@ function getDateTimeFormat(
   });
 }
 
+// A polyfilled Intl.PluralRules takes milliseconds to build, and an app formats in a handful of
+// locale lists; the cap bounds lists that come from input.
+const MAX_PLURAL_RULES = 64;
+// Keyed by constructor so rules built before a polyfill was installed are not reused after it.
+const pluralRulesByConstructor = new WeakMap<
+  typeof Intl.PluralRules,
+  Map<string, Intl.PluralRules>
+>();
+
 function getPluralRules(
   context: FormatContext,
   type: Intl.PluralRuleType
@@ -254,10 +262,23 @@ function getPluralRules(
     error.originalMessage = context.message;
     throw error;
   }
-  const cache = (context.pluralRules ??= new Map());
-  return getCachedFormatter(cache, type, () => {
-    return new Intl.PluralRules(context.locales, { type });
-  });
+  let cache = pluralRulesByConstructor.get(Intl.PluralRules);
+  if (!cache) {
+    cache = new Map();
+    pluralRulesByConstructor.set(Intl.PluralRules, cache);
+  }
+  const { locales } = context;
+  const key = JSON.stringify([
+    type,
+    typeof locales === 'string' ? locales : locales.map(String),
+  ]);
+  let rules = cache.get(key);
+  if (!rules) {
+    rules = new Intl.PluralRules(locales, { type });
+    if (cache.size >= MAX_PLURAL_RULES) cache.clear();
+    cache.set(key, rules);
+  }
+  return rules;
 }
 
 function getCachedFormatter<Key, Value>(
