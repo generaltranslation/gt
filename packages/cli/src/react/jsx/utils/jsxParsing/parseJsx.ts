@@ -496,6 +496,7 @@ function buildJSXTree({
         // Basically, if componentType is not a GT component, use typeName such as <div>
         type: componentType ?? typeName ?? '',
         ...(shadowedTag && { shadowed: true as const }),
+        ...(elementIsVariable && { variableType: componentType }),
         props,
       };
     }

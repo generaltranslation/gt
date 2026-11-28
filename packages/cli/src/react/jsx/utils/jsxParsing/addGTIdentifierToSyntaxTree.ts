@@ -159,17 +159,24 @@ export default function addGTIdentifierToSyntaxTree(
         };
       }
 
-      // Variables — only treat as GT variable if confirmed as GT import
-      const isGTVariable = gtVariableNames
-        ? gtVariableNames.has(type)
-        : Object.keys(defaultVariableNames).includes(type);
+      // Variables — only treat as GT variable if confirmed as GT import.
+      // A tag resolved from its own binding carries that answer, which the
+      // file-level name set cannot reproduce: two functions may award one local
+      // name to different GT exports.
+      const resolvedVariableType =
+        'variableType' in child ? child.variableType : undefined;
+      const isGTVariable = resolvedVariableType
+        ? true
+        : gtVariableNames
+          ? gtVariableNames.has(type)
+          : Object.keys(defaultVariableNames).includes(type);
       if (isGTVariable) {
-        const variableType = minifyVariableType(
-          type as keyof typeof defaultVariableNames
-        );
+        const variableTypeName = (resolvedVariableType ??
+          type) as keyof typeof defaultVariableNames;
+        const variableType = minifyVariableType(variableTypeName);
         const variableName = getVariableName(
           props,
-          type as keyof typeof defaultVariableNames,
+          variableTypeName,
           indexObject.index
         );
         return {

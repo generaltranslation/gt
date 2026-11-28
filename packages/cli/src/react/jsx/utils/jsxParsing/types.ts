@@ -19,6 +19,12 @@ type ElementNode = {
    * stays in `type` to match the runtime hash, but no GT props are derived.
    */
   shadowed?: true;
+  /**
+   * The GT variable component this tag rendered at its own binding. Carried so
+   * the identifier pass reads the tag's binding instead of the file-level alias
+   * map, which cannot tell two same-named bindings apart.
+   */
+  variableType?: string;
   props?: {
     children?: JsxTree | MultiplicationNode | (JsxTree | MultiplicationNode)[];
     [key: string]: unknown;
@@ -76,6 +82,8 @@ type WhitespaceJsxTree = {
   type: string;
   /** Carried through the whitespace and multiplication passes; see ElementNode. */
   shadowed?: true;
+  /** Carried through the whitespace and multiplication passes; see ElementNode. */
+  variableType?: string;
   props?: {
     children?: (WhitespaceJsxTreeResult | WhitespaceMultiplicationNode)[];
     // Other attributess
