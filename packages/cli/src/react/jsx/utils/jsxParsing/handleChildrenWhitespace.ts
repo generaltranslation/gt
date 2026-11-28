@@ -251,6 +251,7 @@ export function handleChildrenWhitespace(
     return {
       nodeType: 'element',
       type: currentTree.type,
+      ...(currentTree.shadowed && { shadowed: true as const }),
       ...(processedProps ? { props: processedProps } : {}),
     };
   } else if (isExpressionNode(currentTree)) {

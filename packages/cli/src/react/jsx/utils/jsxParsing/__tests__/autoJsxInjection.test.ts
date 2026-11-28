@@ -1064,3 +1064,50 @@ describe('injection and extraction', () => {
     );
   });
 });
+
+describe('a tag name rebound in the enclosing scope', () => {
+  it('does not inject into a shadowed branching component', () => {
+    const code = [
+      'import { Plural } from "gt-next";',
+      'export default function Page({ Plural }) {',
+      '  return <Plural n={2} one="item">items</Plural>;',
+      '}',
+    ].join('\n');
+
+    const { code: output } = inject(code);
+
+    // A real Plural at the root is opaque and wrapped in a _T; a shadowed one is
+    // an ordinary element, so the injection goes inside it instead.
+    expect(output).toContain(
+      '<Plural n={2} one="item"><GtInternalTranslateJsx>items</GtInternalTranslateJsx></Plural>'
+    );
+    expect(output).not.toContain('<GtInternalTranslateJsx><Plural');
+  });
+
+  it('still wraps an imported Plural at the root in a _T', () => {
+    const code = [
+      'import { Plural } from "gt-next";',
+      'export default function Page() {',
+      '  return <Plural n={2} one="item">items</Plural>;',
+      '}',
+    ].join('\n');
+
+    expect(inject(code).code).toContain(
+      '<GtInternalTranslateJsx><Plural n={2} one="item">items</Plural></GtInternalTranslateJsx>'
+    );
+  });
+
+  it('extracts the shadowed component children without plural data', () => {
+    const code = [
+      'import { T, Plural } from "gt-next";',
+      'export default function Page({ Plural }) {',
+      '  return <T><Plural n={2} one="item">items</Plural></T>;',
+      '}',
+    ].join('\n');
+
+    const result = extractWithAutoInjection(code);
+
+    expect(result.errors).toEqual([]);
+    expect(sources(result)).toEqual([{ t: 'Plural', i: 1, c: 'items' }]);
+  });
+});

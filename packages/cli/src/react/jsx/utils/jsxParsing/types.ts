@@ -13,6 +13,12 @@ type ExpressionNode = {
 type ElementNode = {
   nodeType: 'element';
   type: string;
+  /**
+   * Set when an enclosing scope rebinds the tag name, so the element renders
+   * that binding rather than the GT component of the same name. The tag name
+   * stays in `type` to match the runtime hash, but no GT props are derived.
+   */
+  shadowed?: true;
   props?: {
     children?: JsxTree | MultiplicationNode | (JsxTree | MultiplicationNode)[];
     [key: string]: unknown;
@@ -68,6 +74,8 @@ type WhitespaceMultiplicationNode = {
 type WhitespaceJsxTree = {
   nodeType?: 'element';
   type: string;
+  /** Carried through the whitespace and multiplication passes; see ElementNode. */
+  shadowed?: true;
   props?: {
     children?: (WhitespaceJsxTreeResult | WhitespaceMultiplicationNode)[];
     // Other attributess

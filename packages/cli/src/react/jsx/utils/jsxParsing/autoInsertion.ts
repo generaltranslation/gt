@@ -13,6 +13,7 @@ import traverseModule, { NodePath } from '@babel/traverse';
 const traverse: typeof traverseModule.default =
   traverseModule.default || traverseModule;
 import { isStaticExpression } from '../../evaluateJsx.js';
+import { isShadowedJsxTag } from './isShadowedJsxTag.js';
 import {
   TRANSLATION_COMPONENT,
   INTERNAL_TRANSLATION_COMPONENT,
@@ -155,9 +156,10 @@ function processJsxElement({
 }: { path: NodePath<t.JSXElement> } & InsertionContext): void {
   processedNodes.add(path.node);
 
-  // Get component type
+  // Get component type. A tag whose name the enclosing scope rebinds renders
+  // that binding, so it is not a GT component here either.
   const typeName = getElementTypeName(path.node);
-  const canonicalName = typeName ? importAliases[typeName] : undefined;
+  const canonicalName = getCanonicalName(path, typeName, importAliases);
 
   // User T → mark all descendants, hands off
   if (canonicalName === TRANSLATION_COMPONENT) {
@@ -248,7 +250,7 @@ function processElementChildren({
   };
 
   const hasText = hasTranslatableText(children);
-  const hasOpaque = hasOpaqueGTChild(children, importAliases);
+  const hasOpaque = hasOpaqueGTChild(path, children, importAliases);
   const shouldClaimT = !insideAutoT && (hasText || hasOpaque);
 
   if (shouldClaimT) {
@@ -299,7 +301,7 @@ function processFragmentChildren({
   };
 
   const hasText = hasTranslatableText(children);
-  const hasOpaque = hasOpaqueGTChild(children, importAliases);
+  const hasOpaque = hasOpaqueGTChild(path, children, importAliases);
   const shouldClaimT = !insideAutoT && (hasText || hasOpaque);
 
   if (shouldClaimT) {
@@ -501,20 +503,37 @@ function hasTranslatableText(children: t.Node[]): boolean {
 }
 
 function hasOpaqueGTChild(
+  path: NodePath<t.JSXElement | t.JSXFragment>,
   children: t.Node[],
   importAliases: Record<string, string>
 ): boolean {
-  return children.some((child) => {
+  const childPaths = path.get('children');
+  return children.some((child, index) => {
     if (!t.isJSXElement(child)) return false;
-    const typeName = getElementTypeName(child);
-    if (!typeName) return false;
-    const canonical = importAliases[typeName];
+    const canonical = getCanonicalName(
+      childPaths[index] as NodePath,
+      getElementTypeName(child),
+      importAliases
+    );
     return (
       canonical === BRANCH_COMPONENT ||
       canonical === PLURAL_COMPONENT ||
       canonical === DERIVE_COMPONENT
     );
   });
+}
+
+/**
+ * Resolves the GT component a tag renders, or undefined when the tag is not one.
+ * A name the enclosing scope rebinds renders that binding, not the import.
+ */
+function getCanonicalName(
+  path: NodePath,
+  typeName: string | null,
+  importAliases: Record<string, string>
+): string | undefined {
+  if (!typeName || isShadowedJsxTag(path, typeName)) return undefined;
+  return importAliases[typeName];
 }
 
 function needsVarWrapping(container: t.JSXExpressionContainer): boolean {

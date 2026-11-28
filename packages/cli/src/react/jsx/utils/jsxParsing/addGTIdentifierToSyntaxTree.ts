@@ -128,6 +128,22 @@ export default function addGTIdentifierToSyntaxTree(
         type = '';
       }
 
+      // A tag whose name an enclosing scope rebinds renders that binding, so it
+      // carries no GT semantics: no data-_gt prop, no variable form and no
+      // plural/branch handling. The tag name stays in the hash, because the
+      // runtime renders that element.
+      if ('shadowed' in child && child.shadowed) {
+        const shadowedIndex = indexObject.index;
+        const shadowedChildren = handleChildren(
+          props?.children === undefined ? null : props?.children
+        );
+        return {
+          t: type || `C${shadowedIndex}`,
+          i: shadowedIndex,
+          ...(shadowedChildren !== false && { c: shadowedChildren }),
+        };
+      }
+
       // Variables — only treat as GT variable if confirmed as GT import
       const isGTVariable = gtVariableNames
         ? gtVariableNames.has(type)
