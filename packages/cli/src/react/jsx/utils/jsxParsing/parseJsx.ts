@@ -38,7 +38,7 @@ import type { Metadata } from 'generaltranslation/types';
 import { NodePath } from '@babel/traverse';
 import { ParsingConfigOptions } from '../../../../types/parsing.js';
 import { resolveImportPath } from '../resolveImportPath.js';
-import { isShadowedJsxTag } from './isShadowedJsxTag.js';
+import { resolveJsxTag } from './resolveJsxTag.js';
 
 import traverseModule from '@babel/traverse';
 import { buildImportMap } from '../buildImportMap.js';
@@ -291,14 +291,16 @@ function buildJSXTree({
       typeName = null;
     }
 
-    // Convert from alias to original name. A tag whose name a parameter or
-    // local variable rebinds renders that binding, so it is not a GT component.
-    const shadowedTag = Boolean(
-      typeName && isShadowedJsxTag(helperPath, typeName)
+    // Resolve the GT export from the binding at this tag. A name a parameter or
+    // local variable rebinds renders that binding, so it is not a GT component;
+    // and two functions may award one local name to different GT exports.
+    const resolvedTag = resolveJsxTag(
+      helperPath,
+      typeName,
+      config.importAliases
     );
-    const componentType = shadowedTag
-      ? undefined
-      : config.importAliases[typeName ?? ''];
+    const shadowedTag = resolvedTag.shadowed;
+    const componentType = resolvedTag.canonical;
 
     // When enableAutoJsxInjection is on and we're inside a Derive context,
     // any auto-inserted T component will be stripped at runtime by

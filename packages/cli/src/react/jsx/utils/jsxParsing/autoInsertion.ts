@@ -13,7 +13,7 @@ import traverseModule, { NodePath } from '@babel/traverse';
 const traverse: typeof traverseModule.default =
   traverseModule.default || traverseModule;
 import { isStaticExpression } from '../../evaluateJsx.js';
-import { isShadowedJsxTag } from './isShadowedJsxTag.js';
+import { resolveJsxTag } from './resolveJsxTag.js';
 import {
   TRANSLATION_COMPONENT,
   INTERNAL_TRANSLATION_COMPONENT,
@@ -156,8 +156,8 @@ function processJsxElement({
 }: { path: NodePath<t.JSXElement> } & InsertionContext): void {
   processedNodes.add(path.node);
 
-  // Get component type. A tag whose name the enclosing scope rebinds renders
-  // that binding, so it is not a GT component here either.
+  // Get component type. The binding at the tag decides, so a name the
+  // enclosing scope rebinds is not read as the GT component of that name.
   const typeName = getElementTypeName(path.node);
   const canonicalName = getCanonicalName(path, typeName, importAliases);
 
@@ -525,15 +525,16 @@ function hasOpaqueGTChild(
 
 /**
  * Resolves the GT component a tag renders, or undefined when the tag is not one.
- * A name the enclosing scope rebinds renders that binding, not the import.
+ * The binding at the tag decides, so two functions can award one local name to
+ * different GT exports.
  */
 function getCanonicalName(
   path: NodePath,
   typeName: string | null,
   importAliases: Record<string, string>
 ): string | undefined {
-  if (!typeName || isShadowedJsxTag(path, typeName)) return undefined;
-  return importAliases[typeName];
+  const { canonical, shadowed } = resolveJsxTag(path, typeName, importAliases);
+  return shadowed ? undefined : canonical;
 }
 
 function needsVarWrapping(container: t.JSXExpressionContainer): boolean {

@@ -1039,4 +1039,75 @@ describe('a tag name rebound in the enclosing scope', () => {
       { t: 'Plural', i: 1, d: { b: { one: 'item' }, t: 'p' }, c: 'more' },
     ]);
   });
+
+  it('resolves one local name to the export each binding imports', () => {
+    // Both functions call their component Choice. A file-level alias map keeps
+    // only the last entry for that spelling, so the plural would be serialized
+    // with branch data.
+    const code = [
+      'function First() {',
+      '  const { Plural: Choice } = require("gt-next");',
+      '  return <Choice n={2} one="item">items</Choice>;',
+      '}',
+      'function Second() {',
+      '  const { Branch: Choice } = require("gt-next");',
+      '  return <Choice branch="selected" fallback="none">items</Choice>;',
+      '}',
+      'export default function Page() { return <div><First/><Second/></div>; }',
+    ].join('\n');
+
+    const result = extractWithAutoInjection(code);
+
+    expect(result.errors).toEqual([]);
+    expect(sources(result)).toEqual([
+      { t: 'Plural', i: 1, d: { b: { one: 'item' }, t: 'p' }, c: 'items' },
+      {
+        t: 'Branch',
+        i: 1,
+        d: { b: { fallback: 'none' }, t: 'b' },
+        c: 'items',
+      },
+    ]);
+  });
+
+  it('does not read an ordinary export under a GT alias as a GT component', () => {
+    // GTProvider is not a component the extraction hashes, so keeping the
+    // outer alias would emit plural data for <Choice>Welcome</Choice>.
+    const code = [
+      'function Outer() {',
+      '  const { Plural: Choice } = require("gt-next");',
+      '  return <Choice n={2} one="a">outer</Choice>;',
+      '}',
+      'function Inner() {',
+      '  const { GTProvider: Choice } = require("gt-next");',
+      '  return <Choice>Welcome</Choice>;',
+      '}',
+      'export default function Page() { return <div><Outer/><Inner/></div>; }',
+    ].join('\n');
+
+    const result = extractWithAutoInjection(code);
+
+    expect(result.errors).toEqual([]);
+    expect(sources(result)).toEqual([
+      { t: 'Plural', i: 1, d: { b: { one: 'a' }, t: 'p' }, c: 'outer' },
+      'Welcome',
+    ]);
+  });
+
+  it('reads a package that only starts with a GT name as unrelated', () => {
+    // `gt-next-widgets` is a different package, so this Plural is a local
+    // binding and carries no plural data.
+    const code = [
+      'import { T } from "gt-next";',
+      'export default function Page() {',
+      '  const { Plural } = require("gt-next-widgets");',
+      '  return <T><Plural n={2} one="item">items</Plural></T>;',
+      '}',
+    ].join('\n');
+
+    const result = extractUserT(code);
+
+    expect(result.errors).toEqual([]);
+    expect(sources(result)).toEqual([{ t: 'Plural', i: 1, c: 'items' }]);
+  });
 });
