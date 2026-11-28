@@ -6,6 +6,7 @@ import { resolveImportPath } from '../../resolveImportPath.js';
 import { resolveAutoderive } from '../../../../../types/parsing.js';
 import {
   extractUserT,
+  extractWithAutoInjection,
   mockFiles,
   page,
   parsingOptions,
@@ -980,6 +981,25 @@ describe('a tag name rebound in the enclosing scope', () => {
     // ({ t: 'Branch', i: 1, d: { b: { fallback: 'none' }, t: 'b' }, c: 'one' });
     // the shadowed tag hashes as an element and keeps no branch data.
     expect(sources(result)).toEqual([{ t: 'Branch', i: 1, c: 'one' }]);
+  });
+
+  it('keeps CommonJS require imports as GT components', () => {
+    // A destructured require declares the name locally, so a binding-kind
+    // check alone would read it as a shadowing local variable.
+    const code = [
+      'const { T, Plural } = require("gt-next");',
+      'export default function Page() {',
+      '  return <T><Plural n={2} one="item">items</Plural></T>;',
+      '}',
+    ].join('\n');
+
+    // extractUserT resolves ESM imports only, so run the full extraction path.
+    const result = extractWithAutoInjection(code);
+
+    expect(result.errors).toEqual([]);
+    expect(sources(result)).toEqual([
+      { t: 'Plural', i: 1, d: { b: { one: 'item' }, t: 'p' }, c: 'items' },
+    ]);
   });
 
   it('keeps an ordinary HTML content prop on a shadowed tag', () => {
