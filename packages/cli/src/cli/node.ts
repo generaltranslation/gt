@@ -5,7 +5,7 @@ import { Libraries, NODE_LIBRARIES } from '../types/libraries.js';
 import { checkMonorepoVersionConsistency } from '../utils/monorepoVersionCheck.js';
 
 const NODE_SOURCE_HELP =
-  "Space-separated list of glob patterns containing the app's source code; by default the project's JavaScript and TypeScript files, except node_modules";
+  "Space-separated list of glob patterns containing the app's source code; by default the project's JavaScript and TypeScript files, except node_modules, dist, build, coverage, public, test files and declaration files";
 
 /**
  * CLI tool for managing translations with gt-node
