@@ -129,7 +129,8 @@ describe('createUpdates', () => {
       true,
       patterns,
       parsingFlags,
-      parsingOptions
+      parsingOptions,
+      undefined
     );
     expect(createPythonInlineUpdates).not.toHaveBeenCalled();
   });
