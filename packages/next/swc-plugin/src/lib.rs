@@ -1,3 +1,12 @@
+#[cfg(all(feature = "swc-current", feature = "swc-legacy"))]
+compile_error!("Enable exactly one of the `swc-current` and `swc-legacy` features.");
+#[cfg(not(any(feature = "swc-current", feature = "swc-legacy")))]
+compile_error!("Enable one of the `swc-current` or `swc-legacy` features.");
+
+// The legacy build compiles the same source against an older swc_core.
+#[cfg(all(feature = "swc-legacy", not(feature = "swc-current")))]
+extern crate swc_core_legacy as swc_core;
+
 use crate::visitor::TransformVisitor;
 use crate::{
   config::PluginConfig,

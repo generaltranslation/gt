@@ -7,7 +7,10 @@ import { describe, expect, it } from 'vitest';
 const packageRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const distInitGTServerPath = join(packageRoot, 'dist/setup/initGT.server.mjs');
 const distClientPath = join(packageRoot, 'dist/index.client.mjs');
-const distSwcPluginPath = join(packageRoot, 'dist/gt_swc_plugin.wasm');
+const distSwcPluginPaths = [
+  join(packageRoot, 'dist/gt_swc_plugin.wasm'),
+  join(packageRoot, 'dist/gt_swc_plugin_legacy.wasm'),
+];
 
 function runNode(args: string[]): void {
   const result = spawnSync(process.execPath, args, {
@@ -131,7 +134,9 @@ describe('gt-next package exports', () => {
   const swcPluginIt = process.env.CI ? it : it.skip;
 
   swcPluginIt('ships the SWC plugin WASM alongside the built config', () => {
-    expect(existsSync(distSwcPluginPath)).toBe(true);
+    for (const distSwcPluginPath of distSwcPluginPaths) {
+      expect(existsSync(distSwcPluginPath)).toBe(true);
+    }
   });
 
   distIt('keeps custom request functions visible to bundler aliases', () => {

@@ -1,7 +1,22 @@
 use crate::hash::{HtmlContentProps, SanitizedChild, VariableType};
+use std::borrow::Cow;
 use swc_core::ecma::ast::*;
 
 use crate::whitespace::{has_significant_whitespace, is_normal_whitespace, trim_normal_whitespace};
+
+/// Read a JSX text node's value. Newer swc_core versions store it as a
+/// `Wtf8Atom`, older versions as an `Atom`.
+#[cfg(feature = "swc-current")]
+pub fn jsx_text_value(text: &JSXText) -> Cow<'_, str> {
+  text.value.to_string_lossy()
+}
+
+/// Read a JSX text node's value. Newer swc_core versions store it as a
+/// `Wtf8Atom`, older versions as an `Atom`.
+#[cfg(not(feature = "swc-current"))]
+pub fn jsx_text_value(text: &JSXText) -> Cow<'_, str> {
+  Cow::Borrowed(&text.value)
+}
 
 /// Custom number to string function to match JS behavior
 pub fn js_number_to_string(value: f64) -> String {
@@ -96,7 +111,8 @@ pub fn filter_jsx_children(children: &[JSXElementChild]) -> Vec<JSXElementChild>
     // Check beginning
     let first_child = children.first().unwrap();
     if let JSXElementChild::JSXText(text) = first_child {
-      if trim_normal_whitespace(&text.value).is_empty() && text.value.contains('\n') {
+      let value = jsx_text_value(text);
+      if trim_normal_whitespace(&value).is_empty() && value.contains('\n') {
         remove_first_child = true;
       }
     }
@@ -104,7 +120,8 @@ pub fn filter_jsx_children(children: &[JSXElementChild]) -> Vec<JSXElementChild>
     // Check end
     let last_child = children.last().unwrap();
     if let JSXElementChild::JSXText(text) = last_child {
-      if trim_normal_whitespace(&text.value).is_empty() && text.value.contains('\n') {
+      let value = jsx_text_value(text);
+      if trim_normal_whitespace(&value).is_empty() && value.contains('\n') {
         remove_last_child = true;
       }
     }
@@ -133,15 +150,16 @@ pub fn filter_jsx_children(children: &[JSXElementChild]) -> Vec<JSXElementChild>
           return false;
         }
       } else if let JSXElementChild::JSXText(text) = child {
-        let trimmed = trim_normal_whitespace(&text.value);
+        let value = jsx_text_value(text);
+        let trimmed = trim_normal_whitespace(&value);
         if trimmed.is_empty() {
           // Check if it contains HTML entities (like &nbsp;, &amp;, etc.)
-          if has_significant_whitespace(&text.value) {
+          if has_significant_whitespace(&value) {
             return true;
           }
 
           // Remove plain whitespace with newlines
-          if text.value.contains('\n') {
+          if value.contains('\n') {
             return false;
           }
         }
@@ -155,7 +173,7 @@ pub fn filter_jsx_children(children: &[JSXElementChild]) -> Vec<JSXElementChild>
 
 /// Build sanitized text content
 pub fn build_sanitized_text_content(text: &JSXText) -> Option<SanitizedChild> {
-  let content = text.value.to_string();
+  let content = jsx_text_value(text).into_owned();
   // Only normalize internal whitespace, preserve leading/trailing spaces
   // This matches how browsers handle JSX text content
   if trim_normal_whitespace(&content).is_empty() {
@@ -445,7 +463,7 @@ mod tests {
     fn create_jsx_text(content: &str) -> JSXElementChild {
       JSXElementChild::JSXText(JSXText {
         span: DUMMY_SP,
-        value: Atom::new(content),
+        value: Atom::new(content).into(),
         raw: Atom::new(content),
       })
     }
@@ -467,7 +485,7 @@ mod tests {
       let filtered = filter_jsx_children(&children);
       assert_eq!(filtered.len(), 1);
       if let JSXElementChild::JSXText(text) = &filtered[0] {
-        assert_eq!(text.value.as_ref(), "content");
+        assert_eq!(jsx_text_value(text), "content");
       } else {
         panic!("Expected JSXText");
       }
@@ -507,7 +525,7 @@ mod tests {
     fn create_jsx_text(content: &str) -> JSXText {
       JSXText {
         span: DUMMY_SP,
-        value: Atom::new(content),
+        value: Atom::new(content).into(),
         raw: Atom::new(content),
       }
     }
