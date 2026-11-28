@@ -129,18 +129,33 @@ export default function addGTIdentifierToSyntaxTree(
       }
 
       // A tag whose name an enclosing scope rebinds renders that binding, so it
-      // carries no GT semantics: no data-_gt prop, no variable form and no
-      // plural/branch handling. The tag name stays in the hash, because the
-      // runtime renders that element.
+      // carries no GT semantics: no variable form and no plural/branch handling.
+      // It keeps the ordinary HTML content props the compiler also collects
+      // (title, placeholder, …), and the tag name, because the runtime renders
+      // that element.
       if ('shadowed' in child && child.shadowed) {
         const shadowedIndex = indexObject.index;
         const shadowedChildren = handleChildren(
           props?.children === undefined ? null : props?.children
         );
+        const htmlContentProps = Object.entries(
+          HTML_CONTENT_PROPS
+        ).reduce<GTProp>((acc, [minifiedName, fullName]) => {
+          const value = (props as Record<string, unknown> | undefined)?.[
+            fullName
+          ];
+          if (typeof value === 'string') {
+            acc[minifiedName as keyof HtmlContentPropKeysRecord] = value;
+          }
+          return acc;
+        }, {});
         return {
           t: type || `C${shadowedIndex}`,
           i: shadowedIndex,
           ...(shadowedChildren !== false && { c: shadowedChildren }),
+          ...(Object.keys(htmlContentProps).length > 0 && {
+            d: htmlContentProps,
+          }),
         };
       }
 

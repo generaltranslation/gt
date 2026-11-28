@@ -982,6 +982,25 @@ describe('a tag name rebound in the enclosing scope', () => {
     expect(sources(result)).toEqual([{ t: 'Branch', i: 1, c: 'one' }]);
   });
 
+  it('keeps an ordinary HTML content prop on a shadowed tag', () => {
+    // The compiler collects title/placeholder/alt on an ordinary element, so
+    // dropping them here would hash differently and lose the translation.
+    const code = [
+      'import { T } from "gt-next";',
+      'export default function Page() {',
+      '  const Link = local;',
+      '  return <T><Link title="Help">Open</Link></T>;',
+      '}',
+    ].join('\n');
+
+    const result = extractUserT(code);
+
+    expect(result.errors).toEqual([]);
+    expect(sources(result)).toEqual([
+      { t: 'Link', i: 1, d: { ti: 'Help' }, c: 'Open' },
+    ]);
+  });
+
   it('keeps a sibling GT component when only one tag is shadowed', () => {
     const code = [
       'import { T, Plural } from "gt-next";',
