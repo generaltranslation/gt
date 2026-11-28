@@ -6,6 +6,7 @@ import { resolveImportPath } from '../../resolveImportPath.js';
 import { resolveAutoderive } from '../../../../../types/parsing.js';
 import {
   extractUserT,
+  extractWithAutoInjection,
   mockFiles,
   page,
   parsingOptions,
@@ -919,5 +920,194 @@ describe('resolveAutoderive', () => {
     ],
   ])('%j resolves to %j', (input, expected) => {
     expect(resolveAutoderive(input)).toEqual(expected);
+  });
+});
+
+describe('a tag name rebound in the enclosing scope', () => {
+  it.each([
+    ['a parameter', 'export default function Page({ Plural }) {'],
+    [
+      'a local const',
+      'export default function Page() {\n  const Plural = prop;\n',
+    ],
+  ])(
+    'reads %s as the rendered binding, not the imported GT component',
+    (_name, declaration) => {
+      const code = [
+        'import { T, Plural } from "gt-next";',
+        declaration,
+        '  return <T><Plural n={2} one="item">items</Plural></T>;',
+        '}',
+      ].join('\n');
+
+      const result = extractUserT(code);
+
+      expect(result.errors).toEqual([]);
+      // The direct import hashes as a plural ({ t: 'Plural', i: 1, d: { b: …, t: 'p' }, c }).
+      // The shadowed tag hashes as an ordinary element: same tag and position, no plural data.
+      expect(sources(result)).toEqual([{ t: 'Plural', i: 1, c: 'items' }]);
+    }
+  );
+
+  it('treats a shadowed variable component as its rendered binding', () => {
+    const code = [
+      'import { T, Var } from "gt-next";',
+      'export default function Page({ Var }) {',
+      '  return <T>Hello <Var>name</Var></T>;',
+      '}',
+    ].join('\n');
+
+    const result = extractUserT(code);
+
+    expect(result.errors).toEqual([]);
+    // A GT variable hashes as { i, k, v }; the shadowed tag hashes as an element.
+    expect(sources(result)).toEqual([
+      ['Hello ', { t: 'Var', i: 1, c: 'name' }],
+    ]);
+  });
+
+  it('treats a shadowed branching component as its rendered binding', () => {
+    const code = [
+      'import { T, Branch } from "gt-next";',
+      'export default function Page({ Branch }) {',
+      '  return <T><Branch branch="selected" fallback="none">one</Branch></T>;',
+      '}',
+    ].join('\n');
+
+    const result = extractUserT(code);
+
+    expect(result.errors).toEqual([]);
+    // A GT branch hashes its non-control props as branches
+    // ({ t: 'Branch', i: 1, d: { b: { fallback: 'none' }, t: 'b' }, c: 'one' });
+    // the shadowed tag hashes as an element and keeps no branch data.
+    expect(sources(result)).toEqual([{ t: 'Branch', i: 1, c: 'one' }]);
+  });
+
+  it('keeps CommonJS require imports as GT components', () => {
+    // A destructured require declares the name locally, so a binding-kind
+    // check alone would read it as a shadowing local variable.
+    const code = [
+      'const { T, Plural } = require("gt-next");',
+      'export default function Page() {',
+      '  return <T><Plural n={2} one="item">items</Plural></T>;',
+      '}',
+    ].join('\n');
+
+    // extractUserT resolves ESM imports only, so run the full extraction path.
+    const result = extractWithAutoInjection(code);
+
+    expect(result.errors).toEqual([]);
+    expect(sources(result)).toEqual([
+      { t: 'Plural', i: 1, d: { b: { one: 'item' }, t: 'p' }, c: 'items' },
+    ]);
+  });
+
+  it('keeps an ordinary HTML content prop on a shadowed tag', () => {
+    // The compiler collects title/placeholder/alt on an ordinary element, so
+    // dropping them here would hash differently and lose the translation.
+    const code = [
+      'import { T } from "gt-next";',
+      'export default function Page() {',
+      '  const Link = local;',
+      '  return <T><Link title="Help">Open</Link></T>;',
+      '}',
+    ].join('\n');
+
+    const result = extractUserT(code);
+
+    expect(result.errors).toEqual([]);
+    expect(sources(result)).toEqual([
+      { t: 'Link', i: 1, d: { ti: 'Help' }, c: 'Open' },
+    ]);
+  });
+
+  it('keeps a sibling GT component when only one tag is shadowed', () => {
+    const code = [
+      'import { T, Plural } from "gt-next";',
+      'export default function Page({ Plural }) {',
+      '  return <T><Plural n={2} one="item">items</Plural></T>;',
+      '}',
+      'function Other() { return <T><Plural n={3} one="item">more</Plural></T>; }',
+    ].join('\n');
+
+    const result = extractUserT(code);
+
+    expect(result.errors).toEqual([]);
+    // The shadowed tag hashes as an element; the function-level usage keeps its plural data.
+    expect(sources(result)).toEqual([
+      { t: 'Plural', i: 1, c: 'items' },
+      { t: 'Plural', i: 1, d: { b: { one: 'item' }, t: 'p' }, c: 'more' },
+    ]);
+  });
+
+  it('resolves one local name to the export each binding imports', () => {
+    // Both functions call their component Choice. A file-level alias map keeps
+    // only the last entry for that spelling, so the plural would be serialized
+    // with branch data.
+    const code = [
+      'function First() {',
+      '  const { Plural: Choice } = require("gt-next");',
+      '  return <Choice n={2} one="item">items</Choice>;',
+      '}',
+      'function Second() {',
+      '  const { Branch: Choice } = require("gt-next");',
+      '  return <Choice branch="selected" fallback="none">items</Choice>;',
+      '}',
+      'export default function Page() { return <div><First/><Second/></div>; }',
+    ].join('\n');
+
+    const result = extractWithAutoInjection(code);
+
+    expect(result.errors).toEqual([]);
+    expect(sources(result)).toEqual([
+      { t: 'Plural', i: 1, d: { b: { one: 'item' }, t: 'p' }, c: 'items' },
+      {
+        t: 'Branch',
+        i: 1,
+        d: { b: { fallback: 'none' }, t: 'b' },
+        c: 'items',
+      },
+    ]);
+  });
+
+  it('does not read an ordinary export under a GT alias as a GT component', () => {
+    // GTProvider is not a component the extraction hashes, so keeping the
+    // outer alias would emit plural data for <Choice>Welcome</Choice>.
+    const code = [
+      'function Outer() {',
+      '  const { Plural: Choice } = require("gt-next");',
+      '  return <Choice n={2} one="a">outer</Choice>;',
+      '}',
+      'function Inner() {',
+      '  const { GTProvider: Choice } = require("gt-next");',
+      '  return <Choice>Welcome</Choice>;',
+      '}',
+      'export default function Page() { return <div><Outer/><Inner/></div>; }',
+    ].join('\n');
+
+    const result = extractWithAutoInjection(code);
+
+    expect(result.errors).toEqual([]);
+    expect(sources(result)).toEqual([
+      { t: 'Plural', i: 1, d: { b: { one: 'a' }, t: 'p' }, c: 'outer' },
+      'Welcome',
+    ]);
+  });
+
+  it('reads a package that only starts with a GT name as unrelated', () => {
+    // `gt-next-widgets` is a different package, so this Plural is a local
+    // binding and carries no plural data.
+    const code = [
+      'import { T } from "gt-next";',
+      'export default function Page() {',
+      '  const { Plural } = require("gt-next-widgets");',
+      '  return <T><Plural n={2} one="item">items</Plural></T>;',
+      '}',
+    ].join('\n');
+
+    const result = extractUserT(code);
+
+    expect(result.errors).toEqual([]);
+    expect(sources(result)).toEqual([{ t: 'Plural', i: 1, c: 'items' }]);
   });
 });

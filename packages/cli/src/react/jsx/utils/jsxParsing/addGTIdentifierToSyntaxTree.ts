@@ -128,17 +128,55 @@ export default function addGTIdentifierToSyntaxTree(
         type = '';
       }
 
-      // Variables — only treat as GT variable if confirmed as GT import
-      const isGTVariable = gtVariableNames
-        ? gtVariableNames.has(type)
-        : Object.keys(defaultVariableNames).includes(type);
-      if (isGTVariable) {
-        const variableType = minifyVariableType(
-          type as keyof typeof defaultVariableNames
+      // A tag whose name an enclosing scope rebinds renders that binding, so it
+      // carries no GT semantics: no variable form and no plural/branch handling.
+      // It keeps the ordinary HTML content props the compiler also collects
+      // (title, placeholder, …), and the tag name, because the runtime renders
+      // that element.
+      if ('shadowed' in child && child.shadowed) {
+        const shadowedIndex = indexObject.index;
+        const shadowedChildren = handleChildren(
+          props?.children === undefined ? null : props?.children
         );
+        const htmlContentProps = Object.entries(
+          HTML_CONTENT_PROPS
+        ).reduce<GTProp>((acc, [minifiedName, fullName]) => {
+          const value = (props as Record<string, unknown> | undefined)?.[
+            fullName
+          ];
+          if (typeof value === 'string') {
+            acc[minifiedName as keyof HtmlContentPropKeysRecord] = value;
+          }
+          return acc;
+        }, {});
+        return {
+          t: type || `C${shadowedIndex}`,
+          i: shadowedIndex,
+          ...(shadowedChildren !== false && { c: shadowedChildren }),
+          ...(Object.keys(htmlContentProps).length > 0 && {
+            d: htmlContentProps,
+          }),
+        };
+      }
+
+      // Variables — only treat as GT variable if confirmed as GT import.
+      // A tag resolved from its own binding carries that answer, which the
+      // file-level name set cannot reproduce: two functions may award one local
+      // name to different GT exports.
+      const resolvedVariableType =
+        'variableType' in child ? child.variableType : undefined;
+      const isGTVariable = resolvedVariableType
+        ? true
+        : gtVariableNames
+          ? gtVariableNames.has(type)
+          : Object.keys(defaultVariableNames).includes(type);
+      if (isGTVariable) {
+        const variableTypeName = (resolvedVariableType ??
+          type) as keyof typeof defaultVariableNames;
+        const variableType = minifyVariableType(variableTypeName);
         const variableName = getVariableName(
           props,
-          type as keyof typeof defaultVariableNames,
+          variableTypeName,
           indexObject.index
         );
         return {

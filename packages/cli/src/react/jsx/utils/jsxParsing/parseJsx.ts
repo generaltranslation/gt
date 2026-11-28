@@ -38,6 +38,7 @@ import type { Metadata } from 'generaltranslation/types';
 import { NodePath } from '@babel/traverse';
 import { ParsingConfigOptions } from '../../../../types/parsing.js';
 import { resolveImportPath } from '../resolveImportPath.js';
+import { resolveJsxTag } from './resolveJsxTag.js';
 
 import traverseModule from '@babel/traverse';
 import { buildImportMap } from '../buildImportMap.js';
@@ -290,8 +291,16 @@ function buildJSXTree({
       typeName = null;
     }
 
-    // Convert from alias to original name
-    const componentType = config.importAliases[typeName ?? ''];
+    // Resolve the GT export from the binding at this tag. A name a parameter or
+    // local variable rebinds renders that binding, so it is not a GT component;
+    // and two functions may award one local name to different GT exports.
+    const resolvedTag = resolveJsxTag(
+      helperPath,
+      typeName,
+      config.importAliases
+    );
+    const shadowedTag = resolvedTag.shadowed;
+    const componentType = resolvedTag.canonical;
 
     // When enableAutoJsxInjection is on and we're inside a Derive context,
     // any auto-inserted T component will be stripped at runtime by
@@ -355,7 +364,9 @@ function buildJSXTree({
     }
 
     // If this JSXElement is one of the recognized variable components,
-    const elementIsVariable = VARIABLE_COMPONENTS.includes(componentType);
+    const elementIsVariable =
+      componentType !== undefined &&
+      VARIABLE_COMPONENTS.includes(componentType);
 
     const props: JSXProps = {};
 
@@ -484,6 +495,8 @@ function buildJSXTree({
         // if componentType is undefined, use typeName
         // Basically, if componentType is not a GT component, use typeName such as <div>
         type: componentType ?? typeName ?? '',
+        ...(shadowedTag && { shadowed: true as const }),
+        ...(elementIsVariable && { variableType: componentType }),
         props,
       };
     }
@@ -519,7 +532,8 @@ function buildJSXTree({
       nodeType: 'element',
       // if componentType is undefined, use typeName
       // Basically, if componentType is not a GT component, use typeName such as <div>
-      type: componentType ?? typeName,
+      type: componentType ?? typeName ?? '',
+      ...(shadowedTag && { shadowed: true as const }),
       props,
     };
   }
